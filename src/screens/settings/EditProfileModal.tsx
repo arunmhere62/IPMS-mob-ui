@@ -2,13 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  Modal,
-  TouchableOpacity,
   ScrollView,
   TextInput,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +15,7 @@ import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { CountryPhoneSelector, COUNTRIES } from '../../components/CountryPhoneSelector';
 import { OptionSelector } from '../../components/OptionSelector';
 import { InputField } from '../../components/InputField';
+import { SlideBottomModal } from '../../components/SlideBottomModal';
 import axiosInstance from '../../services/core/axiosInstance';
 import userService from '../../services/userService';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
@@ -195,239 +192,154 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   if (!user) return null;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <SlideBottomModal
+      visible={visible}
+      onClose={handleClose}
+      title="Edit Profile"
+      subtitle="Update your personal information"
+      onSubmit={handleSave}
+      onCancel={handleClose}
+      submitLabel="Save Changes"
+      cancelLabel="Cancel"
+      isLoading={loading}
+    >
+      <ScrollView
         style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 0, paddingBottom: 20 }}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+        bounces={true}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <View
+        {/* Name */}
+        <InputField
+          label="Name"
+          value={name}
+          onChangeText={setName}
+          placeholder="Enter your full name"
+          error={errors.name}
+          required={true}
+          prefixIcon="person-outline"
+          containerStyle={{ marginBottom: 16 }}
+        />
+
+        {/* Email */}
+        <InputField
+          label="Email Address"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Enter your email"
+          error={errors.email}
+          required={true}
+          prefixIcon="mail-outline"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          containerStyle={{ marginBottom: 16 }}
+        />
+
+        {/* Phone */}
+        <View style={{ marginBottom: 16 }}>
+          <Text
             style={{
-              backgroundColor: Theme.colors.canvas,
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              maxHeight: '90%',
-              flex: 1,
-              flexDirection: 'column',
+              fontSize: 14,
+              fontWeight: '500',
+              color: Theme.colors.text.primary,
+              marginBottom: 8,
             }}
           >
-            {/* Header */}
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 20,
-                borderBottomWidth: 1,
-                borderBottomColor: Theme.colors.border,
-              }}
-            >
-              <View>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Edit Profile
-                </Text>
-                <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginTop: 4 }}>
-                  Update your personal information
-                </Text>
-              </View>
-              <TouchableOpacity onPress={handleClose} disabled={loading}>
-                <Ionicons name="close" size={24} color={Theme.colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Form */}
-            <ScrollView
-              style={{ flex: 1 }}
-              contentContainerStyle={{ padding: 20, paddingBottom: 20 }}
-              showsVerticalScrollIndicator={true}
-              keyboardShouldPersistTaps="handled"
-              bounces={true}
-            >
-              {/* Name */}
-              <InputField
-                label="Name"
-                value={name}
-                onChangeText={setName}
-                placeholder="Enter your full name"
-                error={errors.name}
-                required={true}
-                prefixIcon="person-outline"
-                containerStyle={{ marginBottom: 16 }}
-              />
-
-              {/* Email */}
-              <InputField
-                label="Email Address"
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter your email"
-                error={errors.email}
-                required={true}
-                prefixIcon="mail-outline"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                containerStyle={{ marginBottom: 16 }}
-              />
-
-              {/* Phone */}
-              <View style={{ marginBottom: 16 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '500',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
-                >
-                  Phone Number
-                </Text>
-                <CountryPhoneSelector
-                  selectedCountry={selectedCountry}
-                  onSelectCountry={setSelectedCountry}
-                  phoneValue={phone}
-                  onPhoneChange={setPhone}
-                  size="medium"
-                />
-                {errors.phone && (
-                  <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
-                    {errors.phone}
-                  </Text>
-                )}
-              </View>
-
-              {/* Gender */}
-              <OptionSelector
-                label="Gender"
-                options={GENDER_OPTIONS}
-                selectedValue={gender}
-                onSelect={(value) => setGender((value as 'MALE' | 'FEMALE' | '') || '')}
-                containerStyle={{ marginBottom: 16 }}
-              />
-
-              {/* State */}
-              <View style={{ marginBottom: 16 }}>
-                <SearchableDropdown
-                  label="State"
-                  items={stateData.map((state) => ({
-                    id: state.s_no,
-                    label: state.name,
-                    value: state.s_no,
-                  }))}
-                  selectedValue={stateId}
-                  onSelect={(item) => setStateId(item ? item.value : null)}
-                  placeholder="Select State"
-                  loading={loadingStates}
-                />
-              </View>
-
-              {/* City */}
-              <View style={{ marginBottom: 16 }}>
-                <SearchableDropdown
-                  label="City"
-                  items={cityData.map((city) => ({
-                    id: city.s_no,
-                    label: city.name,
-                    value: city.s_no,
-                  }))}
-                  selectedValue={cityId}
-                  onSelect={(item) => setCityId(item ? item.value : null)}
-                  placeholder="Select City"
-                  loading={loadingCities}
-                  disabled={!stateId}
-                />
-              </View>
-
-              {/* Address */}
-              <InputField
-                label="Address"
-                value={address}
-                onChangeText={setAddress}
-                placeholder="Enter your address"
-                prefixIcon="location-outline"
-                multiline={true}
-                numberOfLines={3}
-                containerStyle={{ marginBottom: 16 }}
-              />
-
-              {/* Profile Image */}
-              <View style={{ marginBottom: 0, marginTop: 16 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '500',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 12,
-                  }}
-                >
-                  Profile Picture
-                </Text>
-                <ImageUploadS3
-                  images={profileImages}
-                  onImagesChange={setProfileImages}
-                  maxImages={1}
-                  label=""
-                  folder="profile/images"
-                  entityId={user?.s_no?.toString()}
-                />
-              </View>
-            </ScrollView>
-
-            {/* Footer */}
-            <View
-              style={{
-                flexDirection: 'row',
-                gap: 12,
-                padding: 20,
-                borderTopWidth: 1,
-                borderTopColor: Theme.colors.border,
-                backgroundColor: Theme.colors.canvas,
-              }}
-            >
-              <TouchableOpacity
-                onPress={handleClose}
-                disabled={loading}
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: Theme.colors.light,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleSave}
-                disabled={loading}
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: loading ? Theme.colors.light : Theme.colors.primary,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#fff' }}>
-                    Save Changes
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+            Phone Number
+          </Text>
+          <CountryPhoneSelector
+            selectedCountry={selectedCountry}
+            onSelectCountry={setSelectedCountry}
+            phoneValue={phone}
+            onPhoneChange={setPhone}
+          />
+          {errors.phone && (
+            <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
+              {errors.phone}
+            </Text>
+          )}
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+
+        {/* Address */}
+        <InputField
+          label="Address"
+          value={address}
+          onChangeText={setAddress}
+          placeholder="Enter your address"
+          error={errors.address}
+          prefixIcon="location-outline"
+          multiline
+          numberOfLines={3}
+          containerStyle={{ marginBottom: 16 }}
+        />
+
+        {/* Gender */}
+        <OptionSelector
+          label="Gender"
+          options={GENDER_OPTIONS}
+          selectedValue={gender || null}
+          onSelect={(value) => setGender((value || '') as 'MALE' | 'FEMALE' | '')}
+          error={errors.gender}
+          containerStyle={{ marginBottom: 16 }}
+        />
+
+        {/* State */}
+        <View style={{ marginBottom: 16 }}>
+          <SearchableDropdown
+            label="State"
+            items={stateData.map(state => ({
+              id: state.s_no,
+              label: state.state_name,
+              value: state.s_no,
+              isoCode: state.iso_code
+            }))}
+            selectedValue={stateId}
+            onSelect={(item) => setStateId(item.value)}
+            placeholder="Select state"
+            loading={loadingStates}
+            error={errors.stateId}
+          />
+        </View>
+
+        {/* City */}
+        <View style={{ marginBottom: 16 }}>
+          <SearchableDropdown
+            label="City"
+            items={cityData.map(city => ({
+              id: city.s_no,
+              label: city.city_name,
+              value: city.s_no
+            }))}
+            selectedValue={cityId}
+            onSelect={(item) => setCityId(item.value)}
+            placeholder="Select city"
+            loading={loadingCities}
+            disabled={!stateId}
+            error={errors.cityId}
+          />
+        </View>
+
+        {/* Profile Image */}
+        <View style={{ marginBottom: 20 }}>
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: '500',
+              color: Theme.colors.text.primary,
+              marginBottom: 8,
+            }}
+          >
+            Profile Image
+          </Text>
+          <ImageUploadS3
+            images={profileImages}
+            onImagesChange={setProfileImages}
+            maxImages={1}
+            disabled={loading}
+          />
+        </View>
+      </ScrollView>
+    </SlideBottomModal>
   );
 };

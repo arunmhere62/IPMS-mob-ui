@@ -1,5 +1,5 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { View, TextInput, StyleSheet, TextInputProps } from 'react-native';
+import React, { useRef, useState, useCallback } from 'react';
+import { View, TextInput, StyleSheet } from 'react-native';
 import { Theme } from '../theme';
 
 interface OTPInputProps {
@@ -15,131 +15,181 @@ export const OTPInput: React.FC<OTPInputProps> = ({
   onChangeText,
   error = false,
 }) => {
-  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const input1Ref = useRef<TextInput>(null);
+  const input2Ref = useRef<TextInput>(null);
+  const input3Ref = useRef<TextInput>(null);
+  const input4Ref = useRef<TextInput>(null);
+  
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-  const [otpValues, setOtpValues] = useState<string[]>(Array(length).fill(''));
+  const [input1Value, setInput1Value] = useState('');
+  const [input2Value, setInput2Value] = useState('');
+  const [input3Value, setInput3Value] = useState('');
+  const [input4Value, setInput4Value] = useState('');
 
-  // Update otpValues when value prop changes
-  useEffect(() => {
-    const newOtpValues = Array(length).fill('');
-    for (let i = 0; i < value.length && i < length; i++) {
-      newOtpValues[i] = value[i];
-    }
-    setOtpValues(newOtpValues);
-  }, [value, length]);
-
-  const handleChangeText = (text: string, index: number) => {
-    // Only allow numbers
-    const numericText = text.replace(/[^0-9]/g, '');
-    
-    const newOtpValues = [...otpValues];
-    
-    if (numericText.length === 0) {
-      // Handle backspace - clear current and shift left
-      newOtpValues[index] = '';
-      
-      // Shift all subsequent values left by one
-      for (let i = index + 1; i < length; i++) {
-        if (newOtpValues[i]) {
-          newOtpValues[i - 1] = newOtpValues[i];
-          newOtpValues[i] = '';
-        } else {
-          break; // Stop when we hit an empty slot
-        }
-      }
-      
-      setOtpValues(newOtpValues);
-      const finalValue = newOtpValues.join('').trimEnd();
-      onChangeText(finalValue);
-      
-      // Focus management
-      if (index > 0 && !newOtpValues[index]) {
-        inputRefs.current[index - 1]?.focus();
-      }
-    } else if (numericText.length === 1) {
-      // Single digit entered - could be replacement or new entry
-      if (newOtpValues[index]) {
-        // Replacing existing digit
-        newOtpValues[index] = numericText;
-        setOtpValues(newOtpValues);
-        const finalValue = newOtpValues.join('').trimEnd();
-        onChangeText(finalValue);
-        
-        // Move to next input if available
-        if (index < length - 1) {
-          inputRefs.current[index + 1]?.focus();
-        }
-      } else {
-        // New digit in empty slot
-        newOtpValues[index] = numericText;
-        setOtpValues(newOtpValues);
-        const finalValue = newOtpValues.join('').trimEnd();
-        onChangeText(finalValue);
-        
-        // Move to next input
-        if (index < length - 1) {
-          inputRefs.current[index + 1]?.focus();
-        }
-      }
-    } else if (numericText.length > 1) {
-      // Handle paste - distribute digits
-      const digits = numericText.slice(0, length - index).split('');
-      
-      digits.forEach((digit, i) => {
-        if (index + i < length) {
-          newOtpValues[index + i] = digit;
-        }
-      });
-      
-      setOtpValues(newOtpValues);
-      const finalValue = newOtpValues.join('').trimEnd();
-      onChangeText(finalValue);
-      
-      // Focus last filled input
-      const lastFilledIndex = newOtpValues.map((val, i) => val ? i : -1).filter(i => i !== -1).pop();
-      if (lastFilledIndex !== undefined && lastFilledIndex < length - 1) {
-        inputRefs.current[lastFilledIndex + 1]?.focus();
-      }
+  // Get ref for specific input
+  const getInputRef = (index: number) => {
+    switch(index) {
+      case 0: return input1Ref;
+      case 1: return input2Ref;
+      case 2: return input3Ref;
+      case 3: return input4Ref;
+      default: return input1Ref;
     }
   };
 
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && !otpValues[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+  // Get value for specific input
+  const getInputValue = (index: number) => {
+    switch(index) {
+      case 0: return input1Value;
+      case 1: return input2Value;
+      case 2: return input3Value;
+      case 3: return input4Value;
+      default: return '';
     }
   };
 
-  const getBoxStyle = (index: number) => {
+  // Set value for specific input
+  const setInputValue = (index: number, val: string) => {
+    switch(index) {
+      case 0: setInput1Value(val); break;
+      case 1: setInput2Value(val); break;
+      case 2: setInput3Value(val); break;
+      case 3: setInput4Value(val); break;
+    }
+  };
+
+  // Update parent with all values
+  const updateParentValue = useCallback(() => {
+    const fullValue = input1Value + input2Value + input3Value + input4Value;
+    onChangeText(fullValue);
+  }, [input1Value, input2Value, input3Value, input4Value, onChangeText]);
+
+  // Handle input change for specific input
+  const handleInputChange = useCallback((text: string, index: number) => {
+    // Only allow numbers, take last character
+    const cleanText = text.replace(/[^0-9]/g, '');
+    const char = cleanText.slice(-1);
+    
+    // Update this input
+    setInputValue(index, char);
+    
+    // Auto-focus next input if we have a character
+    if (char && index < length - 1) {
+      const nextRef = getInputRef(index + 1);
+      if (nextRef.current) {
+        nextRef.current.focus();
+      }
+    }
+  }, [length]);
+
+  // Handle key press for backspace
+  const handleKeyPress = useCallback((e: any, index: number) => {
+    if (e.nativeEvent.key === 'Backspace') {
+      // If current input is empty and we're not at the first input
+      if (!getInputValue(index) && index > 0) {
+        const prevRef = getInputRef(index - 1);
+        if (prevRef.current) {
+          prevRef.current.focus();
+        }
+      }
+    }
+  }, []);
+
+  // Update parent whenever any input value changes
+  React.useEffect(() => {
+    updateParentValue();
+  }, [updateParentValue]);
+
+  // Sync with external value prop
+  React.useEffect(() => {
+    if (value.length >= 1) setInput1Value(value[0] || '');
+    if (value.length >= 2) setInput2Value(value[1] || '');
+    if (value.length >= 3) setInput3Value(value[2] || '');
+    if (value.length >= 4) setInput4Value(value[3] || '');
+  }, [value]);
+
+  // Get input style
+  const getInputStyle = useCallback((index: number) => {
     const isFocused = focusedIndex === index;
-    const isFilled = !!otpValues[index];
+    const hasValue = !!getInputValue(index);
     
     return [
-      styles.box,
-      isFocused && styles.boxFocused,
-      isFilled && styles.boxFilled,
-      error && styles.boxError,
+      styles.input,
+      isFocused && styles.inputFocused,
+      hasValue && styles.inputFilled,
+      error && styles.inputError,
     ];
-  };
+  }, [focusedIndex, error]);
 
   return (
     <View style={styles.container}>
-      {Array.from({ length }).map((_, index) => (
-        <TextInput
-          key={index}
-          ref={(ref) => {
-            inputRefs.current[index] = ref;
-          }}
-          style={getBoxStyle(index)}
-          value={otpValues[index]}
-          onChangeText={(text) => handleChangeText(text, index)}
-          onKeyPress={(e) => handleKeyPress(e, index)}
-          onFocus={() => setFocusedIndex(index)}
-          onBlur={() => setFocusedIndex(null)}
-          keyboardType="number-pad"
-          selectTextOnFocus
-          textAlign="center"
-        />
-      ))}
+      {/* Input 1 */}
+      <TextInput
+        ref={input1Ref}
+        style={getInputStyle(0)}
+        value={input1Value}
+        onChangeText={(text) => handleInputChange(text, 0)}
+        onKeyPress={(e) => handleKeyPress(e, 0)}
+        onFocus={() => setFocusedIndex(0)}
+        onBlur={() => setFocusedIndex(null)}
+        keyboardType="number-pad"
+        selectTextOnFocus
+        textAlign="center"
+        maxLength={1}
+        importantForAccessibility="yes"
+        accessibilityLabel="OTP digit 1"
+      />
+      
+      {/* Input 2 */}
+      <TextInput
+        ref={input2Ref}
+        style={getInputStyle(1)}
+        value={input2Value}
+        onChangeText={(text) => handleInputChange(text, 1)}
+        onKeyPress={(e) => handleKeyPress(e, 1)}
+        onFocus={() => setFocusedIndex(1)}
+        onBlur={() => setFocusedIndex(null)}
+        keyboardType="number-pad"
+        selectTextOnFocus
+        textAlign="center"
+        maxLength={1}
+        importantForAccessibility="yes"
+        accessibilityLabel="OTP digit 2"
+      />
+      
+      {/* Input 3 */}
+      <TextInput
+        ref={input3Ref}
+        style={getInputStyle(2)}
+        value={input3Value}
+        onChangeText={(text) => handleInputChange(text, 2)}
+        onKeyPress={(e) => handleKeyPress(e, 2)}
+        onFocus={() => setFocusedIndex(2)}
+        onBlur={() => setFocusedIndex(null)}
+        keyboardType="number-pad"
+        selectTextOnFocus
+        textAlign="center"
+        maxLength={1}
+        importantForAccessibility="yes"
+        accessibilityLabel="OTP digit 3"
+      />
+      
+      {/* Input 4 */}
+      <TextInput
+        ref={input4Ref}
+        style={getInputStyle(3)}
+        value={input4Value}
+        onChangeText={(text) => handleInputChange(text, 3)}
+        onKeyPress={(e) => handleKeyPress(e, 3)}
+        onFocus={() => setFocusedIndex(3)}
+        onBlur={() => setFocusedIndex(null)}
+        keyboardType="number-pad"
+        selectTextOnFocus
+        textAlign="center"
+        maxLength={1}
+        importantForAccessibility="yes"
+        accessibilityLabel="OTP digit 4"
+      />
     </View>
   );
 };
@@ -150,7 +200,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
-  box: {
+  input: {
     width: 56,
     height: 56,
     borderWidth: 2,
@@ -161,15 +211,15 @@ const styles = StyleSheet.create({
     color: Theme.colors.text.primary,
     backgroundColor: Theme.colors.canvas,
   },
-  boxFocused: {
+  inputFocused: {
     borderColor: Theme.colors.primary,
     borderWidth: 2,
   },
-  boxFilled: {
+  inputFilled: {
     borderColor: Theme.colors.primary,
     backgroundColor: Theme.withOpacity(Theme.colors.primary, 0.05),
   },
-  boxError: {
+  inputError: {
     borderColor: Theme.colors.danger,
   },
 });
