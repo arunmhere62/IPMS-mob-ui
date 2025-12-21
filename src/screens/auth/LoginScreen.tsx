@@ -55,8 +55,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
 
     try {
-      // Send phone with country code
-      const fullPhone = selectedCountry.phoneCode + phone;
+      // Send phone with country code and space
+      const fullPhone = selectedCountry.phoneCode + ' ' + phone;
       await dispatch(sendOtp(fullPhone)).unwrap();
       Alert.alert('Success', 'OTP sent successfully to your phone number');
       navigation.navigate('OTPVerification', { phone: fullPhone });
