@@ -21,10 +21,10 @@ const userService = {
   },
 
   /**
-   * Get user profile
+   * Get user profile by ID
    */
   async getUserProfile(userId: number): Promise<any> {
-    const response = await axiosInstance.get(`/users/${userId}`);
+    const response = await axiosInstance.get(`/auth/profile/${userId}`);
     return response.data;
   },
 

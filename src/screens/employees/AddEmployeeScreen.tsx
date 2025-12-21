@@ -20,7 +20,6 @@ import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { OptionSelector } from '../../components/OptionSelector';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
-import axiosInstance from '../../services/core/axiosInstance';
 import employeeService, { UserGender } from '../../services/employees/employeeService';
 import { locationService } from '../../services/location/locationService';
 import { rolesService } from '../../services/roles/rolesService';
@@ -48,13 +47,9 @@ interface RoleData {
   role_name: string;
 }
 
-interface PGLocationData {
-  s_no: number;
-  location_name: string;
-}
-
 export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation, route }) => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const { selectedPGLocationId, locations } = useSelector((state: RootState) => state.pgLocations);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
   
@@ -66,7 +61,6 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const [stateData, setStateData] = useState<StateData[]>([]);
   const [cityData, setCityData] = useState<CityData[]>([]);
   const [roleData, setRoleData] = useState<RoleData[]>([]);
-  const [pgLocations, setPGLocations] = useState<PGLocationData[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<any>({ code: 'IN', name: 'India', flag: '🇮🇳', phoneCode: '+91', phoneLength: 10 });
 
   // Form state
@@ -92,7 +86,6 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingRoles, setLoadingRoles] = useState(false);
-  const [loadingPGLocations, setLoadingPGLocations] = useState(false);
 
   // Fetch employee data if in edit mode
   useEffect(() => {
@@ -105,8 +98,13 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   useEffect(() => {
     fetchStates();
     fetchRoles();
-    fetchPGLocations();
   }, []);
+
+  useEffect(() => {
+    if (!isEditMode && selectedPGLocationId) {
+      setFormData(prev => ({ ...prev, pg_id: selectedPGLocationId }));
+    }
+  }, [isEditMode, selectedPGLocationId]);
 
   // Fetch cities when state is selected
   useEffect(() => {
@@ -211,19 +209,9 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     }
   };
 
-  const fetchPGLocations = async () => {
-    setLoadingPGLocations(true);
-    try {
-      const response = await axiosInstance.get('/pg-locations');
-      if (response.data.success) {
-        setPGLocations(response.data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching PG locations:', error);
-    } finally {
-      setLoadingPGLocations(false);
-    }
-  };
+  const selectedPGLocation = selectedPGLocationId
+    ? locations.find((loc: any) => loc.s_no === selectedPGLocationId)
+    : null;
 
   const updateField = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -266,6 +254,16 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
       newErrors.role_id = 'Role is required';
     }
 
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(formData.phone.trim())) {
+      newErrors.phone = 'Phone number must be 10 digits';
+    }
+
+    if (!formData.gender) {
+      newErrors.gender = 'Gender is required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -281,10 +279,10 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
       const employeeData: any = {
         name: formData.name.trim(),
-        phone: formData.phone.trim() || undefined,
+        phone: formData.phone.trim(),
         role_id: formData.role_id!,
-        pg_id: formData.pg_id || undefined,
-        gender: formData.gender || undefined,
+        pg_id: (selectedPGLocationId || formData.pg_id) || undefined,
+        gender: formData.gender as UserGender,
         address: formData.address.trim() || undefined,
         city_id: formData.city_id || undefined,
         state_id: formData.state_id || undefined,
@@ -449,7 +447,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                 {/* Phone Number */}
                 <View style={{ marginBottom: 16 }}>
                   <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-                    Phone Number
+                    Phone Number <Text style={{ color: '#EF4444' }}>*</Text>
                   </Text>
                   <CountryPhoneSelector
                     selectedCountry={selectedCountry}
@@ -472,9 +470,14 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   ]}
                   selectedValue={formData.gender || null}
                   onSelect={(value) => updateField('gender', value as UserGender)}
-                  required={false}
+                  required={true}
                   containerStyle={{ marginBottom: 16 }}
                 />
+                {errors.gender && (
+                  <Text style={{ fontSize: 11, color: '#EF4444', marginTop: -10, marginBottom: 16 }}>
+                    {errors.gender}
+                  </Text>
+                )}
               </Card>
 
               {/* Work Information */}
@@ -499,20 +502,22 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   required={true}
                 />
 
-                {/* PG Location */}
-                <SearchableDropdown
-                  label="PG Location"
-                  placeholder="Select a PG location"
-                  items={pgLocations.map(pg => ({
-                    id: pg.s_no,
-                    label: pg.location_name,
-                    value: pg.s_no,
-                  }))}
-                  selectedValue={formData.pg_id}
-                  onSelect={(item) => updateField('pg_id', item.id)}
-                  loading={loadingPGLocations}
-                  required={false}
-                />
+                <View style={{ marginTop: 12 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+                    Current PG
+                  </Text>
+                  <View
+                    style={{
+                      borderRadius: 8,
+                      padding: 12,
+                      backgroundColor: '#F9FAFB',
+                    }}
+                  >
+                    <Text style={{ color: Theme.colors.text.primary, fontSize: 14 }}>
+                      {selectedPGLocation?.location_name || 'No PG selected'}
+                    </Text>
+                  </View>
+                </View>
               </Card>
 
               {/* Address Information */}

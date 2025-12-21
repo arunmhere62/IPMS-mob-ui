@@ -1,37 +1,43 @@
 import axiosInstance from '../core/axiosInstance';
+import { extractResponseData, extractPaginatedData } from '../../utils/apiResponseHandler';
+
+export interface VisitorRoom {
+  s_no: number;
+  room_no?: string | null;
+}
+
+export interface VisitorBed {
+  s_no: number;
+  bed_no?: string | null;
+  bed_price?: string | null;
+}
+
+export interface VisitorLocation {
+  s_no: number;
+  name?: string | null;
+}
 
 export interface Visitor {
   s_no: number;
-  pg_id?: number;
+  pg_id?: number | null;
   visitor_name?: string;
   phone_no?: string;
   purpose?: string;
   visited_date?: string;
-  visited_room_id?: number;
-  visited_bed_id?: number;
-  city_id?: number;
-  state_id?: number;
+  visited_room_id?: number | null;
+  visited_bed_id?: number | null;
+  city_id?: number | null;
+  state_id?: number | null;
   remarks?: string;
   convertedTo_tenant: boolean;
   is_deleted: boolean;
   created_at?: string;
   updated_at?: string;
-  rooms?: {
-    s_no: number;
-    room_no: string;
-  };
-  beds?: {
-    s_no: number;
-    bed_no: string;
-  };
-  city?: {
-    s_no: number;
-    city_name: string;
-  };
-  state?: {
-    s_no: number;
-    state_name: string;
-  };
+  address?: string | null;
+  rooms?: VisitorRoom | null;
+  beds?: VisitorBed | null;
+  city?: VisitorLocation | null;
+  state?: VisitorLocation | null;
 }
 
 export interface CreateVisitorDto {
@@ -58,12 +64,12 @@ export interface GetVisitorsParams {
 const visitorService = {
   async getAllVisitors(params: GetVisitorsParams = {}) {
     const response = await axiosInstance.get('/visitors', { params });
-    return response.data;
+    return extractPaginatedData<Visitor>(response.data);
   },
 
-  async getVisitorById(id: number) {
+  async getVisitorById(id: number): Promise<Visitor> {
     const response = await axiosInstance.get(`/visitors/${id}`);
-    return response.data;
+    return extractResponseData<Visitor>(response.data);
   },
 
   async createVisitor(data: CreateVisitorDto) {
@@ -78,12 +84,12 @@ const visitorService = {
 
   async deleteVisitor(id: number) {
     const response = await axiosInstance.delete(`/visitors/${id}`);
-    return response.data;
+    return extractResponseData(response.data);
   },
 
   async getVisitorStats() {
     const response = await axiosInstance.get('/visitors/stats');
-    return response.data;
+    return extractResponseData(response.data);
   },
 };
 

@@ -126,7 +126,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
 
       {/* Action Buttons */}
       <View style={styles.actionGrid}>
-        <Action icon="wallet" text="Add Payment" onPress={onAddPayment} />
+        <Action icon="wallet" text="Add Rent" onPress={onAddPayment} />
         <Action icon="trending-up" text="Add Advance" onPress={onAddAdvance} />
         <Action
           icon="trending-down"

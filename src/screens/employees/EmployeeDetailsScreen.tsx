@@ -1,0 +1,342 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  Image,
+} from 'react-native';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { Theme } from '../../theme';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { ScreenLayout } from '../../components/ScreenLayout';
+import { Card } from '../../components/Card';
+import { ActionButtons } from '../../components/ActionButtons';
+import { CONTENT_COLOR } from '@/constant';
+import employeeService from '../../services/employees/employeeService';
+
+const DetailRow = ({
+  label,
+  value,
+  isLast,
+}: {
+  label: string;
+  value?: string | number | null;
+  isLast?: boolean;
+}) => (
+  <View
+    style={{
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      paddingVertical: 10,
+      borderBottomWidth: isLast ? 0 : 1,
+      borderBottomColor: Theme.colors.border + '40',
+      gap: 12,
+    }}
+  >
+    <Text style={{ flex: 1, fontSize: 13, color: Theme.colors.text.secondary }}>
+      {label}
+    </Text>
+    <Text
+      style={{
+        flex: 1,
+        fontSize: 13,
+        fontWeight: '600',
+        color: Theme.colors.text.primary,
+        textAlign: 'right',
+      }}
+    >
+      {value === null || value === undefined || value === '' ? 'N/A' : String(value)}
+    </Text>
+  </View>
+);
+
+interface Role {
+  s_no: number;
+  role_name: string;
+}
+
+interface City {
+  s_no: number;
+  name: string;
+}
+
+interface State {
+  s_no: number;
+  name: string;
+}
+
+interface Employee {
+  s_no: number;
+  name: string;
+  email: string | null;
+  phone: string;
+  status: string;
+  role_id: number | null;
+  pg_id: number | null;
+  organization_id: number;
+  gender: string;
+  address: string | null;
+  city_id: number | null;
+  state_id: number | null;
+  pincode: string | null;
+  country: string | null;
+  proof_documents: string | null;
+  profile_images: string | string[] | null;
+  created_at: string;
+  updated_at: string;
+  roles?: Role | null;
+  city?: City | null;
+  state?: State | null;
+}
+
+const EmployeeDetailsScreen: React.FC = () => {
+  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const { employeeId } = route.params;
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchEmployeeDetails = async () => {
+    try {
+      const data = await employeeService.getEmployeeById(employeeId);
+      setEmployee(data);
+    } catch (error: any) {
+      console.error('Error fetching employee details:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to fetch employee details');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployeeDetails();
+  }, [employeeId]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchEmployeeDetails();
+  };
+
+  const handleEdit = useCallback(() => {
+    (navigation as any).navigate('AddEmployee', { employeeId });
+  }, [navigation, employeeId]);
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Employee',
+      `Are you sure you want to delete ${employee?.name || 'this employee'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await employeeService.deleteEmployee(employeeId);
+              Alert.alert('Success', 'Employee deleted successfully');
+              navigation.goBack();
+            } catch (error: any) {
+              console.error('Error deleting employee:', error);
+              Alert.alert('Error', error.response?.data?.message || 'Failed to delete employee');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+      <ScreenHeader
+        title="Employee Details"
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+        backgroundColor={Theme.colors.background.blue}
+        syncMobileHeaderBg={true}
+      />
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={Theme.colors.primary} />
+            <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
+              Loading employee details...
+            </Text>
+          </View>
+        ) : !employee ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={{ color: Theme.colors.text.primary, fontSize: 16 }}>
+              Employee not found
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          >
+            <Card
+              style={{
+                marginBottom: 12,
+                padding: 14,
+                borderRadius: 16,
+                backgroundColor: '#fff',
+                shadowColor: '#00000015',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 10,
+                elevation: 2,
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                  {employee.profile_images && 
+                   (typeof employee.profile_images === 'string' ? employee.profile_images.trim() !== '' : 
+                    Array.isArray(employee.profile_images) ? employee.profile_images.length > 0 : false) ? (
+                    <Image 
+                      source={{ uri: Array.isArray(employee.profile_images) ? employee.profile_images[0] : employee.profile_images }} 
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 14,
+                      }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 14,
+                        backgroundColor: Theme.colors.primary + '20',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 20 }}>👤</Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1}>
+                      {employee.name || 'N/A'}
+                    </Text>
+                    <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.secondary }}>
+                      {employee.phone || 'N/A'}
+                    </Text>
+                    {employee.roles && (
+                      <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.primary }}>
+                        {employee.roles.role_name}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 8 }}>
+                  <View
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 6,
+                      backgroundColor: employee.status === 'ACTIVE' ? '#DCFCE7' : '#FEE2E2',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: '700',
+                        color: employee.status === 'ACTIVE' ? '#166534' : '#991B1B',
+                      }}
+                    >
+                      {employee.status}
+                    </Text>
+                  </View>
+                  <ActionButtons onEdit={handleEdit} onDelete={handleDelete} showView={false} />
+                </View>
+              </View>
+            </Card>
+
+            <Card
+              style={{
+                marginBottom: 12,
+                padding: 14,
+                borderRadius: 16,
+                backgroundColor: '#fff',
+                shadowColor: '#00000010',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 1,
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
+                Contact Information
+              </Text>
+              <DetailRow label="Email" value={employee.email} />
+              <DetailRow label="Phone" value={employee.phone} />
+              <DetailRow label="Gender" value={employee.gender} isLast={true} />
+            </Card>
+
+            <Card
+              style={{
+                marginBottom: 12,
+                padding: 14,
+                borderRadius: 16,
+                backgroundColor: '#fff',
+                shadowColor: '#00000010',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 1,
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
+                Address Information
+              </Text>
+              <DetailRow label="Address" value={employee.address} />
+              <DetailRow label="City" value={employee.city?.name} />
+              <DetailRow label="State" value={employee.state?.name} />
+              <DetailRow label="Pincode" value={employee.pincode} />
+              <DetailRow label="Country" value={employee.country} isLast={true} />
+            </Card>
+
+            <Card
+              style={{
+                marginBottom: 12,
+                padding: 14,
+                borderRadius: 16,
+                backgroundColor: '#fff',
+                shadowColor: '#00000010',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 1,
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
+                Additional Information
+              </Text>
+              <DetailRow label="Employee ID" value={employee.s_no} />
+              <DetailRow label="PG ID" value={employee.pg_id} />
+              <DetailRow label="Proof Documents" value={employee.proof_documents ? 'Available' : 'Not uploaded'} />
+              <DetailRow 
+                label="Created At" 
+                value={employee.created_at ? new Date(employee.created_at).toLocaleDateString('en-IN') : 'N/A'} 
+              />
+              <DetailRow 
+                label="Updated At" 
+                value={employee.updated_at ? new Date(employee.updated_at).toLocaleDateString('en-IN') : 'N/A'} 
+                isLast={true} 
+              />
+            </Card>
+          </ScrollView>
+        )}
+      </View>
+    </ScreenLayout>
+  );
+};
+
+export default EmployeeDetailsScreen;

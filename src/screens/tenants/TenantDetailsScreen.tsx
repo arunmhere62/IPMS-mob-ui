@@ -17,7 +17,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchTenantById, fetchTenants } from '../../store/slices/tenantSlice';
-import { TenantPayment, AdvancePayment, RefundPayment, CurrentBill, PendingPaymentMonth, deleteTenant } from '../../services/tenants/tenantService';
+import { TenantPayment, AdvancePayment, RefundPayment, PendingPaymentMonth, deleteTenant } from '../../services/tenants/tenantService';
 import { Card } from '../../components/Card';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { Theme } from '../../theme';
@@ -37,18 +37,15 @@ import {
   PendingPaymentAlert,
   AccommodationDetails,
   PersonalInformation,
-  AddCurrentBillModal,
   ImageViewerModal,
   ReceiptViewModal,
   RentPaymentsSection,
   AdvancePaymentsSection,
   RefundPaymentsSection,
-  CurrentBillsSection,
 } from './components';
 import advancePaymentService from '@/services/payments/advancePaymentService';
 import refundPaymentService from '@/services/payments/refundPaymentService';
 import { paymentService } from '@/services/payments/paymentService';
-import { createCurrentBill } from '@/services/bills/currentBillService';
 import { showErrorAlert } from '@/utils/errorHandler';
 import AdvancePaymentForm from './AdvancePaymentForm';
 
@@ -66,7 +63,6 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
     rentPayments: false,
     advancePayments: false,
     refundPayments: false,
-    currentBills: false,
     pendingMonths: false,
     proofDocuments: false,
     images: false,
@@ -99,12 +95,6 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
   const [editRefundPaymentModalVisible, setEditRefundPaymentModalVisible] = useState(false);
   const [editingRefundPayment, setEditingRefundPayment] = useState<any>(null);
 
-  // Current bill modal state
-  const [currentBillModalVisible, setCurrentBillModalVisible] = useState(false);
-  const [currentBillAmount, setCurrentBillAmount] = useState('');
-  const [currentBillDate, setCurrentBillDate] = useState('');
-  const [currentBillRemarks, setCurrentBillRemarks] = useState('');
-  const [currentBillLoading, setCurrentBillLoading] = useState(false);
 
   // Receipt modal state
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
@@ -484,51 +474,6 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
     }
   };
 
-  // Current bill handlers
-  const handleAddCurrentBill = () => {
-    setCurrentBillAmount('');
-    setCurrentBillDate(new Date().toISOString().split('T')[0]);
-    setCurrentBillRemarks('');
-    setCurrentBillModalVisible(true);
-  };
-
-  const handleSaveCurrentBill = async () => {
-    if (!currentBillAmount || isNaN(Number(currentBillAmount)) || Number(currentBillAmount) <= 0) {
-      Alert.alert('Error', 'Please enter a valid bill amount');
-      return;
-    }
-
-    try {
-      setCurrentBillLoading(true);
-      await createCurrentBill(
-        {
-          tenant_id: currentTenant.s_no,
-          pg_id: selectedPGLocationId || 0,
-          bill_amount: parseFloat(currentBillAmount),
-          bill_date: currentBillDate,
-          remarks: currentBillRemarks || undefined,
-        },
-        {
-          pg_id: selectedPGLocationId || undefined,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        }
-      );
-      Alert.alert('Success', 'Current bill added successfully');
-      setCurrentBillModalVisible(false);
-      loadTenantDetails();
-      refreshTenantList(); // Refresh tenant list
-    } catch (error: any) {
-      // Extract error message from backend response
-      const errorMessage = 
-        error?.response?.data?.message || 
-        error?.message || 
-        'Failed to add current bill';
-      Alert.alert('Error', errorMessage);
-    } finally {
-      setCurrentBillLoading(false);
-    }
-  };
 
   // Checkout handlers
   const handleCheckout = () => {
@@ -772,7 +717,6 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
           onAddPayment={handleAddRentPayment}
           onAddAdvance={() => setAdvancePaymentModalVisible(true)}
           onAddRefund={() => setRefundPaymentModalVisible(true)}
-          onAddCurrentBill={handleAddCurrentBill}
         />
 
         {/* Pending Payment Alert */}
@@ -788,12 +732,6 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
         {/* Personal Information */}
         <PersonalInformation tenant={tenant} />
 
-        {/* Current Bills */}
-        <CurrentBillsSection
-          bills={tenant?.current_bills}
-          expanded={expandedSections.currentBills}
-          onToggle={() => toggleSection('currentBills')}
-        />
 
         {/* Rent Payments Button - Always Show */}
         <TouchableOpacity
@@ -1215,19 +1153,6 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
         />
       )}
 
-      {/* Current Bill Modal */}
-      <AddCurrentBillModal
-        visible={currentBillModalVisible}
-        billAmount={currentBillAmount}
-        billDate={currentBillDate}
-        billRemarks={currentBillRemarks}
-        loading={currentBillLoading}
-        onBillAmountChange={setCurrentBillAmount}
-        onBillDateChange={setCurrentBillDate}
-        onBillRemarksChange={setCurrentBillRemarks}
-        onClose={() => setCurrentBillModalVisible(false)}
-        onSave={handleSaveCurrentBill}
-      />
 
       {/* Receipt View Modal */}
       <ReceiptViewModal

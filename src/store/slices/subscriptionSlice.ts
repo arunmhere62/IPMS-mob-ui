@@ -7,7 +7,7 @@ import subscriptionService, {
 } from '../../services/subscription/subscriptionService';
 
 interface SubscriptionState {
-  plans: SubscriptionPlan[];
+  data: SubscriptionPlan[];
   currentSubscription: UserSubscription | null;
   subscriptionStatus: SubscriptionStatus | null;
   history: UserSubscription[];
@@ -22,7 +22,7 @@ interface SubscriptionState {
 }
 
 const initialState: SubscriptionState = {
-  plans: [],
+  data: [],
   currentSubscription: null,
   subscriptionStatus: null,
   history: [],
@@ -38,7 +38,7 @@ export const fetchPlans = createAsyncThunk(
     try {
       const response = await subscriptionService.getPlans();
       // API returns { success, plans } - extract plans array
-      return response.plans || [];
+      return response.data || [];
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch plans');
     }
@@ -119,8 +119,8 @@ const subscriptionSlice = createSlice({
       })
       .addCase(fetchPlans.fulfilled, (state, action) => {
         state.loading = false;
-        state.plans = action.payload;
-        console.log('✅ Plans stored in Redux:', state.plans);
+        state.data = action.payload;
+        console.log('✅ Plans stored in Redux:', state.data);
       })
       .addCase(fetchPlans.rejected, (state, action) => {
         state.loading = false;

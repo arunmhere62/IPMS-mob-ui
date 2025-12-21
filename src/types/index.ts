@@ -7,13 +7,33 @@ export interface User {
   role_name?: string;
   organization_id: number;
   organization_name?: string;
+  organization_description?: string;
   pg_id?: number;
   status?: 'ACTIVE' | 'INACTIVE';
   address?: string;
   city_id?: number;
   state_id?: number;
+  city_name?: string;
+  state_name?: string;
   gender?: 'MALE' | 'FEMALE';
   profile_images?: any;
+  pincode?: string;
+  country?: string;
+  created_at?: string;
+  updated_at?: string;
+  pg_location?: {
+    s_no: number;
+    location_name: string;
+    address?: string;
+    pincode?: string;
+    status: 'ACTIVE' | 'INACTIVE';
+    pg_type: 'MENS' | 'WOMENS' | 'CO_ED';
+    rent_cycle_type: 'CALENDAR' | 'MONTHLY' | 'CUSTOM';
+    rent_cycle_start: number;
+    rent_cycle_end: number;
+    city_id: number;
+    state_id: number;
+  };
 }
 
 export interface AuthState {

@@ -21,6 +21,7 @@ import { showErrorAlert } from '../../utils/errorHandler';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { VisitorFormModal } from '../../components/VisitorFormModal';
+import { ActionButtons } from '../../components/ActionButtons';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 
@@ -157,6 +158,10 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
     setVisitorModalVisible(true);
   };
 
+  const handleViewVisitor = (visitorId: number) => {
+    navigation.navigate('VisitorDetails', { visitorId });
+  };
+
   const handleVisitorFormSuccess = () => {
     // Refresh the visitors list
     setCurrentPage(1);
@@ -208,26 +213,12 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 6 }}>
-          <TouchableOpacity
-            onPress={() => handleEditVisitor(item?.s_no)}
-            style={{
-              padding: 6,
-              borderRadius: 6,
-              backgroundColor: '#F3F4F6',
-            }}
-          >
-            <Ionicons name="pencil" size={16} color={Theme.colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDeleteVisitor(item?.s_no, visitorName)}
-            style={{
-              padding: 6,
-              borderRadius: 6,
-              backgroundColor: '#FEE2E2',
-            }}
-          >
-            <Ionicons name="trash-outline" size={16} color="#EF4444" />
-          </TouchableOpacity>
+          <ActionButtons
+            onView={() => handleViewVisitor(item?.s_no)}
+            onEdit={() => handleEditVisitor(item?.s_no)}
+            onDelete={() => handleDeleteVisitor(item?.s_no, visitorName)}
+            containerStyle={{ gap: 6 }}
+          />
         </View>
       </View>
 

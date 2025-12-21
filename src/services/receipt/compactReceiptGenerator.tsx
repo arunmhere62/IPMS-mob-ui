@@ -121,7 +121,7 @@ export class CompactReceiptGenerator {
    * Capture receipt as image and share via WhatsApp
    */
   static async shareViaWhatsApp(
-    receiptRef: React.RefObject<View>,
+    receiptRef: React.RefObject<View | null>,
     data: ReceiptData,
     phoneNumber: string
   ): Promise<void> {
@@ -175,7 +175,7 @@ PG Management Team
   /**
    * Share receipt image
    */
-  static async shareImage(receiptRef: React.RefObject<View>): Promise<void> {
+  static async shareImage(receiptRef: React.RefObject<View | null>): Promise<void> {
     try {
       const uri = await captureRef(receiptRef, {
         format: 'png',

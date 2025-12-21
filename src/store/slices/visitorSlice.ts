@@ -63,9 +63,9 @@ const visitorSlice = createSlice({
       })
       .addCase(fetchVisitors.fulfilled, (state, action) => {
         state.loading = false;
-        const data = action.payload.data;
+        const data = action.payload.data as Visitor[];
         // Append data for infinite scroll or replace for new search
-        if (action.payload.append && action.payload.pagination?.page > 1) {
+        if (action.payload.append && action.payload.pagination && action.payload.pagination.page > 1) {
           state.visitors = [...state.visitors, ...data];
         } else {
           state.visitors = data;

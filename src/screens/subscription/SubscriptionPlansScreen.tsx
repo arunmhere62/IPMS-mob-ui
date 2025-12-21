@@ -28,7 +28,7 @@ interface SubscriptionPlansScreenProps {
 
 export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { plans, subscriptionStatus, loading } = useSelector((state: RootState) => state.subscription);
+  const { data: plans, subscriptionStatus, loading } = useSelector((state: RootState) => state.subscription);
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
   const [subscribing, setSubscribing] = useState(false);
 
@@ -51,9 +51,6 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
   
   // Debug log when plans change
   useEffect(() => {
-    console.log('🔍 Plans state updated:', plans);
-    console.log('🔍 Plans length:', plans?.length);
-    console.log('🔍 Loading:', loading);
   }, [plans, loading]);
 
   const handleSubscribe = async (planId: number) => {

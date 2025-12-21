@@ -126,7 +126,9 @@ export const OTPInput: React.FC<OTPInputProps> = ({
       {Array.from({ length }).map((_, index) => (
         <TextInput
           key={index}
-          ref={(ref) => (inputRefs.current[index] = ref)}
+          ref={(ref) => {
+            inputRefs.current[index] = ref;
+          }}
           style={getBoxStyle(index)}
           value={otpValues[index]}
           onChangeText={(text) => handleChangeText(text, index)}

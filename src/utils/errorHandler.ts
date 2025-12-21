@@ -1,6 +1,7 @@
 import { Alert } from 'react-native';
 import { openNetworkLogger } from '../components/NetworkLoggerModal';
 import { AxiosError } from 'axios';
+import { getApiErrorMessage } from './apiResponseHandler';
 
 export type ErrorType = 'network' | 'timeout' | 'server' | 'client' | 'unknown';
 
@@ -13,44 +14,89 @@ export interface ErrorInfo {
 }
 
 /**
+ * Show success alert
+ * Can accept either a message string or an API response object
+ */
+export const showSuccessAlert = (messageOrResponse: string | any, title?: string): void => {
+  try {
+    let message: string;
+    let alertTitle: string;
+    
+    if (typeof messageOrResponse === 'string') {
+      // Direct message string
+      message = messageOrResponse;
+      alertTitle = title || 'Success';
+    } else if (messageOrResponse && typeof messageOrResponse === 'object') {
+      // API response object - extract message from response structure
+      console.log('showSuccessAlert received object:', messageOrResponse);
+      
+      // Try to get message from various possible locations
+      if (messageOrResponse.message) {
+        message = messageOrResponse.message;
+      } else if (messageOrResponse.data && messageOrResponse.data.message) {
+        message = messageOrResponse.data.message;
+      } else {
+        message = 'Operation completed successfully';
+      }
+      alertTitle = title || (messageOrResponse.success ? 'Success' : 'Complete');
+    } else {
+      message = 'Operation completed successfully';
+      alertTitle = title || 'Success';
+    }
+    
+    console.log('Final message for alert:', message);
+    Alert.alert(alertTitle, message);
+  } catch (e) {
+    console.error('Error in showSuccessAlert:', e);
+    Alert.alert(title || 'Success', typeof messageOrResponse === 'string' ? messageOrResponse : 'Operation completed successfully');
+  }
+};
+
+/**
  * Show error alert from backend response
+ * Uses API response handler for new centralized response structure
  */
 export const showErrorAlert = (error: any, title: string = 'Error'): void => {
   let errorMessage = '';
   
   try {
-    // Try to extract message from response data
+    // First try to use API response handler for new structure
     if (error?.response?.data) {
-      const data = error.response.data;
-      
-      if (typeof data === 'string') {
-        errorMessage = data;
-      } else if (data?.message) {
-        errorMessage = data.message;
-      } else if (data?.error) {
-        // Handle case where error is an object with code/details
-        if (typeof data.error === 'string') {
-          errorMessage = data.error;
-        } else if (data.error?.message) {
-          errorMessage = data.error.message;
-        }
-      } else if (data?.errors) {
-        if (Array.isArray(data.errors)) {
-          errorMessage = data.errors[0]?.message || data.errors[0] || '';
-        } else {
-          errorMessage = data.errors;
+      errorMessage = getApiErrorMessage(error.response.data);
+    }
+    
+    // Fallback to legacy error extraction if API handler didn't find message
+    if (!errorMessage) {
+      if (error?.response?.data) {
+        const data = error.response.data;
+        
+        if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (data?.error) {
+          // Handle case where error is an object with code/details
+          if (typeof data.error === 'string') {
+            errorMessage = data.error;
+          } else if (data.error?.message) {
+            errorMessage = data.error.message;
+          }
+        } else if (data?.errors) {
+          if (Array.isArray(data.errors)) {
+            errorMessage = data.errors[0]?.message || data.errors[0] || '';
+          } else {
+            errorMessage = data.errors;
+          }
         }
       }
-    }
-    
-    // Fallback to error message
-    if (!errorMessage && error?.message) {
-      errorMessage = error.message;
-    }
-    
-    // Last resort - stringify the error
-    if (!errorMessage) {
-      errorMessage = JSON.stringify(error?.response?.data) || 'An error occurred. Please try again.';
+      
+      // Fallback to error message
+      if (!errorMessage && error?.message) {
+        errorMessage = error.message;
+      }
+      
+      // Last resort - stringify the error
+      if (!errorMessage) {
+        errorMessage = JSON.stringify(error?.response?.data) || 'An error occurred. Please try again.';
+      }
     }
     
     Alert.alert(title, errorMessage);

@@ -212,57 +212,49 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         {/* Header Card */}
-        <Card style={{ margin: 16, padding: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                backgroundColor: Theme.colors.primary + '20',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 16,
-              }}
-            >
-              <Text style={{ fontSize: 32 }}>🏠</Text>
+        <Card
+          style={{
+            marginHorizontal: 12,
+            marginTop: 16,
+            padding: 14,
+            borderRadius: 16,
+            backgroundColor: '#fff',
+            shadowColor: '#00000015',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 10,
+            elevation: 2,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 14,
+                  backgroundColor: Theme.colors.primary + '20',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 20 }}>🏠</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }}>
+                  Room {room.room_no}
+                </Text>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>ID: {room.s_no}</Text>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: Theme.colors.text.primary }}>
-                Room {room.room_no}
-              </Text>
-              <Text style={{ fontSize: 13, color: Theme.colors.text.tertiary, marginTop: 4 }}>
-                ID: {room.s_no}
-              </Text>
-            </View>
-          </View>
-
-          {/* Action Buttons */}
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity
-              onPress={handleEdit}
-              style={{
-                flex: 1,
-                backgroundColor: '#3B82F6',
-                padding: 12,
-                borderRadius: 8,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>Edit Room</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleDelete}
-              style={{
-                flex: 1,
-                backgroundColor: '#EF4444',
-                padding: 12,
-                borderRadius: 8,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>Delete</Text>
-            </TouchableOpacity>
+            <ActionButtons
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              showEdit
+              showDelete
+              showView={false}
+              containerStyle={{ gap: 6 }}
+            />
           </View>
         </Card>
 

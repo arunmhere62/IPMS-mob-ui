@@ -17,7 +17,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
-import { EditProfileModal } from '../../components/EditProfileModal';
+import { EditProfileModal } from './EditProfileModal';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal';
 import userService from '../../services/userService';
 import { updateUser } from '../../store/slices/authSlice';
@@ -35,6 +35,65 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [stateName, setStateName] = useState<string>('');
   const [cityName, setCityName] = useState<string>('');
+  const [profileData, setProfileData] = useState<any>(null);
+
+  useEffect(() => {
+    // Fetch fresh profile data on component mount
+    if (user?.s_no) {
+      fetchProfileData();
+    }
+  }, [user?.s_no]);
+
+  const fetchProfileData = async () => {
+    try {
+      if (user?.s_no) {
+        const profileResponse = await userService.getUserProfile(user.s_no);
+
+        // Handle the nested API response structure
+        const data = profileResponse.data?.data || profileResponse.data;
+
+        if (data && (profileResponse.success || data.success)) {
+          // Store complete profile data in local state
+          setProfileData(data);
+
+          // Update Redux store with basic user data (excluding nested objects)
+          dispatch(updateUser({
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            role_id: data.role_id,
+            role_name: data.role_name,
+            organization_id: data.organization_id,
+            organization_name: data.organization_name,
+            pg_id: data.pg_id,
+            status: data.status,
+            address: data.address,
+            city_id: data.city_id,
+            state_id: data.state_id,
+            gender: data.gender,
+            profile_images: data.profile_images,
+          }));
+
+          // Update state and city names from the fresh data
+          if (data.state_name) {
+            setStateName(data.state_name);
+          }
+          if (data.city_name) {
+            setCityName(data.city_name);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      // Fallback to existing methods on error
+      if (user?.state_id) {
+        fetchStateName(user.state_id);
+      }
+      if (user?.city_id) {
+        fetchCityName(user.city_id);
+      }
+    }
+  };
 
   useEffect(() => {
     if (user?.state_id) {
@@ -93,37 +152,73 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
 
   const onRefresh = async () => {
     setRefreshing(true);
-    if (user?.state_id) {
-      await fetchStateName(user.state_id);
-    }
-    if (user?.city_id) {
-      await fetchCityName(user.city_id);
-    }
-    setTimeout(() => setRefreshing(false), 500);
-  };
-
-  const handleSaveProfile = async (data: any) => {
     try {
-      if (!user) return;
-      
-      const response = await userService.updateUserProfile(user.s_no, data);
-      
-      // Update Redux store with new user data
-      dispatch(updateUser(data));
-      
-      setShowEditModal(false);
-    } catch (error: any) {
-      console.error('Error updating profile:', error);
-      throw error;
+      if (user?.s_no) {
+        // Fetch fresh profile data from API
+        const profileResponse = await userService.getUserProfile(user.s_no);
+
+        // Handle the nested API response structure
+        const data = profileResponse.data?.data || profileResponse.data;
+
+        if (data && (profileResponse.success || data.success)) {
+          // Store complete profile data in local state
+          setProfileData(data);
+
+          // Update Redux store with basic user data (excluding nested objects)
+          dispatch(updateUser({
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            role_id: data.role_id,
+            role_name: data.role_name,
+            organization_id: data.organization_id,
+            organization_name: data.organization_name,
+            pg_id: data.pg_id,
+            status: data.status,
+            address: data.address,
+            city_id: data.city_id,
+            state_id: data.state_id,
+            gender: data.gender,
+            profile_images: data.profile_images,
+          }));
+
+          // Update state and city names from the fresh data
+          if (data.state_name) {
+            setStateName(data.state_name);
+          }
+          if (data.city_name) {
+            setCityName(data.city_name);
+          }
+        }
+      }
+
+      // Fallback to existing methods if needed
+      if (user?.state_id && !stateName) {
+        await fetchStateName(user.state_id);
+      }
+      if (user?.city_id && !cityName) {
+        await fetchCityName(user.city_id);
+      }
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+      // Fallback to existing methods on error
+      if (user?.state_id) {
+        await fetchStateName(user.state_id);
+      }
+      if (user?.city_id) {
+        await fetchCityName(user.city_id);
+      }
+    } finally {
+      setRefreshing(false);
     }
   };
 
   const handleChangePassword = async (data: { currentPassword: string; newPassword: string }) => {
     try {
       if (!user) return;
-      
+
       await userService.changePassword(user.s_no, data);
-      
+
       setShowChangePasswordModal(false);
     } catch (error: any) {
       console.error('Error changing password:', error);
@@ -175,120 +270,339 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
       />
 
       <ScrollView
-        style={{ flex: 1, backgroundColor:CONTENT_COLOR }}
+        style={{ flex: 1, backgroundColor: CONTENT_COLOR }}
         contentContainerStyle={{ paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Profile Header Card */}
         <Card
           style={{
-            margin: 16,
-            padding: 24,
-            alignItems: 'center',
+            marginHorizontal: 16,
+            marginTop: 16,
+            marginBottom: 20,
+            padding: 20,
             backgroundColor: Theme.colors.canvas,
+            borderRadius: 16,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 8,
+            elevation: 3,
           }}
         >
-          {/* Profile Image */}
-          <View
-            style={{
-              width: 120,
-              height: 120,
-              borderRadius: 60,
-              backgroundColor:CONTENT_COLOR,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 16,
-              overflow: 'hidden',
-              borderWidth: 4,
-              borderColor: Theme.colors.background.blueLight,
-            }}
-          >
-            {userData?.profile_images ? (
-              <Image
-                source={{ uri: userData.profile_images }}
-                style={{ width: 120, height: 120 }}
-                resizeMode="cover"
-              />
-            ) : (
-              <Text style={{ color: '#fff', fontSize: 48, fontWeight: 'bold' }}>
-                {getInitials(userData?.name || 'User')}
-              </Text>
-            )}
-          </View>
-
-          {/* Name */}
-          <Text
-            style={{
-              fontSize: 28,
-              fontWeight: 'bold',
-              color: Theme.colors.text.primary,
-              marginBottom: 8,
-              textAlign: 'center',
-            }}
-          >
-            {userData?.name}
-          </Text>
-
-          {/* Role Badge */}
-          <View
-            style={{
-              paddingHorizontal: 16,
-              paddingVertical: 6,
-              borderRadius: 20,
-              backgroundColor: roleBadge.bg,
-              marginBottom: 12,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: '600',
-                color: roleBadge.color,
-              }}
-            >
-              {userData?.role_name?.replace('_', ' ') || 'User'}
-            </Text>
-          </View>
-
-          {/* Status Badge */}
-          <View
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 4,
-              borderRadius: 12,
-              backgroundColor: getStatusBgColor(userData?.status),
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: '600',
-                color: getStatusColor(userData?.status),
-              }}
-            >
-              ● {userData?.status || 'ACTIVE'}
-            </Text>
-          </View>
-
-          {/* Organization */}
-          {userData?.organization_name && (
+          <View style={{ alignItems: 'center' }}>
+            {/* Profile Image */}
             <View
               style={{
-                marginTop: 16,
-                paddingHorizontal: 16,
-                paddingVertical: 8,
+                width: 80,
+                height: 80,
+                borderRadius: 40,
                 backgroundColor: Theme.colors.background.secondary,
-                borderRadius: 8,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                borderWidth: 2,
+                borderColor: Theme.colors.border,
               }}
             >
-              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginBottom: 2 }}>
-                Organization
-              </Text>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
-                {userData.organization_name}
-              </Text>
+              {userData?.profile_images ? (
+                <Image
+                  source={{ uri: userData.profile_images }}
+                  style={{ width: 76, height: 76, borderRadius: 38 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={{
+                  color: Theme.colors.text.secondary,
+                  fontSize: 28,
+                  fontWeight: '600'
+                }}>
+                  {getInitials(userData?.name || 'User')}
+                </Text>
+              )}
             </View>
-          )}
+
+            {/* User Info */}
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: '700',
+                  color: Theme.colors.text.primary,
+                  marginBottom: 6,
+                  textAlign: 'center',
+                }}
+              >
+                {userData?.name}
+              </Text>
+
+              {/* Role and Status Row */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 8
+              }}>
+                <View
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 4,
+                    borderRadius: 12,
+                    backgroundColor: roleBadge.bg,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: roleBadge.color,
+                    }}
+                  >
+                    {userData?.role_name?.replace('_', ' ') || 'User'}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: userData?.status === 'ACTIVE' ? '#10B981' : '#EF4444',
+                  }}
+                />
+
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '500',
+                    color: Theme.colors.text.tertiary,
+                  }}
+                >
+                  {userData?.status || 'ACTIVE'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Organization */}
+            {(userData?.organization_name || profileData?.organization_name) && (
+              <View
+                style={{
+                  width: '100%',
+                  backgroundColor: Theme.colors.background.secondary,
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{
+                  fontSize: 11,
+                  color: Theme.colors.text.tertiary,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  Organization
+                </Text>
+                <Text style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: Theme.colors.text.primary,
+                  marginBottom: 2,
+                }}>
+                  {profileData?.organization_name || userData?.organization_name}
+                </Text>
+                {profileData?.organization_description && (
+                  <Text style={{
+                    fontSize: 12,
+                    color: Theme.colors.text.secondary,
+                    fontStyle: 'italic',
+                  }}>
+                    {profileData.organization_description}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {/* Location Information */}
+            {(profileData?.city_name || profileData?.state_name || cityName || stateName) && (
+              <View
+                style={{
+                  width: '100%',
+                  backgroundColor: Theme.colors.background.secondary,
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{
+                  fontSize: 11,
+                  color: Theme.colors.text.tertiary,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  Location
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Ionicons name="location-outline" size={14} color={Theme.colors.text.tertiary} />
+                  <Text style={{
+                    fontSize: 13,
+                    fontWeight: '500',
+                    color: Theme.colors.text.primary,
+                    marginLeft: 4,
+                  }}>
+                    {(profileData?.city_name && profileData?.state_name)
+                      ? `${profileData.city_name}, ${profileData.state_name}`
+                      : (profileData?.city_name || profileData?.state_name || cityName || stateName || 'Not provided')
+                    }
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* PG Location */}
+            {profileData?.pg_location && (
+              <View
+                style={{
+                  width: '100%',
+                  backgroundColor: Theme.colors.background.secondary,
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{
+                  fontSize: 11,
+                  color: Theme.colors.text.tertiary,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  PG Location
+                </Text>
+                <Text style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: Theme.colors.text.primary,
+                  marginBottom: 2,
+                }}>
+                  {profileData.pg_location.location_name}
+                </Text>
+                {profileData.pg_location.address && (
+                  <Text style={{
+                    fontSize: 12,
+                    color: Theme.colors.text.secondary,
+                    marginBottom: 4,
+                  }}>
+                    {profileData.pg_location.address}
+                  </Text>
+                )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <View style={{
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    backgroundColor: '#EFF6FF',
+                    borderRadius: 4,
+                    marginRight: 6,
+                    marginBottom: 4,
+                  }}>
+                    <Text style={{
+                      fontSize: 10,
+                      color: '#3B82F6',
+                      fontWeight: '500',
+                    }}>
+                      {profileData.pg_location.pg_type}
+                    </Text>
+                  </View>
+                  <View style={{
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    backgroundColor: '#F0FDF4',
+                    borderRadius: 4,
+                    marginRight: 6,
+                    marginBottom: 4,
+                  }}>
+                    <Text style={{
+                      fontSize: 10,
+                      color: '#16A34A',
+                      fontWeight: '500',
+                    }}>
+                      {profileData.pg_location.rent_cycle_type}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Quick Stats */}
+            <View
+              style={{
+                flexDirection: 'row',
+                width: '100%',
+                justifyContent: 'space-around',
+                paddingTop: 16,
+                borderTopWidth: 1,
+                borderTopColor: Theme.colors.border,
+              }}
+            >
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: Theme.colors.primary,
+                  marginBottom: 2
+                }}>
+                  {userData?.s_no || '--'}
+                </Text>
+                <Text style={{
+                  fontSize: 10,
+                  color: Theme.colors.text.tertiary,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  ID
+                </Text>
+              </View>
+
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: Theme.colors.primary,
+                  marginBottom: 2
+                }}>
+                  {userData?.pg_id || '--'}
+                </Text>
+                <Text style={{
+                  fontSize: 10,
+                  color: Theme.colors.text.tertiary,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  PG ID
+                </Text>
+              </View>
+
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: Theme.colors.primary,
+                  marginBottom: 2
+                }}>
+                  {userData?.role_id || '--'}
+                </Text>
+                <Text style={{
+                  fontSize: 10,
+                  color: Theme.colors.text.tertiary,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  Role ID
+                </Text>
+              </View>
+            </View>
+          </View>
         </Card>
 
         {/* Contact Information */}
@@ -335,7 +649,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
 
           {/* Phone */}
           {userData?.phone && (
-            <View>
+            <View style={{ marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                 <Ionicons name="call-outline" size={16} color={Theme.colors.text.tertiary} />
                 <Text
@@ -357,6 +671,35 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                 }}
               >
                 {userData.phone}
+              </Text>
+            </View>
+          )}
+
+          {/* Address */}
+          {userData?.address && (
+            <View style={{ marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <Ionicons name="home-outline" size={16} color={Theme.colors.text.tertiary} />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: Theme.colors.text.tertiary,
+                    marginLeft: 6,
+                  }}
+                >
+                  Address
+                </Text>
+              </View>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '600',
+                  color: Theme.colors.text.primary,
+                  marginLeft: 22,
+                  lineHeight: 22,
+                }}
+              >
+                {userData.address}
               </Text>
             </View>
           )}
@@ -391,42 +734,6 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
               </View>
             )}
 
-            {/* State */}
-            {stateName && (
-              <View>
-                <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginBottom: 4 }}>
-                  State
-                </Text>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
-                  {stateName}
-                </Text>
-              </View>
-            )}
-
-            {/* City */}
-            {cityName && (
-              <View>
-                <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginBottom: 4 }}>
-                  City
-                </Text>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
-                  {cityName}
-                </Text>
-              </View>
-            )}
-
-            {/* Address */}
-            {userData?.address && (
-              <View>
-                <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginBottom: 4 }}>
-                  Address
-                </Text>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
-                  {userData.address}
-                </Text>
-              </View>
-            )}
-
             {/* User ID */}
             <View>
               <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginBottom: 4 }}>
@@ -436,6 +743,22 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                 #{userData?.s_no}
               </Text>
             </View>
+
+            {/* Joined Date */}
+            {(userData?.created_at || profileData?.created_at) && (
+              <View>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginBottom: 4 }}>
+                  Member Since
+                </Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
+                  {new Date(profileData?.created_at || userData?.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </Text>
+              </View>
+            )}
           </View>
         </Card>
 
@@ -545,7 +868,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
         visible={showEditModal}
         user={userData}
         onClose={() => setShowEditModal(false)}
-        onSave={handleSaveProfile}
+        onProfileUpdated={onRefresh}
       />
 
       {/* Change Password Modal */}

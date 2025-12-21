@@ -19,7 +19,6 @@ import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { RoomFormModal } from './CreateEditRoomModal';
-import { CurrentBillModal } from './CurrentBillModal';
 import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
 import { showErrorAlert } from '../../utils/errorHandler';
 import { CONTENT_COLOR } from '@/constant';
@@ -42,9 +41,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<number | null>(null);
 
-  // Current bill modal state
-  const [billModalVisible, setBillModalVisible] = useState(false);
-  const [selectedRoomForBill, setSelectedRoomForBill] = useState<Room | null>(null);
 
   // Track if this is the first mount to load data
   const isFirstMount = useRef(true);
@@ -139,19 +135,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     loadRooms();
   };
 
-  const handleOpenBillModal = (room: Room) => {
-    setSelectedRoomForBill(room);
-    setBillModalVisible(true);
-  };
-
-  const handleCloseBillModal = () => {
-    setBillModalVisible(false);
-    setSelectedRoomForBill(null);
-  };
-
-  const handleBillSuccess = () => {
-    loadRooms();
-  };
 
   const handleDeleteRoom = (roomId: number, roomNo: string) => {
     showDeleteConfirmation({
@@ -179,105 +162,78 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const renderRoomCard = ({ item }: { item: Room }) => (
     <TouchableOpacity
       onPress={() => navigation.navigate('RoomDetails', { roomId: item.s_no })}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      <Card className='' style={{ margin: 16, marginBottom: 0, padding: 16 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <Card className='' style={{ marginHorizontal: 10, marginVertical: 4, padding: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <View
               style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
+                width: 32,
+                height: 32,
+                borderRadius: 16,
                 backgroundColor: Theme.colors.primary + '20',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 20 }}>🏠</Text>
+              <Text style={{ fontSize: 16 }}>🏠</Text>
             </View>
             <View>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
                 {item.room_no}
               </Text>
-              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
                 ID: {item.s_no}
               </Text>
             </View>
           </View>
 
-          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-            <TouchableOpacity
-              onPress={() => handleOpenBillModal(item)}
-              style={{
-                backgroundColor: '#F59E0B',
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 6,
-              }}
-            >
-              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>Bill</Text>
-            </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
             <ActionButtons
+              onView={() => navigation.navigate('RoomDetails', { roomId: item.s_no })}
               onEdit={() => handleOpenEditModal(item.s_no)}
               onDelete={() => handleDeleteRoom(item.s_no, item.room_no)}
-              showEdit={true}
-              showDelete={true}
-              showView={false}
+              showEdit
+              showDelete
+              showView
+              containerStyle={{ gap: 6 }}
             />
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-          <View style={{ flex: 1, minWidth: '45%' }}>
-            <View
-              style={{
-                backgroundColor: '#F0FDF4',
-                padding: 12,
-                borderRadius: 8,
-                borderLeftWidth: 3,
-                borderLeftColor: '#3B82F6',
-              }}
-            >
-              <Text style={{ fontSize: 10, color: '#2563EB', fontWeight: '600', marginBottom: 4 }}>
-                BEDS
-              </Text>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#047857' }}>
-                {item.beds?.length || 0}
-              </Text>
-            </View>
-          </View>
-
-          <View style={{ flex: 1, minWidth: '45%' }}>
-            <View
-              style={{
-                backgroundColor: '#EFF6FF',
-                padding: 12,
-                borderRadius: 8,
-                borderLeftWidth: 3,
-                borderLeftColor: '#3B82F6',
-              }}
-            >
-              <Text style={{ fontSize: 10, color: '#2563EB', fontWeight: '600', marginBottom: 4 }}>
-                TOTAL BEDS
-              </Text>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#1D4ED8' }}>
-                {item.total_beds || 0}
-              </Text>
-            </View>
-          </View>
+        <View
+          style={{
+            marginTop: 8,
+            padding: 10,
+            borderRadius: 12,
+            backgroundColor: '#F8FAFC',
+            borderWidth: 1,
+            borderColor: '#D0D5DD',
+          }}
+        >
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+            Beds: <Text style={{ fontWeight: '700', color: Theme.colors.text.primary }}>{item.beds?.length || 0}</Text>
+            {'  |  '}
+            Total Beds: <Text style={{ fontWeight: '700', color: Theme.colors.text.primary }}>{item.total_beds || 0}</Text>
+          </Text>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 4 }}>
+            {item.total_beds
+              ? `${Math.round(((item.beds?.length || 0) / item.total_beds) * 100)}% occupied`
+              : 'Capacity data pending'}
+          </Text>
         </View>
 
         {item.pg_locations && (
           <View
             style={{
-              marginTop: 12,
-              paddingTop: 12,
+              marginTop: 8,
+              paddingTop: 8,
               borderTopWidth: 1,
               borderTopColor: Theme.colors.border,
             }}
           >
-            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
+            <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary }}>
               📍 {item.pg_locations.location_name}
             </Text>
           </View>
@@ -387,15 +343,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         onSuccess={handleEditSuccess}
       />
 
-      {/* Current Bill Modal */}
-      {selectedRoomForBill && (
-        <CurrentBillModal
-          visible={billModalVisible}
-          room={selectedRoomForBill}
-          onClose={handleCloseBillModal}
-          onSuccess={handleBillSuccess}
-        />
-      )}
     </ScreenLayout>
   );
 };

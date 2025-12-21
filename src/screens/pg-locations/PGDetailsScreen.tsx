@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Alert,
   Image,
+  TextInput,
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,8 +30,8 @@ interface PGDetails {
   pincode: string;
   status: string;
   rent_cycle_type: string;
-  rent_cycle_start: string | null;
-  rent_cycle_end: string | null;
+  rent_cycle_start: number | null;
+  rent_cycle_end: number | null;
   pg_type: string;
   images: string[];
   city: {
@@ -43,18 +44,224 @@ interface PGDetails {
   };
   created_at: string;
   updated_at: string;
+  room_statistics: {
+    total_rooms: number;
+    total_beds: number;
+    occupied_beds: number;
+    available_beds: number;
+    occupancy_rate: number;
+    total_monthly_revenue: number;
+  };
+  tenant_statistics: {
+    total_tenants: number;
+    active_tenants: number;
+    inactive_tenants: number;
+    occupancy_rate: number;
+  };
+  room_details: Array<{
+    s_no: number;
+    room_no: string;
+    total_beds: number;
+    occupied_beds: number;
+    available_beds: number;
+    occupancy_rate: number;
+    beds: Array<{
+      s_no: number;
+      bed_no: string;
+      price: string;
+      is_occupied: boolean;
+      tenant: {
+        name: string;
+        phone_no: string;
+        check_in_date: string;
+        check_out_date: string;
+      } | null;
+      latest_payment: {
+        amount_paid: string;
+        payment_date: string;
+        start_date: string;
+        end_date: string;
+        actual_rent_amount: string;
+      } | null;
+    }>;
+  }>;
+  tenant_details: Array<{
+    s_no: number;
+    name: string;
+    phone_no: string;
+    status: string;
+    check_in_date: string;
+    check_out_date: string;
+    created_at: string;
+  }>;
 }
 
-const StatCard = ({ label, value }: { label: string; value: number }) => (
-  <Card style={{ flex: 1, padding: 14, backgroundColor: '#fff', marginBottom: 10 }}>
-    <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 6, fontWeight: '500' }}>
+const StatCard = ({ label, value, color = Theme.colors.primary, size = 'medium' }: { 
+  label: string; 
+  value: number | string; 
+  color?: string;
+  size?: 'small' | 'medium';
+}) => (
+  <View style={{ 
+    flex: 1, 
+    padding: size === 'small' ? 8 : 12, 
+    backgroundColor: '#fff', 
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    alignItems: 'center'
+  }}>
+    <Text style={{ 
+      fontSize: size === 'small' ? 10 : 11, 
+      color: Theme.colors.text.secondary, 
+      marginBottom: 2, 
+      fontWeight: '500' 
+    }}>
       {label}
     </Text>
-    <Text style={{ fontSize: 28, fontWeight: '600', color: Theme.colors.primary }}>
+    <Text style={{ 
+      fontSize: size === 'small' ? 16 : 20, 
+      fontWeight: '700', 
+      color: color 
+    }}>
       {value}
     </Text>
-  </Card>
+  </View>
 );
+
+const RoomSummaryCard = ({ room }: { room: PGDetails['room_details'][0] }) => (
+  <View style={{ 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    marginBottom: 8
+  }}>
+    {/* Room Info */}
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 4 }}>
+        {room.room_no}
+      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ 
+            width: 8, 
+            height: 8, 
+            borderRadius: 4, 
+            backgroundColor: room.occupancy_rate > 75 ? '#10B981' : room.occupancy_rate > 50 ? '#F59E0B' : '#EF4444',
+            marginRight: 4
+          }} />
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+            {room.occupied_beds}/{room.total_beds} beds
+          </Text>
+        </View>
+        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+          {room.occupancy_rate.toFixed(0)}% occupied
+        </Text>
+      </View>
+    </View>
+    
+    {/* Quick Actions */}
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.primary }}>
+          ₹{room.beds.reduce((sum, bed) => sum + Number(bed.price), 0).toLocaleString('en-IN')}
+        </Text>
+        <Text style={{ fontSize: 10, color: Theme.colors.text.secondary }}>
+          {room.available_beds} free
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={Theme.colors.text.secondary} />
+    </View>
+  </View>
+);
+
+const RoomCard = ({ room }: { room: PGDetails['room_details'][0] }) => (
+  <View style={{ 
+    marginBottom: 12, 
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    padding: 12
+  }}>
+    {/* Room Header */}
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      <Text style={{ fontSize: 15, fontWeight: '600', color: Theme.colors.text.primary }}>
+        {room.room_no}
+      </Text>
+      <View style={{ 
+        paddingHorizontal: 6, 
+        paddingVertical: 2, 
+        backgroundColor: room.occupancy_rate > 75 ? '#10B981' : room.occupancy_rate > 50 ? '#F59E0B' : '#EF4444',
+        borderRadius: 8
+      }}>
+        <Text style={{ fontSize: 10, fontWeight: '600', color: '#fff' }}>
+          {room.occupancy_rate.toFixed(0)}%
+        </Text>
+      </View>
+    </View>
+    
+    {/* Compact Stats Row */}
+    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+      <StatCard label="Beds" value={`${room.occupied_beds}/${room.total_beds}`} color={Theme.colors.text.secondary} size="small" />
+      <StatCard label="Free" value={room.available_beds} color="#3B82F6" size="small" />
+    </View>
+
+    {/* Beds List - Compact */}
+    {room.beds.length > 0 && (
+      <View style={{ borderTopWidth: 1, borderTopColor: Theme.colors.border, paddingTop: 8 }}>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+          Beds ({room.beds.length})
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {room.beds.map(bed => (
+            <View key={bed.s_no} style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center',
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              backgroundColor: bed.is_occupied ? '#F0FDF4' : '#FEF2F2',
+              borderRadius: 6,
+              borderWidth: 1,
+              borderColor: bed.is_occupied ? '#BBF7D0' : '#FECACA',
+              minWidth: 80
+            }}>
+              <View style={{ 
+                width: 6, 
+                height: 6, 
+                borderRadius: 3, 
+                backgroundColor: bed.is_occupied ? '#10B981' : '#EF4444',
+                marginRight: 6
+              }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: Theme.colors.text.primary }}>
+                  {bed.bed_no}
+                </Text>
+                <Text style={{ fontSize: 10, color: Theme.colors.primary, fontWeight: '500' }}>
+                  ₹{bed.price}
+                </Text>
+              </View>
+              {bed.tenant && (
+                <View style={{ 
+                  width: 4, 
+                  height: 4, 
+                  borderRadius: 2, 
+                  backgroundColor: '#10B981',
+                  marginLeft: 4
+                }} />
+              )}
+            </View>
+          ))}
+        </View>
+      </View>
+    )}
+  </View>
+);
+
 
 export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) => {
   const route = useRoute();
@@ -63,6 +270,9 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [pgDetails, setPgDetails] = useState<PGDetails | null>(null);
+  const [viewMode, setViewMode] = useState<'summary' | 'detailed'>('summary');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedRoom, setExpandedRoom] = useState<number | null>(null);
 
   useEffect(() => {
     loadPGDetails();
@@ -95,6 +305,17 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
     setRefreshing(true);
     await loadPGDetails();
     setRefreshing(false);
+  };
+
+  // Filter rooms based on search query
+  const filteredRooms = pgDetails?.room_details?.filter(room => 
+    room.room_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    room.beds.some(bed => bed.bed_no.toLowerCase().includes(searchQuery.toLowerCase()))
+  ) || [];
+
+  // Toggle room expansion
+  const toggleRoomExpansion = (roomId: number) => {
+    setExpandedRoom(expandedRoom === roomId ? null : roomId);
   };
 
   return (
@@ -247,56 +468,195 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
               </View>
             </Card>
 
-            {/* Quick Actions */}
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <AnimatedButton
-                style={{
-                  flex: 1,
-                  backgroundColor: Theme.colors.primary,
-                  paddingVertical: 12,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexDirection: 'row',
-                }}
-                onPress={() => navigation.navigate('Rooms')}
-              >
-                <Ionicons name="home" size={16} color="#fff" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#fff' }}>Rooms</Text>
-              </AnimatedButton>
-
-              <AnimatedButton
-                style={{
-                  flex: 1,
-                  backgroundColor: Theme.colors.primary,
-                  paddingVertical: 12,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexDirection: 'row',
-                }}
-                onPress={() => navigation.navigate('Tenants')}
-              >
-                <Ionicons name="people" size={16} color="#fff" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#fff' }}>Tenants</Text>
-              </AnimatedButton>
-
-              <AnimatedButton
-                style={{
-                  flex: 1,
-                  backgroundColor: Theme.colors.primary,
-                  paddingVertical: 12,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexDirection: 'row',
-                }}
-                onPress={() => navigation.navigate('Beds')}
-              >
-                <Ionicons name="bed" size={16} color="#fff" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#fff' }}>Beds</Text>
-              </AnimatedButton>
+            {/* Room Statistics Overview */}
+            <View style={{ 
+              marginBottom: 16, 
+              backgroundColor: '#fff',
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: Theme.colors.border,
+              padding: 16
+            }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
+                Overview
+              </Text>
+              
+              {/* Main Stats */}
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                <StatCard label="Rooms" value={pgDetails.room_statistics.total_rooms} color={Theme.colors.text.secondary} size="small" />
+                <StatCard label="Beds" value={pgDetails.room_statistics.total_beds} color={Theme.colors.text.secondary} size="small" />
+                <StatCard label="Tenants" value={pgDetails.tenant_statistics.total_tenants} color={Theme.colors.text.secondary} size="small" />
+              </View>
+              
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                <StatCard label="Occupancy" value={`${pgDetails.room_statistics.occupancy_rate.toFixed(0)}%`} color={pgDetails.room_statistics.occupancy_rate > 75 ? '#10B981' : pgDetails.room_statistics.occupancy_rate > 50 ? '#F59E0B' : '#EF4444'} size="small" />
+                <StatCard label="Active" value={pgDetails.tenant_statistics.active_tenants} color="#10B981" size="small" />
+                <StatCard label="Available" value={pgDetails.room_statistics.available_beds} color="#3B82F6" size="small" />
+              </View>
+              
+              {/* Revenue Row */}
+              <View style={{ 
+                flexDirection: 'row', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                paddingTop: 8,
+                borderTopWidth: 1,
+                borderTopColor: Theme.colors.border
+              }}>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, fontWeight: '500' }}>
+                  Monthly Revenue
+                </Text>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.primary }}>
+                  ₹{pgDetails.room_statistics.total_monthly_revenue.toLocaleString('en-IN')}
+                </Text>
+              </View>
             </View>
+
+            {/* Room Details */}
+            {pgDetails.room_details && pgDetails.room_details.length > 0 && (
+              <View>
+                {/* Room Controls */}
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: 12 
+                }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
+                    Rooms ({filteredRooms.length})
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        backgroundColor: viewMode === 'summary' ? Theme.colors.primary : '#fff',
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: Theme.colors.primary
+                      }}
+                      onPress={() => setViewMode('summary')}
+                    >
+                      <Text style={{ 
+                        fontSize: 12, 
+                        fontWeight: '500', 
+                        color: viewMode === 'summary' ? '#fff' : Theme.colors.primary 
+                      }}>
+                        List
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        backgroundColor: viewMode === 'detailed' ? Theme.colors.primary : '#fff',
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: Theme.colors.primary
+                      }}
+                      onPress={() => setViewMode('detailed')}
+                    >
+                      <Text style={{ 
+                        fontSize: 12, 
+                        fontWeight: '500', 
+                        color: viewMode === 'detailed' ? '#fff' : Theme.colors.primary 
+                      }}>
+                        Detailed
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Search Bar */}
+                {(pgDetails.room_details.length > 10 || searchQuery) && (
+                  <View style={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'center',
+                    backgroundColor: '#fff',
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: Theme.colors.border,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    marginBottom: 12
+                  }}>
+                    <Ionicons name="search" size={16} color={Theme.colors.text.secondary} />
+                    <TextInput
+                      style={{ 
+                        flex: 1, 
+                        marginLeft: 8, 
+                        fontSize: 14, 
+                        color: Theme.colors.text.primary 
+                      }}
+                      placeholder="Search room or bed..."
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                    />
+                    {searchQuery.length > 0 && (
+                      <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <Ionicons name="close-circle" size={16} color={Theme.colors.text.secondary} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
+                {/* Room List */}
+                {viewMode === 'summary' ? (
+                  <View>
+                    {filteredRooms.slice(0, 20).map(room => (
+                      <TouchableOpacity key={room.s_no} onPress={() => toggleRoomExpansion(room.s_no)}>
+                        <RoomSummaryCard room={room} />
+                        {expandedRoom === room.s_no && (
+                          <View style={{ marginTop: 8, marginLeft: 12 }}>
+                            <RoomCard room={room} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                    {filteredRooms.length > 20 && (
+                      <TouchableOpacity
+                        style={{
+                          padding: 12,
+                          backgroundColor: '#fff',
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: Theme.colors.border,
+                          alignItems: 'center'
+                        }}
+                        onPress={() => setViewMode('detailed')}
+                      >
+                        <Text style={{ fontSize: 14, color: Theme.colors.primary, fontWeight: '500' }}>
+                          View all {filteredRooms.length} rooms →
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  <View>
+                    {filteredRooms.map(room => (
+                      <RoomCard key={room.s_no} room={room} />
+                    ))}
+                  </View>
+                )}
+
+                {/* No Results */}
+                {filteredRooms.length === 0 && searchQuery && (
+                  <View style={{ 
+                    padding: 20, 
+                    alignItems: 'center',
+                    backgroundColor: '#fff',
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: Theme.colors.border
+                  }}>
+                    <Text style={{ fontSize: 14, color: Theme.colors.text.secondary }}>
+                      No rooms found for "{searchQuery}"
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
           </ScrollView>
         ) : (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

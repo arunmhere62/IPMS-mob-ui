@@ -37,8 +37,10 @@ import { ExpenseScreen } from '@/screens/expense/ExpenseScreen';
 import { EmployeeSalaryScreen } from '@/screens/employee-salary/EmployeeSalaryScreen';
 import { EmployeesScreen } from '@/screens/employees/EmployeesScreen';
 import { AddEmployeeScreen } from '@/screens/employees/AddEmployeeScreen';
+import EmployeeDetailsScreen from '@/screens/employees/EmployeeDetailsScreen';
 import { VisitorsScreen } from '@/screens/visitors/VisitorsScreen';
 import { AddVisitorScreen } from '@/screens/visitors/AddVisitorScreen';
+import { VisitorDetailsScreen } from '@/screens/visitors/VisitorDetailsScreen';
 import { TicketsScreen } from '@/screens/tickets/TicketsScreen';
 import { CreateTicketScreen } from '@/screens/tickets/CreateTicketScreen';
 import { TicketDetailsScreen } from '@/screens/tickets/TicketDetailsScreen';
@@ -185,8 +187,10 @@ export const AppNavigator = () => {
             <Stack.Screen name="EmployeeSalary" component={EmployeeSalaryScreen} />
             <Stack.Screen name="Employees" component={EmployeesScreen} />
             <Stack.Screen name="AddEmployee" component={AddEmployeeScreen} />
+            <Stack.Screen name="EmployeeDetails" component={EmployeeDetailsScreen} />
             <Stack.Screen name="Visitors" component={VisitorsScreen} />
             <Stack.Screen name="AddVisitor" component={AddVisitorScreen} />
+            <Stack.Screen name="VisitorDetails" component={VisitorDetailsScreen} />
             <Stack.Screen name="Tickets" component={TicketsScreen} />
             <Stack.Screen name="CreateTicket" component={CreateTicketScreen} />
             <Stack.Screen name="TicketDetails" component={TicketDetailsScreen} />

@@ -824,7 +824,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
 
           // Check if start is 1st of month and end is last day of month
           const isFirstOfMonth = startDay === 1;
-          const lastDayOfMonth = new Date(startYear, startMonth + 1, 0).getDate();
+          const lastDayOfMonth = new Date(endYear, endMonth + 1, 0).getDate();
           const isLastDayOfMonth = endDay === lastDayOfMonth && endMonth === startMonth && endYear === startYear;
 
           if (!isFirstOfMonth || !isLastDayOfMonth) {

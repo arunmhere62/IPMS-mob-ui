@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
@@ -35,15 +36,14 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const isFetchingRef = useRef(false);
+  const isFirstFocusRef = useRef(true);
 
-  useEffect(() => {
-    loadEmployees();
-  }, [selectedPGLocationId, search]);
-
-  const loadEmployees = async (pageNum: number = 1, append: boolean = false) => {
-    if (loading) return;
+  const loadEmployees = useCallback(async (pageNum: number = 1, append: boolean = false) => {
+    if (isFetchingRef.current) return;
 
     try {
+      isFetchingRef.current = true;
       setLoading(true);
       const response = await employeeService.getEmployees(
         pageNum,
@@ -67,8 +67,24 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
     } finally {
       setLoading(false);
       setRefreshing(false);
+      isFetchingRef.current = false;
     }
-  };
+  }, [selectedPGLocationId, search]);
+
+  useEffect(() => {
+    loadEmployees(1, false);
+  }, [selectedPGLocationId, search, loadEmployees]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // When coming back from AddEmployee (create/update) refresh the list
+      if (isFirstFocusRef.current) {
+        isFirstFocusRef.current = false;
+        return;
+      }
+      loadEmployees(1, false);
+    }, [loadEmployees])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -156,9 +172,10 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
         <ActionButtons
           onEdit={() => navigation.navigate('AddEmployee', { employeeId: employee.s_no })}
           onDelete={() => handleDelete(employee)}
+          onView={() => navigation.navigate('EmployeeDetails', { employeeId: employee.s_no })}
           showEdit={true}
           showDelete={true}
-          showView={false}
+          showView={true}
         />
       </View>
     </Card>

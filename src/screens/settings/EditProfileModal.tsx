@@ -12,17 +12,22 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Theme } from '../theme';
-import { User } from '../types';
-import { SearchableDropdown } from './SearchableDropdown';
-import { ImageUpload } from './ImageUpload';
-import axiosInstance from '../services/core/axiosInstance';
+import { Theme } from '../../theme';
+import { User } from '../../types';
+import { SearchableDropdown } from '../../components/SearchableDropdown';
+import { ImageUploadS3 } from '../../components/ImageUploadS3';
+import { CountryPhoneSelector, COUNTRIES } from '../../components/CountryPhoneSelector';
+import { OptionSelector } from '../../components/OptionSelector';
+import { InputField } from '../../components/InputField';
+import axiosInstance from '../../services/core/axiosInstance';
+import userService from '../../services/userService';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface EditProfileModalProps {
   visible: boolean;
   user: User | null;
   onClose: () => void;
-  onSave: (data: any) => Promise<void>;
+  onProfileUpdated?: () => void;
 }
 
 const GENDER_OPTIONS = [
@@ -34,16 +39,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   visible,
   user,
   onClose,
-  onSave,
+  onProfileUpdated,
 }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]); // Default to India
   const [address, setAddress] = useState('');
   const [gender, setGender] = useState<'MALE' | 'FEMALE' | ''>('');
   const [stateId, setStateId] = useState<number | null>(null);
   const [cityId, setCityId] = useState<number | null>(null);
-  const [profileImage, setProfileImage] = useState<string>('');
+  const [profileImages, setProfileImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<any>({});
 
@@ -68,7 +74,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setGender(user.gender || '');
       setStateId(user.state_id || null);
       setCityId(user.city_id || null);
-      setProfileImage(user.profile_images || '');
+      setProfileImages(user.profile_images ? [user.profile_images] : []);
     }
   }, [user, visible]);
 
@@ -129,8 +135,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       newErrors.email = 'Invalid email format';
     }
 
-    if (phone && !/^\d{10}$/.test(phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Phone number must be 10 digits';
+    // Construct full phone number with country code for validation
+    const fullPhoneNumber = phone && selectedCountry ? `${selectedCountry.phoneCode} ${phone}` : phone;
+    
+    if (fullPhoneNumber && !/^\+\d{1,3}\s\d{8,10}$/.test(fullPhoneNumber)) {
+      newErrors.phone = 'Phone number format is invalid';
     }
 
     setErrors(newErrors);
@@ -142,21 +151,37 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
     try {
       setLoading(true);
-      await onSave({
+      // Construct full phone number with country code
+      const fullPhoneNumber = phone && selectedCountry ? `${selectedCountry.phoneCode} ${phone}` : phone;
+      
+      const payload = {
         name: name.trim(),
         email: email.trim(),
-        phone: phone.trim() || undefined,
+        phone: fullPhoneNumber?.trim() || undefined,
         address: address.trim() || undefined,
         gender: gender || undefined,
         state_id: stateId,
         city_id: cityId,
-        profile_images: profileImage || undefined,
-      });
-      Alert.alert('Success', 'Profile updated successfully');
+        profile_images: profileImages.length > 0 ? profileImages[0] : null,
+      };
+      
+      console.log('=== FRONTEND DEBUG ===');
+      console.log('Sending payload to backend:', payload);
+      console.log('profileImages array:', profileImages);
+      console.log('profileImages.length:', profileImages.length);
+      console.log('profile_images field value:', payload.profile_images);
+      console.log('=== END FRONTEND DEBUG ===');
+      
+      const response = await userService.updateUserProfile(user.s_no, payload);
+      
+      showSuccessAlert(response, 'Success')
+      
+      // Call parent callback to refresh user data
+      onProfileUpdated?.();
+      
       onClose();
     } catch (error: any) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to update profile');
+      showErrorAlert(error, 'Error')
     } finally {
       setLoading(false);
     }
@@ -225,96 +250,30 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               bounces={true}
             >
               {/* Name */}
-              <View style={{ marginBottom: 16 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '500',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
-                >
-                  Full Name <Text style={{ color: Theme.colors.danger }}>*</Text>
-                </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: Theme.colors.input.background,
-                    borderWidth: 1,
-                    borderColor: errors.name ? Theme.colors.danger : Theme.colors.input.border,
-                    borderRadius: 8,
-                    paddingHorizontal: 16,
-                  }}
-                >
-                  <Ionicons name="person-outline" size={20} color={Theme.colors.text.tertiary} />
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      paddingHorizontal: 12,
-                      fontSize: 16,
-                      color: Theme.colors.text.primary,
-                    }}
-                    placeholder="Enter your full name"
-                    placeholderTextColor={Theme.colors.input.placeholder}
-                    value={name}
-                    onChangeText={setName}
-                  />
-                </View>
-                {errors.name && (
-                  <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
-                    {errors.name}
-                  </Text>
-                )}
-              </View>
+              <InputField
+                label="Name"
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter your full name"
+                error={errors.name}
+                required={true}
+                prefixIcon="person-outline"
+                containerStyle={{ marginBottom: 16 }}
+              />
 
               {/* Email */}
-              <View style={{ marginBottom: 16 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '500',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
-                >
-                  Email Address <Text style={{ color: Theme.colors.danger }}>*</Text>
-                </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: Theme.colors.input.background,
-                    borderWidth: 1,
-                    borderColor: errors.email ? Theme.colors.danger : Theme.colors.input.border,
-                    borderRadius: 8,
-                    paddingHorizontal: 16,
-                  }}
-                >
-                  <Ionicons name="mail-outline" size={20} color={Theme.colors.text.tertiary} />
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      paddingHorizontal: 12,
-                      fontSize: 16,
-                      color: Theme.colors.text.primary,
-                    }}
-                    placeholder="Enter your email"
-                    placeholderTextColor={Theme.colors.input.placeholder}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    value={email}
-                    onChangeText={setEmail}
-                  />
-                </View>
-                {errors.email && (
-                  <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
-                    {errors.email}
-                  </Text>
-                )}
-              </View>
+              <InputField
+                label="Email Address"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Enter your email"
+                error={errors.email}
+                required={true}
+                prefixIcon="mail-outline"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                containerStyle={{ marginBottom: 16 }}
+              />
 
               {/* Phone */}
               <View style={{ marginBottom: 16 }}>
@@ -328,33 +287,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 >
                   Phone Number
                 </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: Theme.colors.input.background,
-                    borderWidth: 1,
-                    borderColor: errors.phone ? Theme.colors.danger : Theme.colors.input.border,
-                    borderRadius: 8,
-                    paddingHorizontal: 16,
-                  }}
-                >
-                  <Ionicons name="call-outline" size={20} color={Theme.colors.text.tertiary} />
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      paddingHorizontal: 12,
-                      fontSize: 16,
-                      color: Theme.colors.text.primary,
-                    }}
-                    placeholder="Enter your phone number"
-                    placeholderTextColor={Theme.colors.input.placeholder}
-                    keyboardType="phone-pad"
-                    value={phone}
-                    onChangeText={setPhone}
-                  />
-                </View>
+                <CountryPhoneSelector
+                  selectedCountry={selectedCountry}
+                  onSelectCountry={setSelectedCountry}
+                  phoneValue={phone}
+                  onPhoneChange={setPhone}
+                  size="medium"
+                />
                 {errors.phone && (
                   <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
                     {errors.phone}
@@ -363,52 +302,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </View>
 
               {/* Gender */}
-              <View style={{ marginBottom: 16 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '500',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
-                >
-                  Gender
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {GENDER_OPTIONS.map((option) => (
-                    <TouchableOpacity
-                      key={option.value}
-                      onPress={() => setGender(option.value as 'MALE' | 'FEMALE')}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor:
-                          gender === option.value ? Theme.colors.primary : Theme.colors.border,
-                        backgroundColor:
-                          gender === option.value
-                            ? Theme.colors.background.blueLight
-                            : Theme.colors.canvas,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: gender === option.value ? '600' : '400',
-                          color:
-                            gender === option.value
-                              ? Theme.colors.primary
-                              : Theme.colors.text.primary,
-                        }}
-                      >
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+              <OptionSelector
+                label="Gender"
+                options={GENDER_OPTIONS}
+                selectedValue={gender}
+                onSelect={(value) => setGender((value as 'MALE' | 'FEMALE' | '') || '')}
+                containerStyle={{ marginBottom: 16 }}
+              />
 
               {/* State */}
               <View style={{ marginBottom: 16 }}>
@@ -444,49 +344,16 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </View>
 
               {/* Address */}
-              <View style={{ marginBottom: 16 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '500',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
-                >
-                  Address
-                </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'flex-start',
-                    backgroundColor: Theme.colors.input.background,
-                    borderWidth: 1,
-                    borderColor: Theme.colors.input.border,
-                    borderRadius: 8,
-                    paddingHorizontal: 16,
-                    paddingTop: 12,
-                  }}
-                >
-                  <Ionicons name="location-outline" size={20} color={Theme.colors.text.tertiary} style={{ marginTop: 2 }} />
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      paddingVertical: 0,
-                      paddingHorizontal: 12,
-                      fontSize: 16,
-                      color: Theme.colors.text.primary,
-                      minHeight: 80,
-                      textAlignVertical: 'top',
-                    }}
-                    placeholder="Enter your address"
-                    placeholderTextColor={Theme.colors.input.placeholder}
-                    multiline
-                    numberOfLines={3}
-                    value={address}
-                    onChangeText={setAddress}
-                  />
-                </View>
-              </View>
+              <InputField
+                label="Address"
+                value={address}
+                onChangeText={setAddress}
+                placeholder="Enter your address"
+                prefixIcon="location-outline"
+                multiline={true}
+                numberOfLines={3}
+                containerStyle={{ marginBottom: 16 }}
+              />
 
               {/* Profile Image */}
               <View style={{ marginBottom: 0, marginTop: 16 }}>
@@ -500,11 +367,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 >
                   Profile Picture
                 </Text>
-                <ImageUpload
-                  images={profileImage ? [profileImage] : []}
-                  onImagesChange={(images) => setProfileImage(images[0] || '')}
+                <ImageUploadS3
+                  images={profileImages}
+                  onImagesChange={setProfileImages}
                   maxImages={1}
                   label=""
+                  folder="profile/images"
+                  entityId={user?.s_no?.toString()}
                 />
               </View>
             </ScrollView>

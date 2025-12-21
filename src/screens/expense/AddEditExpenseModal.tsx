@@ -12,6 +12,7 @@ import expenseService, { Expense, PaymentMethod } from '../../services/expenses/
 import { DatePicker } from '../../components/DatePicker';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { OptionSelector } from '../../components/OptionSelector';
+import { AmountInput } from '../../components/AmountInput';
 
 interface AddEditExpenseModalProps {
   visible: boolean;
@@ -105,7 +106,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
   };
 
   const handleSave = async () => {
-    
+
     if (!validate()) {
       return;
     }
@@ -168,290 +169,256 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
       cancelLabel="Cancel"
       isLoading={loading}
     >
-              {/* Expense Type */}
-              <View style={{ marginBottom: 24 }}>
+      {/* Expense Type */}
+      <View style={{ marginBottom: 24 }}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: '600',
+            color: Theme.colors.text.primary,
+            marginBottom: 12,
+          }}
+        >
+          Expense Type <Text style={{ color: Theme.colors.danger }}>*</Text>
+        </Text>
+
+        {/* Toggle between predefined and custom */}
+        <View style={{ flexDirection: 'row', marginBottom: 8, gap: 8 }}>
+          <TouchableOpacity
+            onPress={() => {
+              setShowCustomType(false);
+              setCustomExpenseType('');
+            }}
+            style={{
+              flex: 1,
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: !showCustomType ? Theme.colors.primary : Theme.colors.border,
+              backgroundColor: !showCustomType ? Theme.colors.background.blueLight : Theme.colors.canvas,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: !showCustomType ? '600' : '400',
+                color: !showCustomType ? Theme.colors.primary : Theme.colors.text.secondary,
+              }}
+            >
+              Predefined Types
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setShowCustomType(true);
+              setExpenseType('');
+            }}
+            style={{
+              flex: 1,
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: showCustomType ? Theme.colors.primary : Theme.colors.border,
+              backgroundColor: showCustomType ? Theme.colors.background.blueLight : Theme.colors.canvas,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: showCustomType ? '600' : '400',
+                color: showCustomType ? Theme.colors.primary : Theme.colors.text.secondary,
+              }}
+            >
+              Custom Type
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {!showCustomType ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {EXPENSE_TYPES.map((type) => (
+              <TouchableOpacity
+                key={type}
+                onPress={() => setExpenseType(type)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: expenseType === type ? Theme.colors.primary : Theme.colors.border,
+                  backgroundColor: expenseType === type ? Theme.colors.background.blueLight : Theme.colors.canvas,
+                }}
+              >
                 <Text
                   style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 12,
+                    fontSize: 13,
+                    fontWeight: expenseType === type ? '600' : '400',
+                    color: expenseType === type ? Theme.colors.primary : Theme.colors.text.primary,
                   }}
                 >
-                  Expense Type <Text style={{ color: Theme.colors.danger }}>*</Text>
+                  {type}
                 </Text>
-                
-                {/* Toggle between predefined and custom */}
-                <View style={{ flexDirection: 'row', marginBottom: 8, gap: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowCustomType(false);
-                      setCustomExpenseType('');
-                    }}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: !showCustomType ? Theme.colors.primary : Theme.colors.border,
-                      backgroundColor: !showCustomType ? Theme.colors.background.blueLight : Theme.colors.canvas,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: !showCustomType ? '600' : '400',
-                        color: !showCustomType ? Theme.colors.primary : Theme.colors.text.secondary,
-                      }}
-                    >
-                      Predefined Types
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowCustomType(true);
-                      setExpenseType('');
-                    }}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: showCustomType ? Theme.colors.primary : Theme.colors.border,
-                      backgroundColor: showCustomType ? Theme.colors.background.blueLight : Theme.colors.canvas,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: showCustomType ? '600' : '400',
-                        color: showCustomType ? Theme.colors.primary : Theme.colors.text.secondary,
-                      }}
-                    >
-                      Custom Type
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <TextInput
+            style={{
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              fontSize: 16,
+              color: Theme.colors.text.primary,
+              backgroundColor: Theme.colors.input.background,
+              borderWidth: 1,
+              borderColor: errors.expenseType ? Theme.colors.danger : Theme.colors.input.border,
+              borderRadius: 8,
+            }}
+            placeholder="Enter custom expense type (e.g., Gas Bill, Pest Control)"
+            placeholderTextColor={Theme.colors.input.placeholder}
+            value={customExpenseType}
+            onChangeText={setCustomExpenseType}
+            autoFocus
+          />
+        )}
+        {errors.expenseType && (
+          <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
+            {errors.expenseType}
+          </Text>
+        )}
+      </View>
 
-                {!showCustomType ? (
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {EXPENSE_TYPES.map((type) => (
-                      <TouchableOpacity
-                        key={type}
-                        onPress={() => setExpenseType(type)}
-                        style={{
-                          paddingHorizontal: 16,
-                          paddingVertical: 8,
-                          borderRadius: 20,
-                          borderWidth: 1,
-                          borderColor: expenseType === type ? Theme.colors.primary : Theme.colors.border,
-                          backgroundColor: expenseType === type ? Theme.colors.background.blueLight : Theme.colors.canvas,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            fontWeight: expenseType === type ? '600' : '400',
-                            color: expenseType === type ? Theme.colors.primary : Theme.colors.text.primary,
-                          }}
-                        >
-                          {type}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : (
-                  <TextInput
-                    style={{
-                      paddingVertical: 12,
-                      paddingHorizontal: 16,
-                      fontSize: 16,
-                      color: Theme.colors.text.primary,
-                      backgroundColor: Theme.colors.input.background,
-                      borderWidth: 1,
-                      borderColor: errors.expenseType ? Theme.colors.danger : Theme.colors.input.border,
-                      borderRadius: 8,
-                    }}
-                    placeholder="Enter custom expense type (e.g., Gas Bill, Pest Control)"
-                    placeholderTextColor={Theme.colors.input.placeholder}
-                    value={customExpenseType}
-                    onChangeText={setCustomExpenseType}
-                    autoFocus
-                  />
-                )}
-                {errors.expenseType && (
-                  <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
-                    {errors.expenseType}
-                  </Text>
-                )}
-              </View>
+      {/* Amount */}
+      <AmountInput
+        label="Amount"
+        value={amount}
+        onChangeText={setAmount}
+        placeholder="0.00"
+        error={errors.amount}
+        required={true}
+        containerStyle={{ marginBottom: 24 }}
+        maxLength={10}
+      />
 
-              {/* Amount */}
-              <View style={{ marginBottom: 24 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
-                >
-                  Amount <Text style={{ color: Theme.colors.danger }}>*</Text>
-                </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: Theme.colors.input.background,
-                    borderWidth: 1,
-                    borderColor: errors.amount ? Theme.colors.danger : Theme.colors.input.border,
-                    borderRadius: 8,
-                    paddingHorizontal: 16,
-                  }}
-                >
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: Theme.colors.text.secondary }}>₹</Text>
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      paddingHorizontal: 12,
-                      fontSize: 16,
-                      color: Theme.colors.text.primary,
-                    }}
-                    placeholder="0.00"
-                    placeholderTextColor={Theme.colors.input.placeholder}
-                    keyboardType="decimal-pad"
-                    value={amount}
-                    onChangeText={setAmount}
-                  />
-                </View>
-                {errors.amount && (
-                  <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
-                    {errors.amount}
-                  </Text>
-                )}
-              </View>
+      {/* Paid To */}
+      <View style={{ marginBottom: 24 }}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: '600',
+            color: Theme.colors.text.primary,
+            marginBottom: 8,
+          }}
+        >
+          Paid To <Text style={{ color: Theme.colors.danger }}>*</Text>
+        </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: Theme.colors.input.background,
+            borderWidth: 1,
+            borderColor: errors.paidTo ? Theme.colors.danger : Theme.colors.input.border,
+            borderRadius: 8,
+            paddingHorizontal: 16,
+          }}
+        >
+          <Ionicons name="person-outline" size={20} color={Theme.colors.text.tertiary} />
+          <TextInput
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              paddingHorizontal: 12,
+              fontSize: 16,
+              color: Theme.colors.text.primary,
+            }}
+            placeholder="Enter person or company name"
+            placeholderTextColor={Theme.colors.input.placeholder}
+            value={paidTo}
+            onChangeText={setPaidTo}
+          />
+        </View>
+        {errors.paidTo && (
+          <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
+            {errors.paidTo}
+          </Text>
+        )}
+      </View>
 
-              {/* Paid To */}
-              <View style={{ marginBottom: 24 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
-                >
-                  Paid To <Text style={{ color: Theme.colors.danger }}>*</Text>
-                </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: Theme.colors.input.background,
-                    borderWidth: 1,
-                    borderColor: errors.paidTo ? Theme.colors.danger : Theme.colors.input.border,
-                    borderRadius: 8,
-                    paddingHorizontal: 16,
-                  }}
-                >
-                  <Ionicons name="person-outline" size={20} color={Theme.colors.text.tertiary} />
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      paddingHorizontal: 12,
-                      fontSize: 16,
-                      color: Theme.colors.text.primary,
-                    }}
-                    placeholder="Enter person or company name"
-                    placeholderTextColor={Theme.colors.input.placeholder}
-                    value={paidTo}
-                    onChangeText={setPaidTo}
-                  />
-                </View>
-                {errors.paidTo && (
-                  <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
-                    {errors.paidTo}
-                  </Text>
-                )}
-              </View>
+      {/* Date */}
+      <View style={{ marginBottom: 24 }}>
+        <DatePicker
+          label="Date"
+          value={paidDate}
+          onChange={setPaidDate}
+          error={errors.paidDate}
+          required
+          maximumDate={new Date()}
+        />
+      </View>
 
-              {/* Date */}
-              <View style={{ marginBottom: 24 }}>
-                <DatePicker
-                  label="Date"
-                  value={paidDate}
-                  onChange={setPaidDate}
-                  error={errors.paidDate}
-                  required
-                  maximumDate={new Date()}
-                />
-              </View>
+      {/* Payment Method */}
+      <View style={{ marginBottom: 24 }}>
+        <OptionSelector
+          label="Payment Method"
+          description="Select how the expense was paid"
+          options={PAYMENT_METHODS.map((method) => {
+            const iconMap: { [key: string]: string } = {
+              'GPay': '💰',
+              'PhonePe': '📱',
+              'Cash': '💵',
+              'Bank Transfer': '🏦',
+            };
+            return {
+              label: method.label,
+              value: method.value,
+              icon: iconMap[method.label] || '💳',
+            };
+          })}
+          selectedValue={paymentMethod}
+          onSelect={(value) => setPaymentMethod(value as PaymentMethod)}
+          required={true}
+          disabled={loading}
+          containerStyle={{ marginBottom: 0 }}
+        />
+      </View>
 
-              {/* Payment Method */}
-              <View style={{ marginBottom: 24 }}>
-                <OptionSelector
-                  label="Payment Method"
-                  description="Select how the expense was paid"
-                options={PAYMENT_METHODS.map((method) => {
-                  const iconMap: { [key: string]: string } = {
-                    'GPay': '💰',
-                    'PhonePe': '📱',
-                    'Cash': '💵',
-                    'Bank Transfer': '🏦',
-                  };
-                  return {
-                    label: method.label,
-                    value: method.value,
-                    icon: iconMap[method.label] || '💳',
-                  };
-                })}
-                selectedValue={paymentMethod}
-                onSelect={(value) => setPaymentMethod(value as PaymentMethod)}
-                required={true}
-                disabled={loading}
-                containerStyle={{ marginBottom: 0 }}
-              />
-              </View>
-
-              {/* Remarks */}
-              <View style={{ marginBottom: 16 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
-                >
-                  Remarks (Optional)
-                </Text>
-                <TextInput
-                  style={{
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                    fontSize: 16,
-                    color: Theme.colors.text.primary,
-                    backgroundColor: Theme.colors.input.background,
-                    borderWidth: 1,
-                    borderColor: Theme.colors.input.border,
-                    borderRadius: 8,
-                    minHeight: 80,
-                    textAlignVertical: 'top',
-                  }}
-                  placeholder="Add any additional notes"
-                  placeholderTextColor={Theme.colors.input.placeholder}
-                  multiline
-                  numberOfLines={3}
-                  value={remarks}
-                  onChangeText={setRemarks}
-                />
-              </View>
+      {/* Remarks */}
+      <View style={{ marginBottom: 16 }}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: '600',
+            color: Theme.colors.text.primary,
+            marginBottom: 8,
+          }}
+        >
+          Remarks (Optional)
+        </Text>
+        <TextInput
+          style={{
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            fontSize: 16,
+            color: Theme.colors.text.primary,
+            backgroundColor: Theme.colors.input.background,
+            borderWidth: 1,
+            borderColor: Theme.colors.input.border,
+            borderRadius: 8,
+            minHeight: 80,
+            textAlignVertical: 'top',
+          }}
+          placeholder="Add any additional notes"
+          placeholderTextColor={Theme.colors.input.placeholder}
+          multiline
+          numberOfLines={3}
+          value={remarks}
+          onChangeText={setRemarks}
+        />
+      </View>
     </SlideBottomModal>
   );
 };

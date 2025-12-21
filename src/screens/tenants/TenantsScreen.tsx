@@ -16,7 +16,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { AppDispatch, RootState } from '../../store';
-import { fetchTenants, deleteTenant, checkoutTenant } from '../../store/slices/tenantSlice';
+import { fetchTenants, checkoutTenant } from '../../store/slices/tenantSlice';
 import { Card } from '../../components/Card';
 import { AnimatedButton } from '../../components/AnimatedButton';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
@@ -38,7 +38,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { tenants, pagination, loading } = useSelector((state: RootState) => state?.tenants);
   const { selectedPGLocationId } = useSelector((state: RootState) => state?.pgLocations);
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state?.auth);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -220,35 +220,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     minimumViewTime: 100,
   }).current;
 
-  const handleDeleteTenant = (id: number, name: string) => {
-    Alert.alert(
-      'Delete Tenant',
-      `Are you sure you want to delete ${name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await dispatch(deleteTenant({
-                id,
-                headers: {
-                  pg_id: selectedPGLocationId || undefined,
-                  organization_id: user?.organization_id || undefined,
-                  user_id: user?.s_no || undefined,
-                },
-              })).unwrap();
-              Alert.alert('Success', 'Tenant deleted successfully');
-              loadTenants(currentPage);
-            } catch (error: any) {
-              showErrorAlert(error, 'Delete Error');
-            }
-          },
-        },
-      ]
-    );
-  };
 
   const clearFilters = () => {
     setStatusFilter('ALL');
@@ -435,7 +406,22 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               </Text>
             </View>
           )}
-          
+          {isAdvancePaid && (
+            <View style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 11,
+              backgroundColor: '#10B981',
+            }}>
+              <Text style={{
+                fontSize: 11,
+                fontWeight: '700',
+                color: '#fff',
+              }}>
+                ✅ Advance Paid
+              </Text>
+            </View>
+          )}
           {/* Partial Status Badge */}
           {isRentPartial && (
             <View style={{
@@ -846,21 +832,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
         >
           <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>View Details</Text>
         </AnimatedButton>
-        {/* Show delete button for checked-out tenants */}
-        {item.status === 'INACTIVE' && item.check_out_date && (
-          <TouchableOpacity
-            onPress={() => handleDeleteTenant(item.s_no, item.name)}
-            style={{
-              paddingVertical: 10,
-              paddingHorizontal: 16,
-              backgroundColor: '#EF4444',
-              borderRadius: 8,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Delete</Text>
-          </TouchableOpacity>
-        )}
       </View>
         </Card>
       </AnimatedPressableCard>

@@ -35,8 +35,8 @@ interface BedsScreenProps {
 }
 
 export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { selectedPGLocationId } = useSelector((state: RootState) => state?.pgLocations);
+  const { user } = useSelector((state: RootState) => state?.auth);
 
   const [beds, setBeds] = useState<Bed[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -74,7 +74,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
     React.useCallback(() => {
       // Refetch beds to get latest data when returning to this screen
       loadBedsWithComparison();
-      
+
       return () => {
         // Cleanup if needed
       };
@@ -119,11 +119,11 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
 
       // Compare with existing data to avoid unnecessary re-renders
       const hasDataChanged = JSON.stringify(beds) !== JSON.stringify(filteredBeds);
-      
+
       if (hasDataChanged) {
         setBeds(filteredBeds);
       }
-      
+
       setPagination(response.pagination);
     } catch (error: any) {
       console.error('Error loading beds:', error);
@@ -287,99 +287,93 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   };
 
   const renderBedCard = ({ item }: { item: Bed }) => (
-    <Card style={{ margin: 16, marginBottom: 0, padding: 16 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+    <Card
+      style={{
+        marginHorizontal: 12,
+        marginBottom: 8,
+        marginTop: 8,
+        padding: 12,
+        borderRadius: 14,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+      }}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <View
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              backgroundColor: item.is_occupied ? '#FEE2E2' : '#DCFCE7',
+              width: 36,
+              height: 36,
+              borderRadius: 12,
+              backgroundColor: item.is_occupied ? '#FEE2E2' : '#D1FAE5',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Ionicons name="bed" size={24} color={item.is_occupied ? '#DC2626' : '#16A34A'} />
+            <Ionicons name="bed" size={18} color={item.is_occupied ? '#DC2626' : '#16A34A'} />
           </View>
           <View>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }}>{item.bed_no}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: item.is_occupied ? '#DC2626' : '#16A34A',
-                }}
-              />
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
-                {item.is_occupied ? 'Occupied' : 'Available'}
-              </Text>
-            </View>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>{item.bed_no}</Text>
+            <Text style={{ fontSize: 12, color: item.is_occupied ? '#DC2626' : '#16A34A', marginTop: 2 }}>
+              {item.is_occupied ? 'Occupied' : 'Available'}
+            </Text>
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
           {!item.is_occupied && (
             <TouchableOpacity
-              onPress={() => navigation.navigate('AddTenant', { 
-                bed_id: item.s_no, 
-                room_id: item.room_id 
-              })}
+              onPress={() => navigation.navigate('AddTenant', { bed_id: item.s_no, room_id: item.room_id })}
               style={{
-                backgroundColor: '#10B981',
-                paddingHorizontal: 12,
+                paddingHorizontal: 10,
                 paddingVertical: 6,
-                borderRadius: 6,
+                borderRadius: 8,
+                backgroundColor: '#10B981',
+                justifyContent: 'center',
               }}
             >
-              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>+ Tenant</Text>
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Add Tenant</Text>
             </TouchableOpacity>
           )}
           <ActionButtons
             onEdit={() => handleEditBed(item)}
             onDelete={() => handleDeleteBed(item.s_no, item.bed_no)}
-            showEdit={true}
-            showDelete={true}
-            showView={false}
+            onView={() => item.is_occupied && item.tenants?.[0]?.s_no && navigation.navigate('TenantDetails', { tenantId: item.tenants[0].s_no })}
+            showEdit
+            showDelete
+            showView={!!(item.is_occupied && item.tenants?.[0]?.s_no)}
+            containerStyle={{ gap: 6 }}
           />
         </View>
       </View>
 
-      {/* Room Info */}
-      {item.rooms && (
-        <View
-          style={{
-            backgroundColor: '#F3F4F6',
-            padding: 10,
-            borderRadius: 8,
-            marginBottom: 8,
-          }}
-        >
-          <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 4 }}>ROOM</Text>
+      <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>Room</Text>
           <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-            {item.rooms.room_no}
+            {item.rooms?.room_no || 'N/A'}
           </Text>
         </View>
-      )}
-
-      {/* Tenant Info */}
-      {item.tenants && item.tenants.length > 0 && (
-        <View
-          style={{
-            backgroundColor: '#FEF3C7',
-            padding: 10,
-            borderRadius: 8,
-            borderLeftWidth: 3,
-            borderLeftColor: '#F59E0B',
-          }}
-        >
-          <Text style={{ fontSize: 11, color: '#92400E', fontWeight: '600', marginBottom: 4 }}>TENANT</Text>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#78350F' }}>{item.tenants[0].name}</Text>
-          {item.tenants[0].phone_no && (
-            <Text style={{ fontSize: 12, color: '#92400E', marginTop: 2 }}>{item.tenants[0].phone_no}</Text>
-          )}
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>Price</Text>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.primary }}>
+            {item.bed_price ? `₹${item.bed_price.toLocaleString('en-IN')}` : 'Unassigned'}
+          </Text>
+        </View>
+      </View>
+      {item.is_occupied && item.tenants?.[0]?.name && (
+        <View style={{ 
+          marginTop: 10,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6
+        }}>
+          <Ionicons name="person" size={14} color="#F59E0B" />
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>Occupant:</Text>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
+            {item.tenants[0].name}
+          </Text>
         </View>
       )}
     </Card>
@@ -394,7 +388,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
         subtitle={`${pagination?.total || 0} total`}
       />
       {/* Search and Filter Bar */}
-      <View style={{  padding: 12, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
+      <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
           <TextInput
             style={{
@@ -454,301 +448,301 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
         </View>
 
       </View>
-<View style={{flex : 1 , backgroundColor : CONTENT_COLOR}}>
-  
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
 
-      {/* Filter Modal Overlay */}
-      <Modal
-        visible={showFilters}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFilters(false)}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setShowFilters(false)}
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            justifyContent: 'flex-end',
-          }}
+
+        {/* Filter Modal Overlay */}
+        <Modal
+          visible={showFilters}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowFilters(false)}
         >
-          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-            <View
-              style={{
-                backgroundColor: '#fff',
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                maxHeight: SCREEN_HEIGHT * 0.7,
-                ...Theme.colors.shadows.large,
-              }}
-            >
-              {/* Handle Bar */}
-              <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
-                <View
-                  style={{
-                    width: 40,
-                    height: 4,
-                    backgroundColor: Theme.colors.border,
-                    borderRadius: 2,
-                  }}
-                />
-              </View>
-
-              {/* Header */}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setShowFilters(false)}
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
               <View
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 20,
-                  paddingVertical: 16,
-                  borderBottomWidth: 1,
-                  borderBottomColor: Theme.colors.border,
+                  backgroundColor: '#fff',
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  maxHeight: SCREEN_HEIGHT * 0.7,
+                  ...Theme.colors.shadows.large,
                 }}
               >
-                <View>
-                  <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary }}>
-                    Filter Beds
-                  </Text>
-                  {getFilterCount() > 0 && (
-                    <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginTop: 2 }}>
-                      {getFilterCount()} filter{getFilterCount() > 1 ? 's' : ''} active
-                    </Text>
-                  )}
+                {/* Handle Bar */}
+                <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
+                  <View
+                    style={{
+                      width: 40,
+                      height: 4,
+                      backgroundColor: Theme.colors.border,
+                      borderRadius: 2,
+                    }}
+                  />
                 </View>
-                <TouchableOpacity
-                  onPress={() => setShowFilters(false)}
+
+                {/* Header */}
+                <View
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
-                    backgroundColor: Theme.colors.light,
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    justifyContent: 'space-between',
+                    paddingHorizontal: 20,
+                    paddingVertical: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: Theme.colors.border,
                   }}
                 >
-                  <Ionicons name="close" size={20} color={Theme.colors.text.secondary} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Filter Content */}
-              <ScrollView style={{ maxHeight: SCREEN_HEIGHT * 0.5 }} contentContainerStyle={{ padding: 20 }}>
-                {/* Room Filter */}
-                <View style={{ marginBottom: 24 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                    Filter by Room
-                  </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => setSelectedRoomId(null)}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        backgroundColor: selectedRoomId === null ? Theme.colors.primary : '#fff',
-                        borderWidth: 1,
-                        borderColor: selectedRoomId === null ? Theme.colors.primary : Theme.colors.border,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '600',
-                          color: selectedRoomId === null ? '#fff' : Theme.colors.text.secondary,
-                        }}
-                      >
-                        All Rooms
+                  <View>
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary }}>
+                      Filter Beds
+                    </Text>
+                    {getFilterCount() > 0 && (
+                      <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginTop: 2 }}>
+                        {getFilterCount()} filter{getFilterCount() > 1 ? 's' : ''} active
                       </Text>
-                    </TouchableOpacity>
-                    {rooms.map((room) => (
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setShowFilters(false)}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: Theme.colors.light,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name="close" size={20} color={Theme.colors.text.secondary} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Filter Content */}
+                <ScrollView style={{ maxHeight: SCREEN_HEIGHT * 0.5 }} contentContainerStyle={{ padding: 20 }}>
+                  {/* Room Filter */}
+                  <View style={{ marginBottom: 24 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
+                      Filter by Room
+                    </Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       <TouchableOpacity
-                        key={room.s_no}
-                        onPress={() => setSelectedRoomId(room.s_no)}
+                        onPress={() => setSelectedRoomId(null)}
                         style={{
                           paddingHorizontal: 16,
                           paddingVertical: 10,
                           borderRadius: 8,
-                          backgroundColor: selectedRoomId === room.s_no ? Theme.colors.primary : '#fff',
+                          backgroundColor: selectedRoomId === null ? Theme.colors.primary : '#fff',
                           borderWidth: 1,
-                          borderColor: selectedRoomId === room.s_no ? Theme.colors.primary : Theme.colors.border,
+                          borderColor: selectedRoomId === null ? Theme.colors.primary : Theme.colors.border,
                         }}
                       >
                         <Text
                           style={{
                             fontSize: 13,
                             fontWeight: '600',
-                            color: selectedRoomId === room.s_no ? '#fff' : Theme.colors.text.secondary,
+                            color: selectedRoomId === null ? '#fff' : Theme.colors.text.secondary,
                           }}
                         >
-                          {room.room_no}
+                          All Rooms
                         </Text>
                       </TouchableOpacity>
-                    ))}
+                      {rooms.map((room) => (
+                        <TouchableOpacity
+                          key={room.s_no}
+                          onPress={() => setSelectedRoomId(room.s_no)}
+                          style={{
+                            paddingHorizontal: 16,
+                            paddingVertical: 10,
+                            borderRadius: 8,
+                            backgroundColor: selectedRoomId === room.s_no ? Theme.colors.primary : '#fff',
+                            borderWidth: 1,
+                            borderColor: selectedRoomId === room.s_no ? Theme.colors.primary : Theme.colors.border,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: '600',
+                              color: selectedRoomId === room.s_no ? '#fff' : Theme.colors.text.secondary,
+                            }}
+                          >
+                            {room.room_no}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
-                </View>
 
-                {/* Occupancy Filter */}
-                <View style={{ marginBottom: 24 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                    Filter by Status
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => setOccupancyFilter('all')}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        borderRadius: 8,
-                        backgroundColor: occupancyFilter === 'all' ? Theme.colors.primary : '#fff',
-                        borderWidth: 1,
-                        borderColor: occupancyFilter === 'all' ? Theme.colors.primary : Theme.colors.border,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
+                  {/* Occupancy Filter */}
+                  <View style={{ marginBottom: 24 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
+                      Filter by Status
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={() => setOccupancyFilter('all')}
                         style={{
-                          fontSize: 13,
-                          fontWeight: '600',
-                          color: occupancyFilter === 'all' ? '#fff' : Theme.colors.text.secondary,
+                          flex: 1,
+                          paddingVertical: 12,
+                          borderRadius: 8,
+                          backgroundColor: occupancyFilter === 'all' ? Theme.colors.primary : '#fff',
+                          borderWidth: 1,
+                          borderColor: occupancyFilter === 'all' ? Theme.colors.primary : Theme.colors.border,
+                          alignItems: 'center',
                         }}
                       >
-                        All
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setOccupancyFilter('available')}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        borderRadius: 8,
-                        backgroundColor: occupancyFilter === 'available' ? '#16A34A' : '#fff',
-                        borderWidth: 1,
-                        borderColor: occupancyFilter === 'available' ? '#16A34A' : Theme.colors.border,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: '600',
+                            color: occupancyFilter === 'all' ? '#fff' : Theme.colors.text.secondary,
+                          }}
+                        >
+                          All
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setOccupancyFilter('available')}
                         style={{
-                          fontSize: 13,
-                          fontWeight: '600',
-                          color: occupancyFilter === 'available' ? '#fff' : Theme.colors.text.secondary,
+                          flex: 1,
+                          paddingVertical: 12,
+                          borderRadius: 8,
+                          backgroundColor: occupancyFilter === 'available' ? '#16A34A' : '#fff',
+                          borderWidth: 1,
+                          borderColor: occupancyFilter === 'available' ? '#16A34A' : Theme.colors.border,
+                          alignItems: 'center',
                         }}
                       >
-                        🟢 Available
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setOccupancyFilter('occupied')}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        borderRadius: 8,
-                        backgroundColor: occupancyFilter === 'occupied' ? '#DC2626' : '#fff',
-                        borderWidth: 1,
-                        borderColor: occupancyFilter === 'occupied' ? '#DC2626' : Theme.colors.border,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: '600',
+                            color: occupancyFilter === 'available' ? '#fff' : Theme.colors.text.secondary,
+                          }}
+                        >
+                          🟢 Available
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setOccupancyFilter('occupied')}
                         style={{
-                          fontSize: 13,
-                          fontWeight: '600',
-                          color: occupancyFilter === 'occupied' ? '#fff' : Theme.colors.text.secondary,
+                          flex: 1,
+                          paddingVertical: 12,
+                          borderRadius: 8,
+                          backgroundColor: occupancyFilter === 'occupied' ? '#DC2626' : '#fff',
+                          borderWidth: 1,
+                          borderColor: occupancyFilter === 'occupied' ? '#DC2626' : Theme.colors.border,
+                          alignItems: 'center',
                         }}
                       >
-                        🔴 Occupied
-                      </Text>
-                    </TouchableOpacity>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: '600',
+                            color: occupancyFilter === 'occupied' ? '#fff' : Theme.colors.text.secondary,
+                          }}
+                        >
+                          🔴 Occupied
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              </ScrollView>
+                </ScrollView>
 
-              {/* Footer Buttons */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  gap: 12,
-                  padding: 20,
-                  paddingTop: 16,
-                  borderTopWidth: 1,
-                  borderTopColor: Theme.colors.border,
-                }}
-              >
-                {getFilterCount() > 0 && (
+                {/* Footer Buttons */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    gap: 12,
+                    padding: 20,
+                    paddingTop: 16,
+                    borderTopWidth: 1,
+                    borderTopColor: Theme.colors.border,
+                  }}
+                >
+                  {getFilterCount() > 0 && (
+                    <TouchableOpacity
+                      onPress={clearFilters}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 14,
+                        borderRadius: 12,
+                        backgroundColor: Theme.colors.light,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
+                        Clear Filters
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
-                    onPress={clearFilters}
+                    onPress={() => setShowFilters(false)}
                     style={{
                       flex: 1,
                       paddingVertical: 14,
                       borderRadius: 12,
-                      backgroundColor: Theme.colors.light,
+                      backgroundColor: Theme.colors.primary,
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-                      Clear Filters
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+                      Apply Filters
                     </Text>
                   </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => setShowFilters(false)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 14,
-                    borderRadius: 12,
-                    backgroundColor: Theme.colors.primary,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
-                    Apply Filters
-                  </Text>
-                </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
           </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+        </Modal>
 
-      {loading && !refreshing ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={{ marginTop: 12, color: Theme.colors.text.secondary }}>Loading beds...</Text>
-        </View>
-      ) : beds.length === 0 ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <Ionicons name="bed-outline" size={64} color={Theme.colors.text.tertiary} />
-          <Text style={{ fontSize: 18, fontWeight: '600', color: Theme.colors.text.primary, marginTop: 16, marginBottom: 8 }}>
-            No Beds Found
-          </Text>
-          <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, textAlign: 'center' }}>
-            {getFilterCount() > 0 ? 'Try adjusting your filters' : 'Add your first bed to get started'}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={beds}
-          renderItem={renderBedCard}
-          keyExtractor={(item) => item.s_no.toString()}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-          contentContainerStyle={{ paddingBottom: 80 }}
+        {loading && !refreshing ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="large" color={Theme.colors.primary} />
+            <Text style={{ marginTop: 12, color: Theme.colors.text.secondary }}>Loading beds...</Text>
+          </View>
+        ) : beds.length === 0 ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+            <Ionicons name="bed-outline" size={64} color={Theme.colors.text.tertiary} />
+            <Text style={{ fontSize: 18, fontWeight: '600', color: Theme.colors.text.primary, marginTop: 16, marginBottom: 8 }}>
+              No Beds Found
+            </Text>
+            <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, textAlign: 'center' }}>
+              {getFilterCount() > 0 ? 'Try adjusting your filters' : 'Add your first bed to get started'}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={beds}
+            renderItem={renderBedCard}
+            keyExtractor={(item) => item.s_no.toString()}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+            contentContainerStyle={{ paddingBottom: 80 }}
+          />
+        )}
+
+        {/* Bed Form Modal - Only for editing */}
+        <BedFormModal
+          visible={bedModalVisible}
+          onClose={() => setBedModalVisible(false)}
+          onSuccess={handleBedFormSuccess}
+          roomId={selectedBed?.room_id || 0}
+          roomNo={selectedBed?.rooms?.room_no || ''}
+          bed={selectedBed}
+          pgId={selectedPGLocationId || undefined}
+          organizationId={user?.organization_id}
+          userId={user?.s_no}
         />
-      )}
-
-      {/* Bed Form Modal - Only for editing */}
-      <BedFormModal
-        visible={bedModalVisible}
-        onClose={() => setBedModalVisible(false)}
-        onSuccess={handleBedFormSuccess}
-        roomId={selectedBed?.room_id || 0}
-        roomNo={selectedBed?.rooms?.room_no || ''}
-        bed={selectedBed}
-        pgId={selectedPGLocationId || undefined}
-        organizationId={user?.organization_id}
-        userId={user?.s_no}
-      />
-</View>
+      </View>
     </ScreenLayout>
   );
 };

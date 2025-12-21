@@ -23,6 +23,7 @@ import { getAllRooms } from '../../services/rooms/roomService';
 import { getAllBeds } from '../../services/rooms/bedService';
 import axiosInstance from '../../services/core/axiosInstance';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface AddVisitorScreenProps {
   navigation: any;
@@ -109,7 +110,7 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
     try {
       setLoadingData(true);
       const response = await visitorService.getVisitorById(visitorId);
-      const visitor = response.data;
+      const visitor = response;
       
       setVisitorName(visitor.visitor_name || '');
       setPhoneNo(visitor.phone_no || '');
@@ -226,16 +227,16 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
       };
 
       if (isEditMode) {
-        await visitorService.updateVisitor(visitorId, data);
-        Alert.alert('Success', 'Visitor updated successfully');
+        let response = await visitorService.updateVisitor(visitorId, data);
+        showSuccessAlert(response);
       } else {
-        await visitorService.createVisitor(data);
-        Alert.alert('Success', 'Visitor added successfully');
+        let response = await visitorService.createVisitor(data);
+        showSuccessAlert(response);
       }
       
       navigation.goBack();
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'add'} visitor`);
+      showErrorAlert(error, 'Error');
     } finally {
       setLoading(false);
     }

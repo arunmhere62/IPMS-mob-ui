@@ -10,7 +10,7 @@ import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenera
 interface ReceiptViewModalProps {
   visible: boolean;
   receiptData: any;
-  receiptRef: React.RefObject<View>;
+  receiptRef: React.RefObject<View | null>;
   onClose: () => void;
   onShare: () => Promise<void>;
 }

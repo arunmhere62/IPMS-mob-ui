@@ -53,7 +53,7 @@ class SubscriptionService {
   /**
    * Get all active subscription plans
    */
-  async getPlans(): Promise<{ success: boolean; plans: SubscriptionPlan[] }> {
+  async getPlans(): Promise<{ success: boolean; data: SubscriptionPlan[] }> {
     const response = await axiosInstance.get('/subscription/plans');
     return response.data;
   }

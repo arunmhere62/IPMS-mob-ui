@@ -23,6 +23,7 @@ import { CONTENT_COLOR } from '@/constant';
 import expenseService, { Expense, PaymentMethod } from '../../services/expenses/expenseService';
 import { AddEditExpenseModal } from '@/screens/expense/AddEditExpenseModal';
 import { DatePicker } from '@/components/DatePicker';
+import { ActionButtons } from '../../components/ActionButtons';
 
 interface ExpenseScreenProps {
   navigation: any;
@@ -448,40 +449,12 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 </Text>
               )}
 
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                <TouchableOpacity
-                  onPress={() => handleEditExpense(expense)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 6,
-                    backgroundColor: Theme.colors.background.blueLight,
-                  }}
-                >
-                  <Ionicons name="create-outline" size={16} color={Theme.colors.primary} />
-                  <Text style={{ fontSize: 13, fontWeight: '500', color: Theme.colors.primary, marginLeft: 4 }}>
-                    Edit
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleDeleteExpense(expense)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 6,
-                    backgroundColor: '#FEE2E2',
-                  }}
-                >
-                  <Ionicons name="trash-outline" size={16} color={Theme.colors.danger} />
-                  <Text style={{ fontSize: 13, fontWeight: '500', color: Theme.colors.danger, marginLeft: 4 }}>
-                    Delete
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <ActionButtons
+                onEdit={() => handleEditExpense(expense)}
+                onDelete={() => handleDeleteExpense(expense)}
+                containerStyle={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}
+                showView={false}
+              />
             </Card>
           ))
         )}

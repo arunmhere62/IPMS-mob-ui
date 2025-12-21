@@ -104,51 +104,107 @@ export const CheckoutTenantForm: React.FC<CheckoutTenantFormProps> = ({
           }}>
             📋 Rent Periods
           </Text>
-          {tenant.tenant_payments.slice(-3).reverse().map((payment: any) => (
-            <View key={payment.s_no} style={{ marginBottom: 8 }}>
-              <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-                <Text style={{
-                  fontSize: 12,
-                  color: Theme.colors.text.tertiary,
-                  width: 80,
-                }}>
-                  Period:
-                </Text>
-                <Text style={{
-                  fontSize: 12,
-                  fontWeight: '600',
-                  color: Theme.colors.text.primary,
-                  flex: 1,
-                }}>
-                  {payment.start_date ? new Date(payment.start_date).toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                  }) : 'N/A'} - {payment.end_date ? new Date(payment.end_date).toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                  }) : 'N/A'}
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row' }}>
-                <Text style={{
-                  fontSize: 12,
-                  color: Theme.colors.text.tertiary,
-                  width: 80,
-                }}>
-                  Status:
-                </Text>
-                <Text style={{
-                  fontSize: 12,
-                  fontWeight: '600',
-                  color: payment.status === 'PAID' ? '#10B981' : payment.status === 'PARTIAL' ? '#F59E0B' : '#EF4444',
-                }}>
-                  {payment.status}
-                </Text>
-              </View>
-            </View>
-          ))}
+          {tenant.tenant_payments.length > 2 ? (
+            <ScrollView 
+              showsVerticalScrollIndicator={true}
+              style={{ maxHeight: 120, }}
+              contentContainerStyle={{ paddingBottom: 8 }}
+            >
+              {tenant.tenant_payments.slice().reverse().map((payment: any) => (
+                <View key={payment.s_no} style={{ marginBottom: 8 }}>
+                  <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+                    <Text style={{
+                      fontSize: 12,
+                      color: Theme.colors.text.tertiary,
+                      width: 80,
+                    }}>
+                      Period:
+                    </Text>
+                    <Text style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: Theme.colors.text.primary,
+                      flex: 1,
+                    }}>
+                      {payment.start_date ? new Date(payment.start_date).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      }) : 'N/A'} - {payment.end_date ? new Date(payment.end_date).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      }) : 'N/A'}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row' }}>
+                    <Text style={{
+                      fontSize: 12,
+                      color: Theme.colors.text.tertiary,
+                      width: 80,
+                    }}>
+                      Status:
+                    </Text>
+                    <Text style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: payment.status === 'PAID' ? '#10B981' : payment.status === 'PARTIAL' ? '#F59E0B' : '#EF4444',
+                    }}>
+                      {payment.status}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <>
+              {tenant.tenant_payments.slice().reverse().map((payment: any) => (
+              <View key={payment.s_no} style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+                  <Text style={{
+                    fontSize: 12,
+                    color: Theme.colors.text.tertiary,
+                    width: 80,
+                  }}>
+                    Period:
+                  </Text>
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    color: Theme.colors.text.primary,
+                    flex: 1,
+                  }}>
+                    {payment.start_date ? new Date(payment.start_date).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    }) : 'N/A'} - {payment.end_date ? new Date(payment.end_date).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    }) : 'N/A'}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row' }}>
+                  <Text style={{
+                    fontSize: 12,
+                    color: Theme.colors.text.tertiary,
+                    width: 80,
+                  }}>
+                    Status:
+                  </Text>
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    color: payment.status === 'PAID' ? '#10B981' : payment.status === 'PARTIAL' ? '#F59E0B' : '#EF4444',
+            }}>
+                      {payment.status}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
         </View>
       )}
 

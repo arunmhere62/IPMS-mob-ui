@@ -12,10 +12,13 @@ import { Theme } from '../theme';
 import { SearchableDropdown } from './SearchableDropdown';
 import { DatePicker } from './DatePicker';
 import { SlideBottomModal } from './SlideBottomModal';
-import visitorService from '../services/visitors/visitorService';
+import visitorService, { Visitor } from '../services/visitors/visitorService';
 import { getAllRooms } from '../services/rooms/roomService';
 import { getAllBeds } from '../services/rooms/bedService';
 import axiosInstance from '../services/core/axiosInstance';
+import { CountryPhoneSelector } from './CountryPhoneSelector';
+import { COUNTRIES } from './CountryPhoneSelector';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface VisitorFormModalProps {
   visible: boolean;
@@ -39,6 +42,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
   // Form fields
   const [visitorName, setVisitorName] = useState('');
   const [phoneNo, setPhoneNo] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]); // Default to India
   const [purpose, setPurpose] = useState('');
   const [customPurpose, setCustomPurpose] = useState('');
   const [visitedDate, setVisitedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -134,8 +138,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
   const loadVisitorData = async () => {
     try {
       setLoadingData(true);
-      const response = await visitorService.getVisitorById(visitorId!);
-      const visitor = response.data;
+      const visitor: Visitor = await visitorService.getVisitorById(visitorId!);
       
       setVisitorName(visitor.visitor_name || '');
       setPhoneNo(visitor.phone_no || '');
@@ -237,7 +240,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
       
       const data = {
         visitor_name: visitorName,
-        phone_no: phoneNo,
+        phone_no: selectedCountry.phoneCode + phoneNo,
         purpose: finalPurpose || undefined,
         visited_date: visitedDate || undefined,
         visited_room_id: selectedRoomId || undefined,
@@ -249,15 +252,17 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
       };
 
       if (isEditMode) {
-        await visitorService.updateVisitor(visitorId!, data);
+        const response = await visitorService.updateVisitor(visitorId!, data);
+        showSuccessAlert(response);
       } else {
-        await visitorService.createVisitor(data);
+        const response = await visitorService.createVisitor(data);
+        showSuccessAlert(response);
       }
       
       onSuccess();
       onClose();
     } catch (error: any) {
-      alert(error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'add'} visitor`);
+      showErrorAlert(error, 'Failed');
     } finally {
       setLoading(false);
     }
@@ -311,19 +316,12 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                       <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
                         Phone Number <Text style={{ color: '#EF4444' }}>*</Text>
                       </Text>
-                      <TextInput
-                        style={{
-                          borderWidth: 1,
-                          borderColor: Theme.colors.border,
-                          borderRadius: 8,
-                          padding: 12,
-                          fontSize: 14,
-                          backgroundColor: '#fff',
-                        }}
-                        placeholder="Enter phone number"
-                        value={phoneNo}
-                        onChangeText={setPhoneNo}
-                        keyboardType="phone-pad"
+                      <CountryPhoneSelector
+                        selectedCountry={selectedCountry}
+                        onSelectCountry={setSelectedCountry}
+                        phoneValue={phoneNo}
+                        onPhoneChange={setPhoneNo}
+                        size="medium"
                       />
                     </View>
 

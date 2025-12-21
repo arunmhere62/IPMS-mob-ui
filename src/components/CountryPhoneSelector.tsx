@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, TextInput, StyleSheet } from 'react-native';
 import { Theme } from '../theme';
 
@@ -25,6 +25,8 @@ const COUNTRIES: Country[] = [
   { code: 'NZ', name: 'New Zealand', flag: '🇳🇿', phoneCode: '+64', phoneLength: 9 },
   { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪', phoneCode: '+971', phoneLength: 9 },
 ];
+
+export { COUNTRIES };
 
 interface CountryPhoneSelectorProps {
   selectedCountry?: Country;
@@ -71,6 +73,62 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
   const [showModal, setShowModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const sizeStyles = getSizeStyles(size);
+  const lastEmittedPhoneRef = useRef<string | null>(null);
+
+  const sanitizePhoneInput = (raw: string) => {
+    const trimmed = raw.trim();
+    const digitsOnly = trimmed.replace(/[^\d]/g, '');
+
+    const hasExplicitCountryPrefix = trimmed.startsWith('+') || trimmed.startsWith('00');
+
+    const countriesByCodeLength = [...COUNTRIES].sort(
+      (a, b) => b.phoneCode.length - a.phoneCode.length
+    );
+
+    // Only try to detect country codes when user explicitly provides '+' or '00' prefix.
+    // This avoids mis-detecting local numbers like "94xxxxxxxx" as Sri Lanka.
+    const normalizedWithPlus = trimmed.startsWith('00') ? `+${digitsOnly}` : trimmed.startsWith('+') ? `+${digitsOnly}` : '';
+    const matchedCountry = hasExplicitCountryPrefix
+      ? countriesByCodeLength.find(country => normalizedWithPlus.startsWith(country.phoneCode))
+      : undefined;
+
+    if (matchedCountry) {
+      const countryCodeDigits = matchedCountry.phoneCode.replace('+', '');
+      const strippedDigits = digitsOnly.startsWith(countryCodeDigits)
+        ? digitsOnly.slice(countryCodeDigits.length)
+        : digitsOnly;
+
+      return {
+        matchedCountry,
+        localDigits: strippedDigits.slice(0, matchedCountry.phoneLength),
+        hasExplicitCountryPrefix,
+      };
+    }
+
+    return {
+      matchedCountry: null as Country | null,
+      localDigits: digitsOnly.slice(0, selectedCountry.phoneLength),
+      hasExplicitCountryPrefix,
+    };
+  };
+
+  useEffect(() => {
+    if (!onPhoneChange) return;
+
+    const { matchedCountry, localDigits, hasExplicitCountryPrefix } = sanitizePhoneInput(phoneValue);
+    const shouldSelect = matchedCountry && matchedCountry.code !== selectedCountry.code;
+    const shouldSanitize = phoneValue !== localDigits && (hasExplicitCountryPrefix || /[^\d]/.test(phoneValue));
+
+    if (shouldSelect) {
+      onSelectCountry(matchedCountry);
+    }
+
+    if (shouldSanitize) {
+      if (lastEmittedPhoneRef.current === localDigits) return;
+      lastEmittedPhoneRef.current = localDigits;
+      onPhoneChange(localDigits);
+    }
+  }, [phoneValue, selectedCountry.code, onPhoneChange, onSelectCountry]);
 
   const filteredCountries = COUNTRIES.filter(
     country =>
@@ -176,12 +234,17 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
           placeholderTextColor={Theme.colors.text.tertiary}
           value={phoneValue}
           onChangeText={(text) => {
-            // Remove any non-digit characters and country code prefixes
-            const cleanedText = text.replace(/[^\d]/g, '');
-            onPhoneChange?.(cleanedText);
+            const { matchedCountry, localDigits } = sanitizePhoneInput(text);
+
+            if (matchedCountry && matchedCountry.code !== selectedCountry.code) {
+              onSelectCountry(matchedCountry);
+            }
+
+            lastEmittedPhoneRef.current = localDigits;
+            onPhoneChange?.(localDigits);
           }}
           keyboardType="phone-pad"
-          maxLength={selectedCountry.phoneLength}
+          maxLength={20}
         />
       </View>
 
