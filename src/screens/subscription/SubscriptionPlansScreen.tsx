@@ -56,20 +56,23 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
   const handleSubscribe = async (planId: number) => {
     try {
       setSubscribing(true);
+      setSelectedPlan(planId);
       const result = await dispatch(subscribeToPlan(planId)).unwrap();
       
       console.log('💳 Subscribe result:', result);
       
-      if (result.payment_url) {
-        // Find the plan details
-        const selectedPlan = plans?.find(p => p.s_no === planId);
-        
-        // Navigate to payment options screen (Flipkart/Zomato style)
-        navigation.navigate('PaymentOptions', {
-          plan: selectedPlan,
-          paymentUrl: result.payment_url,
-          orderId: result.order_id,
-          subscriptionId: result.subscription.id,
+      const paymentUrl = (result as any)?.payment_url;
+      const orderId = (result as any)?.order_id;
+      const subscription = (result as any)?.subscription;
+      const subscriptionId = subscription?.s_no ?? subscription?.id;
+
+      if (paymentUrl) {
+        // Go directly to CCAvenue (skip payment option screen)
+        navigation.navigate('PaymentWebView', {
+          paymentUrl,
+          orderId,
+          subscriptionId,
+          paymentMethod: 'ccavenue',
         });
       } else {
         Alert.alert('Success', 'Subscription initiated successfully!');

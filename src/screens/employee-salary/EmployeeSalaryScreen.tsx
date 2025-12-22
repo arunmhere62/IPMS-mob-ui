@@ -11,6 +11,7 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
+import { ActionButtons } from '../../components/ActionButtons';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -254,34 +255,37 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
             </View>
           ) : (
             salaries.map((salary) => (
-              <Card key={salary.s_no} style={{ marginHorizontal: 16, marginBottom: 12, padding: 16 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 4 }}>
+              <Card key={salary.s_no} style={{ marginHorizontal: 12, marginBottom: 8, padding: 12, borderRadius: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 4 }}>
                       {salary.users?.name || 'Unknown Employee'}
                     </Text>
-                    <Text style={{ fontSize: 13, color: Theme.colors.text.secondary }}>
-                      📅 {formatMonth(salary.month)}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="calendar-outline" size={14} color={Theme.colors.text.secondary} />
+                      <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginLeft: 6 }}>
+                        {formatMonth(salary.month)}
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: Theme.colors.primary }}>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: Theme.colors.primary }}>
                     {formatAmount(Number(salary.salary_amount))}
                   </Text>
                 </View>
 
                 {salary.paid_date && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: salary.remarks ? 6 : 0 }}>
                     {salary.payment_method && (
                       <>
                         <Ionicons
                           name={getPaymentMethodIcon(salary.payment_method) as any}
-                          size={16}
+                          size={14}
                           color={getPaymentMethodColor(salary.payment_method)}
                         />
-                        <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginLeft: 6 }}>
+                        <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginLeft: 6 }}>
                           {salary.payment_method}
                         </Text>
-                        <Text style={{ fontSize: 13, color: Theme.colors.text.tertiary, marginLeft: 12 }}>
+                        <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginLeft: 8 }}>
                           • Paid on {formatDate(salary.paid_date)}
                         </Text>
                       </>
@@ -290,44 +294,22 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
                 )}
 
                 {salary.remarks && (
-                  <Text style={{ fontSize: 13, color: Theme.colors.text.tertiary, fontStyle: 'italic', marginBottom: 8 }}>
-                    {salary.remarks}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                    <Ionicons name="document-text-outline" size={14} color={Theme.colors.text.tertiary} />
+                    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginLeft: 6, fontStyle: 'italic' }}>
+                      {salary.remarks}
+                    </Text>
+                  </View>
                 )}
 
-                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => handleEditSalary(salary)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 6,
-                      backgroundColor: Theme.colors.background.blueLight,
-                    }}
-                  >
-                    <Ionicons name="create-outline" size={16} color={Theme.colors.primary} />
-                    <Text style={{ fontSize: 13, fontWeight: '500', color: Theme.colors.primary, marginLeft: 4 }}>
-                      Edit
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDeleteSalary(salary)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 6,
-                      backgroundColor: '#FEE2E2',
-                    }}
-                  >
-                    <Ionicons name="trash-outline" size={16} color={Theme.colors.danger} />
-                    <Text style={{ fontSize: 13, fontWeight: '500', color: Theme.colors.danger, marginLeft: 4 }}>
-                      Delete
-                    </Text>
-                  </TouchableOpacity>
+                <View style={{ marginTop: 8, alignItems: 'flex-end' }}>
+                  <ActionButtons
+                    onEdit={() => handleEditSalary(salary)}
+                    onDelete={() => handleDeleteSalary(salary)}
+                    showEdit={true}
+                    showDelete={true}
+                    showView={false}
+                  />
                 </View>
               </Card>
             ))

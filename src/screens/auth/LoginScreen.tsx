@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, KeyboardAvoidingView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Alert, KeyboardAvoidingView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
 import { Theme } from '../../theme';
-import { sendOtp, resetLoading } from '../../store/slices/authSlice';
-import { Input } from '../../components/Input';
+import { sendOtp } from '../../store/slices/authSlice';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
@@ -34,13 +32,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   });
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((state: RootState) => state.auth);
-
-  // Reset loading state when component mounts (fixes stuck loader after app restart)
-  useEffect(() => {
-    if (loading) {
-      dispatch(resetLoading());
-    }
-  }, [dispatch, loading]);
 
   const validatePhone = (phoneNumber: string): boolean => {
     const phoneRegex = /^[0-9]{10}$/;
@@ -110,7 +101,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           onSelectCountry={setSelectedCountry}
           size="large"
           phoneValue={phone}
-          onPhoneChange={(text) => {
+          onPhoneChange={(text: string) => {
             setPhone(text);
             setPhoneError('');
           }}

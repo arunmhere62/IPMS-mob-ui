@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
 import employeeSalaryService, { EmployeeSalary, PaymentMethod } from '../../services/employees/employeeSalaryService';
-import userService from '../../services/userService';
+import employeeService from '../../services/employees/employeeService';
 import { DatePicker } from '../../components/DatePicker';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { OptionSelector } from '../../components/OptionSelector';
@@ -75,12 +75,14 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
   const fetchEmployees = async () => {
     try {
       setLoadingEmployees(true);
-      const response = await userService.getUsers();
-      
-      if (response.success) {
-        setEmployees(response.data?.data || []);
+      const response = await employeeService.getEmployees(1, 1000);
+
+      if (response?.success) {
+        setEmployees(response.data || []);
       } else if (Array.isArray(response)) {
         setEmployees(response);
+      } else {
+        setEmployees([]);
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to load employees list');

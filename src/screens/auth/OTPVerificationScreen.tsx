@@ -127,7 +127,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
           <OTPInput
             length={4}
             value={otp}
-            onChangeText={(text) => {
+            onChangeText={(text: string) => {
               setOtp(text);
               setOtpError('');
             }}

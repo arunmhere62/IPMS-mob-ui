@@ -6,6 +6,14 @@ import subscriptionService, {
   SubscriptionHistory 
 } from '../../services/subscription/subscriptionService';
 
+type ThunkRejectValue = string;
+
+type SubscribeToPlanPayload = {
+  subscription: UserSubscription;
+  payment_url: string;
+  order_id: string;
+};
+
 interface SubscriptionState {
   data: SubscriptionPlan[];
   currentSubscription: UserSubscription | null;
@@ -32,7 +40,11 @@ const initialState: SubscriptionState = {
 };
 
 // Async thunks
-export const fetchPlans = createAsyncThunk(
+export const fetchPlans = createAsyncThunk<
+  SubscriptionPlan[],
+  void,
+  { rejectValue: ThunkRejectValue }
+>(
   'subscription/fetchPlans',
   async (_, { rejectWithValue }) => {
     try {
@@ -45,7 +57,11 @@ export const fetchPlans = createAsyncThunk(
   }
 );
 
-export const fetchCurrentSubscription = createAsyncThunk(
+export const fetchCurrentSubscription = createAsyncThunk<
+  UserSubscription | null,
+  void,
+  { rejectValue: ThunkRejectValue }
+>(
   'subscription/fetchCurrent',
   async (_, { rejectWithValue }) => {
     try {
@@ -57,7 +73,11 @@ export const fetchCurrentSubscription = createAsyncThunk(
   }
 );
 
-export const fetchSubscriptionStatus = createAsyncThunk(
+export const fetchSubscriptionStatus = createAsyncThunk<
+  SubscriptionStatus,
+  void,
+  { rejectValue: ThunkRejectValue }
+>(
   'subscription/fetchStatus',
   async (_, { rejectWithValue }) => {
     try {
@@ -73,16 +93,21 @@ export const fetchSubscriptionStatus = createAsyncThunk(
   }
 );
 
-export const fetchSubscriptionHistory = createAsyncThunk(
+export const fetchSubscriptionHistory = createAsyncThunk<
+  SubscriptionHistory,
+  ({ page?: number; limit?: number; append?: boolean } | undefined),
+  { rejectValue: ThunkRejectValue }
+>(
   'subscription/fetchHistory',
-  async (params: { page?: number; limit?: number } = {}, { rejectWithValue }) => {
+  async (params: { page?: number; limit?: number; append?: boolean } = {}, { rejectWithValue }) => {
     try {
-      const response = await subscriptionService.getSubscriptionHistory(params);
+      const { append, ...apiParams } = params;
+      const response = await subscriptionService.getSubscriptionHistory(apiParams);
       console.log('📜 History API response:', response);
       // Handle different response structures
       const historyData = response.data || response;
       console.log('📜 History data extracted:', historyData);
-      return historyData;
+      return { ...(historyData as any), append: append || false } as any;
     } catch (error: any) {
       console.error('❌ History fetch error:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch history');
@@ -90,12 +115,26 @@ export const fetchSubscriptionHistory = createAsyncThunk(
   }
 );
 
-export const subscribeToPlan = createAsyncThunk(
+export const subscribeToPlan = createAsyncThunk<
+  SubscribeToPlanPayload,
+  number,
+  { rejectValue: ThunkRejectValue }
+>(
   'subscription/subscribe',
   async (planId: number, { rejectWithValue }) => {
     try {
       const response = await subscriptionService.subscribeToPlan(planId);
-      return response.data;
+      const raw: any = response;
+
+      // Backend responses can be wrapped in multiple layers. Normalize to the inner payload.
+      // Expected normalized shape: { subscription, payment_url, order_id }
+      const normalized =
+        raw?.data?.data?.data ||
+        raw?.data?.data ||
+        raw?.data ||
+        raw;
+
+      return normalized as SubscribeToPlanPayload;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to subscribe');
     }
@@ -173,8 +212,28 @@ const subscriptionSlice = createSlice({
         state.loading = false;
         // Handle different response structures
         const payload: any = action.payload;
-        state.history = payload.data || payload.subscriptions || [];
-        state.historyPagination = payload.pagination || null;
+        const append = Boolean(payload?.append);
+
+        const extractedHistory =
+          payload?.data?.data ||
+          payload?.data ||
+          payload?.subscriptions ||
+          [];
+
+        const extractedPagination =
+          payload?.data?.pagination ||
+          payload?.pagination ||
+          null;
+
+        const historyArray = Array.isArray(extractedHistory) ? extractedHistory : [];
+
+        if (append && extractedPagination?.page > 1) {
+          state.history = [...state.history, ...historyArray];
+        } else {
+          state.history = historyArray;
+        }
+
+        state.historyPagination = extractedPagination;
         console.log('✅ History stored in Redux:', { 
           history: state.history, 
           pagination: state.historyPagination 
