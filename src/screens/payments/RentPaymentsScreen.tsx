@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Modal, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Modal, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { AppDispatch, RootState } from '../../store';
@@ -10,13 +10,11 @@ import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
-import { DatePicker } from '../../components/DatePicker';
 import { Payment } from '../../types';
 import { getAllRooms, Room } from '../../services/rooms/roomService';
 import { getAllBeds, Bed } from '../../services/rooms/bedService';
 import { paymentService } from '@/services/payments/paymentService';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { SlideBottomModal } from '../../components/SlideBottomModal';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -44,8 +42,6 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED'>('ALL');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [selectedBedId, setSelectedBedId] = useState<number | null>(null);
   const [quickFilter, setQuickFilter] = useState<'NONE' | 'LAST_WEEK' | 'LAST_MONTH'>('NONE');
@@ -149,10 +145,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
 
       if (statusFilter !== 'ALL') params.status = statusFilter;
       
-      if (startDate || endDate) {
-        if (startDate) params.start_date = startDate;
-        if (endDate) params.end_date = endDate;
-      } else if (selectedMonth && selectedYear) {
+      if (selectedMonth && selectedYear) {
         params.month = selectedMonth;
         params.year = selectedYear;
       }
@@ -224,7 +217,6 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     if (statusFilter !== 'ALL') count++;
     if (quickFilter !== 'NONE') count++;
     if (selectedMonth && selectedYear) count++;
-    if (startDate || endDate) count++;
     if (selectedRoomId) count++;
     if (selectedBedId) count++;
     return count;
@@ -235,8 +227,6 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     setQuickFilter('NONE');
     setSelectedMonth(null);
     setSelectedYear(null);
-    setStartDate('');
-    setEndDate('');
     setSelectedRoomId(null);
     setSelectedBedId(null);
     setCurrentPage(1);
@@ -268,8 +258,6 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     }
     
     setQuickFilter(filter);
-    setStartDate(start.toISOString().split('T')[0]);
-    setEndDate(today.toISOString().split('T')[0]);
     setSelectedMonth(null);
     setSelectedYear(null);
   };
@@ -357,38 +345,38 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     return (
       <Card style={{ 
         marginHorizontal: 16, 
-        marginBottom: 12, 
-        padding: 16, 
+        marginBottom: 10, 
+        padding: 12, 
         borderLeftWidth: 4, 
         borderLeftColor: isPartial ? '#EF4444' : Theme.colors.primary,
         backgroundColor: isPartial ? '#FEF2F2' : '#fff',
       }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-          <View style={{ flex: 1, marginRight: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+          <View style={{ flex: 1, marginRight: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <View style={{ 
                 backgroundColor: isPartial ? '#FEE2E2' : Theme.withOpacity(Theme.colors.primary, 0.1), 
                 paddingHorizontal: 8, 
-                paddingVertical: 4, 
+                paddingVertical: 3, 
                 borderRadius: 6,
                 marginRight: 8
               }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: isPartial ? '#EF4444' : Theme.colors.primary }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: isPartial ? '#EF4444' : Theme.colors.primary }}>
                   {isPartial ? '⚠️ PARTIAL PAYMENT' : 'RENT PAYMENT'}
                 </Text>
               </View>
             </View>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 4 }}>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 2 }}>
               {item.tenants?.name || 'Unknown Tenant'}
             </Text>
-            <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
               ID: {item.tenants?.tenant_id || 'N/A'}
             </Text>
           </View>
           <View
             style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
               borderRadius: 8,
               backgroundColor: 
                 item.status === 'PAID' ? '#DCFCE7' :
@@ -398,7 +386,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
             }}
           >
             <Text style={{
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: '700',
               color: 
                 item.status === 'PAID' ? '#16A34A' :
@@ -411,93 +399,70 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
           </View>
                   </View>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
           <View>
             <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 2 }}>Amount Paid</Text>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.primary }}>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: Theme.colors.primary }}>
               ₹{item.amount_paid?.toLocaleString('en-IN')}
             </Text>
           </View>
           {item.actual_rent_amount !== item.amount_paid && (
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 2 }}>Actual Rent</Text>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.secondary }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.secondary }}>
                 ₹{item.actual_rent_amount?.toLocaleString('en-IN')}
               </Text>
             </View>
           )}
         </View>
 
-        <View style={{ gap: 8 }}>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            {item.rooms && (
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Room</Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-                  {item.rooms.room_no}
-                </Text>
-              </View>
-            )}
-            {item.beds && (
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Bed</Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-                  {item.beds.bed_no}
-                </Text>
-              </View>
-            )}
+        <View style={{ gap: 6 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+              Room {item.rooms?.room_no || 'N/A'} • Bed {item.beds?.bed_no || 'N/A'}
+            </Text>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+              {formatDate(item.payment_date || '')}
+            </Text>
           </View>
 
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Payment Date</Text>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
-                {formatDate(item.payment_date || '')}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+              {getPaymentMethodIcon(item.payment_method)} {item.payment_method}
+            </Text>
+            {!!item.tenants?.phone_no && (
+              <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+                {item.tenants.phone_no}
               </Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Method</Text>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
-                {getPaymentMethodIcon(item.payment_method)} {item.payment_method}
-              </Text>
-            </View>
+            )}
           </View>
 
           {item.start_date && item.end_date && (
             <View>
               <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Payment Period</Text>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
                 {formatDate(item.start_date)} - {formatDate(item.end_date)}
               </Text>
             </View>
           )}
 
-          {item.tenants?.phone_no && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <Ionicons name="call-outline" size={14} color={Theme.colors.text.tertiary} />
-              <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginLeft: 6 }}>
-                {item.tenants.phone_no}
-              </Text>
-            </View>
-          )}
-
           {item.remarks && (
-            <View style={{ marginTop: 4, padding: 8, backgroundColor: Theme.colors.background.secondary, borderRadius: 6 }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 2 }}>Remarks</Text>
-              <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+            <View style={{ marginTop: 6, padding: 8, backgroundColor: Theme.colors.background.secondary, borderRadius: 6 }}>
+              <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, marginBottom: 2 }}>Remarks</Text>
+              <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
                 {item.remarks}
               </Text>
             </View>
           )}
 
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
             {item.tenants && !item.tenant_unavailable_reason ? (
               <TouchableOpacity
                 onPress={() => navigation.navigate('TenantDetails', { tenantId: item.tenant_id })}
                 style={{
                   flex: 1,
-                  paddingVertical: 10,
-                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
                   backgroundColor: Theme.colors.background.blueLight,
                   borderRadius: 8,
                   flexDirection: 'row',
@@ -507,8 +472,8 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
                   borderColor: Theme.colors.primary,
                 }}
               >
-                <Ionicons name="information-circle-outline" size={16} color={Theme.colors.primary} />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.primary, marginLeft: 6 }}>
+                <Ionicons name="information-circle-outline" size={14} color={Theme.colors.primary} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.primary, marginLeft: 6 }}>
                   View Details
                 </Text>
               </TouchableOpacity>
@@ -516,8 +481,8 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
               <View
                 style={{
                   flex: 1,
-                  paddingVertical: 10,
-                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
                   backgroundColor: '#F3F4F6',
                   borderRadius: 8,
                   flexDirection: 'row',
@@ -527,8 +492,8 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
                   borderColor: '#E5E7EB',
                 }}
               >
-                <Ionicons name="alert-circle-outline" size={16} color="#9CA3AF" />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#9CA3AF', marginLeft: 6 }}>
+                <Ionicons name="alert-circle-outline" size={14} color="#9CA3AF" />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#9CA3AF', marginLeft: 6 }}>
                   Tenant Removed
                 </Text>
               </View>
@@ -539,8 +504,8 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
                 onPress={() => handleMarkAsPaid(item)}
                 style={{
                   flex: 1,
-                  paddingVertical: 10,
-                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
                   backgroundColor: Theme.colors.secondary,
                   borderRadius: 8,
                   flexDirection: 'row',
@@ -548,8 +513,8 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
                   justifyContent: 'center',
                 }}
               >
-                <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff', marginLeft: 6 }}>
+                <Ionicons name="checkmark-circle-outline" size={14} color="#fff" />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff', marginLeft: 6 }}>
                   Mark as Paid
                 </Text>
               </TouchableOpacity>
@@ -627,83 +592,40 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             <View>
-              <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-                <TouchableOpacity
-                  onPress={() => setShowFilters(true)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: Theme.colors.canvas,
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: getFilterCount() > 0 ? Theme.colors.primary : Theme.colors.border,
-                    ...Theme.colors.shadows.small,
-                  }}
-                >
-                  <Ionicons
-                    name="filter"
-                    size={20}
-                    color={getFilterCount() > 0 ? Theme.colors.primary : Theme.colors.text.secondary}
-                  />
-                  <Text
+              <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={() => setShowFilters(true)}
                     style={{
-                      marginLeft: 8,
-                      fontSize: 14,
-                      fontWeight: '600',
-                      color: getFilterCount() > 0 ? Theme.colors.primary : Theme.colors.text.primary,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.border,
+                      backgroundColor: Theme.colors.canvas,
                     }}
                   >
-                    Filters {getFilterCount() > 0 && `(${getFilterCount()})`}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                    <Ionicons name="options-outline" size={18} color={Theme.colors.text.secondary} />
+                    <Text style={{ marginLeft: 8, fontSize: 13, color: Theme.colors.text.primary, fontWeight: '600' }}>
+                      Filters
+                    </Text>
+                  </TouchableOpacity>
 
-              {getFilterCount() > 0 && (
-                <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      {statusFilter !== 'ALL' && (
-                        <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                          <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                            {statusFilter}
-                          </Text>
-                        </View>
-                      )}
-                      {quickFilter !== 'NONE' && (
-                        <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                          <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                            {quickFilter === 'LAST_WEEK' ? 'Last 1 Week' : 'Last 1 Month'}
-                          </Text>
-                        </View>
-                      )}
-                      {selectedMonth && selectedYear && (
-                        <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                          <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                            {selectedMonth} {selectedYear}
-                          </Text>
-                        </View>
-                      )}
-                      {selectedRoomId && (
-                        <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                          <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                            Room: {rooms.find(r => r?.s_no === selectedRoomId)?.room_no}
-                          </Text>
-                        </View>
-                      )}
-                      {selectedBedId && (
-                        <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                          <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                            Bed: {beds.find(b => b?.s_no === selectedBedId)?.bed_no}
-                          </Text>
-                        </View>
-                      )}
+                  {getFilterCount() > 0 ? (
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+                        {getFilterCount()} active
+                      </Text>
                     </View>
-                  </ScrollView>
+                  ) : (
+                    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                      No filters
+                    </Text>
+                  )}
                 </View>
-              )}
+              </View>
             </View>
           }
           ListEmptyComponent={
@@ -743,393 +665,296 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
         />
       </View>
 
-      <Modal visible={showFilters} animationType="slide" transparent={true} onRequestClose={() => setShowFilters(false)}>
-        <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-          activeOpacity={1}
-          onPress={() => setShowFilters(false)}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: Theme.colors.canvas,
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              maxHeight: SCREEN_HEIGHT * 0.85,
-            }}
-          >
-            <View
+      <SlideBottomModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        title="Filter Payments"
+        subtitle={getFilterCount() > 0 ? `${getFilterCount()} filter${getFilterCount() > 1 ? 's' : ''} active` : undefined}
+        submitLabel="Apply Filters"
+        cancelLabel={getFilterCount() > 0 ? 'Clear Filters' : 'Cancel'}
+        onSubmit={applyFilters}
+        onCancel={getFilterCount() > 0 ? clearFilters : undefined}
+      >
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
+            Quick Filters
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => applyQuickFilter('LAST_WEEK')}
               style={{
-                flexDirection: 'row',
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                backgroundColor: quickFilter === 'LAST_WEEK' ? Theme.colors.primary : '#fff',
+                borderWidth: 1,
+                borderColor: quickFilter === 'LAST_WEEK' ? Theme.colors.primary : Theme.colors.border,
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 20,
-                borderBottomWidth: 1,
-                borderBottomColor: Theme.colors.border,
               }}
             >
-              <View>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Filter Payments
-                </Text>
-                {getFilterCount() > 0 && (
-                  <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginTop: 2 }}>
-                    {getFilterCount()} filter{getFilterCount() > 1 ? 's' : ''} active
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity onPress={() => setShowFilters(false)}>
-                <Ionicons name="close" size={24} color={Theme.colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ maxHeight: SCREEN_HEIGHT * 0.5 }} contentContainerStyle={{ padding: 20 }}>
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                  Quick Filters
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => applyQuickFilter('LAST_WEEK')}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      paddingHorizontal: 16,
-                      borderRadius: 8,
-                      backgroundColor: quickFilter === 'LAST_WEEK' ? Theme.colors.primary : '#fff',
-                      borderWidth: 1,
-                      borderColor: quickFilter === 'LAST_WEEK' ? Theme.colors.primary : Theme.colors.border,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '600',
-                        color: quickFilter === 'LAST_WEEK' ? '#fff' : Theme.colors.text.secondary,
-                      }}
-                    >
-                      📅 Last 1 Week
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => applyQuickFilter('LAST_MONTH')}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      paddingHorizontal: 16,
-                      borderRadius: 8,
-                      backgroundColor: quickFilter === 'LAST_MONTH' ? Theme.colors.primary : '#fff',
-                      borderWidth: 1,
-                      borderColor: quickFilter === 'LAST_MONTH' ? Theme.colors.primary : Theme.colors.border,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '600',
-                        color: quickFilter === 'LAST_MONTH' ? '#fff' : Theme.colors.text.secondary,
-                      }}
-                    >
-                      📅 Last 1 Month
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                  Payment Status
-                </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {['ALL', 'PAID', 'PARTIAL', 'PENDING', 'FAILED'].map((status) => (
-                    <TouchableOpacity
-                      key={status}
-                      onPress={() => setStatusFilter(status as any)}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        backgroundColor: statusFilter === status ? Theme.colors.primary : '#fff',
-                        borderWidth: 1,
-                        borderColor: statusFilter === status ? Theme.colors.primary : Theme.colors.border,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '600',
-                          color: statusFilter === status ? '#fff' : Theme.colors.text.secondary,
-                        }}
-                      >
-                        {status}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                  Filter by Month & Year
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => setSelectedMonth(null)}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 8,
-                        backgroundColor: selectedMonth === null ? Theme.colors.primary : '#fff',
-                        borderWidth: 1,
-                        borderColor: selectedMonth === null ? Theme.colors.primary : Theme.colors.border,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: selectedMonth === null ? '#fff' : Theme.colors.text.secondary }}>
-                        All
-                      </Text>
-                    </TouchableOpacity>
-                    {MONTHS.map((month) => (
-                      <TouchableOpacity
-                        key={month}
-                        onPress={() => setSelectedMonth(month)}
-                        style={{
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                          borderRadius: 8,
-                          backgroundColor: selectedMonth === month ? Theme.colors.primary : '#fff',
-                          borderWidth: 1,
-                          borderColor: selectedMonth === month ? Theme.colors.primary : Theme.colors.border,
-                        }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: selectedMonth === month ? '#fff' : Theme.colors.text.secondary }}>
-                          {month.substring(0, 3)}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => setSelectedYear(null)}
-                    style={{
-                      paddingHorizontal: 16,
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      backgroundColor: selectedYear === null ? Theme.colors.primary : '#fff',
-                      borderWidth: 1,
-                      borderColor: selectedYear === null ? Theme.colors.primary : Theme.colors.border,
-                    }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: selectedYear === null ? '#fff' : Theme.colors.text.secondary }}>
-                      All
-                    </Text>
-                  </TouchableOpacity>
-                  {years.map((year) => (
-                    <TouchableOpacity
-                      key={year}
-                      onPress={() => setSelectedYear(year)}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        backgroundColor: selectedYear === year ? Theme.colors.primary : '#fff',
-                        borderWidth: 1,
-                        borderColor: selectedYear === year ? Theme.colors.primary : Theme.colors.border,
-                      }}
-                    >
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: selectedYear === year ? '#fff' : Theme.colors.text.secondary }}>
-                        {year}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                  Date Range
-                </Text>
-                <DatePicker
-                  label="Start Date"
-                  value={startDate}
-                  onChange={(date: string) => setStartDate(date)}
-                />
-                <DatePicker
-                  label="End Date"
-                  value={endDate}
-                  onChange={(date: string) => setEndDate(date)}
-                  minimumDate={startDate ? new Date(startDate) : undefined}
-                />
-              </View>
-
-              {rooms.length > 0 && (
-                <View style={{ marginBottom: 24 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                    Filter by Room
-                  </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setSelectedRoomId(null);
-                        setSelectedBedId(null);
-                      }}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        backgroundColor: selectedRoomId === null ? Theme.colors.primary : '#fff',
-                        borderWidth: 1,
-                        borderColor: selectedRoomId === null ? Theme.colors.primary : Theme.colors.border,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '600',
-                          color: selectedRoomId === null ? '#fff' : Theme.colors.text.secondary,
-                        }}
-                      >
-                        All Rooms
-                      </Text>
-                    </TouchableOpacity>
-                    {rooms.map((room: any) => (
-                      <TouchableOpacity
-                        key={room.s_no}
-                        onPress={() => {
-                          setSelectedRoomId(room.s_no);
-                          setSelectedBedId(null);
-                        }}
-                        style={{
-                          paddingHorizontal: 16,
-                          paddingVertical: 10,
-                          borderRadius: 8,
-                          backgroundColor: selectedRoomId === room.s_no ? Theme.colors.primary : '#fff',
-                          borderWidth: 1,
-                          borderColor: selectedRoomId === room.s_no ? Theme.colors.primary : Theme.colors.border,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            fontWeight: '600',
-                            color: selectedRoomId === room.s_no ? '#fff' : Theme.colors.text.secondary,
-                          }}
-                        >
-                          {room.room_no}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              {beds.length > 0 && selectedRoomId && (
-                <View style={{ marginBottom: 24 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                    Filter by Bed
-                  </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => setSelectedBedId(null)}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        backgroundColor: selectedBedId === null ? Theme.colors.primary : '#fff',
-                        borderWidth: 1,
-                        borderColor: selectedBedId === null ? Theme.colors.primary : Theme.colors.border,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '600',
-                          color: selectedBedId === null ? '#fff' : Theme.colors.text.secondary,
-                        }}
-                      >
-                        All Beds
-                      </Text>
-                    </TouchableOpacity>
-                    {beds.map((bed: any) => (
-                      <TouchableOpacity
-                        key={bed.s_no}
-                        onPress={() => setSelectedBedId(bed.s_no)}
-                        style={{
-                          paddingHorizontal: 16,
-                          paddingVertical: 10,
-                          borderRadius: 8,
-                          backgroundColor: selectedBedId === bed.s_no ? Theme.colors.primary : '#fff',
-                          borderWidth: 1,
-                          borderColor: selectedBedId === bed.s_no ? Theme.colors.primary : Theme.colors.border,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            fontWeight: '600',
-                            color: selectedBedId === bed.s_no ? '#fff' : Theme.colors.text.secondary,
-                          }}
-                        >
-                          {bed.bed_no}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </ScrollView>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                gap: 12,
-                padding: 20,
-                paddingTop: 16,
-                borderTopWidth: 1,
-                borderTopColor: Theme.colors.border,
-              }}
-            >
-              {getFilterCount() > 0 && (
-                <TouchableOpacity
-                  onPress={clearFilters}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 14,
-                    borderRadius: 12,
-                    backgroundColor: Theme.colors.light,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-                    Clear Filters
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={applyFilters}
+              <Text
                 style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: Theme.colors.primary,
-                  alignItems: 'center',
+                  fontSize: 13,
+                  fontWeight: '600',
+                  color: quickFilter === 'LAST_WEEK' ? '#fff' : Theme.colors.text.secondary,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
-                  Apply Filters
+                📅 Last 1 Week
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => applyQuickFilter('LAST_MONTH')}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                backgroundColor: quickFilter === 'LAST_MONTH' ? Theme.colors.primary : '#fff',
+                borderWidth: 1,
+                borderColor: quickFilter === 'LAST_MONTH' ? Theme.colors.primary : Theme.colors.border,
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '600',
+                  color: quickFilter === 'LAST_MONTH' ? '#fff' : Theme.colors.text.secondary,
+                }}
+              >
+                📅 Last 1 Month
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
+            Payment Status
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {['ALL', 'PAID', 'PARTIAL', 'PENDING', 'FAILED'].map((status) => (
+              <TouchableOpacity
+                key={status}
+                onPress={() => setStatusFilter(status as any)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: statusFilter === status ? Theme.colors.primary : '#fff',
+                  borderWidth: 1,
+                  borderColor: statusFilter === status ? Theme.colors.primary : Theme.colors.border,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: statusFilter === status ? '#fff' : Theme.colors.text.secondary,
+                  }}
+                >
+                  {status}
                 </Text>
               </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
+            Filter by Month & Year
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => setSelectedMonth(null)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  backgroundColor: selectedMonth === null ? Theme.colors.primary : '#fff',
+                  borderWidth: 1,
+                  borderColor: selectedMonth === null ? Theme.colors.primary : Theme.colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '600', color: selectedMonth === null ? '#fff' : Theme.colors.text.secondary }}>
+                  All
+                </Text>
+              </TouchableOpacity>
+              {MONTHS.map((month) => (
+                <TouchableOpacity
+                  key={month}
+                  onPress={() => setSelectedMonth(month)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    backgroundColor: selectedMonth === month ? Theme.colors.primary : '#fff',
+                    borderWidth: 1,
+                    borderColor: selectedMonth === month ? Theme.colors.primary : Theme.colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: selectedMonth === month ? '#fff' : Theme.colors.text.secondary }}>
+                    {month.substring(0, 3)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+          </ScrollView>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => setSelectedYear(null)}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 8,
+                backgroundColor: selectedYear === null ? Theme.colors.primary : '#fff',
+                borderWidth: 1,
+                borderColor: selectedYear === null ? Theme.colors.primary : Theme.colors.border,
+              }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '600', color: selectedYear === null ? '#fff' : Theme.colors.text.secondary }}>
+                All
+              </Text>
+            </TouchableOpacity>
+            {years.map((year) => (
+              <TouchableOpacity
+                key={year}
+                onPress={() => setSelectedYear(year)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: selectedYear === year ? Theme.colors.primary : '#fff',
+                  borderWidth: 1,
+                  borderColor: selectedYear === year ? Theme.colors.primary : Theme.colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: selectedYear === year ? '#fff' : Theme.colors.text.secondary }}>
+                  {year}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {rooms.length > 0 && (
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
+              Filter by Room
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedRoomId(null);
+                  setSelectedBedId(null);
+                }}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: selectedRoomId === null ? Theme.colors.primary : '#fff',
+                  borderWidth: 1,
+                  borderColor: selectedRoomId === null ? Theme.colors.primary : Theme.colors.border,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: selectedRoomId === null ? '#fff' : Theme.colors.text.secondary,
+                  }}
+                >
+                  All Rooms
+                </Text>
+              </TouchableOpacity>
+              {rooms.map((room: any) => (
+                <TouchableOpacity
+                  key={room.s_no}
+                  onPress={() => {
+                    setSelectedRoomId(room.s_no);
+                    setSelectedBedId(null);
+                  }}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    backgroundColor: selectedRoomId === room.s_no ? Theme.colors.primary : '#fff',
+                    borderWidth: 1,
+                    borderColor: selectedRoomId === room.s_no ? Theme.colors.primary : Theme.colors.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: selectedRoomId === room.s_no ? '#fff' : Theme.colors.text.secondary,
+                    }}
+                  >
+                    {room.room_no}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {beds.length > 0 && selectedRoomId && (
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
+              Filter by Bed
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => setSelectedBedId(null)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: selectedBedId === null ? Theme.colors.primary : '#fff',
+                  borderWidth: 1,
+                  borderColor: selectedBedId === null ? Theme.colors.primary : Theme.colors.border,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: selectedBedId === null ? '#fff' : Theme.colors.text.secondary,
+                  }}
+                >
+                  All Beds
+                </Text>
+              </TouchableOpacity>
+              {beds.map((bed: any) => (
+                <TouchableOpacity
+                  key={bed.s_no}
+                  onPress={() => setSelectedBedId(bed.s_no)}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    backgroundColor: selectedBedId === bed.s_no ? Theme.colors.primary : '#fff',
+                    borderWidth: 1,
+                    borderColor: selectedBedId === bed.s_no ? Theme.colors.primary : Theme.colors.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: selectedBedId === bed.s_no ? '#fff' : Theme.colors.text.secondary,
+                    }}
+                  >
+                    {bed.bed_no}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+      </SlideBottomModal>
 
       <Modal visible={showStatusModal} animationType="fade" transparent={true} onRequestClose={() => setShowStatusModal(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>

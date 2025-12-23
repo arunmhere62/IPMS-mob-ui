@@ -323,55 +323,55 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
   const renderAdvancePaymentItem = ({ item }: { item: AdvancePayment }) => (
     <Card style={{ 
       marginHorizontal: 16, 
-      marginBottom: 12, 
-      padding: 16, 
+      marginBottom: 10, 
+      padding: 12, 
       borderLeftWidth: 4, 
       borderLeftColor: '#10B981',
       backgroundColor: Theme.colors.canvas
     }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-        <View style={{ flex: 1, marginRight: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <View style={{ flex: 1, marginRight: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
             <View style={{ 
               backgroundColor: Theme.withOpacity('#10B981', 0.1), 
               paddingHorizontal: 8, 
-              paddingVertical: 4, 
+              paddingVertical: 3, 
               borderRadius: 6,
               marginRight: 8,
               flexDirection: 'row',
               alignItems: 'center'
             }}>
-              <Ionicons name="flash" size={12} color="#10B981" style={{ marginRight: 4 }} />
+              <Ionicons name="flash" size={11} color="#10B981" style={{ marginRight: 4 }} />
               <Text style={{ fontSize: 10, fontWeight: '700', color: '#10B981' }}>
                 ADVANCE PAYMENT
               </Text>
             </View>
           </View>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 4 }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 2 }}>
             {item.tenants?.name || 'Tenant Removed'}
           </Text>
           {!item.tenants && item.tenant_unavailable_reason && (
             <View style={{ 
               backgroundColor: item.tenant_unavailable_reason === 'CHECKED_OUT' ? '#FEF3C7' : '#FEE2E2', 
               paddingHorizontal: 8, 
-              paddingVertical: 4, 
+              paddingVertical: 3, 
               borderRadius: 6, 
               marginBottom: 4,
               alignSelf: 'flex-start'
             }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: getTenantUnavailableMessage(item.tenant_unavailable_reason).color }}>
+              <Text style={{ fontSize: 10, fontWeight: '600', color: getTenantUnavailableMessage(item.tenant_unavailable_reason).color }}>
                 {getTenantUnavailableMessage(item.tenant_unavailable_reason).text}
               </Text>
             </View>
           )}
-          <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
             ID: {item.tenants?.tenant_id || 'N/A'}
           </Text>
         </View>
         <View
             style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
               borderRadius: 8,
               backgroundColor: 
                 item.status === 'PAID' ? '#DCFCE7' :
@@ -380,7 +380,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
             }}
           >
             <Text style={{
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: '700',
               color: 
                 item.status === 'PAID' ? '#16A34A' :
@@ -395,84 +395,70 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
       <View style={{ 
         flexDirection: 'row', 
         justifyContent: 'space-between', 
-        marginBottom: 12, 
-        paddingBottom: 12, 
+        marginBottom: 8, 
+        paddingBottom: 8, 
         borderBottomWidth: 1, 
         borderBottomColor: Theme.colors.border,
         backgroundColor: Theme.withOpacity('#10B981', 0.05),
-        padding: 12,
+        padding: 10,
         borderRadius: 8,
-        marginHorizontal: -4
+        marginHorizontal: -2
       }}>
         <View>
           <Text style={{ fontSize: 11, color: '#10B981', marginBottom: 2, fontWeight: '600' }}>Advance Amount</Text>
-          <Text style={{ fontSize: 22, fontWeight: '700', color: '#10B981' }}>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: '#10B981' }}>
             ₹{item.amount_paid?.toLocaleString('en-IN')}
           </Text>
         </View>
         {item.actual_rent_amount !== item.amount_paid && (
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 2 }}>Actual Rent</Text>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.secondary }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.secondary }}>
               ₹{item.actual_rent_amount?.toLocaleString('en-IN')}
             </Text>
           </View>
         )}
       </View>
 
-      <View style={{ gap: 8 }}>
-        <View style={{ flexDirection: 'row', gap: 16 }}>
-          {item.rooms && (
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Room</Text>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-                {item.rooms.room_no}
-              </Text>
-            </View>
-          )}
-          {item.beds && (
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Bed</Text>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-                {item.beds.bed_no}
-              </Text>
-            </View>
-          )}
+      <View style={{ gap: 6 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+            Room {item.rooms?.room_no || 'N/A'} • Bed {item.beds?.bed_no || 'N/A'}
+          </Text>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+            {formatDate(item.payment_date || '')}
+          </Text>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 16 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Payment Date</Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
-              {formatDate(item.payment_date || '')}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+            {getPaymentMethodIcon(item.payment_method)} {item.payment_method}
+          </Text>
+          {!!item.tenants?.phone_no && (
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+              {item.tenants.phone_no}
             </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Method</Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
-              {getPaymentMethodIcon(item.payment_method)} {item.payment_method}
-            </Text>
-          </View>
+          )}
         </View>
 
         {item.remarks && (
-          <View style={{ marginTop: 4, padding: 8, backgroundColor: Theme.colors.background.secondary, borderRadius: 6 }}>
-            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 2 }}>Remarks</Text>
-            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+          <View style={{ marginTop: 6, padding: 8, backgroundColor: Theme.colors.background.secondary, borderRadius: 6 }}>
+            <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, marginBottom: 2 }}>Remarks</Text>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
               {item.remarks}
             </Text>
           </View>
         )}
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
         {item.tenants && !item.tenant_unavailable_reason ? (
           <TouchableOpacity
             onPress={() => navigation.navigate('TenantDetails', { tenantId: item.tenant_id })}
             style={{
               flex: 1,
-              paddingVertical: 10,
-              paddingHorizontal: 16,
+              paddingVertical: 8,
+              paddingHorizontal: 12,
               backgroundColor: Theme.colors.background.blueLight,
               borderRadius: 8,
               flexDirection: 'row',
@@ -482,8 +468,8 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
               borderColor: Theme.colors.primary,
             }}
           >
-            <Ionicons name="information-circle-outline" size={16} color={Theme.colors.primary} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.primary, marginLeft: 6 }}>
+            <Ionicons name="information-circle-outline" size={14} color={Theme.colors.primary} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.primary, marginLeft: 6 }}>
               View Details
             </Text>
           </TouchableOpacity>
@@ -491,8 +477,8 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
           <View
             style={{
               flex: 1,
-              paddingVertical: 10,
-              paddingHorizontal: 16,
+              paddingVertical: 8,
+              paddingHorizontal: 12,
               backgroundColor: '#F3F4F6',
               borderRadius: 8,
               flexDirection: 'row',
@@ -502,8 +488,8 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
               borderColor: '#E5E7EB',
             }}
           >
-            <Ionicons name="alert-circle-outline" size={16} color="#9CA3AF" />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#9CA3AF', marginLeft: 6 }}>
+            <Ionicons name="alert-circle-outline" size={14} color="#9CA3AF" />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#9CA3AF', marginLeft: 6 }}>
               Tenant Removed
             </Text>
           </View>
