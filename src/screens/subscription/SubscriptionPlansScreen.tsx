@@ -16,6 +16,7 @@ import { fetchPlans, fetchSubscriptionStatus, subscribeToPlan } from '../../stor
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Card } from '../../components/Card';
+import { ErrorBanner } from '../../components/ErrorBanner';
 import { Theme } from '../../theme';
 import { SubscriptionPlan } from '../../services/subscription/subscriptionService';
 import { CONTENT_COLOR } from '@/constant';
@@ -31,23 +32,31 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
   const { data: plans, subscriptionStatus, loading } = useSelector((state: RootState) => state.subscription);
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
   const [subscribing, setSubscribing] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const loadData = React.useCallback(async () => {
+    try {
+      setFetchError(null);
+
+      const plansResult = await dispatch(fetchPlans()).unwrap();
+      console.log('📦 Plans fetched:', plansResult);
+      console.log('📦 Plans length:', plansResult?.length);
+      
+      const statusResult = await dispatch(fetchSubscriptionStatus()).unwrap();
+      console.log('📊 Status fetched:', statusResult);
+    } catch (error: any) {
+      console.error('❌ Error loading subscription data:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to load subscription plans. Please try again.';
+      setFetchError(errorMessage);
+    }
+  }, [dispatch]);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const plansResult = await dispatch(fetchPlans()).unwrap();
-        console.log('📦 Plans fetched:', plansResult);
-        console.log('📦 Plans length:', plansResult?.length);
-        
-        const statusResult = await dispatch(fetchSubscriptionStatus()).unwrap();
-        console.log('📊 Status fetched:', statusResult);
-      } catch (error) {
-        console.error('❌ Error loading subscription data:', error);
-      }
-    };
-    
     loadData();
-  }, [dispatch]);
+  }, [loadData]);
   
   // Debug log when plans change
   useEffect(() => {
@@ -370,11 +379,18 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
         backgroundColor={Theme.colors.background.blue}
       />
 
-      <ScrollView
-        style={{ backgroundColor: CONTENT_COLOR }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+        <ErrorBanner
+          error={fetchError}
+          title="Error Loading Subscription Plans"
+          onRetry={loadData}
+        />
+
+        <ScrollView
+          style={{ backgroundColor: CONTENT_COLOR }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Current Status Card */}
         {subscriptionStatus && (
           <Card style={{ marginBottom: 24, padding: 20 }}>
@@ -496,29 +512,8 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
             {plans.map((plan, index) => renderPlanCard(plan, index))}
           </>
         )}
-
-        {/* View History Button */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('SubscriptionHistory')}
-          style={{
-            marginTop: 20,
-            paddingVertical: 16,
-            paddingHorizontal: 24,
-            backgroundColor: Theme.colors.canvas,
-            borderRadius: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: Theme.colors.border,
-          }}
-        >
-          <Ionicons name="time-outline" size={20} color={Theme.colors.primary} style={{ marginRight: 8 }} />
-          <Text style={{ fontSize: 15, fontWeight: '600', color: Theme.colors.primary }}>
-            View Subscription History
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </ScreenLayout>
   );
 };

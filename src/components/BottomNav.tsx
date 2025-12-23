@@ -175,100 +175,77 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(({ navigation, cur
         })}
       </BlurView>
       
-      {/* Payment Options Dropdown */}
-      {showPaymentOptions && (
-        <Animated.View style={{
-          position: 'absolute',
-          bottom: 85, // Reduced space from bottom nav
-          left: paymentOptionsPosition.x - 70, // Center horizontally on tab
-          backgroundColor: Theme.colors.canvas,
-          borderRadius: 10,
-          padding: 8,
-          minWidth: 140, // Reduced width
-          borderWidth: 1,
-          borderColor: Theme.colors.border,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.15,
-          shadowRadius: 6,
-          elevation: 6,
-          zIndex: 1000,
-          opacity: dropdownAnimValue,
-          transform: [
-            {
-              scale: dropdownAnimValue.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.8, 1],
-                extrapolate: 'clamp',
-              }),
-            },
-            {
-              translateY: dropdownAnimValue.interpolate({
-                inputRange: [0, 1],
-                outputRange: [10, 0],
-                extrapolate: 'clamp',
-              }),
-            },
-          ],
-        }}>
-          {/* Simplified dropdown arrow */}
-          <View style={{
-            position: 'absolute',
-            bottom: -6,
-            left: 70 - 6, // Center the arrow
-            width: 12,
-            height: 12,
-            backgroundColor: Theme.colors.canvas,
-            transform: [{ rotate: '45deg' }],
-            borderBottomWidth: 1,
-            borderRightWidth: 1,
-            borderBottomColor: Theme.colors.border,
-            borderRightColor: Theme.colors.border,
-          }} />
-          
-          <PaymentOption
-            icon="card"
-            title="Rent"
-            screen="Payments"
-            color={Theme.colors.primary}
-          />
-          <PaymentOption
-            icon="arrow-up"
-            title="Advance"
-            screen="AdvancePayments"
-            color="#10B981"
-          />
-          <PaymentOption
-            icon="arrow-down"
-            title="Refund"
-            screen="RefundPayments"
-            color="#EF4444"
-          />
-        </Animated.View>
-      )}
-      
-      {/* Backdrop to close dropdown */}
-      {showPaymentOptions && (
-        <Animated.View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'transparent',
-            zIndex: 999,
-            opacity: backdropAnimValue,
-          }}
+      {/* Payment Options Modal Popup */}
+      <Modal
+        visible={showPaymentOptions}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowPaymentOptions(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}
+          activeOpacity={1}
+          onPress={() => setShowPaymentOptions(false)}
         >
           <TouchableOpacity
-            style={{ flex: 1 }}
-            onPress={() => animateDropdownOut(() => setShowPaymentOptions(false))}
             activeOpacity={1}
-          />
-        </Animated.View>
-      )}
-    </>
+            style={{
+              backgroundColor: Theme.colors.canvas,
+              borderRadius: 16,
+              padding: 24,
+              minWidth: 200,
+              marginHorizontal: 32,
+              borderWidth: 1,
+              borderColor: Theme.colors.border,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              elevation: 8,
+            }}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 16, textAlign: 'center' }}>
+              Payment Options
+            </Text>
+            <View style={{ gap: 4 }}>
+              <PaymentOption
+                icon="card"
+                title="Rent"
+                screen="Payments"
+                color={Theme.colors.primary}
+              />
+              <PaymentOption
+                icon="arrow-up"
+                title="Advance"
+                screen="AdvancePayments"
+                color="#10B981"
+              />
+              <PaymentOption
+                icon="arrow-down"
+                title="Refund"
+                screen="RefundPayments"
+                color="#EF4444"
+              />
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowPaymentOptions(false)}
+              style={{
+                marginTop: 16,
+                paddingVertical: 10,
+                borderRadius: 8,
+                backgroundColor: Theme.colors.light,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+      </>
   );
 });
 

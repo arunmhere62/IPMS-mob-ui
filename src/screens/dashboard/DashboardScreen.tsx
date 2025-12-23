@@ -92,15 +92,12 @@ export const DashboardScreen: React.FC = () => {
 
     try {
       console.log('📊 Loading dashboard data for PG:', selectedPGLocationId);
-      
-      // Load all PG-dependent data in parallel
-      await Promise.all([
-        loadSummary(selectedPGLocationId),
-        loadFinancialAnalytics(selectedPGLocationId, selectedMonths),
-        loadTenantData(selectedPGLocationId),
-        dispatch(fetchPayments({})),
-      ]);
-      
+
+      await loadSummary(selectedPGLocationId);
+      await loadFinancialAnalytics(selectedPGLocationId, selectedMonths);
+      await loadTenantData(selectedPGLocationId);
+      await dispatch(fetchPayments({})).unwrap();
+
       console.log('✅ Dashboard data loaded successfully');
     } catch (error) {
       console.error('❌ Error loading dashboard data:', error);
@@ -112,16 +109,7 @@ export const DashboardScreen: React.FC = () => {
       setLoadingSummary(true);
       setErrors(prev => ({ ...prev, summary: undefined }));
       
-      const response = await retryWithBackoff(
-        () => pgLocationService.getSummary(pgId),
-        {
-          maxRetries: 2,
-          initialDelay: 1000,
-          onRetry: (attempt) => {
-            console.log(`🔄 Retrying summary API (attempt ${attempt})...`);
-          },
-        }
-      );
+      const response = await pgLocationService.getSummary(pgId);
       
       if (response.success) {
         console.log('📊 PG Summary Data:', response.data);
@@ -131,6 +119,7 @@ export const DashboardScreen: React.FC = () => {
       const errorInfo = categorizeError(error);
       console.error(`❌ [${errorInfo.type.toUpperCase()}] Error loading summary:`, errorInfo.message);
       setErrors(prev => ({ ...prev, summary: errorInfo }));
+      throw error;
     } finally {
       setLoadingSummary(false);
     }
@@ -141,16 +130,7 @@ export const DashboardScreen: React.FC = () => {
       setLoadingFinancial(true);
       setErrors(prev => ({ ...prev, financial: undefined }));
       
-      const response = await retryWithBackoff(
-        () => pgLocationService.getFinancialAnalytics(pgId, months),
-        {
-          maxRetries: 2,
-          initialDelay: 1000,
-          onRetry: (attempt) => {
-            console.log(`🔄 Retrying financial analytics API (attempt ${attempt})...`);
-          },
-        }
-      );
+      const response = await pgLocationService.getFinancialAnalytics(pgId, months);
       
       if (response.success) {
         console.log('💰 Financial Analytics Data:', response.data);
@@ -160,6 +140,7 @@ export const DashboardScreen: React.FC = () => {
       const errorInfo = categorizeError(error);
       console.error(`❌ [${errorInfo.type.toUpperCase()}] Error loading financial analytics:`, errorInfo.message);
       setErrors(prev => ({ ...prev, financial: errorInfo }));
+      throw error;
     } finally {
       setLoadingFinancial(false);
     }
@@ -172,27 +153,27 @@ export const DashboardScreen: React.FC = () => {
       
       // Use single API with different filters
       const [pendingResponse, partialResponse, noAdvanceResponse] = await Promise.all([
-        retryWithBackoff(() => getAllTenants({ 
+        getAllTenants({ 
           pending_rent: true, 
           limit: 20, 
           pg_id: pgId, 
           organization_id: user?.organization_id, 
           user_id: user?.s_no 
-        })),
-        retryWithBackoff(() => getAllTenants({ 
+        }),
+        getAllTenants({ 
           partial_rent: true, 
           limit: 20, 
           pg_id: pgId, 
           organization_id: user?.organization_id, 
           user_id: user?.s_no 
-        })),
-        retryWithBackoff(() => getAllTenants({ 
+        }),
+        getAllTenants({ 
           pending_advance: true, 
           limit: 20, 
           pg_id: pgId, 
           organization_id: user?.organization_id, 
           user_id: user?.s_no 
-        })),
+        }),
       ]);
       
       // Debug logging to compare API responses
@@ -230,6 +211,7 @@ export const DashboardScreen: React.FC = () => {
       const errorInfo = categorizeError(error);
       console.error(`❌ [${errorInfo.type.toUpperCase()}] Error loading tenant data:`, errorInfo.message);
       setErrors(prev => ({ ...prev, tenants: errorInfo }));
+      throw error;
     } finally {
       setLoadingTenants(false);
     }

@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
+import { ErrorBanner } from '../../components/ErrorBanner';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -36,6 +37,10 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
   const [refundPayments, setRefundPayments] = useState<RefundPayment[]>([]);
   const [pagination, setPagination] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [lastFailedPage, setLastFailedPage] = useState<number | null>(null);
+  const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
   
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED'>('ALL');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -115,12 +120,15 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
   useEffect(() => {
     setCurrentPage(1);
     setHasMore(true);
+    setLastFailedPage(null);
+    setInitialLoadCompleted(false);
     loadRefundPayments(1, true);
   }, [selectedPGLocationId]);
 
   useFocusEffect(
     React.useCallback(() => {
       if (currentPage === 1) {
+        setInitialLoadCompleted(false);
         loadRefundPayments(1, true);
       }
     }, [selectedPGLocationId])
@@ -128,9 +136,12 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
 
   const loadRefundPayments = async (page: number, reset: boolean = false) => {
     try {
+      if (isPageLoading) return;
       if (!hasMore && !reset) return;
+      if (lastFailedPage !== null && !reset && page <= lastFailedPage) return;
       
       setLoading(true);
+      setIsPageLoading(true);
       
       const params: any = {
         page,
@@ -153,25 +164,40 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
       const response = await refundPaymentService.getRefundPayments(params, {
         pg_id: selectedPGLocationId || undefined,
       });
+
+      const refundPaymentsData = Array.isArray(response.data?.data) ? response.data.data : [];
+      const refundPaymentsPagination = response.data?.pagination || null;
       
       if (reset || page === 1) {
-        setRefundPayments(Array.isArray(response.data) ? response.data : []);
+        setRefundPayments(refundPaymentsData);
       } else {
-        const newData = Array.isArray(response.data) ? response.data : [];
-        setRefundPayments((prev: RefundPayment[]) => [...prev, ...newData]);
+        setRefundPayments((prev: RefundPayment[]) => [...prev, ...refundPaymentsData]);
       }
       
-      setPagination(response.pagination);
+      setPagination(refundPaymentsPagination);
       setCurrentPage(page);
-      setHasMore(response.pagination ? page < response.pagination.totalPages : false);
+      setHasMore(refundPaymentsPagination ? page < refundPaymentsPagination.totalPages : false);
+      setFetchError(null);
+      setLastFailedPage(null);
+      setInitialLoadCompleted(true);
       
       if (flatListRef.current && reset) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading refund payments:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to load refund payments. Please try again.';
+      setFetchError(errorMessage);
+      setLastFailedPage(page);
+      if (page === 1) {
+        setHasMore(false);
+      }
     } finally {
       setLoading(false);
+      setIsPageLoading(false);
     }
   };
 
@@ -179,13 +205,16 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
     setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
+    setLastFailedPage(null);
+    setInitialLoadCompleted(false);
     await loadRefundPayments(1, true);
     setRefreshing(false);
   };
 
   const loadMore = () => {
-    if (!hasMore || loading) return;
+    if (!hasMore || loading || isPageLoading || !initialLoadCompleted) return;
     const nextPage = currentPage + 1;
+    if (lastFailedPage !== null && nextPage <= lastFailedPage) return;
     loadRefundPayments(nextPage, false);
   };
 
@@ -248,6 +277,7 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
     setEndDate(today.toISOString().split('T')[0]);
     setSelectedMonth(null);
     setSelectedYear(null);
+    setLastFailedPage(null);
   };
 
 
@@ -483,6 +513,17 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
           </View>
         )}
         
+        <>
+        <ErrorBanner
+          error={fetchError}
+          title="Error Loading Refund Payments"
+          onRetry={() => {
+            setFetchError(null);
+            setLastFailedPage(null);
+            setInitialLoadCompleted(false);
+            loadRefundPayments(1, true);
+          }}
+        />
         <FlatList
           ref={flatListRef}
           data={refundPayments}
@@ -606,6 +647,7 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
         />
+        </>
       </View>
 
       <Modal visible={showFilters} animationType="slide" transparent={true} onRequestClose={() => setShowFilters(false)}>

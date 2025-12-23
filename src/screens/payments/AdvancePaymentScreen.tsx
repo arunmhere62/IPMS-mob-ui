@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Modal, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, ScrollView, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { AppDispatch, RootState } from '../../store';
 import { Card } from '../../components/Card';
+import { ErrorBanner } from '../../components/ErrorBanner';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -13,8 +14,7 @@ import { Alert } from 'react-native';
 import advancePaymentService, { AdvancePayment } from '../../services/payments/advancePaymentService';
 import { getAllRooms, Room } from '../../services/rooms/roomService';
 import { getAllBeds, Bed } from '../../services/rooms/bedService';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { SlideBottomModal } from '../../components/SlideBottomModal';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -32,6 +32,10 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [lastFailedPage, setLastFailedPage] = useState<number | null>(null);
+  const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
   
   const [advancePayments, setAdvancePayments] = useState<AdvancePayment[]>([]);
   const [pagination, setPagination] = useState<any>(null);
@@ -128,8 +132,11 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
 
   const loadAdvancePayments = async (page: number, reset: boolean = false) => {
     try {
+      if (isPageLoading) return;
       if (!hasMore && !reset) return;
+      if (lastFailedPage !== null && !reset && page <= lastFailedPage) return;
       
+      setIsPageLoading(true);
       setLoading(true);
       
       const params: any = {
@@ -163,13 +170,26 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
       setPagination(response.pagination);
       setCurrentPage(page);
       setHasMore(response.pagination ? page < response.pagination.totalPages : false);
+      setFetchError(null);
+      setLastFailedPage(null);
+      setInitialLoadCompleted(true);
       
       if (flatListRef.current && reset) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading advance payments:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to load advance payments. Please try again.';
+      setFetchError(errorMessage);
+      setLastFailedPage(page);
+      if (page === 1) {
+        setHasMore(false);
+      }
     } finally {
+      setIsPageLoading(false);
       setLoading(false);
     }
   };
@@ -178,12 +198,15 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
     setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
+    setLastFailedPage(null);
+    setFetchError(null);
+    setInitialLoadCompleted(false);
     await loadAdvancePayments(1, true);
     setRefreshing(false);
   };
 
   const loadMore = () => {
-    if (!hasMore || loading) return;
+    if (!hasMore || loading || isPageLoading || !initialLoadCompleted) return;
     const nextPage = currentPage + 1;
     loadAdvancePayments(nextPage, false);
   };
@@ -222,6 +245,9 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
     setSelectedBedId(null);
     setCurrentPage(1);
     setHasMore(true);
+    setLastFailedPage(null);
+    setFetchError(null);
+    setInitialLoadCompleted(false);
     loadAdvancePayments(1, true);
   };
 
@@ -229,6 +255,9 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
     setShowFilters(false);
     setCurrentPage(1);
     setHasMore(true);
+    setLastFailedPage(null);
+    setFetchError(null);
+    setInitialLoadCompleted(false);
     loadAdvancePayments(1, true);
   };
 
@@ -494,6 +523,17 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
       />
 
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>
+        <ErrorBanner
+          error={fetchError}
+          title="Error Loading Advance Payments"
+          onRetry={() => {
+            setFetchError(null);
+            setLastFailedPage(null);
+            setInitialLoadCompleted(false);
+            loadAdvancePayments(1, true);
+          }}
+        />
+        
         {visibleItemsCount > 0 && (
           <View style={{
             position: 'absolute',
@@ -539,83 +579,40 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             <View>
-              <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-                <TouchableOpacity
-                  onPress={() => setShowFilters(true)}
-                  style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: Theme.colors.canvas,
-                  paddingVertical: 12,
-                  paddingHorizontal: 16,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: getFilterCount() > 0 ? Theme.colors.primary : Theme.colors.border,
-                  ...Theme.colors.shadows.small,
-                }}
-              >
-                <Ionicons
-                  name="filter"
-                  size={20}
-                  color={getFilterCount() > 0 ? Theme.colors.primary : Theme.colors.text.secondary}
-                />
-                <Text
-                  style={{
-                    marginLeft: 8,
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: getFilterCount() > 0 ? Theme.colors.primary : Theme.colors.text.primary,
-                  }}
-                >
-                  Filters {getFilterCount() > 0 && `(${getFilterCount()})`}
-                </Text>
-              </TouchableOpacity>
-              </View>
+              <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={() => setShowFilters(true)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.border,
+                      backgroundColor: Theme.colors.canvas,
+                    }}
+                  >
+                    <Ionicons name="options-outline" size={18} color={Theme.colors.text.secondary} />
+                    <Text style={{ marginLeft: 8, fontSize: 13, color: Theme.colors.text.primary, fontWeight: '600' }}>
+                      Filters
+                    </Text>
+                  </TouchableOpacity>
 
-              {getFilterCount() > 0 && (
-                <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      {statusFilter !== 'ALL' && (
-                      <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                        <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                          {statusFilter}
-                        </Text>
-                      </View>
-                    )}
-                    {quickFilter !== 'NONE' && (
-                      <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                        <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                          {quickFilter === 'LAST_WEEK' ? 'Last 1 Week' : 'Last 1 Month'}
-                        </Text>
-                      </View>
-                    )}
-                    {selectedMonth && selectedYear && (
-                      <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                        <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                          {selectedMonth} {selectedYear}
-                        </Text>
-                      </View>
-                    )}
-                    {selectedRoomId && (
-                      <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                        <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                          Room: {rooms.find(r => r?.s_no === selectedRoomId)?.room_no}
-                        </Text>
-                      </View>
-                    )}
-                    {selectedBedId && (
-                      <View style={{ backgroundColor: Theme.colors.background.blueLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                        <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600' }}>
-                          Bed: {beds.find(b => b?.s_no === selectedBedId)?.bed_no}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  </ScrollView>
+                  {getFilterCount() > 0 ? (
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+                        {getFilterCount()} active
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                      No filters
+                    </Text>
+                  )}
                 </View>
-              )}
+              </View>
             </View>
           }
           ListEmptyComponent={
@@ -655,51 +652,16 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
         />
       </View>
 
-      <Modal visible={showFilters} animationType="slide" transparent={true} onRequestClose={() => setShowFilters(false)}>
-        <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-          activeOpacity={1}
-          onPress={() => setShowFilters(false)}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: Theme.colors.canvas,
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              maxHeight: SCREEN_HEIGHT * 0.85,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 20,
-                borderBottomWidth: 1,
-                borderBottomColor: Theme.colors.border,
-              }}
-            >
-              <View>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Filter Payments
-                </Text>
-                {getFilterCount() > 0 && (
-                  <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginTop: 2 }}>
-                    {getFilterCount()} filter{getFilterCount() > 1 ? 's' : ''} active
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity onPress={() => setShowFilters(false)}>
-                <Ionicons name="close" size={24} color={Theme.colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ maxHeight: SCREEN_HEIGHT * 0.5 }} contentContainerStyle={{ padding: 20 }}>
+      <SlideBottomModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        title="Filter Payments"
+        subtitle={getFilterCount() > 0 ? `${getFilterCount()} filter${getFilterCount() > 1 ? 's' : ''} active` : undefined}
+        submitLabel="Apply Filters"
+        cancelLabel={getFilterCount() > 0 ? 'Clear Filters' : 'Cancel'}
+        onSubmit={applyFilters}
+        onCancel={getFilterCount() > 0 ? clearFilters : undefined}
+      >
               <View style={{ marginBottom: 24 }}>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
                   Quick Filters
@@ -864,23 +826,6 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                 </View>
               </View>
 
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                  Date Range
-                </Text>
-                <DatePicker
-                  label="Start Date"
-                  value={startDate}
-                  onChange={(date: string) => setStartDate(date)}
-                />
-                <DatePicker
-                  label="End Date"
-                  value={endDate}
-                  onChange={(date: string) => setEndDate(date)}
-                  minimumDate={startDate ? new Date(startDate) : undefined}
-                />
-              </View>
-
               {rooms.length > 0 && (
                 <View style={{ marginBottom: 24 }}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
@@ -996,52 +941,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                   </View>
                 </View>
               )}
-            </ScrollView>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                gap: 12,
-                padding: 20,
-                paddingTop: 16,
-                borderTopWidth: 1,
-                borderTopColor: Theme.colors.border,
-              }}
-            >
-              {getFilterCount() > 0 && (
-                <TouchableOpacity
-                  onPress={clearFilters}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 14,
-                    borderRadius: 12,
-                    backgroundColor: Theme.colors.light,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-                    Clear Filters
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={applyFilters}
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: Theme.colors.primary,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
-                  Apply Filters
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+      </SlideBottomModal>
     </ScreenLayout>
   );
 };

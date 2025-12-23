@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { AppDispatch, RootState } from '../../store';
 import { fetchPayments } from '../../store/slices/paymentSlice';
 import { Card } from '../../components/Card';
+import { ErrorBanner } from '../../components/ErrorBanner';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -35,6 +36,10 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [lastFailedPage, setLastFailedPage] = useState<number | null>(null);
+  const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
   
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED'>('ALL');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -131,7 +136,11 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
 
   const loadPayments = async (page: number, reset: boolean = false) => {
     try {
+      if (isPageLoading) return;
       if (!hasMore && !reset) return;
+      if (lastFailedPage !== null && !reset && page <= lastFailedPage) return;
+      
+      setIsPageLoading(true);
       
       const params: any = {
         page,
@@ -158,11 +167,26 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
       setCurrentPage(page);
       setHasMore(result.pagination ? page < result.pagination.totalPages : false);
       
+      setFetchError(null);
+      setLastFailedPage(null);
+      setInitialLoadCompleted(true);
+      
       if (flatListRef.current && reset) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading payments:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to load payments. Please try again.';
+      setFetchError(errorMessage);
+      setLastFailedPage(page);
+      if (page === 1) {
+        setHasMore(false);
+      }
+    } finally {
+      setIsPageLoading(false);
     }
   };
 
@@ -170,12 +194,15 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
+    setLastFailedPage(null);
+    setFetchError(null);
+    setInitialLoadCompleted(false);
     await loadPayments(1, true);
     setRefreshing(false);
   };
 
   const loadMorePayments = () => {
-    if (!hasMore || loading) return;
+    if (!hasMore || loading || isPageLoading || !initialLoadCompleted) return;
     const nextPage = currentPage + 1;
     loadPayments(nextPage, false);
   };
@@ -214,6 +241,9 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     setSelectedBedId(null);
     setCurrentPage(1);
     setHasMore(true);
+    setLastFailedPage(null);
+    setFetchError(null);
+    setInitialLoadCompleted(false);
     loadPayments(1, true);
   };
 
@@ -221,6 +251,9 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     setShowFilters(false);
     setCurrentPage(1);
     setHasMore(true);
+    setLastFailedPage(null);
+    setFetchError(null);
+    setInitialLoadCompleted(false);
     loadPayments(1, true);
   };
 
@@ -263,6 +296,9 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
         setSelectedPayment(null);
         setCurrentPage(1);
         setHasMore(true);
+        setLastFailedPage(null);
+        setFetchError(null);
+        setInitialLoadCompleted(false);
         loadPayments(1, true);
       }
     } catch (error: any) {
@@ -535,6 +571,17 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
       />
 
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>
+        <ErrorBanner
+          error={fetchError}
+          title="Error Loading Payments"
+          onRetry={() => {
+            setFetchError(null);
+            setLastFailedPage(null);
+            setInitialLoadCompleted(false);
+            loadPayments(1, true);
+          }}
+        />
+        
         {visibleItemsCount > 0 && (
           <View style={{
             position: 'absolute',

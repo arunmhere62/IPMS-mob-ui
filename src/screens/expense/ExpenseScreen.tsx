@@ -7,11 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  Modal,
-  Dimensions,
 } from 'react-native';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
@@ -22,12 +18,27 @@ import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 import expenseService, { Expense, PaymentMethod } from '../../services/expenses/expenseService';
 import { AddEditExpenseModal } from '@/screens/expense/AddEditExpenseModal';
-import { DatePicker } from '@/components/DatePicker';
 import { ActionButtons } from '../../components/ActionButtons';
+import { SlideBottomModal } from '../../components/SlideBottomModal';
 
 interface ExpenseScreenProps {
   navigation: any;
 }
+
+const MONTHS = [
+  { label: 'January', value: 1 },
+  { label: 'February', value: 2 },
+  { label: 'March', value: 3 },
+  { label: 'April', value: 4 },
+  { label: 'May', value: 5 },
+  { label: 'June', value: 6 },
+  { label: 'July', value: 7 },
+  { label: 'August', value: 8 },
+  { label: 'September', value: 9 },
+  { label: 'October', value: 10 },
+  { label: 'November', value: 11 },
+  { label: 'December', value: 12 },
+];
 
 export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -40,17 +51,44 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalExpenses, setTotalExpenses] = useState(0);
-  const [showFilters, setShowFilters] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [expenseTypeFilter, setExpenseTypeFilter] = useState<string | null>(null);
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState<PaymentMethod | null>(null);
 
-  // Debug user data
-  useEffect(() => {
-  }, [user, selectedPGLocationId]);
+  const defaultMonthYear = React.useMemo(() => {
+    const now = new Date();
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return {
+      month: lastMonthDate.getMonth() + 1,
+      year: lastMonthDate.getFullYear(),
+    };
+  }, []);
 
-  const fetchExpenses = useCallback(async (pageNum: number = 1, append: boolean = false) => {
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [appliedMonth, setAppliedMonth] = useState<number | null>(defaultMonthYear.month);
+  const [appliedYear, setAppliedYear] = useState<number | null>(defaultMonthYear.year);
+  const [draftMonth, setDraftMonth] = useState<number | null>(null);
+  const [draftYear, setDraftYear] = useState<number | null>(null);
+
+  const years = React.useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return [currentYear, currentYear - 1, currentYear - 2];
+  }, []);
+
+  const getSelectedMonthLabel = (month: number | null) => {
+    if (!month) return '';
+    return MONTHS.find(m => m.value === month)?.label || '';
+  };
+
+  const openFilters = () => {
+    setDraftMonth(appliedMonth);
+    setDraftYear(appliedYear);
+    setFilterModalVisible(true);
+  };
+
+  const fetchExpenses = useCallback(async (
+    pageNum: number = 1,
+    append: boolean = false,
+    monthOverride?: number | null,
+    yearOverride?: number | null,
+  ) => {
     
     if (!selectedPGLocationId) {
       setLoading(false);
@@ -60,44 +98,30 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
 
     try {
       if (!append) setLoading(true);
-      // Note: Filters will be applied via headers and query params in future API update
-      const response = await expenseService.getExpenses(pageNum, 10);
-      
-      // Apply client-side filters for now
-      let filteredData = response.data.data || [];
-      
-      if (startDate) {
-        filteredData = filteredData.filter((exp: Expense) => 
-          new Date(exp.paid_date) >= new Date(startDate)
-        );
-      }
-      
-      if (endDate) {
-        filteredData = filteredData.filter((exp: Expense) => 
-          new Date(exp.paid_date) <= new Date(endDate)
-        );
-      }
-      
-      if (expenseTypeFilter) {
-        filteredData = filteredData.filter((exp: Expense) => 
-          exp.expense_type === expenseTypeFilter
-        );
-      }
-      
-      if (paymentMethodFilter) {
-        filteredData = filteredData.filter((exp: Expense) => 
-          exp.payment_method === paymentMethodFilter
-        );
-      }
-      
+
+      const monthToUse = monthOverride !== undefined ? monthOverride : appliedMonth;
+      const yearToUse = yearOverride !== undefined ? yearOverride : appliedYear;
+
+      const response = await expenseService.getExpenses(
+        pageNum,
+        10,
+        monthToUse || undefined,
+        yearToUse || undefined,
+      );
+
+      const serverData = response?.data?.data || [];
+      const pagination = response?.data?.pagination;
+      const totalPages = pagination?.totalPages || 0;
+
       if (response.success) {
         if (append) {
-          setExpenses(prev => [...prev, ...filteredData]);
+          setExpenses(prev => [...prev, ...serverData]);
         } else {
-          setExpenses(filteredData);
+          setExpenses(serverData);
         }
-        setHasMore(response.data.pagination?.hasMore || false);
-        setTotalExpenses(response.data.pagination?.total || filteredData.length);
+        setTotalExpenses(pagination?.total || serverData.length);
+        setHasMore(totalPages ? pageNum < totalPages : false);
+        setPage(pageNum);
       }
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to load expenses');
@@ -105,7 +129,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedPGLocationId, startDate, endDate, expenseTypeFilter, paymentMethodFilter]);
+  }, [selectedPGLocationId, appliedMonth, appliedYear]);
 
   useEffect(() => {
     fetchExpenses(1);
@@ -164,69 +188,28 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   };
 
   const clearFilters = () => {
-    setStartDate('');
-    setEndDate('');
-    setExpenseTypeFilter(null);
-    setPaymentMethodFilter(null);
+    setAppliedMonth(defaultMonthYear.month);
+    setAppliedYear(defaultMonthYear.year);
+    setDraftMonth(defaultMonthYear.month);
+    setDraftYear(defaultMonthYear.year);
+    setFilterModalVisible(false);
+    setExpenses([]);
+    setPage(1);
+    setHasMore(true);
+    setRefreshing(true);
+    fetchExpenses(1, false, defaultMonthYear.month, defaultMonthYear.year);
   };
 
-  const getFilterCount = () => {
-    let count = 0;
-    if (startDate) count++;
-    if (endDate) count++;
-    if (expenseTypeFilter) count++;
-    if (paymentMethodFilter) count++;
-    return count;
+  const applyFilters = () => {
+    setAppliedMonth(draftMonth);
+    setAppliedYear(draftYear);
+    setFilterModalVisible(false);
+    setExpenses([]);
+    setPage(1);
+    setHasMore(true);
+    setRefreshing(true);
+    fetchExpenses(1, false, draftMonth, draftYear);
   };
-
-  // Quick date range filters
-  const applyQuickDateFilter = (filter: 'today' | 'yesterday' | 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth') => {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    
-    switch (filter) {
-      case 'today':
-        setStartDate(todayStr);
-        setEndDate(todayStr);
-        break;
-      case 'yesterday':
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        setStartDate(yesterdayStr);
-        setEndDate(yesterdayStr);
-        break;
-      case 'last7days':
-        const last7 = new Date(today);
-        last7.setDate(last7.getDate() - 7);
-        setStartDate(last7.toISOString().split('T')[0]);
-        setEndDate(todayStr);
-        break;
-      case 'last30days':
-        const last30 = new Date(today);
-        last30.setDate(last30.getDate() - 30);
-        setStartDate(last30.toISOString().split('T')[0]);
-        setEndDate(todayStr);
-        break;
-      case 'thisMonth':
-        const firstDayThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        setStartDate(firstDayThisMonth.toISOString().split('T')[0]);
-        setEndDate(todayStr);
-        break;
-      case 'lastMonth':
-        const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-        setStartDate(firstDayLastMonth.toISOString().split('T')[0]);
-        setEndDate(lastDayLastMonth.toISOString().split('T')[0]);
-        break;
-    }
-  };
-
-  // Get unique expense types from expenses
-  const expenseTypes = React.useMemo(() => {
-    const types = [...new Set(expenses.map(exp => exp.expense_type))];
-    return types.sort();
-  }, [expenses]);
 
   const getPaymentMethodIcon = (method: PaymentMethod) => {
     switch (method) {
@@ -326,46 +309,44 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
       />
-      
-      {/* Filter Button */}
-      <View style={{ padding: 12, backgroundColor: CONTENT_COLOR, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
-        <TouchableOpacity
-          onPress={() => setShowFilters(!showFilters)}
-          style={{
-            backgroundColor: getFilterCount() > 0 ? Theme.colors.primary : Theme.colors.light,
-            borderRadius: 8,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-          }}
-        >
-          <Ionicons name="filter" size={18} color={getFilterCount() > 0 ? '#fff' : Theme.colors.text.primary} />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: getFilterCount() > 0 ? '#fff' : Theme.colors.text.primary }}>
-            Filters
-          </Text>
-          {getFilterCount() > 0 && (
-            <View
+
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={openFilters}
               style={{
-                backgroundColor: '#fff',
-                borderRadius: 10,
-                width: 20,
-                height: 20,
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: Theme.colors.border,
+                backgroundColor: '#fff',
               }}
             >
-              <Text style={{ fontSize: 11, fontWeight: '700', color: Theme.colors.primary }}>
-                {getFilterCount()}
+              <Ionicons name="options-outline" size={18} color={Theme.colors.text.secondary} />
+              <Text style={{ marginLeft: 8, fontSize: 13, color: Theme.colors.text.primary, fontWeight: '600' }}>
+                Filters
               </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-      
-      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+            </TouchableOpacity>
+
+            {(appliedMonth || appliedYear) ? (
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+                  {appliedMonth ? getSelectedMonthLabel(appliedMonth) : 'All months'}
+                  {appliedYear ? `, ${appliedYear}` : ''}
+                </Text>
+              </View>
+            ) : (
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                No filters
+              </Text>
+            )}
+          </View>
+        </View>
+
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 80 }}
@@ -392,7 +373,8 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginBottom: 4 }}>
-                This Month
+                {appliedMonth ? getSelectedMonthLabel(appliedMonth) : 'Total'}
+                {appliedYear ? ` ${appliedYear}` : ''}
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '600', color: Theme.colors.danger }}>
                 {formatAmount(expenses.reduce((sum, exp) => sum + Number(exp.amount), 0))}
@@ -502,365 +484,104 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
       />
 
       {/* Filter Modal */}
-      <Modal
-        visible={showFilters}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFilters(false)}
+      <SlideBottomModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        title="Filter Expenses"
+        subtitle="Filter by paid month"
+        submitLabel="Apply"
+        cancelLabel="Clear"
+        onSubmit={applyFilters}
+        onCancel={clearFilters}
       >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setShowFilters(false)}
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-            <View
+        <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 10 }}>
+          Month
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+          <TouchableOpacity
+            onPress={() => setDraftMonth(null)}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              borderRadius: 10,
+              backgroundColor: draftMonth === null ? Theme.colors.primary : '#F3F4F6',
+            }}
+          >
+            <Text style={{
+              fontSize: 13,
+              fontWeight: '700',
+              color: draftMonth === null ? '#fff' : Theme.colors.text.primary,
+            }}>
+              All
+            </Text>
+          </TouchableOpacity>
+
+          {MONTHS.map(m => (
+            <TouchableOpacity
+              key={m.value}
+              onPress={() => setDraftMonth(m.value)}
               style={{
-                backgroundColor: '#fff',
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                maxHeight: SCREEN_HEIGHT * 0.75,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 10,
+                backgroundColor: draftMonth === m.value ? Theme.colors.primary : '#F3F4F6',
               }}
             >
-              {/* Handle Bar */}
-              <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
-                <View
-                  style={{
-                    width: 40,
-                    height: 4,
-                    backgroundColor: Theme.colors.border,
-                    borderRadius: 2,
-                  }}
-                />
-              </View>
+              <Text style={{
+                fontSize: 13,
+                fontWeight: '700',
+                color: draftMonth === m.value ? '#fff' : Theme.colors.text.primary,
+              }}>
+                {m.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-              {/* Header */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 20,
-                  paddingVertical: 16,
-                  borderBottomWidth: 1,
-                  borderBottomColor: Theme.colors.border,
-                }}
-              >
-                <View>
-                  <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary }}>
-                    Filter Expenses
-                  </Text>
-                  {getFilterCount() > 0 && (
-                    <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginTop: 2 }}>
-                      {getFilterCount()} filter{getFilterCount() > 1 ? 's' : ''} active
-                    </Text>
-                  )}
-                </View>
-                <TouchableOpacity
-                  onPress={() => setShowFilters(false)}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
-                    backgroundColor: Theme.colors.light,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Ionicons name="close" size={20} color={Theme.colors.text.secondary} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Filter Content */}
-              <ScrollView style={{ maxHeight: SCREEN_HEIGHT * 0.5 }} contentContainerStyle={{ padding: 20 }}>
-                {/* Date Range Filter */}
-                <View style={{ marginBottom: 24 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                    Date Range
-                  </Text>
-                  
-                  {/* Quick Date Filters */}
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-                    <TouchableOpacity
-                      onPress={() => applyQuickDateFilter('today')}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        backgroundColor: Theme.colors.background.blueLight,
-                        borderWidth: 1,
-                        borderColor: Theme.colors.primary,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.primary }}>
-                        Today
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => applyQuickDateFilter('yesterday')}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        backgroundColor: Theme.colors.background.blueLight,
-                        borderWidth: 1,
-                        borderColor: Theme.colors.primary,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.primary }}>
-                        Yesterday
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => applyQuickDateFilter('last7days')}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        backgroundColor: Theme.colors.background.blueLight,
-                        borderWidth: 1,
-                        borderColor: Theme.colors.primary,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.primary }}>
-                        Last 7 Days
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => applyQuickDateFilter('last30days')}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        backgroundColor: Theme.colors.background.blueLight,
-                        borderWidth: 1,
-                        borderColor: Theme.colors.primary,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.primary }}>
-                        Last 30 Days
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => applyQuickDateFilter('thisMonth')}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        backgroundColor: Theme.colors.background.blueLight,
-                        borderWidth: 1,
-                        borderColor: Theme.colors.primary,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.primary }}>
-                        This Month
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => applyQuickDateFilter('lastMonth')}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        backgroundColor: Theme.colors.background.blueLight,
-                        borderWidth: 1,
-                        borderColor: Theme.colors.primary,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.primary }}>
-                        Last Month
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Custom Date Pickers */}
-                  <DatePicker
-                    label="Start Date"
-                    value={startDate}
-                    onChange={setStartDate}
-                    maximumDate={endDate ? new Date(endDate) : new Date()}
-                  />
-                  <DatePicker
-                    label="End Date"
-                    value={endDate}
-                    onChange={setEndDate}
-                    minimumDate={startDate ? new Date(startDate) : undefined}
-                    maximumDate={new Date()}
-                  />
-                </View>
-
-                {/* Expense Type Filter */}
-                {expenseTypes.length > 0 && (
-                  <View style={{ marginBottom: 24 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                      Expense Type
-                    </Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                      <TouchableOpacity
-                        onPress={() => setExpenseTypeFilter(null)}
-                        style={{
-                          paddingHorizontal: 16,
-                          paddingVertical: 10,
-                          borderRadius: 8,
-                          backgroundColor: expenseTypeFilter === null ? Theme.colors.primary : '#fff',
-                          borderWidth: 1,
-                          borderColor: expenseTypeFilter === null ? Theme.colors.primary : Theme.colors.border,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            fontWeight: '600',
-                            color: expenseTypeFilter === null ? '#fff' : Theme.colors.text.secondary,
-                          }}
-                        >
-                          All Types
-                        </Text>
-                      </TouchableOpacity>
-                      {expenseTypes.map((type) => (
-                        <TouchableOpacity
-                          key={type}
-                          onPress={() => setExpenseTypeFilter(type)}
-                          style={{
-                            paddingHorizontal: 16,
-                            paddingVertical: 10,
-                            borderRadius: 8,
-                            backgroundColor: expenseTypeFilter === type ? Theme.colors.primary : '#fff',
-                            borderWidth: 1,
-                            borderColor: expenseTypeFilter === type ? Theme.colors.primary : Theme.colors.border,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              fontWeight: '600',
-                              color: expenseTypeFilter === type ? '#fff' : Theme.colors.text.secondary,
-                            }}
-                          >
-                            {type}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                )}
-
-                {/* Payment Method Filter */}
-                <View style={{ marginBottom: 24 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                    Payment Method
-                  </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => setPaymentMethodFilter(null)}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        backgroundColor: paymentMethodFilter === null ? Theme.colors.primary : '#fff',
-                        borderWidth: 1,
-                        borderColor: paymentMethodFilter === null ? Theme.colors.primary : Theme.colors.border,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '600',
-                          color: paymentMethodFilter === null ? '#fff' : Theme.colors.text.secondary,
-                        }}
-                      >
-                        All Methods
-                      </Text>
-                    </TouchableOpacity>
-                    {[PaymentMethod.GPAY, PaymentMethod.PHONEPE, PaymentMethod.CASH, PaymentMethod.BANK_TRANSFER].map((method) => (
-                      <TouchableOpacity
-                        key={method}
-                        onPress={() => setPaymentMethodFilter(method)}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 6,
-                          paddingHorizontal: 16,
-                          paddingVertical: 10,
-                          borderRadius: 8,
-                          backgroundColor: paymentMethodFilter === method ? getPaymentMethodColor(method) : '#fff',
-                          borderWidth: 1,
-                          borderColor: paymentMethodFilter === method ? getPaymentMethodColor(method) : Theme.colors.border,
-                        }}
-                      >
-                        <Ionicons
-                          name={getPaymentMethodIcon(method) as any}
-                          size={16}
-                          color={paymentMethodFilter === method ? '#fff' : getPaymentMethodColor(method)}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            fontWeight: '600',
-                            color: paymentMethodFilter === method ? '#fff' : Theme.colors.text.secondary,
-                          }}
-                        >
-                          {method}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              </ScrollView>
-
-              {/* Footer Buttons */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  gap: 12,
-                  padding: 20,
-                  paddingTop: 16,
-                  borderTopWidth: 1,
-                  borderTopColor: Theme.colors.border,
-                }}
-              >
-                {getFilterCount() > 0 && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      clearFilters();
-                      setShowFilters(false);
-                    }}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 14,
-                      borderRadius: 12,
-                      backgroundColor: Theme.colors.light,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-                      Clear Filters
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => setShowFilters(false)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 14,
-                    borderRadius: 12,
-                    backgroundColor: Theme.colors.primary,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
-                    Apply Filters
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 10 }}>
+          Year
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          <TouchableOpacity
+            onPress={() => setDraftYear(null)}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              borderRadius: 10,
+              backgroundColor: draftYear === null ? Theme.colors.primary : '#F3F4F6',
+            }}
+          >
+            <Text style={{
+              fontSize: 13,
+              fontWeight: '700',
+              color: draftYear === null ? '#fff' : Theme.colors.text.primary,
+            }}>
+              All
+            </Text>
           </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+
+          {years.map((y: number) => (
+            <TouchableOpacity
+              key={y}
+              onPress={() => setDraftYear(y)}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 10,
+                backgroundColor: draftYear === y ? Theme.colors.primary : '#F3F4F6',
+              }}
+            >
+              <Text style={{
+                fontSize: 13,
+                fontWeight: '700',
+                color: draftYear === y ? '#fff' : Theme.colors.text.primary,
+              }}>
+                {y}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </SlideBottomModal>
     </ScreenLayout>
   );
 };

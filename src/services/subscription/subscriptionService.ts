@@ -79,11 +79,8 @@ class SubscriptionService {
   /**
    * Get subscription history
    */
-  async getSubscriptionHistory(params?: {
-    page?: number;
-    limit?: number;
-  }): Promise<{ success: boolean; data: SubscriptionHistory }> {
-    const response = await axiosInstance.get('/subscription/history', { params });
+  async getSubscriptionHistory(): Promise<{ success: boolean; data: UserSubscription[] }> {
+    const response = await axiosInstance.get('/subscription/history');
     return response.data;
   }
 

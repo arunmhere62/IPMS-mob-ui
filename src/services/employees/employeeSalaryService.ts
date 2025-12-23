@@ -60,9 +60,14 @@ const employeeSalaryService = {
   /**
    * Get all salary records for a PG location
    */
-  async getSalaries(page: number = 1, limit: number = 10): Promise<any> {
+  async getSalaries(
+    page: number = 1,
+    limit: number = 10,
+    month?: number,
+    year?: number,
+  ): Promise<any> {
     const response = await axiosInstance.get('/employee-salary', {
-      params: { page, limit },
+      params: { page, limit, month, year },
     });
     return response.data;
   },

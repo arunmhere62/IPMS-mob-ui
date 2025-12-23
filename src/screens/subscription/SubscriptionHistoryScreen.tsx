@@ -14,6 +14,7 @@ import { fetchSubscriptionHistory } from '../../store/slices/subscriptionSlice';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Card } from '../../components/Card';
+import { ErrorBanner } from '../../components/ErrorBanner';
 import { Theme } from '../../theme';
 import { UserSubscription } from '../../services/subscription/subscriptionService';
 import { CONTENT_COLOR } from '@/constant';
@@ -24,10 +25,9 @@ interface SubscriptionHistoryScreenProps {
 
 export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { history, historyPagination, loading } = useSelector((state: RootState) => state.subscription);
+  const { history, loading } = useSelector((state: RootState) => state.subscription);
   const [refreshing, setRefreshing] = React.useState(false);
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [hasMore, setHasMore] = React.useState(true);
+  const [fetchError, setFetchError] = React.useState<string | null>(null);
   const [visibleItemsCount, setVisibleItemsCount] = React.useState(0);
   const flatListRef = React.useRef<any>(null);
 
@@ -44,47 +44,39 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
   });
 
   useEffect(() => {
-    loadHistory(1, true);
+    loadHistory(true);
   }, [dispatch]);
 
-  const loadHistory = async (page: number, reset: boolean = false) => {
+  const loadHistory = async (reset: boolean = false) => {
     try {
-      if (!hasMore && !reset) return;
-      
-      setCurrentPage(page);
-      
-      const result = await dispatch(fetchSubscriptionHistory({ page, limit: 10, append: !reset && page > 1 })).unwrap();
+      const result = await dispatch(fetchSubscriptionHistory()).unwrap();
       console.log('📜 History fetched:', result);
-
-      const pagination = (result as any)?.data?.pagination || (result as any)?.pagination;
-      setHasMore(pagination ? page < pagination.totalPages : false);
+      setFetchError(null);
       
       // Scroll to top when resetting
       if (flatListRef.current && reset) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error loading history:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to load subscription history. Please try again.';
+      setFetchError(errorMessage);
     }
   };
 
   // Debug log
   useEffect(() => {
-    console.log('📊 History state:', { history, loading, historyPagination });
-  }, [history, loading, historyPagination]);
+    console.log('📊 History state:', { history, loading });
+  }, [history, loading]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    setCurrentPage(1);
-    setHasMore(true);
-    await loadHistory(1, true);
+    setFetchError(null);
+    await loadHistory(true);
     setRefreshing(false);
-  };
-
-  const loadMoreHistory = () => {
-    if (!hasMore || loading) return;
-    const nextPage = currentPage + 1;
-    loadHistory(nextPage, false);
   };
 
   const formatDate = (dateString: string) => {
@@ -232,70 +224,72 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
         showBackButton
         onBackPress={() => navigation.goBack()}
         title="Subscription History"
-        subtitle={historyPagination ? `${historyPagination.total} subscriptions` : ''}
+        subtitle={history ? `${history.length} subscriptions` : ''}
         backgroundColor={Theme.colors.background.blue}
       />
 
-      <FlatList
-        ref={flatListRef}
-        data={history}
-        renderItem={renderHistoryItem}
-        keyExtractor={(item) => item.s_no?.toString() || item.id?.toString() || Math.random().toString()}
-        style={{ backgroundColor: CONTENT_COLOR }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig.current}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Theme.colors.primary]}
-          />
-        }
-        ListFooterComponent={
-          loading && currentPage > 1 ? (
-            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-              <ActivityIndicator size="small" color={Theme.colors.primary} />
-            </View>
-          ) : null
-        }
-        onEndReached={loadMoreHistory}
-        onEndReachedThreshold={0.5}
-        ListEmptyComponent={
-          loading ? (
-            <View style={{ paddingVertical: 60, alignItems: 'center' }}>
-              <ActivityIndicator size="large" color={Theme.colors.primary} />
-              <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
-                Loading history...
-              </Text>
-            </View>
-          ) : (
-            <View style={{ paddingVertical: 60, alignItems: 'center' }}>
-              <Ionicons name="receipt-outline" size={64} color={Theme.colors.text.tertiary} />
-              <Text style={{ fontSize: 18, fontWeight: '600', color: Theme.colors.text.primary, marginTop: 16 }}>
-                No Subscription History
-              </Text>
-              <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 40 }}>
-                You haven't subscribed to any plan yet
-              </Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('SubscriptionPlans')}
-                style={{
-                  marginTop: 24,
-                  paddingVertical: 12,
-                  paddingHorizontal: 24,
-                  backgroundColor: Theme.colors.primary,
-                  borderRadius: 8,
-                }}
-              >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
-                  View Plans
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+        <ErrorBanner
+          error={fetchError}
+          title="Error Loading Subscription History"
+          onRetry={() => {
+            setFetchError(null);
+            loadHistory(true);
+          }}
+        />
+
+        <FlatList
+          ref={flatListRef}
+          data={history}
+          renderItem={renderHistoryItem}
+          keyExtractor={(item) => item.s_no?.toString() || item.id?.toString() || Math.random().toString()}
+          style={{ backgroundColor: CONTENT_COLOR }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig.current}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Theme.colors.primary]}
+            />
+          }
+          ListEmptyComponent={
+            loading ? (
+              <View style={{ paddingVertical: 60, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={Theme.colors.primary} />
+                <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
+                  Loading history...
                 </Text>
-              </TouchableOpacity>
-            </View>
-          )
-        }
-      />
+              </View>
+            ) : (
+              <View style={{ paddingVertical: 60, alignItems: 'center' }}>
+                <Ionicons name="receipt-outline" size={64} color={Theme.colors.text.tertiary} />
+                <Text style={{ fontSize: 18, fontWeight: '600', color: Theme.colors.text.primary, marginTop: 16 }}>
+                  No Subscription History
+                </Text>
+                <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 40 }}>
+                  You haven't subscribed to any plan yet
+                </Text>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('SubscriptionPlans')}
+                  style={{
+                    marginTop: 24,
+                    paddingVertical: 12,
+                    paddingHorizontal: 24,
+                    backgroundColor: Theme.colors.primary,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+                    View Plans
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )
+          }
+        />
+      </View>
 
       {/* Scroll Position Indicator */}
       {visibleItemsCount > 0 && (
@@ -320,7 +314,7 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
             color: '#fff',
             textAlign: 'center',
           }}>
-            {visibleItemsCount} of {historyPagination?.total || history.length}
+            {visibleItemsCount} of {history.length}
           </Text>
           <Text style={{
             fontSize: 10,
@@ -329,7 +323,7 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
             textAlign: 'center',
             marginTop: 2,
           }}>
-            {(historyPagination?.total || history.length) - visibleItemsCount} remaining
+            {history.length - visibleItemsCount} remaining
           </Text>
         </View>
       )}

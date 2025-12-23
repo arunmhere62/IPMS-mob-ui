@@ -67,12 +67,14 @@ export interface GetRefundPaymentsParams {
 
 export interface RefundPaymentsResponse {
   success: boolean;
-  data: RefundPayment[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
+  data: {
+    data: RefundPayment[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
   };
 }
 

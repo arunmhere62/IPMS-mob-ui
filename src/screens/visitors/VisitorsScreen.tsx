@@ -20,6 +20,7 @@ import { Theme } from '../../theme';
 import { showErrorAlert } from '../../utils/errorHandler';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
+import { ErrorBanner } from '../../components/ErrorBanner';
 import { VisitorFormModal } from '../../components/VisitorFormModal';
 import { ActionButtons } from '../../components/ActionButtons';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +41,10 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [lastFailedPage, setLastFailedPage] = useState<number | null>(null);
+  const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
   const [visibleItemsCount, setVisibleItemsCount] = useState(0);
   const [convertedFilter, setConvertedFilter] = useState<'ALL' | 'CONVERTED' | 'NOT_CONVERTED'>('ALL');
   const [visitorModalVisible, setVisitorModalVisible] = useState(false);
@@ -51,6 +56,9 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   useEffect(() => {
     setCurrentPage(1);
     setHasMore(true);
+    setFetchError(null);
+    setLastFailedPage(null);
+    setInitialLoadCompleted(false);
     loadVisitors(1, true);
   }, [selectedPGLocationId, convertedFilter]);
 
@@ -64,9 +72,13 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
 
   const loadVisitors = async (page: number, reset: boolean = false) => {
     try {
+      if (isPageLoading) return;
       if (!hasMore && !reset) return;
+      if (!initialLoadCompleted && !reset && page > 1) return;
+      if (lastFailedPage !== null && !reset && page <= lastFailedPage) return;
       
       setCurrentPage(page);
+      setIsPageLoading(true);
       
       const params: any = {
         page,
@@ -84,12 +96,33 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       const result = await dispatch(fetchVisitors(params)).unwrap();
       
       setHasMore(result.pagination ? page < result.pagination.totalPages : false);
+      setFetchError(null);
+      setLastFailedPage(null);
+
+      if (page === 1) {
+        setInitialLoadCompleted(true);
+      }
       
       if (flatListRef.current && reset) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading visitors:', error);
+
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to load visitors. Please try again.';
+
+      setFetchError(errorMessage);
+      setLastFailedPage(page);
+
+      if (page === 1) {
+        setHasMore(false);
+        setInitialLoadCompleted(false);
+      }
+    } finally {
+      setIsPageLoading(false);
     }
   };
 
@@ -97,6 +130,9 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
     setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
+    setFetchError(null);
+    setLastFailedPage(null);
+    setInitialLoadCompleted(false);
     await loadVisitors(1, true);
     setRefreshing(false);
   };
@@ -104,11 +140,17 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   const handleSearch = () => {
     setCurrentPage(1);
     setHasMore(true);
+    setFetchError(null);
+    setLastFailedPage(null);
+    setInitialLoadCompleted(false);
     loadVisitors(1, true);
   };
 
   const loadMoreVisitors = () => {
+    if (isPageLoading) return;
+    if (!initialLoadCompleted) return;
     if (!hasMore || loading) return;
+    if (lastFailedPage !== null && currentPage + 1 <= lastFailedPage) return;
     
     const nextPage = currentPage + 1;
     loadVisitors(nextPage, false);
@@ -414,6 +456,19 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       )}
 
       {/* Visitors List */}
+      <ErrorBanner
+        error={fetchError}
+        title="Error Loading Visitors"
+        onRetry={() => {
+          setCurrentPage(1);
+          setHasMore(true);
+          setFetchError(null);
+          setLastFailedPage(null);
+          setInitialLoadCompleted(false);
+          loadVisitors(1, true);
+        }}
+      />
+
       {loading && visitors.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />

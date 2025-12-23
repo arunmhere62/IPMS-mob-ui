@@ -54,9 +54,14 @@ const expenseService = {
   /**
    * Get all expenses for a PG location
    */
-  async getExpenses(page: number = 1, limit: number = 10): Promise<any> {
+  async getExpenses(
+    page: number = 1,
+    limit: number = 10,
+    month?: number,
+    year?: number,
+  ): Promise<any> {
     const response = await axiosInstance.get('/expenses', {
-      params: { page, limit },
+      params: { page, limit, month, year },
     });
     return response.data;
   },

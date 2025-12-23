@@ -94,20 +94,17 @@ export const fetchSubscriptionStatus = createAsyncThunk<
 );
 
 export const fetchSubscriptionHistory = createAsyncThunk<
-  SubscriptionHistory,
-  ({ page?: number; limit?: number; append?: boolean } | undefined),
+  UserSubscription[],
+  void | undefined,
   { rejectValue: ThunkRejectValue }
 >(
   'subscription/fetchHistory',
-  async (params: { page?: number; limit?: number; append?: boolean } = {}, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const { append, ...apiParams } = params;
-      const response = await subscriptionService.getSubscriptionHistory(apiParams);
+      const response = await subscriptionService.getSubscriptionHistory();
       console.log('📜 History API response:', response);
-      // Handle different response structures
-      const historyData = response.data || response;
-      console.log('📜 History data extracted:', historyData);
-      return { ...(historyData as any), append: append || false } as any;
+      const historyData: any = response?.data ?? response;
+      return Array.isArray(historyData) ? historyData : [];
     } catch (error: any) {
       console.error('❌ History fetch error:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch history');
@@ -210,34 +207,8 @@ const subscriptionSlice = createSlice({
       })
       .addCase(fetchSubscriptionHistory.fulfilled, (state, action) => {
         state.loading = false;
-        // Handle different response structures
-        const payload: any = action.payload;
-        const append = Boolean(payload?.append);
-
-        const extractedHistory =
-          payload?.data?.data ||
-          payload?.data ||
-          payload?.subscriptions ||
-          [];
-
-        const extractedPagination =
-          payload?.data?.pagination ||
-          payload?.pagination ||
-          null;
-
-        const historyArray = Array.isArray(extractedHistory) ? extractedHistory : [];
-
-        if (append && extractedPagination?.page > 1) {
-          state.history = [...state.history, ...historyArray];
-        } else {
-          state.history = historyArray;
-        }
-
-        state.historyPagination = extractedPagination;
-        console.log('✅ History stored in Redux:', { 
-          history: state.history, 
-          pagination: state.historyPagination 
-        });
+        state.history = Array.isArray(action.payload) ? action.payload : [];
+        state.historyPagination = null;
       })
       .addCase(fetchSubscriptionHistory.rejected, (state, action) => {
         state.loading = false;

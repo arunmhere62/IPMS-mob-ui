@@ -19,10 +19,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 import employeeSalaryService, { EmployeeSalary, PaymentMethod } from '../../services/employees/employeeSalaryService';
 import { AddEditEmployeeSalaryModal } from '@/screens/employee-salary/AddEditEmployeeSalaryModal';
+import { SlideBottomModal } from '../../components/SlideBottomModal';
 
 interface EmployeeSalaryScreenProps {
   navigation: any;
 }
+
+const MONTHS = [
+  { label: 'January', value: 1 },
+  { label: 'February', value: 2 },
+  { label: 'March', value: 3 },
+  { label: 'April', value: 4 },
+  { label: 'May', value: 5 },
+  { label: 'June', value: 6 },
+  { label: 'July', value: 7 },
+  { label: 'August', value: 8 },
+  { label: 'September', value: 9 },
+  { label: 'October', value: 10 },
+  { label: 'November', value: 11 },
+  { label: 'December', value: 12 },
+];
 
 export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navigation }) => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -33,6 +49,31 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
   const [totalSalaries, setTotalSalaries] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSalary, setEditingSalary] = useState<EmployeeSalary | null>(null);
+
+  const defaultMonthYear = React.useMemo(() => {
+    const now = new Date();
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return {
+      month: lastMonthDate.getMonth() + 1,
+      year: lastMonthDate.getFullYear(),
+    };
+  }, []);
+
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [appliedMonth, setAppliedMonth] = useState<number | null>(defaultMonthYear.month);
+  const [appliedYear, setAppliedYear] = useState<number | null>(defaultMonthYear.year);
+  const [draftMonth, setDraftMonth] = useState<number | null>(null);
+  const [draftYear, setDraftYear] = useState<number | null>(null);
+
+  const years = React.useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return [currentYear, currentYear - 1, currentYear - 2];
+  }, []);
+
+  const getSelectedMonthLabel = (month: number | null) => {
+    if (!month) return '';
+    return MONTHS.find(m => m.value === month)?.label || '';
+  };
 
   const fetchSalaries = useCallback(async () => {
     
@@ -45,7 +86,12 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
     try {
       setLoading(true);
       
-      const response = await employeeSalaryService.getSalaries(1, 50);
+      const response = await employeeSalaryService.getSalaries(
+        1,
+        50,
+        appliedMonth || undefined,
+        appliedYear || undefined,
+      );
       
       if (response.success) {
         setSalaries(response.data.data || []);
@@ -57,7 +103,35 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedPGLocationId]);
+  }, [selectedPGLocationId, appliedMonth, appliedYear]);
+
+  const clearFilters = () => {
+    setAppliedMonth(defaultMonthYear.month);
+    setAppliedYear(defaultMonthYear.year);
+    setDraftMonth(defaultMonthYear.month);
+    setDraftYear(defaultMonthYear.year);
+    setFilterModalVisible(false);
+    setRefreshing(true);
+    fetchSalaries();
+  };
+
+  const applyFilters = () => {
+    setAppliedMonth(draftMonth);
+    setAppliedYear(draftYear);
+    setFilterModalVisible(false);
+    setRefreshing(true);
+  };
+
+  useEffect(() => {
+    if (!refreshing) return;
+    fetchSalaries();
+  }, [refreshing, fetchSalaries]);
+
+  const openFilters = () => {
+    setDraftMonth(appliedMonth);
+    setDraftYear(appliedYear);
+    setFilterModalVisible(true);
+  };
 
   useEffect(() => {
     fetchSalaries();
@@ -65,7 +139,6 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchSalaries();
   };
 
   const handleAddSalary = () => {
@@ -215,6 +288,42 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
       />
       
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={openFilters}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: Theme.colors.border,
+                backgroundColor: '#fff',
+              }}
+            >
+              <Ionicons name="options-outline" size={18} color={Theme.colors.text.secondary} />
+              <Text style={{ marginLeft: 8, fontSize: 13, color: Theme.colors.text.primary, fontWeight: '600' }}>
+                Filters
+              </Text>
+            </TouchableOpacity>
+
+            {(appliedMonth || appliedYear) ? (
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+                  {appliedMonth ? getSelectedMonthLabel(appliedMonth) : 'All months'}
+                  {appliedYear ? `, ${appliedYear}` : ''}
+                </Text>
+              </View>
+            ) : (
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                No filters
+              </Text>
+            )}
+          </View>
+        </View>
+
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 20 }}
@@ -314,20 +423,13 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
               </Card>
             ))
           )}
-
-          {loading && salaries.length > 0 && (
-            <View style={{ padding: 20, alignItems: 'center' }}>
-              <ActivityIndicator size="small" color={Theme.colors.primary} />
-            </View>
-          )}
         </ScrollView>
 
-        {/* Floating Add Button */}
         <TouchableOpacity
           onPress={handleAddSalary}
           style={{
             position: 'absolute',
-            bottom: 20,
+            bottom: 24,
             right: 20,
             width: 60,
             height: 60,
@@ -344,6 +446,105 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
         >
           <Ionicons name="add" size={32} color="#fff" />
         </TouchableOpacity>
+
+        <SlideBottomModal
+          visible={filterModalVisible}
+          onClose={() => setFilterModalVisible(false)}
+          title="Filter Salaries"
+          subtitle="Filter by salary month"
+          submitLabel="Apply"
+          cancelLabel="Clear"
+          onSubmit={applyFilters}
+          onCancel={clearFilters}
+        >
+          <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 10 }}>
+            Month
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+            <TouchableOpacity
+              onPress={() => setDraftMonth(null)}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 10,
+                backgroundColor: draftMonth === null ? Theme.colors.primary : '#F3F4F6',
+              }}
+            >
+              <Text style={{
+                fontSize: 13,
+                fontWeight: '700',
+                color: draftMonth === null ? '#fff' : Theme.colors.text.primary,
+              }}>
+                All
+              </Text>
+            </TouchableOpacity>
+
+            {MONTHS.map(m => (
+              <TouchableOpacity
+                key={m.value}
+                onPress={() => setDraftMonth(m.value)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  backgroundColor: draftMonth === m.value ? Theme.colors.primary : '#F3F4F6',
+                }}
+              >
+                <Text style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: draftMonth === m.value ? '#fff' : Theme.colors.text.primary,
+                }}>
+                  {m.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 10 }}>
+            Year
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => setDraftYear(null)}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 10,
+                backgroundColor: draftYear === null ? Theme.colors.primary : '#F3F4F6',
+              }}
+            >
+              <Text style={{
+                fontSize: 13,
+                fontWeight: '700',
+                color: draftYear === null ? '#fff' : Theme.colors.text.primary,
+              }}>
+                All
+              </Text>
+            </TouchableOpacity>
+
+            {years.map((y: number) => (
+              <TouchableOpacity
+                key={y}
+                onPress={() => setDraftYear(y)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  backgroundColor: draftYear === y ? Theme.colors.primary : '#F3F4F6',
+                }}
+              >
+                <Text style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: draftYear === y ? '#fff' : Theme.colors.text.primary,
+                }}>
+                  {y}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </SlideBottomModal>
       </View>
 
       {/* Add/Edit Modal */}

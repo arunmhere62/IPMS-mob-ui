@@ -50,6 +50,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const [pendingRentFilter, setPendingRentFilter] = useState(false);
   const [pendingAdvanceFilter, setPendingAdvanceFilter] = useState(false);
   const [partialRentFilter, setPartialRentFilter] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isPageLoading, setIsPageLoading] = useState(false);
 
   const [expandedPaymentCards, setExpandedPaymentCards] = useState<Set<number>>(new Set());
   const flatListRef = React.useRef<any>(null);
@@ -127,9 +129,10 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
   const loadTenants = async (page: number, reset: boolean = false) => {
     try {
+      if (isPageLoading) return;
       if (!hasMore && !reset) return;
       
-      setCurrentPage(page);
+      setIsPageLoading(true);
       
       // When room filter is active, fetch all tenants from that room
       const isRoomFiltered = selectedRoomId !== null;
@@ -150,6 +153,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
       
       console.log('Loading tenants with params:', params);
       const result = await dispatch(fetchTenants({ ...params, append: !reset && page > 1 })).unwrap();
+      setFetchError(null);
       
       // Debug: Log tenant statuses when using pending filter
       if (pendingRentFilter && result.data) {
@@ -166,13 +170,21 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
       }
       
       setHasMore(result.pagination ? page < result.pagination.totalPages : false);
+      setCurrentPage(reset ? 1 : page);
       
       // Scroll to top when resetting
       if (flatListRef.current && reset) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading tenants:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to load tenants. Please try again.';
+      setFetchError(errorMessage);
+    } finally {
+      setIsPageLoading(false);
     }
   };
 
@@ -202,7 +214,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   };
 
   const loadMoreTenants = () => {
-    if (!hasMore || loading || selectedRoomId !== null) return;
+    if (!hasMore || loading || selectedRoomId !== null || isPageLoading) return;
     
     const nextPage = currentPage + 1;
     loadTenants(nextPage, false);
@@ -1319,7 +1331,40 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
           <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>Loading tenants...</Text>
         </View>
       ) : (
-        <FlatList
+        <>
+          {fetchError && (
+            <View
+              style={{
+                marginHorizontal: 16,
+                marginTop: 16,
+                padding: 12,
+                borderRadius: 10,
+                backgroundColor: '#FEF3C7',
+                borderWidth: 1,
+                borderColor: '#FCD34D',
+              }}
+            >
+              <Text style={{ color: '#92400E', fontWeight: '600', marginBottom: 4 }}>
+                Unable to refresh tenant list
+              </Text>
+              <Text style={{ color: '#B45309', fontSize: 13, marginBottom: 8 }}>
+                {fetchError}
+              </Text>
+              <TouchableOpacity
+                onPress={() => loadTenants(currentPage, tenants.length === 0)}
+                style={{
+                  alignSelf: 'flex-start',
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 6,
+                  backgroundColor: '#F59E0B',
+                }}
+              >
+                <Text style={{ color: '#FFF', fontWeight: '600', fontSize: 12 }}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          <FlatList
           ref={flatListRef}
           data={tenants}
           renderItem={renderTenantCard}
@@ -1360,6 +1405,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
           }}
           scrollEventThrottle={16}
         />
+        </>
       )}
 
 
