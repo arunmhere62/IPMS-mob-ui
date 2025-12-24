@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, TouchableOpacity, ScrollView } from 'react-native';
 import { Theme } from '../../theme';
-import { useDispatch, useSelector } from 'react-redux';
-import { verifyOtp, resendOtp } from '../../store/slices/authSlice';
-import { AppDispatch, RootState } from '../../store';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '../../store/slices/authSlice';
+import { useResendOtpMutation, useVerifyOtpMutation } from '../../services/api/authApi';
+import { AppDispatch } from '../../store';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { OTPInput } from '../../components/OTPInput';
@@ -25,7 +26,8 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const [verifyOtp, { isLoading: verifyingOtp }] = useVerifyOtpMutation();
+  const [resendOtp, { isLoading: resendingOtp }] = useResendOtpMutation();
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -55,7 +57,15 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
     }
 
     try {
-      const result = await dispatch(verifyOtp({ phone, otp })).unwrap();
+      const result = await verifyOtp({ phone, otp }).unwrap();
+
+      dispatch(
+        setCredentials({
+          user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+        })
+      );
       
       // Initialize notification service after successful login
       if (result.user && result.user.s_no && FEATURES.PUSH_NOTIFICATIONS_ENABLED) {
@@ -84,7 +94,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
     if (!canResend) return;
 
     try {
-      await dispatch(resendOtp(phone)).unwrap();
+      await resendOtp({ phone }).unwrap();
       Alert.alert('Success', 'OTP resent successfully');
       setResendTimer(60);
       setCanResend(false);
@@ -149,7 +159,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
             <Button
               title="Verify OTP"
               onPress={handleVerifyOtp}
-              loading={loading}
+              loading={verifyingOtp}
               variant="primary"
               size="lg"
             />
@@ -162,7 +172,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
                   color: Theme.colors.primary, 
                   fontWeight: Theme.typography.fontWeight.semibold 
                 }}>
-                  Resend OTP
+                  {resendingOtp ? 'Resending...' : 'Resend OTP'}
                 </Text>
               </TouchableOpacity>
             ) : (

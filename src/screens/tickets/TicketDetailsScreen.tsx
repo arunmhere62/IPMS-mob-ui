@@ -11,9 +11,9 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store';
-import { fetchTicketById, addComment, clearCurrentTicket } from '../../store/slices/ticketSlice';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { useAddTicketCommentMutation, useGetTicketByIdQuery } from '@/services/api/ticketsApi';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -58,25 +58,20 @@ const getCategoryIcon = (category: string) => {
 };
 
 export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ navigation, route }) => {
-  const dispatch = useDispatch<AppDispatch>();
   const { ticketId } = route.params;
-  const { currentTicket, loading } = useSelector((state: RootState) => state.tickets);
   const { user } = useSelector((state: RootState) => state.auth);
+  const {
+    data: ticketResponse,
+    isLoading: loading,
+    refetch: refetchTicket,
+  } = useGetTicketByIdQuery(ticketId, { skip: !ticketId });
+  const [addTicketComment] = useAddTicketCommentMutation();
+
+  const currentTicket = (ticketResponse as any)?.data;
 
   const [commentText, setCommentText] = useState('');
   const [commentImages, setCommentImages] = useState<string[]>([]);
   const [submittingComment, setSubmittingComment] = useState(false);
-
-  useEffect(() => {
-    loadTicketDetails();
-    return () => {
-      dispatch(clearCurrentTicket());
-    };
-  }, [ticketId]);
-
-  const loadTicketDetails = () => {
-    dispatch(fetchTicketById(ticketId));
-  };
 
   const handleAddComment = async () => {
     if (!commentText.trim()) {
@@ -91,17 +86,17 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
 
     try {
       setSubmittingComment(true);
-      await dispatch(addComment({
+      await addTicketComment({
         ticketId,
         data: {
           comment: commentText.trim(),
-          attachments: commentImages, // Always send array, even if empty
+          attachments: commentImages,
         },
-      })).unwrap();
+      }).unwrap();
       setCommentText('');
       setCommentImages([]);
       Alert.alert('Success', 'Comment added successfully');
-      loadTicketDetails();
+      refetchTicket();
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to add comment');
     } finally {

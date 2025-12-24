@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store';
-import { fetchOrganizations } from '../../store/slices/organizationSlice';
+import { useGetAllOrganizationsQuery } from '../../services/api/organizationApi';
 import { Theme } from '../../theme';
 import { Card } from '../../components/Card';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -13,14 +11,20 @@ interface OrganizationsScreenProps {
 }
 
 export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { organizations, pagination, loading, error } = useSelector(
-    (state: RootState) => state.organizations
-  );
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedPGLocations, setExpandedPGLocations] = useState<{ [key: number]: boolean }>({});
   const flatListRef = React.useRef<any>(null);
+
+  const {
+    data: organizationsResponse,
+    isFetching,
+    error,
+    refetch,
+  } = useGetAllOrganizationsQuery({ page: currentPage, limit: 10 });
+
+  const organizations = organizationsResponse?.data ?? [];
+  const pagination = organizationsResponse?.pagination ?? null;
 
   useEffect(() => {
     loadOrganizations(1);
@@ -29,7 +33,6 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
   const loadOrganizations = async (page: number) => {
     try {
       setCurrentPage(page);
-      await dispatch(fetchOrganizations({ page, limit: 10 })).unwrap();
       // Scroll to top when page changes
       if (flatListRef.current) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: true });
@@ -48,7 +51,7 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadOrganizations(currentPage);
+    await refetch();
     setRefreshing(false);
   };
 
@@ -415,7 +418,7 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
   };
 
   const renderEmpty = () => {
-    if (loading) return null;
+    if (isFetching) return null;
     return (
       <View style={{ 
         flex: 1, 
@@ -453,12 +456,12 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
           borderLeftColor: '#EF4444',
         }}>
           <Text style={{ fontSize: 12, color: '#991B1B' }}>
-            ❌ {error}
+            ❌ {'Failed to load organizations'}
           </Text>
         </View>
       )}
 
-      {loading && organizations.length === 0 ? (
+      {isFetching && organizations.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
           <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
@@ -484,7 +487,7 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
       )}
 
       {/* Page Navigation */}
-      {!loading && organizations.length > 0 && renderPageNumbers()}
+      {!isFetching && organizations.length > 0 && renderPageNumbers()}
 
       {/* Pagination Info */}
       {pagination && organizations.length > 0 && (

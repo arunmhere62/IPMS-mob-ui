@@ -20,8 +20,9 @@ import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { OptionSelector } from '../../components/OptionSelector';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
-import employeeService, { UserGender } from '../../services/employees/employeeService';
-import { locationService } from '../../services/location/locationService';
+import { useCreateEmployeeMutation, useLazyGetEmployeeByIdQuery, UserGender, useUpdateEmployeeMutation } from '../../services/api/employeesApi';
+import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../services/api/locationApi';
+import { useGetPGLocationsQuery } from '../../services/api/pgLocationsApi';
 import { rolesService } from '../../services/roles/rolesService';
 import { getFolderConfig } from '../../config/aws.config';
 import { CONTENT_COLOR } from '@/constant';
@@ -48,10 +49,14 @@ interface RoleData {
 }
 
 export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation, route }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { selectedPGLocationId, locations } = useSelector((state: RootState) => state.pgLocations);
+  const { user, accessToken } = useSelector((state: RootState) => state.auth);
+  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
+
+  const [fetchEmployeeById] = useLazyGetEmployeeByIdQuery();
+  const [createEmployee] = useCreateEmployeeMutation();
+  const [updateEmployee] = useUpdateEmployeeMutation();
   
   // Check if we're in edit mode
   const employeeId = route?.params?.employeeId;
@@ -87,6 +92,13 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingRoles, setLoadingRoles] = useState(false);
 
+  const { data: statesResponse, isFetching: isFetchingStates } = useGetStatesQuery({ countryCode: 'IN' });
+  const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
+
+  const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, {
+    skip: false,
+  });
+
   // Fetch employee data if in edit mode
   useEffect(() => {
     if (isEditMode && employeeId) {
@@ -96,9 +108,18 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
   // Fetch initial data on mount
   useEffect(() => {
-    fetchStates();
     fetchRoles();
   }, []);
+
+  useEffect(() => {
+    setLoadingStates(isFetchingStates);
+  }, [isFetchingStates]);
+
+  useEffect(() => {
+    if (statesResponse?.success) {
+      setStateData(statesResponse.data);
+    }
+  }, [statesResponse]);
 
   useEffect(() => {
     if (!isEditMode && selectedPGLocationId) {
@@ -122,8 +143,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const fetchEmployeeData = async () => {
     try {
       setInitialLoading(true);
-      const response = await employeeService.getEmployeeById(employeeId);
-      const employee = response;
+      const employee = await fetchEmployeeById(employeeId).unwrap();
       
       setFormData({
         name: employee.name || '',
@@ -164,24 +184,10 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     }
   };
 
-  const fetchStates = async () => {
-    setLoadingStates(true);
-    try {
-      const response = await locationService.getStates('IN');
-      if (response.success) {
-        setStateData(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching states:', error);
-    } finally {
-      setLoadingStates(false);
-    }
-  };
-
   const fetchCities = async (stateCode: string) => {
     setLoadingCities(true);
     try {
-      const response = await locationService.getCities(stateCode);
+      const response = await fetchCitiesTrigger({ stateCode }).unwrap();
       if (response.success) {
         setCityData(response.data);
       }
@@ -209,8 +215,10 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     }
   };
 
+  const safeLocations = Array.isArray((pgLocationsResponse as any)?.data) ? (pgLocationsResponse as any).data : [];
+
   const selectedPGLocation = selectedPGLocationId
-    ? locations.find((loc: any) => loc.s_no === selectedPGLocationId)
+    ? safeLocations.find((loc: any) => loc.s_no === selectedPGLocationId)
     : null;
 
   const updateField = (field: string, value: any) => {
@@ -294,7 +302,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
       if (isEditMode) {
         // Update existing employee
-        await employeeService.updateEmployee(employeeId, employeeData);
+        await updateEmployee({ id: employeeId, data: employeeData }).unwrap();
         Alert.alert('Success', 'Employee updated successfully', [
           {
             text: 'OK',
@@ -306,7 +314,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
         employeeData.email = formData.email.trim();
         employeeData.password = formData.password.trim();
         
-        await employeeService.createEmployee(employeeData);
+        await createEmployee(employeeData).unwrap();
         Alert.alert('Success', 'Employee created successfully', [
           {
             text: 'OK',

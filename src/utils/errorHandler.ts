@@ -1,5 +1,4 @@
 import { Alert } from 'react-native';
-import { openNetworkLogger } from '../components/NetworkLoggerModal';
 import { AxiosError } from 'axios';
 import { getApiErrorMessage } from './apiResponseHandler';
 

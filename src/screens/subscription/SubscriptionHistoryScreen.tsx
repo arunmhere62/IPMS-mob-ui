@@ -7,25 +7,29 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
-import { AppDispatch, RootState } from '../../store';
-import { fetchSubscriptionHistory } from '../../store/slices/subscriptionSlice';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Card } from '../../components/Card';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { Theme } from '../../theme';
-import { UserSubscription } from '../../services/subscription/subscriptionService';
 import { CONTENT_COLOR } from '@/constant';
+import { useGetSubscriptionHistoryQuery, UserSubscription } from '../../services/api/subscriptionApi';
 
 interface SubscriptionHistoryScreenProps {
   navigation: any;
 }
 
 export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { history, loading } = useSelector((state: RootState) => state.subscription);
+  const {
+    data: historyResponse,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetSubscriptionHistoryQuery();
+
+  const history = historyResponse?.data || [];
   const [refreshing, setRefreshing] = React.useState(false);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
   const [visibleItemsCount, setVisibleItemsCount] = React.useState(0);
@@ -44,38 +48,33 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
   });
 
   useEffect(() => {
-    loadHistory(true);
-  }, [dispatch]);
-
-  const loadHistory = async (reset: boolean = false) => {
-    try {
-      const result = await dispatch(fetchSubscriptionHistory()).unwrap();
-      console.log('📜 History fetched:', result);
+    if (!error) {
       setFetchError(null);
-      
-      // Scroll to top when resetting
-      if (flatListRef.current && reset) {
-        flatListRef.current.scrollToOffset({ offset: 0, animated: false });
-      }
-    } catch (error: any) {
-      console.error('❌ Error loading history:', error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Unable to load subscription history. Please try again.';
-      setFetchError(errorMessage);
+      return;
     }
-  };
+
+    const maybeData = (error as any)?.data;
+    const message =
+      (maybeData && (maybeData.message || maybeData.error)) ||
+      (error as any)?.error ||
+      'Unable to load subscription history. Please try again.';
+    setFetchError(message);
+  }, [error]);
 
   // Debug log
   useEffect(() => {
-    console.log('📊 History state:', { history, loading });
-  }, [history, loading]);
+    console.log('📊 History state:', { history, isLoading, isFetching });
+  }, [history, isLoading, isFetching]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     setFetchError(null);
-    await loadHistory(true);
+    await refetch();
+
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+    }
+
     setRefreshing(false);
   };
 
@@ -234,7 +233,11 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
           title="Error Loading Subscription History"
           onRetry={() => {
             setFetchError(null);
-            loadHistory(true);
+            refetch();
+
+            if (flatListRef.current) {
+              flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+            }
           }}
         />
 
@@ -255,7 +258,7 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
             />
           }
           ListEmptyComponent={
-            loading ? (
+            (isLoading || isFetching) ? (
               <View style={{ paddingVertical: 60, alignItems: 'center' }}>
                 <ActivityIndicator size="large" color={Theme.colors.primary} />
                 <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>

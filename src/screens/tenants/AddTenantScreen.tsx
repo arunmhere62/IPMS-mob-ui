@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
-import { createTenant } from '../../store/slices/tenantSlice';
+import { useCreateTenantMutation } from '@/services/api/tenantsApi';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -51,6 +51,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
   const dispatch = useDispatch<AppDispatch>();
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { user } = useSelector((state: RootState) => state.auth);
+  const [createTenantMutation] = useCreateTenantMutation();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
   
@@ -380,16 +381,9 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
         ]);
       } else {
         // Create new tenant
-        await dispatch(
-          createTenant({
-            data: tenantData,
-            headers: {
-              pg_id: selectedPGLocationId,
-              organization_id: user?.organization_id,
-              user_id: user?.s_no,
-            },
-          })
-        ).unwrap();
+        // tenantsApi.createTenant does not currently accept custom headers here.
+        // Base API headers (auth, pg context) are expected to be applied globally.
+        await createTenantMutation(tenantData as any).unwrap();
 
         Alert.alert('Success', 'Tenant created successfully', [
           {

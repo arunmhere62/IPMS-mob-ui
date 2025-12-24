@@ -8,7 +8,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
-import expenseService, { Expense, PaymentMethod } from '../../services/expenses/expenseService';
+import {
+  Expense,
+  PaymentMethod,
+  useCreateExpenseMutation,
+  useUpdateExpenseMutation,
+} from '../../services/api/expensesApi';
 import { DatePicker } from '../../components/DatePicker';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { OptionSelector } from '../../components/OptionSelector';
@@ -46,6 +51,9 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const [createExpense] = useCreateExpenseMutation();
+  const [updateExpense] = useUpdateExpenseMutation();
+
   const [expenseType, setExpenseType] = useState('');
   const [customExpenseType, setCustomExpenseType] = useState('');
   const [showCustomType, setShowCustomType] = useState(false);
@@ -127,11 +135,11 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
 
       if (expense) {
         // Update existing expense
-        await expenseService.updateExpense(expense.s_no, data);
+        await updateExpense({ id: expense.s_no, data }).unwrap();
         Alert.alert('Success', 'Expense updated successfully');
       } else {
         // Create new expense
-        const response = await expenseService.createExpense(data);
+        await createExpense(data).unwrap();
         Alert.alert('Success', 'Expense added successfully');
       }
 

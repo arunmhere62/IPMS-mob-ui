@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
-import employeeSalaryService, { EmployeeSalary, PaymentMethod } from '../../services/employees/employeeSalaryService';
-import employeeService from '../../services/employees/employeeService';
+import { EmployeeSalary, PaymentMethod, useCreateEmployeeSalaryMutation, useUpdateEmployeeSalaryMutation } from '../../services/api/employeeSalaryApi';
+import { useLazyGetEmployeesQuery } from '../../services/api/employeesApi';
 import { DatePicker } from '../../components/DatePicker';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { OptionSelector } from '../../components/OptionSelector';
@@ -39,6 +39,10 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
   onClose,
   onSave,
 }) => {
+  const [createSalary] = useCreateEmployeeSalaryMutation();
+  const [updateSalary] = useUpdateEmployeeSalaryMutation();
+  const [fetchEmployeesTrigger] = useLazyGetEmployeesQuery();
+
   const [employees, setEmployees] = useState<any[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [salaryAmount, setSalaryAmount] = useState('');
@@ -75,17 +79,11 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
   const fetchEmployees = async () => {
     try {
       setLoadingEmployees(true);
-      const response = await employeeService.getEmployees(1, 1000);
-
-      if (response?.success) {
-        setEmployees(response.data || []);
-      } else if (Array.isArray(response)) {
-        setEmployees(response);
-      } else {
-        setEmployees([]);
-      }
+      const response = await fetchEmployeesTrigger({ page: 1, limit: 1000 }).unwrap();
+      setEmployees(response?.data || []);
     } catch (error) {
       Alert.alert('Error', 'Failed to load employees list');
+      setEmployees([]);
     } finally {
       setLoadingEmployees(false);
     }
@@ -129,7 +127,7 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
       };
 
       if (salary) {
-        await employeeSalaryService.updateSalary(salary.s_no, data);
+        await updateSalary({ id: salary.s_no, data }).unwrap();
         Alert.alert('Success', 'Salary record updated successfully');
       } else {
         const createData = {
@@ -137,7 +135,7 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
           month: month,
           ...data,
         };
-        const response = await employeeSalaryService.createSalary(createData);
+        await createSalary(createData).unwrap();
         Alert.alert('Success', 'Salary record added successfully');
       }
 

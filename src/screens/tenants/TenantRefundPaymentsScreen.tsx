@@ -16,11 +16,8 @@ import { Card } from '../../components/Card';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
-import refundPaymentService from '@/services/payments/refundPaymentService';
+import { useDeleteRefundPaymentMutation, useUpdateRefundPaymentMutation } from '@/services/api/paymentsApi';
 import { showErrorAlert } from '@/utils/errorHandler';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { fetchTenants } from '../../store/slices/tenantSlice';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import { AddRefundPaymentModal } from './AddRefundPaymentModal';
@@ -38,9 +35,9 @@ interface RefundPayment {
 export const TenantRefundPaymentsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+
+  const [deleteRefundPayment] = useDeleteRefundPaymentMutation();
+  const [updateRefundPayment] = useUpdateRefundPaymentMutation();
 
   const payments: RefundPayment[] = route.params?.payments || [];
   const tenantName = route.params?.tenantName || 'Tenant';
@@ -57,23 +54,6 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
   const [editingRefundPayment, setEditingRefundPayment] = useState<RefundPayment | null>(null);
 
   const [loading, setLoading] = useState(false);
-
-  // Function to refresh tenant list
-  const refreshTenantList = async () => {
-    try {
-      await dispatch(
-        fetchTenants({
-          page: 1,
-          limit: 20,
-          pg_id: selectedPGLocationId || undefined,
-          organization_id: user?.organization_id || undefined,
-          user_id: user?.s_no || undefined,
-        })
-      ).unwrap();
-    } catch (error) {
-      console.error('Error refreshing tenant list:', error);
-    }
-  };
 
   // Function to refresh tenant details (navigate back to tenant details)
   const refreshTenantDetails = () => {
@@ -95,15 +75,10 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
           onPress: async () => {
             try {
               setLoading(true);
-              await refundPaymentService.deleteRefundPayment(payment.s_no, {
-                pg_id: selectedPGLocationId || undefined,
-                organization_id: user?.organization_id || undefined,
-                user_id: user?.s_no || undefined,
-              });
+              await deleteRefundPayment(payment.s_no).unwrap();
               Alert.alert('Success', 'Refund payment deleted successfully');
 
               refreshTenantDetails();
-              refreshTenantList();
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
             } finally {
@@ -122,16 +97,11 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
   };
 
   const handleUpdateRefundPayment = async (id: number, data: any) => {
-    await refundPaymentService.updateRefundPayment(id, data, {
-      pg_id: selectedPGLocationId || undefined,
-      organization_id: user?.organization_id || undefined,
-      user_id: user?.s_no || undefined,
-    });
+    await updateRefundPayment({ id, data }).unwrap();
   };
 
   const handleRefundPaymentSuccess = () => {
     refreshTenantDetails();
-    refreshTenantList();
   };
 
   const prepareReceiptData = (payment: RefundPayment) => {

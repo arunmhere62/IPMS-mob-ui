@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Theme } from '../theme';
-import { awsS3ServiceBackend as awsS3Service, S3Utils } from '../services/storage/awsS3ServiceBackend';
-import { getFolderConfig } from '../config/aws.config';
+import { useUploadToS3Mutation } from '../services/api/storageApi';
 
 interface ImageUploadS3Props {
   images: string[];
@@ -41,6 +40,27 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
 }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
+  const [uploadToS3Mutation] = useUploadToS3Mutation();
+
+  const generateUniqueFileName = (baseName: string, prefix: string) => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).slice(2, 10);
+    const safePrefix = (prefix || 'file').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeName = (baseName || 'file').replace(/[^a-zA-Z0-9._-]/g, '_');
+    return `${safePrefix}_${timestamp}_${random}_${safeName}`;
+  };
+
+  const validateBase64FileSize = (dataUriOrBase64: string, maxSizeMB: number) => {
+    try {
+      const base64 = dataUriOrBase64.includes('base64,') ? dataUriOrBase64.split('base64,')[1] : dataUriOrBase64;
+      // base64 size in bytes ~= (len * 3/4) - padding
+      const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+      const bytes = Math.floor((base64.length * 3) / 4) - padding;
+      return bytes <= maxSizeMB * 1024 * 1024;
+    } catch {
+      return false;
+    }
+  };
 
   // Helper function to clean up images array
   const cleanImages = (imageArray: string[]) => {
@@ -72,16 +92,19 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
     try {
       setUploadProgress(prev => ({ ...prev, [index]: 0 }));
 
-      const fileName = S3Utils.generateUniqueFileName(
+      const fileName = generateUniqueFileName(
         `room_image_${Date.now()}.jpg`,
         entityId ? `room_${entityId}` : 'room'
       );
 
-      const result = await awsS3Service.uploadImage(base64Image, {
-        folder,
-        fileName,
-        isPublic: true,
-      });
+      const result = await uploadToS3Mutation({
+        file: base64Image,
+        options: {
+          folder,
+          fileName,
+          isPublic: true,
+        },
+      }).unwrap();
 
       setUploadProgress(prev => ({ ...prev, [index]: 100 }));
 
@@ -139,7 +162,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
 
               // Validate file size (max 10MB for images)
               const base64Image = `data:image/jpeg;base64,${asset.base64}`;
-              if (!S3Utils.validateFileSize(base64Image, 10)) {
+              if (!validateBase64FileSize(base64Image, 10)) {
                 throw new Error('Image size exceeds 10MB limit');
               }
 
@@ -204,7 +227,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
           const base64Image = `data:image/jpeg;base64,${asset.base64}`;
           
           // Validate file size
-          if (!S3Utils.validateFileSize(base64Image, 10)) {
+          if (!validateBase64FileSize(base64Image, 10)) {
             Alert.alert('Error', 'Image size exceeds 10MB limit');
             return;
           }

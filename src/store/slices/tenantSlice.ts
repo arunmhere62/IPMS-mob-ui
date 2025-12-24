@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import * as tenantService from '../../services/tenants/tenantService';
-import { Tenant, GetTenantsParams, CreateTenantDto } from '../../services/tenants/tenantService';
+import type { Tenant, GetTenantsParams, CreateTenantDto } from '@/services/api/tenantsApi';
+import { tenantsApi } from '@/services/api/tenantsApi';
 
 interface TenantState {
   tenants: Tenant[];
@@ -26,10 +26,10 @@ const initialState: TenantState = {
 
 export const fetchTenants = createAsyncThunk(
   'tenants/fetchAll',
-  async (params: GetTenantsParams & { append?: boolean }, { rejectWithValue }) => {
+  async (params: GetTenantsParams & { append?: boolean }, { dispatch, rejectWithValue }) => {
     try {
       const { append, ...apiParams } = params;
-      const response = await tenantService.getAllTenants(apiParams);
+      const response = await dispatch(tenantsApi.endpoints.getTenants.initiate(apiParams)).unwrap();
       return { ...response, append: append || false };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch tenants');
@@ -41,10 +41,13 @@ export const fetchTenantById = createAsyncThunk(
   'tenants/fetchById',
   async (
     { id, headers }: { id: number; headers?: { pg_id?: number; organization_id?: number; user_id?: number } },
-    { rejectWithValue }
+    { dispatch, rejectWithValue }
   ) => {
     try {
-      const response = await tenantService.getTenantById(id, headers);
+      // NOTE: tenantsApi.getTenantById currently doesn't accept header overrides.
+      // Keeping the signature for backwards-compat with callers.
+      void headers;
+      const response = await dispatch(tenantsApi.endpoints.getTenantById.initiate(id)).unwrap();
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch tenant');
@@ -56,10 +59,11 @@ export const createTenant = createAsyncThunk(
   'tenants/create',
   async (
     { data, headers }: { data: CreateTenantDto; headers?: { pg_id?: number; organization_id?: number; user_id?: number } },
-    { rejectWithValue }
+    { dispatch, rejectWithValue }
   ) => {
     try {
-      const response = await tenantService.createTenant(data, headers);
+      void headers;
+      const response = await dispatch(tenantsApi.endpoints.createTenant.initiate(data)).unwrap();
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create tenant');
@@ -71,10 +75,11 @@ export const updateTenant = createAsyncThunk(
   'tenants/update',
   async (
     { id, data, headers }: { id: number; data: Partial<CreateTenantDto>; headers?: { pg_id?: number; organization_id?: number; user_id?: number } },
-    { rejectWithValue }
+    { dispatch, rejectWithValue }
   ) => {
     try {
-      const response = await tenantService.updateTenant(id, data, headers);
+      void headers;
+      const response = await dispatch(tenantsApi.endpoints.updateTenant.initiate({ id, data })).unwrap();
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update tenant');
@@ -86,10 +91,11 @@ export const deleteTenant = createAsyncThunk(
   'tenants/delete',
   async (
     { id, headers }: { id: number; headers?: { pg_id?: number; organization_id?: number; user_id?: number } },
-    { rejectWithValue }
+    { dispatch, rejectWithValue }
   ) => {
     try {
-      await tenantService.deleteTenant(id, headers);
+      void headers;
+      await dispatch(tenantsApi.endpoints.deleteTenant.initiate(id)).unwrap();
       return id;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete tenant');
@@ -101,10 +107,11 @@ export const checkoutTenant = createAsyncThunk(
   'tenants/checkout',
   async (
     { id, headers }: { id: number; headers?: { pg_id?: number; organization_id?: number; user_id?: number } },
-    { rejectWithValue }
+    { dispatch, rejectWithValue }
   ) => {
     try {
-      const response = await tenantService.checkoutTenant(id, headers);
+      void headers;
+      const response = await dispatch(tenantsApi.endpoints.checkoutTenant.initiate(id)).unwrap();
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to checkout tenant');
@@ -178,7 +185,7 @@ const tenantSlice = createSlice({
       })
       .addCase(updateTenant.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.tenants.findIndex(t => t.s_no === action.payload.s_no);
+        const index = state.tenants.findIndex((t: Tenant) => t.s_no === action.payload.s_no);
         if (index !== -1) {
           state.tenants[index] = action.payload;
         }
@@ -195,7 +202,7 @@ const tenantSlice = createSlice({
       })
       .addCase(deleteTenant.fulfilled, (state, action) => {
         state.loading = false;
-        state.tenants = state.tenants.filter(t => t.s_no !== action.payload);
+        state.tenants = state.tenants.filter((t: Tenant) => t.s_no !== action.payload);
       })
       .addCase(deleteTenant.rejected, (state, action) => {
         state.loading = false;

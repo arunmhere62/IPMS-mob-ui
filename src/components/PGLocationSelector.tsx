@@ -2,25 +2,56 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
-import { setSelectedPGLocation, fetchPGLocations } from '../store/slices/pgLocationSlice';
+import { setSelectedPGLocation } from '../store/slices/pgLocationSlice';
 import { Theme } from '../theme';
+import { useGetPGLocationsQuery } from '../services/api/pgLocationsApi';
+import type { PGLocation } from '../types';
 
 export const PGLocationSelector: React.FC = () => {
   const dispatch = useDispatch();
-  const { locations, selectedPGLocationId, loading } = useSelector(
-    (state: RootState) => state.pgLocations
-  );
+  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { user, accessToken } = useSelector((state: RootState) => state.auth);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Ensure locations is always an array
-  const safeLocations = Array.isArray(locations) ? locations : [];
+  const {
+    data: pgLocationsResponse,
+    isFetching,
+    isLoading,
+    isUninitialized,
+    isError,
+    error,
+  } = useGetPGLocationsQuery(undefined, {
+    skip: false,
+  });
+
+  const safeLocations: PGLocation[] = Array.isArray(pgLocationsResponse)
+    ? (pgLocationsResponse as PGLocation[])
+    : Array.isArray((pgLocationsResponse as any)?.data)
+      ? ((pgLocationsResponse as any).data as PGLocation[])
+      : [];
 
   useEffect(() => {
-    // Fetch PG locations if not already loaded
-    if (safeLocations.length === 0 && !loading) {
-      dispatch(fetchPGLocations() as any);
+    console.log('pgLocations query status', {
+      skip: false,
+      isUninitialized,
+      isLoading,
+      isFetching,
+      isError,
+      selectedPGLocationId,
+      receivedCount: safeLocations.length,
+      error,
+      hasAccessToken: !!accessToken,
+      hasUserId: !!user?.s_no,
+      hasOrganizationId: !!user?.organization_id,
+      rawResponse: pgLocationsResponse,
+    });
+  }, [accessToken, error, isError, isFetching, isLoading, isUninitialized, safeLocations.length, selectedPGLocationId, user?.organization_id, user?.s_no, pgLocationsResponse]);
+
+  useEffect(() => {
+    if (!selectedPGLocationId && safeLocations.length > 0) {
+      dispatch(setSelectedPGLocation(safeLocations[0].s_no));
     }
-  }, [safeLocations.length, loading]);
+  }, [dispatch, safeLocations, selectedPGLocationId]);
 
   const handleLocationChange = (locationId: number) => {
     dispatch(setSelectedPGLocation(locationId));
@@ -31,14 +62,16 @@ export const PGLocationSelector: React.FC = () => {
     setIsOpen(!isOpen);
   };
 
-  const selectedLocation = safeLocations.find(loc => loc.s_no === selectedPGLocationId);
+  const selectedLocation = safeLocations.find((loc) => loc.s_no === selectedPGLocationId);
 
   // Don't render if no locations
   if (safeLocations.length === 0) {
     return (
       <View style={styles.singleLocationContainer}>
         <Text style={styles.singleLocationLabel}>PG Location</Text>
-        <Text style={[styles.singleLocationText, { fontSize: 13, opacity: 0.7 }]}>Loading locations...</Text>
+        <Text style={[styles.singleLocationText, { fontSize: 13, opacity: 0.7 }]}> 
+          {isFetching ? 'Loading locations...' : 'No locations found'}
+        </Text>
       </View>
     );
   }

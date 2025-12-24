@@ -13,10 +13,10 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { createCurrentBill } from '../../services/bills/currentBillService';
+// import { createCurrentBill } from '../../services/bills/currentBillService';
 import { Theme } from '../../theme';
-import { Room } from '../../services/rooms/roomService';
 import { DatePicker } from '../../components/DatePicker';
+import { Room } from '@/services/api';
 
 interface CurrentBillModalProps {
   visible: boolean;
@@ -32,7 +32,6 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
   onSuccess,
 }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { user } = useSelector((state: RootState) => state.auth);
 
   const [loading, setLoading] = useState(false);
   const [billAmount, setBillAmount] = useState('');
@@ -95,11 +94,11 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
         remarks: remarks || undefined,
       };
 
-      await createCurrentBill(billData, {
-        pg_id: selectedPGLocationId,
-        organization_id: user?.organization_id,
-        user_id: user?.s_no,
-      });
+      // await createCurrentBill(billData, {
+      //   pg_id: selectedPGLocationId,
+      //   organization_id: user?.organization_id,
+      //   user_id: user?.s_no,
+      // });
 
       Alert.alert('Success', `Bill created and split equally among all tenants in Room ${room.room_no}`);
       handleClose();

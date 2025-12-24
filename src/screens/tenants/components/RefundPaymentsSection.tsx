@@ -7,7 +7,7 @@ import {
 import { AnimatedPressableCard } from '../../../components/AnimatedPressableCard';
 import { CollapsibleSection } from '../../../components/CollapsibleSection';
 import { Theme } from '../../../theme';
-import { RefundPayment } from '../../../services/tenants/tenantService';
+import { RefundPayment } from '@/services/api/tenantsApi';
 
 interface RefundPaymentsSectionProps {
   payments: RefundPayment[] | undefined;

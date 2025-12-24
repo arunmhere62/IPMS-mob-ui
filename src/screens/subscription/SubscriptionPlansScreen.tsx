@@ -9,17 +9,21 @@ import {
   Dimensions,
   Linking,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
-import { AppDispatch, RootState } from '../../store';
-import { fetchPlans, fetchSubscriptionStatus, subscribeToPlan } from '../../store/slices/subscriptionSlice';
+import { RootState } from '../../store';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Card } from '../../components/Card';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { Theme } from '../../theme';
-import { SubscriptionPlan } from '../../services/subscription/subscriptionService';
 import { CONTENT_COLOR } from '@/constant';
+import {
+  SubscriptionPlan,
+  useGetPlansQuery,
+  useGetSubscriptionStatusQuery,
+  useSubscribeToPlanMutation,
+} from '../../services/api/subscriptionApi';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -28,51 +32,57 @@ interface SubscriptionPlansScreenProps {
 }
 
 export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { data: plans, subscriptionStatus, loading } = useSelector((state: RootState) => state.subscription);
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
-  const [subscribing, setSubscribing] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const loadData = React.useCallback(async () => {
-    try {
-      setFetchError(null);
+  const {
+    data: plansResponse,
+    isLoading: plansLoading,
+    error: plansError,
+    refetch: refetchPlans,
+  } = useGetPlansQuery();
 
-      const plansResult = await dispatch(fetchPlans()).unwrap();
-      console.log('📦 Plans fetched:', plansResult);
-      console.log('📦 Plans length:', plansResult?.length);
-      
-      const statusResult = await dispatch(fetchSubscriptionStatus()).unwrap();
-      console.log('📊 Status fetched:', statusResult);
-    } catch (error: any) {
-      console.error('❌ Error loading subscription data:', error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Unable to load subscription plans. Please try again.';
-      setFetchError(errorMessage);
-    }
-  }, [dispatch]);
+  const {
+    data: subscriptionStatus,
+    isLoading: statusLoading,
+    error: statusError,
+    refetch: refetchStatus,
+  } = useGetSubscriptionStatusQuery();
+
+  const [subscribeToPlan, { isLoading: subscribing }] = useSubscribeToPlanMutation();
+
+  const plans = plansResponse?.data || [];
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const err: any = plansError || statusError;
+    if (!err) {
+      setFetchError(null);
+      return;
+    }
+
+    const maybeData = (err as any)?.data;
+    const message =
+      (maybeData && (maybeData.message || maybeData.error)) ||
+      (err as any)?.error ||
+      'Unable to load subscription plans. Please try again.';
+    setFetchError(message);
+  }, [plansError, statusError]);
   
   // Debug log when plans change
   useEffect(() => {
-  }, [plans, loading]);
+  }, [plans, plansLoading, statusLoading]);
 
   const handleSubscribe = async (planId: number) => {
     try {
-      setSubscribing(true);
       setSelectedPlan(planId);
-      const result = await dispatch(subscribeToPlan(planId)).unwrap();
+      const result = await subscribeToPlan({ planId }).unwrap();
       
       console.log('💳 Subscribe result:', result);
       
-      const paymentUrl = (result as any)?.payment_url;
-      const orderId = (result as any)?.order_id;
-      const subscription = (result as any)?.subscription;
+      const payload: any = (result as any)?.data ?? result;
+      const paymentUrl = payload?.payment_url;
+      const orderId = payload?.order_id;
+      const subscription = payload?.subscription;
       const subscriptionId = subscription?.s_no ?? subscription?.id;
 
       if (paymentUrl) {
@@ -88,9 +98,12 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
       }
     } catch (error: any) {
       console.error('❌ Subscribe error:', error);
-      Alert.alert('Error', error || 'Failed to subscribe');
-    } finally {
-      setSubscribing(false);
+      const maybeData = (error as any)?.data;
+      const message =
+        (maybeData && (maybeData.message || maybeData.error)) ||
+        (error as any)?.message ||
+        'Failed to subscribe';
+      Alert.alert('Error', message);
     }
   };
 
@@ -293,8 +306,8 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           </Text>
           
           <View style={{ marginBottom: 20 }}>
-            {plan.features && plan.features.slice(0, 3).map((feature, idx) => (
-              <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+            {plan.features && plan.features.slice(0, 3).map((feature: string, idx: number) => (
+              <View key={`${plan.s_no}-${idx}`} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
                 <Ionicons 
                   name="checkmark-circle" 
                   size={18} 
@@ -383,7 +396,10 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
         <ErrorBanner
           error={fetchError}
           title="Error Loading Subscription Plans"
-          onRetry={loadData}
+          onRetry={() => {
+            refetchPlans();
+            refetchStatus();
+          }}
         />
 
         <ScrollView
@@ -469,7 +485,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
         )}
 
         {/* Plans */}
-        {loading && (!plans || plans.length === 0) ? (
+        {((plansLoading || statusLoading) && (!plans || plans.length === 0)) ? (
           <View style={{ paddingVertical: 60, alignItems: 'center',  }}>
             <ActivityIndicator size="large" color={Theme.colors.primary} />
             <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>

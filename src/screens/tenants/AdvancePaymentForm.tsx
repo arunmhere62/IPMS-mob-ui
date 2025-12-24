@@ -12,8 +12,8 @@ import { DatePicker } from "../../components/DatePicker";
 import { SlideBottomModal } from "../../components/SlideBottomModal";
 import { OptionSelector, Option } from "../../components/OptionSelector";
 import { AmountInput } from "../../components/AmountInput";
-import advancePaymentService from "@/services/payments/advancePaymentService";
-import { getBedById } from "@/services/rooms/bedService";
+import { useCreateAdvancePaymentMutation } from "@/services/api/paymentsApi";
+import { useLazyGetBedByIdQuery } from "@/services/api/roomsApi";
 import { showErrorAlert } from "@/utils/errorHandler";
 
 interface AdvancePaymentFormProps {
@@ -63,6 +63,8 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [fetchingBedPrice, setFetchingBedPrice] = useState(false);
   const [bedRentAmount, setBedRentAmount] = useState<number>(0);
+  const [createAdvancePayment] = useCreateAdvancePaymentMutation();
+  const [triggerGetBedById] = useLazyGetBedByIdQuery();
   const [formData, setFormData] = useState({
     amount_paid: "",
     payment_date: "",
@@ -106,14 +108,11 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
           setFetchingBedPrice(true);
 
           // Fetch bed price
-          const bedResponse = await getBedById(bedId, {
-            pg_id: pgId,
-          });
+          const bedResponse = await triggerGetBedById(bedId).unwrap();
 
-          if (bedResponse.success && bedResponse.data?.bed_price) {
-            const bedPrice = typeof bedResponse.data.bed_price === 'string' 
-              ? parseFloat(bedResponse.data.bed_price) 
-              : bedResponse.data.bed_price;
+          const priceValue = (bedResponse as any)?.data?.bed_price;
+          if (priceValue) {
+            const bedPrice = typeof priceValue === 'string' ? parseFloat(priceValue) : priceValue;
             setBedRentAmount(bedPrice);
           }
         } catch (error) {
@@ -175,7 +174,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
           remarks: formData.remarks || undefined,
         };
 
-        await advancePaymentService.createAdvancePayment(paymentData);
+        await createAdvancePayment(paymentData as any).unwrap();
         Alert.alert("Success", "Advance payment added successfully");
       } else if (mode === "edit" && paymentId && onSave) {
         const updateData = {

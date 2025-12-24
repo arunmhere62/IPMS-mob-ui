@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AnimatedPressableCard } from '../../../components/AnimatedPressableCard';
 import { CollapsibleSection } from '../../../components/CollapsibleSection';
 import { Theme } from '../../../theme';
-import { AdvancePayment } from '../../../services/tenants/tenantService';
+import { AdvancePayment } from '@/services/api/tenantsApi';
 
 interface AdvancePaymentsSectionProps {
   payments: AdvancePayment[] | undefined;

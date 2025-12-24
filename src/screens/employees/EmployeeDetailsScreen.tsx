@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
-import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -16,7 +16,7 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
-import employeeService from '../../services/employees/employeeService';
+import { useDeleteEmployeeMutation, useGetEmployeeByIdQuery } from '../../services/api/employeesApi';
 
 const DetailRow = ({
   label,
@@ -98,30 +98,18 @@ const EmployeeDetailsScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { employeeId } = route.params;
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const {
+    data: employee,
+    isLoading: loading,
+    isFetching: refreshing,
+    refetch,
+    error,
+  } = useGetEmployeeByIdQuery(employeeId);
 
-  const fetchEmployeeDetails = async () => {
-    try {
-      const data = await employeeService.getEmployeeById(employeeId);
-      setEmployee(data);
-    } catch (error: any) {
-      console.error('Error fetching employee details:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to fetch employee details');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEmployeeDetails();
-  }, [employeeId]);
+  const [deleteEmployee] = useDeleteEmployeeMutation();
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    fetchEmployeeDetails();
+    refetch();
   };
 
   const handleEdit = useCallback(() => {
@@ -139,7 +127,7 @@ const EmployeeDetailsScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await employeeService.deleteEmployee(employeeId);
+              await deleteEmployee(employeeId).unwrap();
               Alert.alert('Success', 'Employee deleted successfully');
               navigation.goBack();
             } catch (error: any) {

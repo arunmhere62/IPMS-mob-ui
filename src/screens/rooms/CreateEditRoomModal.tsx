@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { getRoomById, updateRoom, createRoom, Room } from '../../services/rooms/roomService';
+import { CreateRoomDto, useCreateRoomMutation, useGetRoomByIdQuery, useUpdateRoomMutation } from '../../services/api/roomsApi';
 import { Theme } from '../../theme';
 import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
@@ -29,7 +29,13 @@ export const RoomModal: React.FC<RoomModalProps> = ({
   onSuccess,
 }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { user } = useSelector((state: RootState) => state.auth);
+
+  const { data: roomResponse, isFetching: isRoomFetching, isError: isRoomError } = useGetRoomByIdQuery(roomId as number, {
+    skip: !visible || !roomId,
+  });
+
+  const [createRoomMutation] = useCreateRoomMutation();
+  const [updateRoomMutation] = useUpdateRoomMutation();
 
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -41,35 +47,33 @@ export const RoomModal: React.FC<RoomModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (visible && roomId) {
-      loadRoomData();
+    if (!visible) return;
+    if (!roomId) {
+      setFormData({ room_no: 'RM', images: [] });
+      setOriginalImages([]);
+      setErrors({});
+      return;
     }
-  }, [visible, roomId]);
 
-  const loadRoomData = async () => {
-    if (!roomId) return;
+    setLoadingData(isRoomFetching);
 
-    try {
-      setLoadingData(true);
-      const response = await getRoomById(roomId, {
-        pg_id: selectedPGLocationId || undefined,
-        organization_id: user?.organization_id,
-        user_id: user?.s_no,
-      });
-
-      const roomImages = response.data.images || [];
+    const roomData = (roomResponse as any)?.data;
+    if (roomData) {
+      const roomImages = roomData.images || [];
       setFormData({
-        room_no: response.data.room_no,
+        room_no: roomData.room_no,
         images: roomImages,
       });
-      setOriginalImages([...roomImages]); // Store original images for comparison
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load room data');
-      onClose();
-    } finally {
-      setLoadingData(false);
+      setOriginalImages([...roomImages]);
     }
-  };
+  }, [visible, roomId, roomResponse, isRoomFetching]);
+
+  useEffect(() => {
+    if (visible && roomId && isRoomError) {
+      Alert.alert('Error', 'Failed to load room data');
+      onClose();
+    }
+  }, [visible, roomId, isRoomError, onClose]);
 
   const updateField = (field: string, value: string): void => {
     // Special handling for room_no to maintain RM prefix
@@ -118,11 +122,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
       images: images, // Always send the images array, even if empty
     };
 
-    await updateRoom(roomId, roomData, {
-      pg_id: selectedPGLocationId,
-      organization_id: user?.organization_id,
-      user_id: user?.s_no,
-    });
+    await updateRoomMutation({ id: roomId, data: roomData as Partial<CreateRoomDto> }).unwrap();
   };
 
 
@@ -147,18 +147,10 @@ export const RoomModal: React.FC<RoomModalProps> = ({
       };
 
       if (roomId) {
-        await updateRoom(roomId, roomData, {
-          pg_id: selectedPGLocationId,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        });
+        await updateRoomMutation({ id: roomId, data: roomData as Partial<CreateRoomDto> }).unwrap();
         Alert.alert('Success', 'Room updated successfully');
       } else {
-        await createRoom(roomData, {
-          pg_id: selectedPGLocationId,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        });
+        await createRoomMutation(roomData as unknown as CreateRoomDto).unwrap();
         Alert.alert('Success', 'Room created successfully');
       }
 

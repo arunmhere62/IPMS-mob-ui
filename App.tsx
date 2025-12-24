@@ -4,7 +4,6 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { store, persistor } from './src/store';
 import { ActivityIndicator, View, StatusBar, Text, TouchableOpacity, Platform } from 'react-native';
-import { NetworkLoggerModal } from './src/components/NetworkLoggerModal';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { NetworkStatusProvider } from './src/providers/NetworkStatusProvider';
 import { Theme } from './src/theme';
@@ -14,6 +13,7 @@ import { initializeGlobalErrorHandling } from './src/config/globalErrorHandler';
 import { ErrorProvider } from './src/providers/ErrorProvider';
 import ErrorAlert from './src/components/ErrorAlert/ErrorAlert';
 import { useError } from './src/providers/ErrorProvider';
+import { NetworkLoggerFloatingButton } from './src/components/NetworkLoggerFloatingButton';
 
 export default function App() {
   const [appError, setAppError] = useState<string | null>(null);
@@ -109,7 +109,7 @@ function AppContent() {
     <NetworkStatusProvider>
       <ErrorAlert error={error} onDismiss={clearError} />
       <AppNavigator />
-      <NetworkLoggerModal />
+      <NetworkLoggerFloatingButton />
     </NetworkStatusProvider>
   );
 }

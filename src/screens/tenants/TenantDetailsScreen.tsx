@@ -14,16 +14,13 @@ import { CollapsibleSection } from '../../components/CollapsibleSection';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { DatePicker } from '../../components/DatePicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store';
-import { fetchTenantById, fetchTenants } from '../../store/slices/tenantSlice';
-import { TenantPayment, AdvancePayment, RefundPayment, PendingPaymentMonth, deleteTenant } from '../../services/tenants/tenantService';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { Card } from '../../components/Card';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
-import axiosInstance from '../../services/core/axiosInstance';
 import { CONTENT_COLOR } from '@/constant';
 import RentPaymentForm from './RentPaymentForm';
 import { AddRefundPaymentModal } from './AddRefundPaymentModal';
@@ -42,21 +39,57 @@ import {
   AdvancePaymentsSection,
   RefundPaymentsSection,
 } from './components';
-import advancePaymentService from '@/services/payments/advancePaymentService';
-import refundPaymentService from '@/services/payments/refundPaymentService';
-import { paymentService } from '@/services/payments/paymentService';
+import {
+  useCreateAdvancePaymentMutation,
+  useCreateRefundPaymentMutation,
+  useDeleteAdvancePaymentMutation,
+  useDeleteRefundPaymentMutation,
+  useUpdateTenantPaymentMutation,
+  useUpdateAdvancePaymentMutation,
+  useUpdateRefundPaymentMutation,
+  useDeleteTenantPaymentMutation,
+} from '@/services/api/paymentsApi';
 import { showErrorAlert } from '@/utils/errorHandler';
 import AdvancePaymentForm from './AdvancePaymentForm';
+import {
+  AdvancePayment,
+  PendingPaymentMonth,
+  RefundPayment,
+  TenantPayment,
+  useCheckoutTenantWithDateMutation,
+  useDeleteTenantMutation,
+  useGetTenantByIdQuery,
+  useLazyGetTenantsQuery,
+  useUpdateTenantCheckoutDateMutation,
+} from '@/services/api/tenantsApi';
 
 // Inner component that doesn't directly interact with frozen navigation context
 const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({ tenantId, navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { currentTenant: reduxTenant, loading } = useSelector((state: RootState) => state.tenants);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { user } = useSelector((state: RootState) => state.auth);
+
+  const {
+    data: tenantResponse,
+    isLoading: tenantLoading,
+    refetch: refetchTenant,
+  } = useGetTenantByIdQuery(tenantId, { skip: !tenantId });
+
+  const [triggerTenants] = useLazyGetTenantsQuery();
+  const [deleteTenantMutation] = useDeleteTenantMutation();
+  const [deleteTenantPayment] = useDeleteTenantPaymentMutation();
+  const [checkoutTenantWithDate] = useCheckoutTenantWithDateMutation();
+  const [updateTenantCheckoutDate] = useUpdateTenantCheckoutDateMutation();
+
+  const [createAdvancePayment] = useCreateAdvancePaymentMutation();
+  const [updateAdvancePayment] = useUpdateAdvancePaymentMutation();
+  const [deleteAdvancePayment] = useDeleteAdvancePaymentMutation();
+  const [createRefundPayment] = useCreateRefundPaymentMutation();
+  const [updateRefundPayment] = useUpdateRefundPaymentMutation();
+  const [deleteRefundPayment] = useDeleteRefundPaymentMutation();
+  const [updateTenantPayment] = useUpdateTenantPaymentMutation();
   
-  // Clone tenant data to avoid frozen Redux state issues with React 19
-  const currentTenant = reduxTenant ? JSON.parse(JSON.stringify(reduxTenant)) : null;
+  // Clone tenant data to avoid frozen state issues
+  const currentTenant = tenantResponse?.data ? JSON.parse(JSON.stringify(tenantResponse.data)) : null;
 
   const [expandedSections, setExpandedSections] = useState({
     rentPayments: false,
@@ -101,8 +134,9 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
   const receiptRef = React.useRef<View>(null);
 
   useEffect(() => {
-    loadTenantDetails();
-  }, [tenantId]);
+    if (!tenantId) return;
+    refetchTenant();
+  }, [tenantId, refetchTenant]);
 
   // Handle refresh parameter when screen comes into focus
   useFocusEffect(
@@ -113,44 +147,17 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
       
       if (shouldRefresh) {
         console.log('Refresh parameter detected in TenantDetails, reloading data');
-        loadTenantDetails();
-        refreshTenantList(); // Also refresh tenant list
+        refetchTenant();
+        refreshTenantList();
         // Clear the refresh parameter
         navigation.setParams({ refresh: undefined });
       }
-    }, [navigation, tenantId])
+    }, [navigation, tenantId, refetchTenant])
   );
-
-  const loadTenantDetails = async () => {
-    try {
-      await dispatch(
-        fetchTenantById({
-          id: tenantId,
-          headers: {
-            pg_id: selectedPGLocationId || undefined,
-            organization_id: user?.organization_id || undefined,
-            user_id: user?.s_no || undefined,
-          },
-        })
-      ).unwrap();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to load tenant details');
-      navigation.goBack();
-    }
-  };
 
   const refreshTenantList = async () => {
     try {
-      // Dispatch fetchTenants to refresh the list in Redux
-      await dispatch(
-        fetchTenants({
-          page: 1,
-          limit: 20,
-          pg_id: selectedPGLocationId || undefined,
-          organization_id: user?.organization_id || undefined,
-          user_id: user?.s_no || undefined,
-        })
-      ).unwrap();
+      await triggerTenants({ page: 1, limit: 20 }).unwrap();
     } catch (error) {
       console.error('Error refreshing tenant list:', error);
     }
@@ -172,14 +179,10 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
         throw new Error('PG Location ID is required');
       }
 
-      await advancePaymentService.createAdvancePayment(data, {
-        pg_id: pgId,
-        organization_id: user?.organization_id,
-        user_id: user?.s_no,
-      });
+      await createAdvancePayment({ ...data, pg_id: pgId }).unwrap();
       
       Alert.alert('Success', 'Advance payment created successfully');
-      loadTenantDetails(); // Reload tenant details to show new payment
+      refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
       throw error; // Re-throw to let modal handle it
@@ -195,17 +198,10 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
         throw new Error('PG Location ID is required');
       }
 
-      await refundPaymentService.createRefundPayment(
-        { ...data, pg_id: pgId },
-        {
-          pg_id: pgId,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        }
-      );
+      await createRefundPayment({ ...data, pg_id: pgId }).unwrap();
       
       Alert.alert('Success', 'Refund payment created successfully');
-      loadTenantDetails(); // Reload tenant details to show new payment
+      refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
       throw error; // Re-throw to let modal handle it
@@ -226,10 +222,10 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
 
   const handleSaveRentPayment = async (id: number, data: any) => {
     try {
-      await paymentService.updateTenantPayment(id, data);
+      await updateTenantPayment({ id, data }).unwrap();
       setRentPaymentFormVisible(false);
       setEditingRentPayment(null);
-      loadTenantDetails();
+      refetchTenant();
       refreshTenantList();
     } catch (error: any) {
       throw error;
@@ -250,9 +246,9 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
           style: 'destructive',
           onPress: async () => {
             try {
-              await axiosInstance.delete(`/tenant-payments/${payment.s_no}`);
+              await deleteTenantPayment(payment.s_no).unwrap();
               Alert.alert('Success', 'Rent payment deleted successfully');
-              loadTenantDetails();
+              refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
@@ -404,14 +400,10 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
 
   const handleUpdateAdvancePayment = async (id: number, data: any) => {
     try {
-      await advancePaymentService.updateAdvancePayment(id, data, {
-        pg_id: selectedPGLocationId || undefined,
-        organization_id: user?.organization_id,
-        user_id: user?.s_no,
-      });
+      await updateAdvancePayment({ id, data }).unwrap();
       setEditAdvancePaymentModalVisible(false);
       setEditingAdvancePayment(null);
-      loadTenantDetails();
+      refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
       throw error; // Re-throw to let modal handle it
@@ -432,9 +424,9 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
           style: 'destructive',
           onPress: async () => {
             try {
-              await axiosInstance.delete(`/advance-payments/${payment.s_no}`);
+              await deleteAdvancePayment(payment.s_no).unwrap();
               Alert.alert('Success', 'Advance payment deleted successfully');
-              loadTenantDetails();
+              refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
@@ -459,14 +451,10 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
 
   const handleUpdateRefundPayment = async (id: number, data: any) => {
     try {
-      await refundPaymentService.updateRefundPayment(id, data, {
-        pg_id: selectedPGLocationId || undefined,
-        organization_id: user?.organization_id,
-        user_id: user?.s_no,
-      });
+      await updateRefundPayment({ id, data }).unwrap();
       setEditRefundPaymentModalVisible(false);
       setEditingRefundPayment(null);
-      loadTenantDetails();
+      refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
       throw error; // Re-throw to let modal handle it
@@ -488,13 +476,11 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
 
     try {
       setCheckoutLoading(true);
-      await axiosInstance.post(`/tenants/${currentTenant.s_no}/checkout`, {
-        check_out_date: newCheckoutDate,
-      });
+      await checkoutTenantWithDate({ id: currentTenant.s_no, check_out_date: newCheckoutDate }).unwrap();
       Alert.alert('Success', 'Tenant checked out successfully');
       setCheckoutDateModalVisible(false);
       setNewCheckoutDate('');
-      loadTenantDetails();
+      refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
       Alert.alert('Error', error?.response?.data?.message || 'Failed to checkout tenant');
@@ -522,16 +508,12 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
           style: 'destructive',
           onPress: async () => {
             try {
-              await refundPaymentService.deleteRefundPayment(payment.s_no, {
-                pg_id: selectedPGLocationId || undefined,
-                organization_id: user?.organization_id,
-                user_id: user?.s_no,
-              });
+              await deleteRefundPayment(payment.s_no).unwrap();
               Alert.alert('Success', 'Refund payment deleted successfully');
-              loadTenantDetails();
+              refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: any) {
-              Alert.alert('Error', error.response?.data?.message || 'Failed to delete refund payment');
+              Alert.alert('Error', error?.response?.data?.message || 'Failed to delete refund payment');
             }
           },
         },
@@ -557,10 +539,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
             style: 'destructive',
             onPress: async () => {
               try {
-                await deleteTenant(currentTenant?.s_no || 0, {
-                  organization_id: user?.organization_id || undefined,
-                  user_id: user?.s_no || undefined,
-                });
+                await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
                 Alert.alert('Success', 'Tenant deleted successfully');
                 refreshTenantList(); // Refresh tenant list
                 navigation.goBack();
@@ -586,10 +565,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
             style: 'destructive',
             onPress: async () => {
               try {
-                await deleteTenant(currentTenant?.s_no || 0, {
-                  organization_id: user?.organization_id || undefined,
-                  user_id: user?.s_no || undefined,
-                });
+                await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
                 Alert.alert('Success', 'Tenant deleted successfully');
                 refreshTenantList(); // Refresh tenant list
                 navigation.goBack();
@@ -642,11 +618,9 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
           onPress: async () => {
             try {
               setCheckoutLoading(true);
-              await axiosInstance.put(`/tenants/${tenantId}/checkout-date`, {
-                clear_checkout: true,
-              });
+              await updateTenantCheckoutDate({ id: tenantId, clear_checkout: true }).unwrap();
               Alert.alert('Success', 'Checkout cleared and tenant reactivated successfully');
-              loadTenantDetails();
+              refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: any) {
               Alert.alert('Error', error?.response?.data?.message || 'Failed to clear checkout');
@@ -662,12 +636,10 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
   const confirmUpdateCheckoutDate = async () => {
     try {
       setCheckoutLoading(true);
-      await axiosInstance.put(`/tenants/${tenantId}/checkout-date`, {
-        check_out_date: newCheckoutDate,
-      });
+      await updateTenantCheckoutDate({ id: tenantId, check_out_date: newCheckoutDate }).unwrap();
       Alert.alert('Success', 'Checkout date updated successfully');
       setCheckoutDateModalVisible(false);
-      loadTenantDetails();
+      refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
       Alert.alert('Error', error?.response?.data?.message || 'Failed to update checkout date');
@@ -676,7 +648,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
     }
   };
 
-  if (loading || !currentTenant) {
+  if (tenantLoading || !currentTenant) {
     return (
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
         <ScreenHeader title="Tenant Details" showBackButton={true} onBackPress={() => navigation.goBack()} />
@@ -1103,7 +1075,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
             setEditingRentPayment(null);
           }}
           onSuccess={() => {
-            loadTenantDetails();
+            refetchTenant();
             refreshTenantList();
           }}
           onSave={handleSaveRentPayment}
@@ -1129,7 +1101,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
             setEditingAdvancePayment(null);
           }}
           onSuccess={() => {
-            loadTenantDetails();
+            refetchTenant();
             refreshTenantList();
           }}
           onSave={handleUpdateAdvancePayment}

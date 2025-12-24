@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Alert, KeyboardAvoidingView } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
 import { Theme } from '../../theme';
-import { sendOtp } from '../../store/slices/authSlice';
+import { useSendOtpMutation } from '../../services/api/authApi';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
-import { RootState, AppDispatch } from '../../store';
 
 interface Country {
   code: string;
@@ -30,8 +28,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     phoneCode: '+91',
     phoneLength: 10,
   });
-  const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const [sendOtp, { isLoading: sendingOtp }] = useSendOtpMutation();
 
   const validatePhone = (phoneNumber: string): boolean => {
     const phoneRegex = /^[0-9]{10}$/;
@@ -55,7 +52,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       // Send phone with country code and space
       const fullPhone = selectedCountry.phoneCode + ' ' + phone;
-      await dispatch(sendOtp(fullPhone)).unwrap();
+      await sendOtp({ phone: fullPhone }).unwrap();
       Alert.alert('Success', 'OTP sent successfully to your phone number');
       navigation.navigate('OTPVerification', { phone: fullPhone });
     } catch (err: any) {
@@ -117,7 +114,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         <Button
           title="Send OTP"
           onPress={handleSendOtp}
-          loading={loading}
+          loading={sendingOtp}
           variant="primary"
           size="md"
         />

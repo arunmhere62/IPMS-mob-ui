@@ -12,8 +12,14 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { getRoomById, deleteRoom, Room } from '../../services/rooms/roomService';
-import { getBedsByRoomId, deleteBed, Bed } from '../../services/rooms/bedService';
+import {
+  useGetRoomByIdQuery,
+  useDeleteRoomMutation,
+  useGetBedsByRoomIdQuery,
+  useDeleteBedMutation,
+  Room,
+  Bed,
+} from '../../services/api/roomsApi';
 import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
 import { Theme } from '../../theme';
@@ -33,7 +39,6 @@ interface RoomDetailsScreenProps {
 export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation, route }) => {
   const { roomId } = route.params;
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { user } = useSelector((state: RootState) => state.auth);
 
   const [room, setRoom] = useState<Room | null>(null);
   const [beds, setBeds] = useState<Bed[]>([]);
@@ -43,47 +48,50 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
   const [roomEditModalVisible, setRoomEditModalVisible] = useState(false);
 
+  const {
+    data: roomResponse,
+    refetch: refetchRoom,
+    isFetching: isRoomFetching,
+    isError: isRoomError,
+  } = useGetRoomByIdQuery(roomId, { skip: !selectedPGLocationId });
+
+  const {
+    data: bedsResponse,
+    refetch: refetchBeds,
+    isFetching: isBedsFetching,
+  } = useGetBedsByRoomIdQuery(roomId, { skip: !selectedPGLocationId });
+
+  const [deleteRoomMutation] = useDeleteRoomMutation();
+  const [deleteBedMutation] = useDeleteBedMutation();
+
   useEffect(() => {
-    loadRoomDetails();
-  }, [roomId]);
+    setRoom(((roomResponse as any)?.data || null) as Room | null);
+  }, [roomResponse]);
 
-  const loadRoomDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await getRoomById(roomId, {
-        pg_id: selectedPGLocationId || undefined,
-        organization_id: user?.organization_id,
-        user_id: user?.s_no,
-      });
-      setRoom(response.data);
-      
-      // Load beds for this room
-      await loadBeds();
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load room details');
+  useEffect(() => {
+    setBeds((((bedsResponse as any)?.data || []) as Bed[]) || []);
+  }, [bedsResponse]);
+
+  useEffect(() => {
+    const nextLoading = !selectedPGLocationId ? true : isRoomFetching || isBedsFetching;
+    setLoading(nextLoading);
+  }, [isRoomFetching, isBedsFetching, selectedPGLocationId]);
+
+  useEffect(() => {
+    if (isRoomError) {
+      Alert.alert('Error', 'Failed to load room details');
       navigation.goBack();
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const loadBeds = async () => {
-    try {
-      const response = await getBedsByRoomId(roomId, {
-        pg_id: selectedPGLocationId || undefined,
-        organization_id: user?.organization_id,
-        user_id: user?.s_no,
-      });
-      setBeds(response.data);
-    } catch (error: any) {
-      console.error('Failed to load beds:', error);
-    }
-  };
+  }, [isRoomError, navigation]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadRoomDetails();
-    setRefreshing(false);
+    try {
+      await refetchRoom();
+      await refetchBeds();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleAddBed = () => {
@@ -103,13 +111,9 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
       itemName: bedNo,
       onConfirm: async () => {
         try {
-          await deleteBed(bedId, {
-            pg_id: selectedPGLocationId || undefined,
-            organization_id: user?.organization_id,
-            user_id: user?.s_no,
-          });
+          await deleteBedMutation(bedId).unwrap();
           Alert.alert('Success', 'Bed deleted successfully');
-          await loadBeds();
+          await refetchBeds();
         } catch (error: any) {
           Alert.alert('Error', error.message || 'Failed to delete bed');
         }
@@ -118,8 +122,8 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   };
 
   const handleBedFormSuccess = async () => {
-    await loadBeds();
-    await loadRoomDetails();
+    await refetchBeds();
+    await refetchRoom();
   };
 
   const handleEdit = () => {
@@ -128,7 +132,8 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
 
   const handleRoomEditSuccess = async () => {
     setRoomEditModalVisible(false);
-    await loadRoomDetails();
+    await refetchRoom();
+    await refetchBeds();
   };
 
   const handleDelete = () => {
@@ -138,11 +143,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
       itemName: room?.room_no,
       onConfirm: async () => {
         try {
-          await deleteRoom(roomId, {
-            pg_id: selectedPGLocationId || undefined,
-            organization_id: user?.organization_id,
-            user_id: user?.s_no,
-          });
+          await deleteRoomMutation(roomId).unwrap();
           Alert.alert('Success', 'Room deleted successfully');
           navigation.goBack();
         } catch (error: any) {
@@ -539,8 +540,8 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
         roomNo={room?.room_no || ''}
         bed={selectedBed}
         pgId={selectedPGLocationId || undefined}
-        organizationId={user?.organization_id}
-        userId={user?.s_no}
+        organizationId={undefined}
+        userId={undefined}
       />
 
       {/* Room Form Modal */}

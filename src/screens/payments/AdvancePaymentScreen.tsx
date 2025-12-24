@@ -11,9 +11,8 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { DatePicker } from '../../components/DatePicker';
 import { Alert } from 'react-native';
-import advancePaymentService, { AdvancePayment } from '../../services/payments/advancePaymentService';
-import { getAllRooms, Room } from '../../services/rooms/roomService';
-import { getAllBeds, Bed } from '../../services/rooms/bedService';
+import { AdvancePayment, useLazyGetAdvancePaymentsQuery } from '../../services/api/paymentsApi';
+import { Bed, Room, useGetAllBedsQuery, useGetAllRoomsQuery } from '../../services/api/roomsApi';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 
 const MONTHS = [
@@ -27,6 +26,8 @@ interface AdvancePaymentScreenProps {
 
 export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navigation }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+
+  const [triggerGetAdvancePayments] = useLazyGetAdvancePaymentsQuery();
   
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,43 +59,56 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [loadingBeds, setLoadingBeds] = useState(false);
 
+  const {
+    data: roomsResponse,
+    isFetching: isRoomsFetching,
+    refetch: refetchRooms,
+  } = useGetAllRoomsQuery(
+    selectedPGLocationId ? { page: 1, limit: 100, pg_id: selectedPGLocationId } : (undefined as any),
+    { skip: !selectedPGLocationId }
+  );
+
+  const {
+    data: bedsResponse,
+    isFetching: isBedsFetching,
+    refetch: refetchBeds,
+  } = useGetAllBedsQuery(
+    selectedRoomId && selectedPGLocationId
+      ? { room_id: selectedRoomId, page: 1, limit: 100, pg_id: selectedPGLocationId }
+      : (undefined as any),
+    { skip: !selectedRoomId || !selectedPGLocationId }
+  );
+
   useEffect(() => {
     if (selectedPGLocationId) {
-      fetchRooms();
+      refetchRooms();
     }
   }, [selectedPGLocationId]);
 
   useEffect(() => {
     if (selectedRoomId) {
-      fetchBeds(selectedRoomId);
+      refetchBeds();
     } else {
       setBeds([]);
     }
   }, [selectedRoomId]);
 
-  const fetchRooms = async () => {
-    try {
-      setLoadingRooms(true);
-      const response = await getAllRooms({ page: 1, limit: 100 });
-      setRooms(response.data);
-    } catch (error) {
-      console.error('Error fetching rooms:', error);
-    } finally {
-      setLoadingRooms(false);
-    }
-  };
+  useEffect(() => {
+    setLoadingRooms(isRoomsFetching);
+  }, [isRoomsFetching]);
 
-  const fetchBeds = async (roomId: number) => {
-    try {
-      setLoadingBeds(true);
-      const response = await getAllBeds({ room_id: roomId, page: 1, limit: 100 });
-      setBeds(response.data);
-    } catch (error) {
-      console.error('Error fetching beds:', error);
-    } finally {
-      setLoadingBeds(false);
-    }
-  };
+  useEffect(() => {
+    setLoadingBeds(isBedsFetching);
+  }, [isBedsFetching]);
+
+  useEffect(() => {
+    setRooms(((roomsResponse as any)?.data || []) as Room[]);
+  }, [roomsResponse]);
+
+  useEffect(() => {
+    if (!selectedRoomId) return;
+    setBeds(((bedsResponse as any)?.data || []) as Bed[]);
+  }, [bedsResponse, selectedRoomId]);
 
   const years = React.useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -157,9 +171,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
       if (selectedRoomId) params.room_id = selectedRoomId;
       if (selectedBedId) params.bed_id = selectedBedId;
 
-      const response = await advancePaymentService.getAdvancePayments(params, {
-        pg_id: selectedPGLocationId || undefined,
-      });
+      const response = await triggerGetAdvancePayments(params).unwrap();
       
       if (reset || page === 1) {
         setAdvancePayments(response.data);
@@ -505,6 +517,8 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
         subtitle={`${pagination?.total || 0} payments`}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack(-1)}
         showPGSelector={true}
       />
 

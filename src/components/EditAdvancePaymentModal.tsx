@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 import { DatePicker } from './DatePicker';
-import { AdvancePayment } from '@/services/payments/advancePaymentService';
+import { AdvancePayment } from '@/services/api/paymentsApi';
 
 interface EditAdvancePaymentModalProps {
   visible: boolean;

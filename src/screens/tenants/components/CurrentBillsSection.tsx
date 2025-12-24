@@ -6,7 +6,7 @@ import {
 import { AnimatedPressableCard } from '../../../components/AnimatedPressableCard';
 import { CollapsibleSection } from '../../../components/CollapsibleSection';
 import { Theme } from '../../../theme';
-import { CurrentBill } from '../../../services/tenants/tenantService';
+import { CurrentBill } from '@/services/api/tenantsApi';
 
 interface CurrentBillsSectionProps {
   bills: CurrentBill[] | undefined;

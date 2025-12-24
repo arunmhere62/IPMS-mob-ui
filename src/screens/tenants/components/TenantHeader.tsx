@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Tenant } from "../../../services/tenants/tenantService";
 import { AnimatedPressableCard } from "../../../components/AnimatedPressableCard";
 import { ActionButtons } from "../../../components/ActionButtons";
+import { Tenant } from "@/services/api/tenantsApi";
 
 interface TenantHeaderProps {
   tenant: Tenant;

@@ -16,11 +16,8 @@ import { Card } from '../../components/Card';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
-import advancePaymentService from '@/services/payments/advancePaymentService';
+import { useDeleteAdvancePaymentMutation, useUpdateAdvancePaymentMutation } from '@/services/api/paymentsApi';
 import { showErrorAlert } from '@/utils/errorHandler';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { fetchTenants } from '../../store/slices/tenantSlice';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import AdvancePaymentForm from '@/screens/tenants/AdvancePaymentForm';
@@ -38,9 +35,9 @@ interface AdvancePayment {
 export const TenantAdvancePaymentsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+
+  const [deleteAdvancePayment] = useDeleteAdvancePaymentMutation();
+  const [updateAdvancePayment] = useUpdateAdvancePaymentMutation();
 
   const payments: AdvancePayment[] = route.params?.payments || [];
   const tenantName = route.params?.tenantName || 'Tenant';
@@ -57,23 +54,6 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
   const receiptRef = useRef<any>(null);
-
-  // Function to refresh tenant list
-  const refreshTenantList = async () => {
-    try {
-      await dispatch(
-        fetchTenants({
-          page: 1,
-          limit: 20,
-          pg_id: selectedPGLocationId || undefined,
-          organization_id: user?.organization_id || undefined,
-          user_id: user?.s_no || undefined,
-        })
-      ).unwrap();
-    } catch (error) {
-      console.error('Error refreshing tenant list:', error);
-    }
-  };
 
   // Function to refresh tenant details (navigate back to tenant details)
   const refreshTenantDetails = () => {
@@ -96,12 +76,11 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
           onPress: async () => {
             try {
               setLoading(true);
-              await advancePaymentService.deleteAdvancePayment(payment.s_no);
+              await deleteAdvancePayment(payment.s_no).unwrap();
               Alert.alert('Success', 'Advance payment deleted successfully');
               
               // Navigate back to tenant details screen with refresh
               refreshTenantDetails();
-              refreshTenantList();
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
             } finally {
@@ -121,7 +100,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
 
   const handleUpdateAdvancePayment = async (id: number, data: any) => {
     try {
-      await advancePaymentService.updateAdvancePayment(id, data);
+      await updateAdvancePayment({ id, data }).unwrap();
     } catch (error: any) {
       throw error;
     }
@@ -130,7 +109,6 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   const handleAdvancePaymentSuccess = () => {
     // Refresh tenant details and list after successful save/update
     refreshTenantDetails();
-    refreshTenantList();
   };
 
   const prepareReceiptData = (payment: AdvancePayment) => {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Card } from '../../../components/Card';
 import { Theme } from '../../../theme';
-import { PendingPayment, PendingPaymentMonth } from '../../../services/tenants/tenantService';
+import { PendingPayment, PendingPaymentMonth } from '@/services/api/tenantsApi';
 
 interface PendingPaymentAlertProps {
   pendingPayment: PendingPayment;

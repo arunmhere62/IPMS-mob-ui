@@ -17,8 +17,14 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '../../store';
-import { getAllBeds, getBedsByRoomId, deleteBed, Bed } from '../../services/rooms/bedService';
-import { getAllRooms, Room } from '../../services/rooms/roomService';
+import {
+  useGetAllBedsQuery,
+  useGetBedsByRoomIdQuery,
+  useGetAllRoomsQuery,
+  useDeleteBedMutation,
+  Room,
+  Bed,
+} from '../../services/api/roomsApi';
 import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
 import { Theme } from '../../theme';
@@ -54,193 +60,112 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   const [bedModalVisible, setBedModalVisible] = useState(false);
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
 
+  const [appliedSearch, setAppliedSearch] = useState('');
+
+  const {
+    data: roomsResponse,
+    isFetching: isRoomsFetching,
+  } = useGetAllRoomsQuery(
+    selectedPGLocationId
+      ? {
+          pg_id: selectedPGLocationId,
+          limit: 100,
+        }
+      : (undefined as any),
+    { skip: !selectedPGLocationId }
+  );
+
+  const {
+    data: bedsAllResponse,
+    refetch: refetchAllBeds,
+    isFetching: isBedsAllFetching,
+  } = useGetAllBedsQuery(
+    selectedPGLocationId
+      ? {
+          limit: 100,
+          search: appliedSearch || undefined,
+        }
+      : (undefined as any),
+    { skip: !selectedPGLocationId || !!selectedRoomId }
+  );
+
+  const {
+    data: bedsByRoomResponse,
+    refetch: refetchBedsByRoom,
+    isFetching: isBedsByRoomFetching,
+  } = useGetBedsByRoomIdQuery(selectedRoomId as number, {
+    skip: !selectedPGLocationId || !selectedRoomId,
+  });
+
+  const [deleteBedMutation] = useDeleteBedMutation();
+
   // Track if this is the first mount to load data
   const isFirstMount = useRef(true);
 
   useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false;
-      loadRooms();
-      loadBeds();
     }
   }, [selectedPGLocationId]);
 
   useEffect(() => {
-    loadBeds();
-  }, [selectedRoomId, occupancyFilter]);
+    // Keep local list in sync with RTK responses while applying client-side occupancy filter
+    const response = selectedRoomId ? bedsByRoomResponse : bedsAllResponse;
+    const incomingBeds = (response as any)?.data || [];
+
+    let filteredBeds = incomingBeds as Bed[];
+    if (occupancyFilter === 'occupied') {
+      filteredBeds = filteredBeds.filter((bed) => bed.is_occupied);
+    } else if (occupancyFilter === 'available') {
+      filteredBeds = filteredBeds.filter((bed) => !bed.is_occupied);
+    }
+
+    setBeds(filteredBeds);
+    setPagination((response as any)?.pagination || undefined);
+  }, [bedsAllResponse, bedsByRoomResponse, selectedRoomId, occupancyFilter]);
 
   // Refetch beds when screen is focused (navigating back from another screen)
   useFocusEffect(
     React.useCallback(() => {
-      // Refetch beds to get latest data when returning to this screen
-      loadBedsWithComparison();
+      if (!selectedPGLocationId) return;
+      if (selectedRoomId) {
+        refetchBedsByRoom();
+      } else {
+        refetchAllBeds();
+      }
 
       return () => {
         // Cleanup if needed
       };
-    }, [selectedRoomId, occupancyFilter, selectedPGLocationId])
+    }, [selectedRoomId, occupancyFilter, selectedPGLocationId, refetchAllBeds, refetchBedsByRoom])
   );
 
-  // Helper function to load beds and compare with existing data for performance
-  const loadBedsWithComparison = async () => {
-    if (!selectedPGLocationId) return;
+  useEffect(() => {
+    setRooms(((roomsResponse as any)?.data || []) as Room[]);
+  }, [roomsResponse]);
 
-    try {
-      setLoading(true);
-
-      let response;
-      if (selectedRoomId) {
-        response = await getBedsByRoomId(selectedRoomId, {
-          pg_id: selectedPGLocationId,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        });
-      } else {
-        response = await getAllBeds(
-          {
-            limit: 100,
-          },
-          {
-            pg_id: selectedPGLocationId,
-            organization_id: user?.organization_id,
-            user_id: user?.s_no,
-          }
-        );
-      }
-
-      let filteredBeds = response.data;
-
-      // Apply occupancy filter
-      if (occupancyFilter === 'occupied') {
-        filteredBeds = filteredBeds.filter((bed) => bed.is_occupied);
-      } else if (occupancyFilter === 'available') {
-        filteredBeds = filteredBeds.filter((bed) => !bed.is_occupied);
-      }
-
-      // Compare with existing data to avoid unnecessary re-renders
-      const hasDataChanged = JSON.stringify(beds) !== JSON.stringify(filteredBeds);
-
-      if (hasDataChanged) {
-        setBeds(filteredBeds);
-      }
-
-      setPagination(response.pagination);
-    } catch (error: any) {
-      console.error('Error loading beds:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadRooms = async () => {
-    if (!selectedPGLocationId) return;
-
-    try {
-      const response = await getAllRooms(
-        {
-          pg_id: selectedPGLocationId,
-          limit: 100,
-        },
-        {
-          pg_id: selectedPGLocationId,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        }
-      );
-      setRooms(response.data);
-    } catch (error: any) {
-      console.error('Failed to load rooms:', error);
-    }
-  };
-
-  const loadBeds = async () => {
-    if (!selectedPGLocationId) return;
-
-    try {
-      setLoading(true);
-
-      let response;
-      if (selectedRoomId) {
-        // Load beds for specific room
-        response = await getBedsByRoomId(selectedRoomId, {
-          pg_id: selectedPGLocationId,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        });
-      } else {
-        // Load all beds
-        response = await getAllBeds(
-          {
-            limit: 100,
-          },
-          {
-            pg_id: selectedPGLocationId,
-            organization_id: user?.organization_id,
-            user_id: user?.s_no,
-          }
-        );
-      }
-
-      let filteredBeds = response.data;
-
-      // Apply occupancy filter
-      if (occupancyFilter === 'occupied') {
-        filteredBeds = filteredBeds.filter((bed) => bed.is_occupied);
-      } else if (occupancyFilter === 'available') {
-        filteredBeds = filteredBeds.filter((bed) => !bed.is_occupied);
-      }
-
-      setBeds(filteredBeds);
-      setPagination(response.pagination);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load beds');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const nextLoading = !!selectedPGLocationId && (isRoomsFetching || isBedsAllFetching || isBedsByRoomFetching);
+    setLoading(nextLoading);
+  }, [isRoomsFetching, isBedsAllFetching, isBedsByRoomFetching, selectedPGLocationId]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadBeds();
-    setRefreshing(false);
+    try {
+      if (selectedRoomId) {
+        await refetchBedsByRoom();
+      } else {
+        await refetchAllBeds();
+      }
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleSearch = async () => {
     if (!selectedPGLocationId || !searchQuery.trim()) return;
 
-    try {
-      setLoading(true);
-      const response = await getAllBeds(
-        {
-          search: searchQuery,
-          limit: 100,
-        },
-        {
-          pg_id: selectedPGLocationId,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        }
-      );
-
-      let filteredBeds = response.data;
-
-      // Apply filters
-      if (selectedRoomId) {
-        filteredBeds = filteredBeds.filter((bed) => bed.room_id === selectedRoomId);
-      }
-      if (occupancyFilter === 'occupied') {
-        filteredBeds = filteredBeds.filter((bed) => bed.is_occupied);
-      } else if (occupancyFilter === 'available') {
-        filteredBeds = filteredBeds.filter((bed) => !bed.is_occupied);
-      }
-
-      setBeds(filteredBeds);
-      setPagination(response.pagination);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to search beds');
-    } finally {
-      setLoading(false);
-    }
+    setAppliedSearch(searchQuery.trim());
   };
 
   const handleEditBed = (bed: Bed) => {
@@ -255,13 +180,13 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
       itemName: bedNo,
       onConfirm: async () => {
         try {
-          await deleteBed(bedId, {
-            pg_id: selectedPGLocationId || undefined,
-            organization_id: user?.organization_id,
-            user_id: user?.s_no,
-          });
+          await deleteBedMutation(bedId).unwrap();
           Alert.alert('Success', 'Bed deleted successfully');
-          loadBeds();
+          if (selectedRoomId) {
+            refetchBedsByRoom();
+          } else {
+            refetchAllBeds();
+          }
         } catch (error: any) {
           showErrorAlert(error, 'Delete Error');
         }
@@ -270,13 +195,18 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   };
 
   const handleBedFormSuccess = async () => {
-    await loadBeds();
+    if (selectedRoomId) {
+      await refetchBedsByRoom();
+    } else {
+      await refetchAllBeds();
+    }
   };
 
   const clearFilters = () => {
     setSelectedRoomId(null);
     setOccupancyFilter('all');
     setSearchQuery('');
+    setAppliedSearch('');
   };
 
   const getFilterCount = () => {

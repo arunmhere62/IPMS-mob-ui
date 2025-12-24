@@ -7,8 +7,10 @@ import {
   StyleSheet,
   Clipboard,
   Alert,
+  Share,
 } from 'react-native';
 import { NetworkLog } from '../utils/networkLogger';
+import { Theme } from '../theme';
 
 interface RequestDetailsComponentProps {
   log: NetworkLog;
@@ -23,10 +25,12 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
     request: boolean;
     response: boolean;
     headers: boolean;
+    curl: boolean;
   }>({
     request: true,
     response: true,
     headers: false,
+    curl: false,
   });
 
   const getStatusColor = (status?: number) => {
@@ -61,6 +65,44 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
     }
   };
 
+  const safeString = (v: any) => {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'string') return v;
+    return formatJson(v);
+  };
+
+  const generateCurl = () => {
+    let curl = `curl -X ${log.method} '${log.url}'`;
+
+    if (log.headers) {
+      Object.entries(log.headers).forEach(([k, v]) => {
+        curl += ` \\\n+  -H '${k}: ${String(v).replace(/'/g, "'\\''")}'`;
+      });
+    }
+
+    if (log.requestData !== undefined && log.requestData !== null) {
+      const body = safeString(log.requestData);
+      if (body) {
+        curl += ` \\\n+  -d '${body.replace(/'/g, "'\\''")}'`;
+      }
+    }
+
+    return curl;
+  };
+
+  const copyToClipboard = (value: string, label: string) => {
+    Clipboard.setString(value);
+    Alert.alert('Copied', `${label} copied to clipboard`);
+  };
+
+  const shareText = async (value: string, title: string) => {
+    try {
+      await Share.share({ message: value, title });
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to share');
+    }
+  };
+
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -69,42 +111,48 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
   };
 
   const handleCopyData = (data: any, label: string) => {
-    Clipboard.setString(formatJson(data));
-    Alert.alert('Success', `${label} copied to clipboard!`);
+    copyToClipboard(formatJson(data), label);
   };
 
   const renderCollapsibleSection = (
     title: string,
     sectionKey: keyof typeof expandedSections,
     content: string,
-    color?: string
+    color?: string,
+    actions?: Array<{ label: string; onPress: () => void; variant?: 'primary' | 'neutral' }>
   ) => (
     <View style={styles.section}>
-      <TouchableOpacity
-        onPress={() => toggleSection(sectionKey)}
-        style={styles.sectionHeader}
-      >
-        <Text style={[styles.sectionTitle, color ? { color } : {}]}>
-          {expandedSections[sectionKey] ? '▼' : '▶'} {title}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.sectionHeaderRow}>
+        <TouchableOpacity onPress={() => toggleSection(sectionKey)} style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, color ? { color } : {}]}>
+            {expandedSections[sectionKey] ? '▼' : '▶'} {title}
+          </Text>
+        </TouchableOpacity>
+        {expandedSections[sectionKey] && actions && actions.length > 0 && (
+          <View style={styles.sectionActions}>
+            {actions.map((a, idx) => (
+              <TouchableOpacity
+                key={`${sectionKey}-${idx}`}
+                onPress={a.onPress}
+                style={[styles.actionButton, a.variant === 'primary' ? styles.actionPrimary : styles.actionNeutral]}
+              >
+                <Text style={[styles.actionText, a.variant === 'primary' ? styles.actionTextPrimary : styles.actionTextNeutral]}>
+                  {a.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
       {expandedSections[sectionKey] && (
         <View style={styles.sectionContent}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={true}
-            nestedScrollEnabled={true}
-          >
-            <Text style={[styles.dataText, color ? { color } : {}]} selectable>
-              {content}
-            </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={true} nestedScrollEnabled={true} style={styles.jsonOuter}>
+            <ScrollView showsVerticalScrollIndicator={true} nestedScrollEnabled={true} style={styles.jsonInner}>
+              <Text style={[styles.dataText, color ? { color } : {}]} selectable>
+                {content}
+              </Text>
+            </ScrollView>
           </ScrollView>
-          <TouchableOpacity
-            onPress={() => handleCopyData(content, title)}
-            style={styles.copyButton}
-          >
-            <Text style={styles.copyButtonText}>📋 Copy</Text>
-          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -159,13 +207,32 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
         </Text>
       </View>
 
+      <View style={styles.topActionsRow}>
+        <TouchableOpacity
+          onPress={() => copyToClipboard(generateCurl(), 'CURL')}
+          style={[styles.topActionButton, styles.buttonPrimary]}
+        >
+          <Text style={styles.topActionText}>Copy CURL</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => shareText(generateCurl(), 'CURL')}
+          style={[styles.topActionButton, styles.buttonNeutral]}
+        >
+          <Text style={styles.topActionTextNeutral}>Share</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Request Data */}
       {log.requestData &&
         renderCollapsibleSection(
           '📤 Request Data',
           'request',
           formatJson(log.requestData),
-          '#F59E0B'
+          '#F59E0B',
+          [
+            { label: 'Copy', variant: 'primary', onPress: () => handleCopyData(log.requestData, 'Request Data') },
+            { label: 'Share', variant: 'neutral', onPress: () => shareText(formatJson(log.requestData), 'Request Data') },
+          ]
         )}
 
       {/* Response Data */}
@@ -174,7 +241,11 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
           '📥 Response Data',
           'response',
           formatJson(log.responseData),
-          '#10B981'
+          '#10B981',
+          [
+            { label: 'Copy', variant: 'primary', onPress: () => handleCopyData(log.responseData, 'Response Data') },
+            { label: 'Share', variant: 'neutral', onPress: () => shareText(formatJson(log.responseData), 'Response Data') },
+          ]
         )}
 
       {/* Headers */}
@@ -183,7 +254,22 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
           '📋 Headers',
           'headers',
           formatJson(log.headers),
-          '#60A5FA'
+          '#60A5FA',
+          [
+            { label: 'Copy', variant: 'primary', onPress: () => handleCopyData(log.headers, 'Headers') },
+            { label: 'Share', variant: 'neutral', onPress: () => shareText(formatJson(log.headers), 'Headers') },
+          ]
+        )}
+
+      {renderCollapsibleSection(
+        '🔧 CURL',
+        'curl',
+        generateCurl(),
+        '#8B5CF6',
+        [
+          { label: 'Copy', variant: 'primary', onPress: () => copyToClipboard(generateCurl(), 'CURL') },
+          { label: 'Share', variant: 'neutral', onPress: () => shareText(generateCurl(), 'CURL') },
+        ]
         )}
 
       {/* Error */}
@@ -200,13 +286,13 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Theme.colors.background.secondary,
   },
   summaryCard: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: Theme.colors.card.background,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: Theme.colors.border,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -219,14 +305,14 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 11,
-    color: '#6b7280',
+    color: Theme.colors.text.tertiary,
     marginBottom: 4,
     textTransform: 'uppercase',
     fontWeight: '600',
   },
   summaryValue: {
     fontSize: 16,
-    color: '#000',
+    color: Theme.colors.text.primary,
     fontWeight: '600',
   },
   urlSection: {
@@ -234,69 +320,131 @@ const styles = StyleSheet.create({
   },
   urlText: {
     fontSize: 13,
-    color: '#374151',
+    color: Theme.colors.text.secondary,
     fontWeight: '500',
   },
   timestampText: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: Theme.colors.text.tertiary,
     marginTop: 4,
   },
   section: {
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: Theme.colors.border,
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   sectionHeader: {
     paddingVertical: 8,
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: Theme.colors.text.primary,
+  },
+  sectionActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  actionPrimary: {
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
+  },
+  actionNeutral: {
+    backgroundColor: Theme.colors.background.tertiary,
+    borderColor: Theme.colors.border,
+  },
+  actionText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  actionTextPrimary: {
+    color: '#fff',
+  },
+  actionTextNeutral: {
+    color: Theme.colors.text.primary,
   },
   sectionContent: {
     marginTop: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#0B1220',
     borderRadius: 8,
     padding: 12,
   },
+  jsonOuter: {
+    maxHeight: 320,
+  },
+  jsonInner: {
+    maxHeight: 320,
+  },
   dataText: {
-    fontSize: 11,
-    color: '#1f2937',
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#E5E7EB',
     fontFamily: 'monospace',
   },
-  copyButton: {
-    marginTop: 12,
-    backgroundColor: '#10B981',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
+  topActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
-  copyButtonText: {
+  topActionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  topActionText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '800',
     fontSize: 12,
   },
+  topActionTextNeutral: {
+    color: Theme.colors.text.primary,
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  buttonPrimary: {
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
+  },
+  buttonNeutral: {
+    backgroundColor: Theme.colors.background.tertiary,
+    borderColor: Theme.colors.border,
+  },
   errorSection: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: Theme.withOpacity(Theme.colors.danger, 0.12),
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 12,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#EF4444',
+    borderLeftColor: Theme.colors.danger,
   },
   errorTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#DC2626',
+    color: Theme.colors.dangerDark,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 13,
-    color: '#991B1B',
+    color: Theme.colors.dangerDark,
   },
 });

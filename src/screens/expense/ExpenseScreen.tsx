@@ -16,7 +16,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
-import expenseService, { Expense, PaymentMethod } from '../../services/expenses/expenseService';
+import { Expense, PaymentMethod, useDeleteExpenseMutation, useLazyGetExpensesQuery } from '../../services/api/expensesApi';
 import { AddEditExpenseModal } from '@/screens/expense/AddEditExpenseModal';
 import { ActionButtons } from '../../components/ActionButtons';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
@@ -51,6 +51,9 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalExpenses, setTotalExpenses] = useState(0);
+
+  const [fetchExpensesTrigger] = useLazyGetExpensesQuery();
+  const [deleteExpense] = useDeleteExpenseMutation();
 
   const defaultMonthYear = React.useMemo(() => {
     const now = new Date();
@@ -102,15 +105,15 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
       const monthToUse = monthOverride !== undefined ? monthOverride : appliedMonth;
       const yearToUse = yearOverride !== undefined ? yearOverride : appliedYear;
 
-      const response = await expenseService.getExpenses(
-        pageNum,
-        10,
-        monthToUse || undefined,
-        yearToUse || undefined,
-      );
+      const response = await fetchExpensesTrigger({
+        page: pageNum,
+        limit: 10,
+        month: monthToUse || undefined,
+        year: yearToUse || undefined,
+      }).unwrap();
 
-      const serverData = response?.data?.data || [];
-      const pagination = response?.data?.pagination;
+      const serverData = response?.data || [];
+      const pagination = response?.pagination;
       const totalPages = pagination?.totalPages || 0;
 
       if (response.success) {
@@ -170,7 +173,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await expenseService.deleteExpense(expense.s_no);
+              await deleteExpense(expense.s_no).unwrap();
               Alert.alert('Success', 'Expense deleted successfully');
               onRefresh();
             } catch (error) {

@@ -9,9 +9,8 @@ import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
-import refundPaymentService, { RefundPayment } from '../../services/payments/refundPaymentService';
-import { getAllRooms, Room } from '../../services/rooms/roomService';
-import { getAllBeds, Bed } from '../../services/rooms/bedService';
+import { RefundPayment, useLazyGetRefundPaymentsQuery } from '../../services/api/paymentsApi';
+import { Bed, Room, useGetAllBedsQuery, useGetAllRoomsQuery } from '../../services/api/roomsApi';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 
 const MONTHS = [
@@ -25,6 +24,8 @@ interface RefundPaymentScreenProps {
 
 export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ navigation }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+
+  const [triggerGetRefundPayments] = useLazyGetRefundPaymentsQuery();
   
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,43 +55,56 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [loadingBeds, setLoadingBeds] = useState(false);
 
+  const {
+    data: roomsResponse,
+    isFetching: isRoomsFetching,
+    refetch: refetchRooms,
+  } = useGetAllRoomsQuery(
+    selectedPGLocationId ? { page: 1, limit: 100, pg_id: selectedPGLocationId } : (undefined as any),
+    { skip: !selectedPGLocationId }
+  );
+
+  const {
+    data: bedsResponse,
+    isFetching: isBedsFetching,
+    refetch: refetchBeds,
+  } = useGetAllBedsQuery(
+    selectedRoomId && selectedPGLocationId
+      ? { room_id: selectedRoomId, page: 1, limit: 100, pg_id: selectedPGLocationId }
+      : (undefined as any),
+    { skip: !selectedRoomId || !selectedPGLocationId }
+  );
+
   useEffect(() => {
     if (selectedPGLocationId) {
-      fetchRooms();
+      refetchRooms();
     }
   }, [selectedPGLocationId]);
 
   useEffect(() => {
     if (selectedRoomId) {
-      fetchBeds(selectedRoomId);
+      refetchBeds();
     } else {
       setBeds([]);
     }
   }, [selectedRoomId]);
 
-  const fetchRooms = async () => {
-    try {
-      setLoadingRooms(true);
-      const response = await getAllRooms({ page: 1, limit: 100 });
-      setRooms(response.data);
-    } catch (error) {
-      console.error('Error fetching rooms:', error);
-    } finally {
-      setLoadingRooms(false);
-    }
-  };
+  useEffect(() => {
+    setLoadingRooms(isRoomsFetching);
+  }, [isRoomsFetching]);
 
-  const fetchBeds = async (roomId: number) => {
-    try {
-      setLoadingBeds(true);
-      const response = await getAllBeds({ room_id: roomId, page: 1, limit: 100 });
-      setBeds(response.data);
-    } catch (error) {
-      console.error('Error fetching beds:', error);
-    } finally {
-      setLoadingBeds(false);
-    }
-  };
+  useEffect(() => {
+    setLoadingBeds(isBedsFetching);
+  }, [isBedsFetching]);
+
+  useEffect(() => {
+    setRooms(((roomsResponse as any)?.data || []) as Room[]);
+  }, [roomsResponse]);
+
+  useEffect(() => {
+    if (!selectedRoomId) return;
+    setBeds(((bedsResponse as any)?.data || []) as Bed[]);
+  }, [bedsResponse, selectedRoomId]);
 
   const years = React.useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -153,12 +167,9 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
       if (selectedRoomId) params.room_id = selectedRoomId;
       if (selectedBedId) params.bed_id = selectedBedId;
 
-      const response = await refundPaymentService.getRefundPayments(params, {
-        pg_id: selectedPGLocationId || undefined,
-      });
-
-      const refundPaymentsData = Array.isArray(response.data?.data) ? response.data.data : [];
-      const refundPaymentsPagination = response.data?.pagination || null;
+      const response = await triggerGetRefundPayments(params).unwrap();
+      const refundPaymentsData = Array.isArray(response.data) ? response.data : [];
+      const refundPaymentsPagination = response.pagination || null;
       
       if (reset || page === 1) {
         setRefundPayments(refundPaymentsData);
@@ -441,6 +452,8 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
         showPGSelector={true}
+         showBackButton={true}
+        onBackPress={() => navigation.goBack(-1)}
       />
 
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>

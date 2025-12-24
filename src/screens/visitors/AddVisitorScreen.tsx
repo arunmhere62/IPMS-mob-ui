@@ -19,8 +19,7 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { DatePicker } from '../../components/DatePicker';
 import visitorService from '../../services/visitors/visitorService';
-import { getAllRooms } from '../../services/rooms/roomService';
-import { getAllBeds } from '../../services/rooms/bedService';
+import { useGetAllBedsQuery, useGetAllRoomsQuery } from '../../services/api/roomsApi';
 import axiosInstance from '../../services/core/axiosInstance';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
@@ -76,8 +75,30 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
 
+  const {
+    data: roomsResponse,
+    isFetching: isRoomsFetching,
+    refetch: refetchRooms,
+  } = useGetAllRoomsQuery(
+    selectedPGLocationId ? { page: 1, limit: 100, pg_id: selectedPGLocationId } : (undefined as any),
+    { skip: !selectedPGLocationId }
+  );
+
+  const {
+    data: bedsResponse,
+    isFetching: isBedsFetching,
+    refetch: refetchBeds,
+  } = useGetAllBedsQuery(
+    selectedRoomId && selectedPGLocationId
+      ? { room_id: selectedRoomId, page: 1, limit: 100, pg_id: selectedPGLocationId }
+      : (undefined as any),
+    { skip: !selectedRoomId || !selectedPGLocationId }
+  );
+
   useEffect(() => {
-    fetchRooms();
+    if (selectedPGLocationId) {
+      refetchRooms();
+    }
     fetchStates();
     
     if (isEditMode) {
@@ -87,12 +108,29 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
 
   useEffect(() => {
     if (selectedRoomId) {
-      fetchBeds(selectedRoomId);
+      refetchBeds();
     } else {
       setBeds([]);
       setSelectedBedId(null);
     }
   }, [selectedRoomId]);
+
+  useEffect(() => {
+    setLoadingRooms(isRoomsFetching);
+  }, [isRoomsFetching]);
+
+  useEffect(() => {
+    setLoadingBeds(isBedsFetching);
+  }, [isBedsFetching]);
+
+  useEffect(() => {
+    setRooms((roomsResponse as any)?.data || []);
+  }, [roomsResponse]);
+
+  useEffect(() => {
+    if (!selectedRoomId) return;
+    setBeds((bedsResponse as any)?.data || []);
+  }, [bedsResponse, selectedRoomId]);
 
   useEffect(() => {
     if (selectedStateId) {
@@ -134,30 +172,6 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
       navigation.goBack();
     } finally {
       setLoadingData(false);
-    }
-  };
-
-  const fetchRooms = async () => {
-    try {
-      setLoadingRooms(true);
-      const response = await getAllRooms({ page: 1, limit: 100 });
-      setRooms(response.data || []);
-    } catch (error) {
-      console.error('Error fetching rooms:', error);
-    } finally {
-      setLoadingRooms(false);
-    }
-  };
-
-  const fetchBeds = async (roomId: number) => {
-    try {
-      setLoadingBeds(true);
-      const response = await getAllBeds({ room_id: roomId, page: 1, limit: 100 });
-      setBeds(response.data || []);
-    } catch (error) {
-      console.error('Error fetching beds:', error);
-    } finally {
-      setLoadingBeds(false);
     }
   };
 

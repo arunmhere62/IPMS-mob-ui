@@ -1,11 +1,5 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import {
-  getAllOrganizations,
-  getOrganizationStats,
-  Organization,
-  OrganizationStats,
-  GetOrganizationsParams,
-} from '../../services/organization/organizationService';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { GetOrganizationsParams, Organization, organizationApi, OrganizationStats } from '../../services/api/organizationApi';
 
 interface OrganizationState {
   organizations: Organization[];
@@ -34,12 +28,14 @@ const initialState: OrganizationState = {
  */
 export const fetchOrganizations = createAsyncThunk(
   'organizations/fetchAll',
-  async (params: GetOrganizationsParams = {}, { rejectWithValue }) => {
+  async (params: GetOrganizationsParams = {}, { dispatch, rejectWithValue }) => {
     try {
-      const response = await getAllOrganizations(params);
-      return response;
+      const response = await dispatch(
+        organizationApi.endpoints.getAllOrganizations.initiate(params)
+      ).unwrap();
+      return response as any;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch organizations');
+      return rejectWithValue(error?.data?.message || error?.error || 'Failed to fetch organizations');
     }
   }
 );
@@ -49,12 +45,14 @@ export const fetchOrganizations = createAsyncThunk(
  */
 export const fetchOrganizationStats = createAsyncThunk(
   'organizations/fetchStats',
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
-      const response = await getOrganizationStats();
-      return response.data;
+      const response = await dispatch(
+        organizationApi.endpoints.getOrganizationStats.initiate()
+      ).unwrap();
+      return (response as any).data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch statistics');
+      return rejectWithValue(error?.data?.message || error?.error || 'Failed to fetch statistics');
     }
   }
 );

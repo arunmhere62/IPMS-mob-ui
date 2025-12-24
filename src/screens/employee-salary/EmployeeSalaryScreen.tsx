@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
-import employeeSalaryService, { EmployeeSalary, PaymentMethod } from '../../services/employees/employeeSalaryService';
+import { EmployeeSalary, PaymentMethod, useDeleteEmployeeSalaryMutation, useGetEmployeeSalariesQuery } from '../../services/api/employeeSalaryApi';
 import { AddEditEmployeeSalaryModal } from '@/screens/employee-salary/AddEditEmployeeSalaryModal';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 
@@ -43,10 +43,6 @@ const MONTHS = [
 export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navigation }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const [salaries, setSalaries] = useState<EmployeeSalary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [totalSalaries, setTotalSalaries] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSalary, setEditingSalary] = useState<EmployeeSalary | null>(null);
 
@@ -65,6 +61,30 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
   const [draftMonth, setDraftMonth] = useState<number | null>(null);
   const [draftYear, setDraftYear] = useState<number | null>(null);
 
+  const {
+    data: salariesResponse,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetEmployeeSalariesQuery(
+    {
+      page: 1,
+      limit: 50,
+      month: appliedMonth || undefined,
+      year: appliedYear || undefined,
+    },
+    {
+      skip: !selectedPGLocationId,
+    }
+  );
+
+  const [deleteSalary] = useDeleteEmployeeSalaryMutation();
+
+  const salaries = salariesResponse?.data || [];
+  const totalSalaries = salariesResponse?.pagination?.total || 0;
+  const loading = isLoading || isFetching;
+  const refreshing = isFetching;
+
   const years = React.useMemo(() => {
     const currentYear = new Date().getFullYear();
     return [currentYear, currentYear - 1, currentYear - 2];
@@ -75,57 +95,20 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
     return MONTHS.find(m => m.value === month)?.label || '';
   };
 
-  const fetchSalaries = useCallback(async () => {
-    
-    if (!selectedPGLocationId) {
-      setLoading(false);
-      setRefreshing(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      const response = await employeeSalaryService.getSalaries(
-        1,
-        50,
-        appliedMonth || undefined,
-        appliedYear || undefined,
-      );
-      
-      if (response.success) {
-        setSalaries(response.data.data || []);
-        setTotalSalaries(response.data.pagination?.total || 0);
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to load salaries');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [selectedPGLocationId, appliedMonth, appliedYear]);
-
   const clearFilters = () => {
     setAppliedMonth(defaultMonthYear.month);
     setAppliedYear(defaultMonthYear.year);
     setDraftMonth(defaultMonthYear.month);
     setDraftYear(defaultMonthYear.year);
     setFilterModalVisible(false);
-    setRefreshing(true);
-    fetchSalaries();
+    refetch();
   };
 
   const applyFilters = () => {
     setAppliedMonth(draftMonth);
     setAppliedYear(draftYear);
     setFilterModalVisible(false);
-    setRefreshing(true);
   };
-
-  useEffect(() => {
-    if (!refreshing) return;
-    fetchSalaries();
-  }, [refreshing, fetchSalaries]);
 
   const openFilters = () => {
     setDraftMonth(appliedMonth);
@@ -133,12 +116,8 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
     setFilterModalVisible(true);
   };
 
-  useEffect(() => {
-    fetchSalaries();
-  }, [fetchSalaries]);
-
   const onRefresh = () => {
-    setRefreshing(true);
+    refetch();
   };
 
   const handleAddSalary = () => {
@@ -167,7 +146,7 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
           style: 'destructive',
           onPress: async () => {
             try {
-              await employeeSalaryService.deleteSalary(salary.s_no);
+              await deleteSalary(salary.s_no).unwrap();
               Alert.alert('Success', 'Salary record deleted successfully');
               onRefresh();
             } catch (error) {

@@ -8,7 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { AnimatedPressableCard } from '../../../components/AnimatedPressableCard';
 import { CollapsibleSection } from '../../../components/CollapsibleSection';
 import { Theme } from '../../../theme';
-import { TenantPayment } from '../../../services/tenants/tenantService';
+import { TenantPayment } from '@/services/api/tenantsApi';
+
 
 interface RentPaymentsSectionProps {
   payments: TenantPayment[] | undefined;

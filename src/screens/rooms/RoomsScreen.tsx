@@ -12,7 +12,7 @@ import {
 import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '../../store';
-import { getAllRooms, deleteRoom, Room, getRoomById } from '../../services/rooms/roomService';
+import { Room, useDeleteRoomMutation, useGetAllRoomsQuery } from '../../services/api/roomsApi';
 import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
 import { Theme } from '../../theme';
@@ -29,13 +29,31 @@ interface RoomsScreenProps {
 
 export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { user } = useSelector((state: RootState) => state.auth);
-  
+
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [pagination, setPagination] = useState<any>(null);
+
+  const [appliedSearch, setAppliedSearch] = useState('');
+
+  const {
+    data: roomsResponse,
+    refetch: refetchRooms,
+    isFetching: isRoomsFetching,
+  } = useGetAllRoomsQuery(
+    selectedPGLocationId
+      ? {
+          pg_id: selectedPGLocationId,
+          limit: 100,
+          search: appliedSearch || undefined,
+        }
+      : (undefined as any),
+    { skip: !selectedPGLocationId }
+  );
+
+  const [deleteRoomMutation] = useDeleteRoomMutation();
   
   // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -48,9 +66,17 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false;
-      loadRooms();
     }
   }, [selectedPGLocationId]);
+
+  useEffect(() => {
+    setRooms(((roomsResponse as any)?.data || []) as Room[]);
+    setPagination((roomsResponse as any)?.pagination || undefined);
+  }, [roomsResponse]);
+
+  useEffect(() => {
+    setLoading(!!selectedPGLocationId && isRoomsFetching);
+  }, [isRoomsFetching, selectedPGLocationId]);
 
   // Only reload rooms when PG location changes, not on every focus
   useFocusEffect(
@@ -62,63 +88,19 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     }, [])
   );
 
-  const loadRooms = async () => {
-    if (!selectedPGLocationId) return;
-    
-    try {
-      setLoading(true);
-      const response = await getAllRooms(
-        {
-          pg_id: selectedPGLocationId,
-          limit: 100,
-        },
-        {
-          pg_id: selectedPGLocationId,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        }
-      );
-      
-      setRooms(response.data);
-      setPagination(response.pagination);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load rooms');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadRooms();
-    setRefreshing(false);
+    try {
+      await refetchRooms();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleSearch = async () => {
     if (!selectedPGLocationId) return;
-    
-    try {
-      setLoading(true);
-      const response = await getAllRooms(
-        {
-          pg_id: selectedPGLocationId,
-          search: searchQuery,
-          limit: 100,
-        },
-        {
-          pg_id: selectedPGLocationId,
-          organization_id: user?.organization_id,
-          user_id: user?.s_no,
-        }
-      );
-      
-      setRooms(response.data);
-      setPagination(response.pagination);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to search rooms');
-    } finally {
-      setLoading(false);
-    }
+
+    setAppliedSearch(searchQuery);
   };
 
   const handleOpenEditModal = (roomId: number) => {
@@ -132,7 +114,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   };
 
   const handleEditSuccess = () => {
-    loadRooms();
+    refetchRooms();
   };
 
 
@@ -144,14 +126,10 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
       onConfirm: async () => {
         try {
           // Delete room from database (backend will handle S3 image deletion)
-          await deleteRoom(roomId, {
-            pg_id: selectedPGLocationId || undefined,
-            organization_id: user?.organization_id,
-            user_id: user?.s_no,
-          });
+          await deleteRoomMutation(roomId).unwrap();
           
           Alert.alert('Success', 'Room and all associated images deleted successfully');
-          loadRooms();
+          refetchRooms();
         } catch (error: any) {
           showErrorAlert(error, 'Delete Error');
         }

@@ -13,8 +13,7 @@ import { SearchableDropdown } from './SearchableDropdown';
 import { DatePicker } from './DatePicker';
 import { SlideBottomModal } from './SlideBottomModal';
 import visitorService, { Visitor } from '../services/visitors/visitorService';
-import { getAllRooms } from '../services/rooms/roomService';
-import { getAllBeds } from '../services/rooms/bedService';
+import { useGetAllRoomsQuery, useGetAllBedsQuery } from '../services/api/roomsApi';
 import axiosInstance from '../services/core/axiosInstance';
 import { CountryPhoneSelector } from './CountryPhoneSelector';
 import { COUNTRIES } from './CountryPhoneSelector';
@@ -77,9 +76,30 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
 
+  const {
+    data: roomsResponse,
+    isFetching: isRoomsFetching,
+    refetch: refetchRooms,
+  } = useGetAllRoomsQuery({ page: 1, limit: 100 });
+
+  const {
+    data: bedsResponse,
+    isFetching: isBedsFetching,
+    refetch: refetchBeds,
+  } = useGetAllBedsQuery(
+    selectedRoomId
+      ? {
+          room_id: selectedRoomId,
+          page: 1,
+          limit: 100,
+        }
+      : (undefined as any),
+    { skip: !selectedRoomId }
+  );
+
   useEffect(() => {
     if (visible) {
-      fetchRooms();
+      refetchRooms();
       fetchStates();
       
       if (isEditMode) {
@@ -92,12 +112,29 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
 
   useEffect(() => {
     if (selectedRoomId) {
-      fetchBeds(selectedRoomId);
+      refetchBeds();
     } else {
       setBeds([]);
       setSelectedBedId(null);
     }
   }, [selectedRoomId]);
+
+  useEffect(() => {
+    setLoadingRooms(isRoomsFetching);
+  }, [isRoomsFetching]);
+
+  useEffect(() => {
+    setLoadingBeds(isBedsFetching);
+  }, [isBedsFetching]);
+
+  useEffect(() => {
+    setRooms((roomsResponse as any)?.data || []);
+  }, [roomsResponse]);
+
+  useEffect(() => {
+    if (!selectedRoomId) return;
+    setBeds((bedsResponse as any)?.data || []);
+  }, [bedsResponse, selectedRoomId]);
 
   useEffect(() => {
     if (selectedStateId) {
@@ -161,30 +198,6 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
       console.error('Error loading visitor data:', error);
     } finally {
       setLoadingData(false);
-    }
-  };
-
-  const fetchRooms = async () => {
-    try {
-      setLoadingRooms(true);
-      const response = await getAllRooms({ page: 1, limit: 100 });
-      setRooms(response.data || []);
-    } catch (error) {
-      console.error('Error fetching rooms:', error);
-    } finally {
-      setLoadingRooms(false);
-    }
-  };
-
-  const fetchBeds = async (roomId: number) => {
-    try {
-      setLoadingBeds(true);
-      const response = await getAllBeds({ room_id: roomId, page: 1, limit: 100 });
-      setBeds(response.data || []);
-    } catch (error) {
-      console.error('Error fetching beds:', error);
-    } finally {
-      setLoadingBeds(false);
     }
   };
 

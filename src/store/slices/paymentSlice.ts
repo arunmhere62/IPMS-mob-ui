@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { Payment } from '../../types';
-import { paymentService } from '@/services/payments/paymentService';
+import { paymentsApi } from '../../services/api/paymentsApi';
 
 interface PaymentState {
   payments: Payment[];
@@ -35,24 +35,24 @@ export const fetchPayments = createAsyncThunk(
     month?: string;
     year?: number;
     append?: boolean; // Flag to append data for infinite scroll
-  } = {}, { rejectWithValue }) => {
+  } = {}, { rejectWithValue, dispatch }) => {
     try {
-      const response = await paymentService.getTenantPayments(params);
+      const response = await dispatch(paymentsApi.endpoints.getTenantPayments.initiate(params)).unwrap();
       return { ...response, append: params?.append || false };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch payments');
+      return rejectWithValue(error.data?.message || 'Failed to fetch payments');
     }
   }
 );
 
 export const createPayment = createAsyncThunk<Payment, Partial<Payment>>(
   'payments/create',
-  async (data: Partial<Payment>, { rejectWithValue }) => {
+  async (data: Partial<Payment>, { rejectWithValue, dispatch }) => {
     try {
-      const response = await paymentService.createPayment(data);
+      const response = await dispatch(paymentsApi.endpoints.createTenantPayment.initiate(data)).unwrap();
       return response.data as Payment;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create payment');
+      return rejectWithValue(error.data?.message || 'Failed to create payment');
     }
   }
 );

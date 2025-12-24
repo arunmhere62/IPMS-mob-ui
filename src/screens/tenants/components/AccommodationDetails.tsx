@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Card } from '../../../components/Card';
 import { Theme } from '../../../theme';
-import { Tenant } from '../../../services/tenants/tenantService';
+import { Tenant } from '@/services/api/tenantsApi';
+
 
 interface AccommodationDetailsProps {
   tenant: Tenant;

@@ -12,7 +12,7 @@ import { DatePicker } from "../../components/DatePicker";
 import { SlideBottomModal } from "../../components/SlideBottomModal";
 import { OptionSelector, Option } from "../../components/OptionSelector";
 import { AmountInput } from "../../components/AmountInput";
-import { getBedById } from "@/services/rooms/bedService";
+import { useLazyGetBedByIdQuery } from "@/services/api/roomsApi";
 import { showErrorAlert } from "@/utils/errorHandler";
 
 interface AddRefundPaymentModalProps {
@@ -82,6 +82,7 @@ export const AddRefundPaymentModal: React.FC<AddRefundPaymentModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [fetchingBedPrice, setFetchingBedPrice] = useState(false);
   const [bedRentAmount, setBedRentAmount] = useState<number>(0);
+  const [triggerGetBedById] = useLazyGetBedByIdQuery();
 
   // Fetch bed details to get rent amount
   useEffect(() => {
@@ -91,14 +92,11 @@ export const AddRefundPaymentModal: React.FC<AddRefundPaymentModalProps> = ({
           setFetchingBedPrice(true);
 
           // Fetch bed price
-          const bedResponse = await getBedById(tenant.bed_id, {
-            pg_id: tenant.pg_id,
-          });
+          const bedResponse = await triggerGetBedById(tenant.bed_id).unwrap();
 
-          if (bedResponse.success && bedResponse.data?.bed_price) {
-            const bedPrice = typeof bedResponse.data.bed_price === 'string' 
-              ? parseFloat(bedResponse.data.bed_price) 
-              : bedResponse.data.bed_price;
+          const priceValue = (bedResponse as any)?.data?.bed_price;
+          if (priceValue) {
+            const bedPrice = typeof priceValue === 'string' ? parseFloat(priceValue) : priceValue;
             setBedRentAmount(bedPrice);
           }
         } catch (error) {

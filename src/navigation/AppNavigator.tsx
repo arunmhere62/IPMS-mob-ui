@@ -5,6 +5,7 @@ import { RootState } from '../store';
 import { usePermissions } from '../hooks/usePermissions';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { Permission } from '../config/rbac.config';
+import { navigationRef } from './navigationRef';
 
 // Use require to avoid TypeScript errors
 const { NavigationContainer, useNavigation, useNavigationState } = require('@react-navigation/native');
@@ -52,6 +53,7 @@ import { PaymentsScreen } from '@/screens/payments/PaymentsScreen';
 import { TenantRentPaymentsScreen } from '@/screens/tenants/TenantRentPaymentsScreen';
 import { TenantRefundPaymentsScreen } from '@/screens/tenants/TenantRefundPaymentsScreen';
 import { TenantAdvancePaymentsScreen } from '@/screens/tenants/TenantAdvancePaymentsScreen';
+import { NetworkLoggerScreen } from '@/screens/network/NetworkLoggerScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -159,7 +161,7 @@ export const AppNavigator = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
@@ -201,6 +203,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="TenantRentPaymentsScreen" component={TenantRentPaymentsScreen} />
             <Stack.Screen name="TenantAdvancePaymentsScreen" component={TenantAdvancePaymentsScreen} />
             <Stack.Screen name="TenantRefundPaymentsScreen" component={TenantRefundPaymentsScreen} />
+            <Stack.Screen name="NetworkLogger" component={NetworkLoggerScreen} />
           </>
 
         )}

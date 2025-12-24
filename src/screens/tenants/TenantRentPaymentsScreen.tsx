@@ -17,12 +17,10 @@ import { Card } from '../../components/Card';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
-import { paymentService } from '@/services/payments/paymentService';
+import { useDeleteTenantPaymentMutation, useUpdateTenantPaymentMutation } from '@/services/api/paymentsApi';
 import { showErrorAlert } from '@/utils/errorHandler';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
-import { RootState, AppDispatch } from '../../store';
-import { fetchTenants } from '../../store/slices/tenantSlice';
 import RentPaymentForm from './RentPaymentForm';
 
 interface RentPayment {
@@ -40,9 +38,8 @@ interface RentPayment {
 export const TenantRentPaymentsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const [deleteTenantPayment] = useDeleteTenantPaymentMutation();
+  const [updateTenantPayment] = useUpdateTenantPaymentMutation();
 
   const payments: RentPayment[] = route.params?.payments || [];
   const tenantName = route.params?.tenantName || 'Tenant';
@@ -51,23 +48,6 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const pgName = route.params?.pgName || 'PG';
 
   const [loading, setLoading] = useState(false);
-
-  // Function to refresh tenant list
-  const refreshTenantList = async () => {
-    try {
-      await dispatch(
-        fetchTenants({
-          page: 1,
-          limit: 20,
-          pg_id: selectedPGLocationId || undefined,
-          organization_id: user?.organization_id || undefined,
-          user_id: user?.s_no || undefined,
-        })
-      ).unwrap();
-    } catch (error) {
-      console.error('Error refreshing tenant list:', error);
-    }
-  };
 
   // Function to refresh tenant details (navigate back to tenant details)
   const refreshTenantDetails = () => {
@@ -95,12 +75,11 @@ export const TenantRentPaymentsScreen: React.FC = () => {
           onPress: async () => {
             try {
               setLoading(true);
-              await paymentService.deleteTenantPayment(payment.s_no);
+              await deleteTenantPayment(payment.s_no).unwrap();
               Alert.alert('Success', 'Payment deleted successfully');
               
               // Navigate back to tenant details screen with refresh
               refreshTenantDetails();
-              refreshTenantList();
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
             } finally {
@@ -120,7 +99,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const handleSavePayment = async (id: number, data: any) => {
     try {
       setLoading(true);
-      await paymentService.updateTenantPayment(id, data);
+      await updateTenantPayment({ id, data }).unwrap();
       setIsEditModalVisible(false);
       setEditingPayment(null);
       

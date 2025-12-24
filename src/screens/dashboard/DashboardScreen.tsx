@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Alert, Animated } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Theme } from '../../theme';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
-import { fetchTenants } from '../../store/slices/tenantSlice';
-import { fetchPGLocations, setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
+import { setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
 import { fetchPayments } from '../../store/slices/paymentSlice';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -13,17 +12,21 @@ import { PGSummary } from '../../components/PGSummary';
 import { FinancialAnalytics } from '../../components/FinancialAnalytics';
 import { QuickActions } from '../../components/QuickActions';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
-import { pgLocationService } from '../../services/organization/pgLocationService';
-import { getAllTenants, Tenant } from '../../services/tenants/tenantService';
-import { retryWithBackoff, categorizeError, ErrorInfo } from '../../utils/errorHandler';
+import {
+  useGetPGLocationsQuery,
+  useLazyGetPGLocationSummaryQuery,
+  useLazyGetPGLocationFinancialAnalyticsQuery,
+} from '../../services/api/pgLocationsApi';
+import { Tenant, useLazyGetTenantsQuery } from '../../services/api/tenantsApi';
+import { categorizeError, ErrorInfo } from '../../utils/errorHandler';
 
 export const DashboardScreen: React.FC = () => {
   // All hooks must be called at the top level
   const navigation = useNavigation<any>();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { tenants, loading: tenantsLoading } = useSelector((state: RootState) => state.tenants);
-  const { locations, selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { accessToken } = useSelector((state: RootState) => state.auth);
+  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { payments } = useSelector((state: RootState) => state.payments);
   const [refreshing, setRefreshing] = useState(false);
   const [summary, setSummary] = useState<any>(null);
@@ -38,6 +41,21 @@ export const DashboardScreen: React.FC = () => {
   const [noAdvanceTenants, setNoAdvanceTenants] = useState<Tenant[]>([]);
   const [loadingTenants, setLoadingTenants] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'pending' | 'partial' | 'noAdvance'>('pending');
+
+  const [triggerSummary] = useLazyGetPGLocationSummaryQuery();
+  const [triggerFinancial] = useLazyGetPGLocationFinancialAnalyticsQuery();
+  const [triggerTenants] = useLazyGetTenantsQuery();
+
+  const {
+    data: pgLocationsResponse,
+    refetch: refetchPGLocations,
+    isUninitialized: isPGLocationsUninitialized,
+  } = useGetPGLocationsQuery(undefined, {
+    skip: false,
+  });
+
+  const canFetchPGLocations = true;
+  const locations = Array.isArray((pgLocationsResponse as any)?.data) ? (pgLocationsResponse as any).data : [];
   
   // Error tracking
   const [errors, setErrors] = useState<{
@@ -45,14 +63,12 @@ export const DashboardScreen: React.FC = () => {
     financial?: ErrorInfo;
     tenants?: ErrorInfo;
   }>({});
-  const [retryCount, setRetryCount] = useState(0);
 
   // Initialize dashboard only when screen comes into focus (lazy loading)
   useFocusEffect(
     useCallback(() => {
       setIsMounted(true);
-      // Step 1: Fetch PG locations first
-      initializeDashboard();
+      refetchPGLocations();
     }, [])
   );
 
@@ -71,17 +87,6 @@ export const DashboardScreen: React.FC = () => {
       loadAllDashboardData();
     }
   }, [selectedPGLocationId, selectedMonths]);
-
-  // Step 1: Initialize dashboard - fetch PG locations FIRST
-  const initializeDashboard = async () => {
-    try {
-      console.log('📍 Step 1: Fetching PG locations...');
-      await dispatch(fetchPGLocations()).unwrap();
-      console.log('✅ PG locations fetched successfully');
-    } catch (error) {
-      console.error('❌ Error fetching PG locations:', error);
-    }
-  };
 
   // Step 3: Load all dashboard data after PG location is selected
   const loadAllDashboardData = async () => {
@@ -108,8 +113,8 @@ export const DashboardScreen: React.FC = () => {
     try {
       setLoadingSummary(true);
       setErrors(prev => ({ ...prev, summary: undefined }));
-      
-      const response = await pgLocationService.getSummary(pgId);
+
+      const response = await triggerSummary(pgId).unwrap();
       
       if (response.success) {
         console.log('📊 PG Summary Data:', response.data);
@@ -119,7 +124,7 @@ export const DashboardScreen: React.FC = () => {
       const errorInfo = categorizeError(error);
       console.error(`❌ [${errorInfo.type.toUpperCase()}] Error loading summary:`, errorInfo.message);
       setErrors(prev => ({ ...prev, summary: errorInfo }));
-      throw error;
+      setSummary(null);
     } finally {
       setLoadingSummary(false);
     }
@@ -129,8 +134,8 @@ export const DashboardScreen: React.FC = () => {
     try {
       setLoadingFinancial(true);
       setErrors(prev => ({ ...prev, financial: undefined }));
-      
-      const response = await pgLocationService.getFinancialAnalytics(pgId, months);
+
+      const response = await triggerFinancial({ pgId, months }).unwrap();
       
       if (response.success) {
         console.log('💰 Financial Analytics Data:', response.data);
@@ -140,7 +145,7 @@ export const DashboardScreen: React.FC = () => {
       const errorInfo = categorizeError(error);
       console.error(`❌ [${errorInfo.type.toUpperCase()}] Error loading financial analytics:`, errorInfo.message);
       setErrors(prev => ({ ...prev, financial: errorInfo }));
-      throw error;
+      setFinancialData(null);
     } finally {
       setLoadingFinancial(false);
     }
@@ -153,31 +158,13 @@ export const DashboardScreen: React.FC = () => {
       
       // Use single API with different filters
       const [pendingResponse, partialResponse, noAdvanceResponse] = await Promise.all([
-        getAllTenants({ 
-          pending_rent: true, 
-          limit: 20, 
-          pg_id: pgId, 
-          organization_id: user?.organization_id, 
-          user_id: user?.s_no 
-        }),
-        getAllTenants({ 
-          partial_rent: true, 
-          limit: 20, 
-          pg_id: pgId, 
-          organization_id: user?.organization_id, 
-          user_id: user?.s_no 
-        }),
-        getAllTenants({ 
-          pending_advance: true, 
-          limit: 20, 
-          pg_id: pgId, 
-          organization_id: user?.organization_id, 
-          user_id: user?.s_no 
-        }),
+        triggerTenants({ pending_rent: true, limit: 20 }).unwrap(),
+        triggerTenants({ partial_rent: true, limit: 20 }).unwrap(),
+        triggerTenants({ pending_advance: true, limit: 20 }).unwrap(),
       ]);
       
       // Debug logging to compare API responses
-      console.log('🔍 API Response Comparison (using getAllTenants):');
+      console.log('🔍 API Response Comparison (using tenantsApi.getTenants):');
       const pendingData = Array.isArray(pendingResponse.data) ? pendingResponse.data : [];
       const partialData = Array.isArray(partialResponse.data) ? partialResponse.data : [];
       const noAdvanceData = Array.isArray(noAdvanceResponse.data) ? noAdvanceResponse.data : [];
@@ -211,7 +198,9 @@ export const DashboardScreen: React.FC = () => {
       const errorInfo = categorizeError(error);
       console.error(`❌ [${errorInfo.type.toUpperCase()}] Error loading tenant data:`, errorInfo.message);
       setErrors(prev => ({ ...prev, tenants: errorInfo }));
-      throw error;
+      setPendingTenants([]);
+      setPartialTenants([]);
+      setNoAdvanceTenants([]);
     } finally {
       setLoadingTenants(false);
     }
@@ -240,55 +229,6 @@ export const DashboardScreen: React.FC = () => {
     }
   }, [selectedCategory, pendingTenants, partialTenants, noAdvanceTenants]);
 
-  // Retry specific failed API
-  const handleRetry = useCallback((section: 'summary' | 'financial' | 'tenants') => {
-    if (!selectedPGLocationId) return;
-    
-    setRetryCount(prev => prev + 1);
-    
-    switch (section) {
-      case 'summary':
-        loadSummary(selectedPGLocationId);
-        break;
-      case 'financial':
-        loadFinancialAnalytics(selectedPGLocationId, selectedMonths);
-        break;
-      case 'tenants':
-        loadTenantData(selectedPGLocationId);
-        break;
-    }
-  }, [selectedPGLocationId, selectedMonths]);
-
-  // Show error banner if there are critical errors
-  const showErrorBanner = useCallback(() => {
-    const criticalErrors = Object.values(errors).filter(e => e && (e.type === 'network' || e.type === 'timeout'));
-    
-    if (criticalErrors.length > 0) {
-      const errorTypes = [...new Set(criticalErrors.map(e => e!.type))];
-      const message = errorTypes.includes('network') 
-        ? 'Network connection issue. Some data may not be available.'
-        : 'Server is slow to respond. Some data may be delayed.';
-      
-      Alert.alert(
-        'Connection Issue',
-        message,
-        [
-          { text: 'Retry All', onPress: () => selectedPGLocationId && loadAllDashboardData() },
-          { text: 'OK', style: 'cancel' },
-        ]
-      );
-    }
-  }, [errors, selectedPGLocationId]);
-
-  // Show error banner when errors change
-  useEffect(() => {
-    const hasNewErrors = Object.values(errors).some(e => e !== undefined);
-    if (hasNewErrors && retryCount === 0) {
-      // Only show banner on first error, not on retries
-      showErrorBanner();
-    }
-  }, [errors]);
-
   const onRefresh = async () => {
     setRefreshing(true);
     
@@ -297,14 +237,14 @@ export const DashboardScreen: React.FC = () => {
       await loadAllDashboardData();
     } else {
       console.log('🔄 Refreshing PG locations...');
-      await initializeDashboard();
+      await refetchPGLocations();
     }
     
     setRefreshing(false);
   };
 
 
-  const activeTenants = tenants?.filter(t => t.status === 'ACTIVE').length || 0;
+  const activeTenants = Number(summary?.tenants?.active ?? 0);
   const totalRevenue = payments && Array.isArray(payments)
     ? payments
         .filter(p => p.status === 'PAID')
@@ -402,19 +342,13 @@ export const DashboardScreen: React.FC = () => {
               <>
                 {errors.summary ? (
                   <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-                    <View style={{ backgroundColor: '#FEF2F2', borderRadius: 12, padding: 16, borderLeftWidth: 4, borderLeftColor: '#EF4444' }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#DC2626', marginBottom: 8 }}>
-                        Failed to load summary
+                    <View style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, borderLeftWidth: 4, borderLeftColor: '#9CA3AF' }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 4 }}>
+                        No data found
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#7F1D1D', marginBottom: 12 }}>
-                        {errors.summary.message}
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                        Summary is not available right now.
                       </Text>
-                      <TouchableOpacity
-                        onPress={() => handleRetry('summary')}
-                        style={{ backgroundColor: '#EF4444', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, alignSelf: 'flex-start' }}
-                      >
-                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 12 }}>Retry</Text>
-                      </TouchableOpacity>
                     </View>
                   </View>
                 ) : (
@@ -428,19 +362,13 @@ export const DashboardScreen: React.FC = () => {
               <>
                 {errors.financial ? (
                   <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-                    <View style={{ backgroundColor: '#FEF2F2', borderRadius: 12, padding: 16, borderLeftWidth: 4, borderLeftColor: '#F59E0B' }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#D97706', marginBottom: 8 }}>
-                        Failed to load financial analytics
+                    <View style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, borderLeftWidth: 4, borderLeftColor: '#9CA3AF' }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 4 }}>
+                        No data found
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#92400E', marginBottom: 12 }}>
-                        {errors.financial.message}
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                        Financial analytics is not available right now.
                       </Text>
-                      <TouchableOpacity
-                        onPress={() => handleRetry('financial')}
-                        style={{ backgroundColor: '#F59E0B', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, alignSelf: 'flex-start' }}
-                      >
-                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 12 }}>Retry</Text>
-                      </TouchableOpacity>
                     </View>
                   </View>
                 ) : (
@@ -468,19 +396,13 @@ export const DashboardScreen: React.FC = () => {
               <>
                 {errors.tenants ? (
                   <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-                    <View style={{ backgroundColor: '#FEF2F2', borderRadius: 12, padding: 16, borderLeftWidth: 4, borderLeftColor: '#EF4444' }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#DC2626', marginBottom: 8 }}>
-                        Failed to load tenant data
+                    <View style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, borderLeftWidth: 4, borderLeftColor: '#9CA3AF' }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 4 }}>
+                        No data found
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#7F1D1D', marginBottom: 12 }}>
-                        {errors.tenants.message}
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                        Tenant data is not available right now.
                       </Text>
-                      <TouchableOpacity
-                        onPress={() => handleRetry('tenants')}
-                        style={{ backgroundColor: '#EF4444', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, alignSelf: 'flex-start' }}
-                      >
-                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 12 }}>Retry</Text>
-                      </TouchableOpacity>
                     </View>
                   </View>
                 ) : (

@@ -23,20 +23,17 @@ The component uses the following dependencies (already included in the project):
 ## Basic Usage
 
 ```tsx
-import { AWSImageUpload } from '../components/AWSImageUpload';
+import { ImageUploadS3 } from '../components/ImageUploadS3';
 
 const MyComponent = () => {
   const [images, setImages] = useState<string[]>([]);
 
   return (
-    <AWSImageUpload
+    <ImageUploadS3
       images={images}
       onImagesChange={setImages}
       maxImages={5}
-      label="Upload Images"
-      folder="my-folder/images"
-      category="image"
-      filePrefix="my-prefix"
+      label="Images"
     />
   );
 };
@@ -59,7 +56,7 @@ const MyComponent = () => {
 
 ### Tenant Images
 ```tsx
-<AWSImageUpload
+<ImageUploadS3
   images={tenantImages}
   onImagesChange={setTenantImages}
   maxImages={5}
@@ -72,7 +69,7 @@ const MyComponent = () => {
 
 ### Document Upload
 ```tsx
-<AWSImageUpload
+<ImageUploadS3
   images={documents}
   onImagesChange={setDocuments}
   maxImages={3}
@@ -85,7 +82,7 @@ const MyComponent = () => {
 
 ### Room Images
 ```tsx
-<AWSImageUpload
+<ImageUploadS3
   images={roomImages}
   onImagesChange={setRoomImages}
   maxImages={10}
@@ -251,7 +248,7 @@ To migrate from the basic `ImageUpload` component:
 import { ImageUpload } from '../components/ImageUpload';
 
 // New
-import { AWSImageUpload } from '../components/AWSImageUpload';
+import { ImageUploadS3 } from '../components/ImageUploadS3';
 ```
 
 2. Update component usage:
@@ -265,14 +262,11 @@ import { AWSImageUpload } from '../components/AWSImageUpload';
 />
 
 // New
-<AWSImageUpload
+<ImageUploadS3
   images={images}
   onImagesChange={setImages}
   maxImages={5}
   label="Images"
-  folder="my-folder"
-  category="image"
-  filePrefix="my-prefix"
 />
 ```
 

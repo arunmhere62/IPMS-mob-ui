@@ -17,7 +17,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Card } from '../../components/Card';
 import { AnimatedButton } from '../../components/AnimatedButton';
-import { pgLocationService } from '../../services/organization/pgLocationService';
+import { useGetPGLocationDetailsQuery } from '../../services/api/pgLocationsApi';
 
 interface PGDetailsScreenProps {
   navigation: any;
@@ -267,43 +267,34 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
   const route = useRoute();
   const { pgId } = route.params as { pgId: number };
 
-  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [pgDetails, setPgDetails] = useState<PGDetails | null>(null);
   const [viewMode, setViewMode] = useState<'summary' | 'detailed'>('summary');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedRoom, setExpandedRoom] = useState<number | null>(null);
 
-  useEffect(() => {
-    loadPGDetails();
-  }, [pgId]);
+  const {
+    data: pgDetailsResponse,
+    isFetching,
+    error,
+    refetch,
+  } = useGetPGLocationDetailsQuery(pgId);
 
-  const loadPGDetails = async () => {
-    setLoading(true);
-    try {
-      const response = await pgLocationService.getDetails(pgId);
-      
-      console.log('PG Details Response:', response);
-      
-      if (response.success && response.data) {
-        console.log('PG Details Data:', response.data);
-        // Handle nested response structure
-        const pgData = response.data?.data || response.data;
-        setPgDetails(pgData);
-      } else {
-        Alert.alert('Error', 'Failed to load PG details');
-      }
-    } catch (error: any) {
-      console.error('Error loading PG details:', error);
-      Alert.alert('Error', error?.message || 'Failed to load PG details');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if ((pgDetailsResponse as any)?.success && (pgDetailsResponse as any)?.data) {
+      const responseData = (pgDetailsResponse as any).data;
+      const pgData = responseData?.data || responseData;
+      setPgDetails(pgData);
     }
-  };
+
+    if (error) {
+      Alert.alert('Error', 'Failed to load PG details');
+    }
+  }, [pgDetailsResponse, error]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadPGDetails();
+    await refetch();
     setRefreshing(false);
   };
 
@@ -327,7 +318,7 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
         onBackPress={() => navigation.goBack()}
       />
       <View style={{ flex: 1, backgroundColor: Theme.colors.light }}>
-        {loading ? (
+        {isFetching ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color={Theme.colors.primary} />
             <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>

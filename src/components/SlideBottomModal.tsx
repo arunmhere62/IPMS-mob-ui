@@ -45,8 +45,13 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
 
   React.useEffect(() => {
     if (visible) {
-      // Reset panY when modal opens
+      // Reset animated values when modal opens.
+      // IMPORTANT: if parent sets visible=false, React Native may unmount <Modal>
+      // before the close animation completes, leaving slideY at 0. So we always
+      // force the starting (hidden) position here.
       panY.setValue(0);
+      slideY.setValue(500);
+      backdropOpacity.setValue(0);
       
       Animated.parallel([
         Animated.timing(backdropOpacity, {

@@ -19,7 +19,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
 import { Ionicons } from '@expo/vector-icons';
-import employeeService, { Employee } from '../../services/employees/employeeService';
+import { Employee, useDeleteEmployeeMutation, useLazyGetEmployeesQuery } from '../../services/api/employeesApi';
 import { CONTENT_COLOR } from '@/constant';
 
 interface EmployeesScreenProps {
@@ -39,19 +39,21 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
   const isFetchingRef = useRef(false);
   const isFirstFocusRef = useRef(true);
 
+  const [fetchEmployees] = useLazyGetEmployeesQuery();
+  const [deleteEmployee] = useDeleteEmployeeMutation();
+
   const loadEmployees = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     if (isFetchingRef.current) return;
 
     try {
       isFetchingRef.current = true;
       setLoading(true);
-      const response = await employeeService.getEmployees(
-        pageNum,
-        20,
-        selectedPGLocationId || undefined,
-        undefined,
-        search || undefined,
-      );
+      const response = await fetchEmployees({
+        page: pageNum,
+        limit: 20,
+        pg_id: selectedPGLocationId || undefined,
+        search: search || undefined,
+      }).unwrap();
 
       if (response.success) {
         if (append) {
@@ -59,7 +61,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
         } else {
           setEmployees(response.data);
         }
-        setHasMore(response.pagination.hasMore);
+        setHasMore(Boolean(response.pagination?.hasMore));
         setPage(pageNum);
       }
     } catch (error: any) {
@@ -69,7 +71,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
       setRefreshing(false);
       isFetchingRef.current = false;
     }
-  }, [selectedPGLocationId, search]);
+  }, [fetchEmployees, selectedPGLocationId, search]);
 
   useEffect(() => {
     loadEmployees(1, false);
@@ -104,7 +106,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
       itemName: employee.name,
       onConfirm: async () => {
         try {
-          await employeeService.deleteEmployee(employee.s_no);
+          await deleteEmployee(employee.s_no).unwrap();
           Alert.alert('Success', 'Employee deleted successfully');
           loadEmployees(1, false);
         } catch (error: any) {

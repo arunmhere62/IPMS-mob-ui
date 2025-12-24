@@ -9,8 +9,7 @@ import { Theme } from '../../theme';
 import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { getFolderConfig } from '../../config/aws.config';
-import { awsS3ServiceBackend as awsS3Service } from '../../services/storage/awsS3ServiceBackend';
-import { createBed, updateBed, Bed } from '../../services/rooms/bedService';
+import { Bed, useCreateBedMutation, useUpdateBedMutation } from '../../services/api/roomsApi';
 
 interface BedFormModalProps {
   visible: boolean;
@@ -35,6 +34,9 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
   organizationId,
   userId,
 }) => {
+  const [createBedMutation] = useCreateBedMutation();
+  const [updateBedMutation] = useUpdateBedMutation();
+
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     bed_no: 'BED',
@@ -134,18 +136,10 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
       };
 
       if (isEditMode && bed) {
-        await updateBed(bed.s_no, bedData, {
-          pg_id: pgId,
-          organization_id: organizationId,
-          user_id: userId,
-        });
+        await updateBedMutation({ id: bed.s_no, data: bedData }).unwrap();
         Alert.alert('Success', 'Bed updated successfully');
       } else {
-        await createBed(bedData, {
-          pg_id: pgId,
-          organization_id: organizationId,
-          user_id: userId,
-        });
+        await createBedMutation(bedData).unwrap();
         Alert.alert('Success', 'Bed created successfully');
       }
 

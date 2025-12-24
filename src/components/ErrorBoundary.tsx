@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native';
 import { Theme } from '../theme';
-import { NetworkLoggerModal, openNetworkLogger } from './NetworkLoggerModal';
+import { navigate } from '../navigation/navigationRef';
 import { networkLogger } from '../utils/networkLogger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -199,7 +199,7 @@ export class ErrorBoundary extends Component<Props, State> {
               onPress={() => {
                 console.log('View Network Logs button pressed');
                 try {
-                  openNetworkLogger();
+                  navigate('NetworkLogger');
                 } catch (error) {
                   console.error('Error opening network logger:', error);
                   Alert.alert('Error', 'Failed to open network logs');
@@ -258,9 +258,6 @@ export class ErrorBoundary extends Component<Props, State> {
               </Text>
             </TouchableOpacity>
           </View>
-
-          {/* Network Logger Modal */}
-          <NetworkLoggerModal />
         </View>
       );
     }

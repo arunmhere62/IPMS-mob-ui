@@ -9,10 +9,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
-import { AppDispatch, RootState } from '../../store';
-import { fetchTickets, deleteTicket } from '../../store/slices/ticketSlice';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
 import { showErrorAlert } from '../../utils/errorHandler';
@@ -20,6 +17,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
+import { useLazyGetTicketsQuery, useDeleteTicketMutation } from '@/services/api/ticketsApi';
 
 interface TicketsScreenProps {
   navigation: any;
@@ -56,8 +54,12 @@ const getCategoryIcon = (category: string) => {
 };
 
 export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { tickets, pagination, loading } = useSelector((state: RootState) => state.tickets);
+  const [triggerTickets, { isFetching }] = useLazyGetTicketsQuery();
+  const [deleteTicketMutation] = useDeleteTicketMutation();
+
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [pagination, setPagination] = useState<any>(null);
+  const loading = isFetching;
 
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,9 +74,9 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
     }, [filterStatus, searchQuery])
   );
 
-  const loadTickets = () => {
+  const buildFilters = (page: number) => {
     const filters: any = {
-      page: 1,
+      page,
       limit: 20,
       search: searchQuery || undefined,
     };
@@ -85,27 +87,31 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
       filters.status = filterStatus;
     }
 
-    dispatch(fetchTickets({ filters, append: false }));
-    setCurrentPage(1);
+    return filters;
   };
 
-  const loadMoreTickets = () => {
-    if (!loading && pagination?.hasMore) {
+  const loadTickets = async () => {
+    try {
+      const filters = buildFilters(1);
+      const res = await triggerTickets(filters).unwrap();
+      setTickets(res.data || []);
+      setPagination(res.pagination || null);
+      setCurrentPage(1);
+    } catch (error: any) {
+      showErrorAlert(error, 'Load Tickets Error');
+    }
+  };
+
+  const loadMoreTickets = async () => {
+    if (loading || !pagination?.hasMore) return;
+    try {
       const nextPage = currentPage + 1;
-      const filters: any = {
-        page: nextPage,
-        limit: 20,
-        search: searchQuery || undefined,
-      };
-
-      if (filterStatus === 'MY_TICKETS') {
-        filters.my_tickets = true;
-      } else if (filterStatus !== 'ALL') {
-        filters.status = filterStatus;
-      }
-
-      dispatch(fetchTickets({ filters, append: true }));
+      const res = await triggerTickets(buildFilters(nextPage)).unwrap();
+      setTickets((prev) => [...prev, ...(res.data || [])]);
+      setPagination(res.pagination || null);
       setCurrentPage(nextPage);
+    } catch (error: any) {
+      showErrorAlert(error, 'Load More Error');
     }
   };
 
@@ -126,8 +132,9 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dispatch(deleteTicket(ticketId)).unwrap();
+              await deleteTicketMutation(ticketId).unwrap();
               Alert.alert('Success', 'Ticket deleted successfully');
+              loadTickets();
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
             }

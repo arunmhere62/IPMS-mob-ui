@@ -13,7 +13,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { AppDispatch, RootState } from '../../store';
-import { fetchPGLocations, setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
+import { setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -27,7 +27,7 @@ import { OptionSelector } from '../../components/OptionSelector';
 import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
 import { getFolderConfig } from '../../config/aws.config';
 import { showErrorAlert } from '../../utils/errorHandler';
-import { locationService } from '../../services/location/locationService';
+import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../services/api/locationApi';
 import axiosInstance from '../../services/core/axiosInstance';
 
 interface PGLocationsScreenProps {
@@ -110,10 +110,22 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
 
+  const { data: statesResponse, isFetching: isFetchingStates } = useGetStatesQuery({ countryCode: 'IN' });
+  const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
+
   useEffect(() => {
     loadPGLocations();
-    loadStates();
   }, []);
+
+  useEffect(() => {
+    setLoadingStates(isFetchingStates);
+  }, [isFetchingStates]);
+
+  useEffect(() => {
+    if (statesResponse?.success) {
+      setStates(statesResponse.data);
+    }
+  }, [statesResponse]);
 
   const loadPGLocations = async () => {
     setLoading(true);
@@ -121,32 +133,21 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
       const response = await axiosInstance.get('/pg-locations');
       if (response.data.success && Array.isArray(response.data.data)) {
         setPgLocations(response.data.data);
+        return response.data.data as PGLocation[];
       }
+      return [] as PGLocation[];
     } catch (error) {
       Alert.alert('Error', 'Failed to load PG locations');
+      return [] as PGLocation[];
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadStates = async () => {
-    setLoadingStates(true);
-    try {
-      const response = await locationService.getStates('IN');
-      if (response.success) {
-        setStates(response.data);
-      }
-    } catch (error) {
-      console.error('Error loading states:', error);
-    } finally {
-      setLoadingStates(false);
     }
   };
 
   const loadCities = async (stateCode: string) => {
     setLoadingCities(true);
     try {
-      const response = await locationService.getCities(stateCode);
+      const response = await fetchCitiesTrigger({ stateCode }).unwrap();
       if (response.success) {
         setCities(response.data);
       }
@@ -291,8 +292,6 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
         if (response.data.success) {
           Alert.alert('Success', 'PG location updated successfully');
           loadPGLocations();
-          // Refresh Redux store for PG location selector
-          dispatch(fetchPGLocations());
           closeModal();
         }
       } else {
@@ -301,8 +300,6 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
         if (response.data.success) {
           Alert.alert('Success', 'PG location created successfully');
           loadPGLocations();
-          // Refresh Redux store for PG location selector
-          dispatch(fetchPGLocations());
           closeModal();
         }
       }
@@ -326,22 +323,13 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
           if (response.data.success) {
             // Check if deleted PG was the selected one
             const wasSelected = selectedPGLocationId === pg.s_no;
-            
-            // Refresh Redux store first and wait for it
-            const result = await dispatch(fetchPGLocations());
-            
-            // Refresh local state
-            await loadPGLocations();
-            
-            // If deleted PG was selected, the Redux slice will auto-select another one
-            // But we can also explicitly handle it here for immediate feedback
-            if (wasSelected && result.payload) {
-              const updatedLocations = result.payload as PGLocation[];
+
+            const updatedLocations = await loadPGLocations();
+
+            if (wasSelected) {
               if (updatedLocations.length > 0) {
-                // Select the first available PG
                 dispatch(setSelectedPGLocation(updatedLocations[0].s_no));
               } else {
-                // No PG locations left
                 dispatch(setSelectedPGLocation(null));
               }
             }

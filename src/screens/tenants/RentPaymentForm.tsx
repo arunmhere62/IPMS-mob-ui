@@ -14,9 +14,15 @@ import { DatePicker } from "../../components/DatePicker";
 import { SlideBottomModal } from "../../components/SlideBottomModal";
 import { OptionSelector, Option } from "../../components/OptionSelector";
 import { AmountInput } from "../../components/AmountInput";
-import { paymentService } from "@/services/payments/paymentService";
-import { getBedById } from "@/services/rooms/bedService";
-import { pgLocationService } from "../../services/organization/pgLocationService";
+import { useLazyGetBedByIdQuery } from "@/services/api/roomsApi";
+import { pgLocationsApi } from "../../services/api/pgLocationsApi";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../store";
+import {
+  useCreateTenantPaymentMutation,
+  useLazyDetectPaymentGapsQuery,
+  useLazyGetNextPaymentDatesQuery,
+} from "@/services/api/paymentsApi";
 import { showErrorAlert } from "@/utils/errorHandler";
 import { calculateRentCycleDates, calculateNextRentCycleDates } from "@/utils/rentCycleCalculator";
 
@@ -230,6 +236,11 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   onSuccess,
   onSave,
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const [triggerDetectPaymentGaps] = useLazyDetectPaymentGapsQuery();
+  const [triggerGetNextPaymentDates] = useLazyGetNextPaymentDatesQuery();
+  const [createTenantPayment] = useCreateTenantPaymentMutation();
+  const [triggerGetBedById] = useLazyGetBedByIdQuery();
   const [loading, setLoading] = useState(false);
   const [fetchingBedPrice, setFetchingBedPrice] = useState(false);
   const [bedRentAmount, setBedRentAmount] = useState<number>(0);
@@ -268,7 +279,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     
     try {
       setCheckingGaps(true);
-      const response = await paymentService.detectPaymentGaps(tenantId);
+      const response = await triggerDetectPaymentGaps(tenantId).unwrap();
       
       if (response.success && response.data) {
         const gapData = response.data as any;
@@ -323,7 +334,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   // Handle "Continue to Next Payment" for CALENDAR cycle
   const handleContinueToNextPaymentCalendar = async () => {
     try {
-      const response = await paymentService.getNextPaymentDates(tenantId, 'CALENDAR', true);
+      const response = await triggerGetNextPaymentDates({ tenant_id: tenantId, rentCycleType: 'CALENDAR', skipGaps: true }).unwrap();
       
       if (response.success && response.data) {
         const nextDates = response.data as any;
@@ -356,7 +367,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   // Handle "Continue to Next Payment" for MIDMONTH cycle
   const handleContinueToNextPaymentMidmonth = async () => {
     try {
-      const response = await paymentService.getNextPaymentDates(tenantId, 'MIDMONTH', true);
+      const response = await triggerGetNextPaymentDates({ tenant_id: tenantId, rentCycleType: 'MIDMONTH', skipGaps: true }).unwrap();
       
       if (response.success && response.data) {
         const nextDates = response.data as any;
@@ -556,29 +567,24 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
           setFetchingBedPrice(true);
 
           // Fetch bed price
-          const bedResponse = await getBedById(bedId, {
-            pg_id: pgId,
-          });
+          const bedResponse = await triggerGetBedById(bedId).unwrap();
 
-          if (bedResponse.success && bedResponse.data?.bed_price) {
-            const bedPrice = bedResponse.data.bed_price;
+          const priceValue = (bedResponse as any)?.data?.bed_price;
+          if (priceValue) {
+            const bedPrice = typeof priceValue === 'string' ? parseFloat(priceValue) : priceValue;
             setBedRentAmount(bedPrice);
             setFormData((prev) => ({
               ...prev,
               actual_rent_amount: bedPrice.toString(),
-            }));
-          } else if (rentAmount > 0) {
-            setBedRentAmount(rentAmount);
-            setFormData((prev) => ({
-              ...prev,
-              actual_rent_amount: rentAmount.toString(),
             }));
           }
 
           // Fetch PG location details for rent cycle data
           if (pgId > 0) {
             try {
-              const pgResponse = await pgLocationService.getDetails(pgId);
+              const pgResponse = await dispatch(
+                pgLocationsApi.endpoints.getPGLocationDetails.initiate(pgId)
+              ).unwrap();
               if (pgResponse.success && pgResponse.data) {
                 const pgData = pgResponse.data;
                 if (pgData.rent_cycle_type) {
@@ -944,7 +950,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
           remarks: formData.remarks || undefined,
         };
 
-        await paymentService.createTenantPayment(paymentData);
+        await createTenantPayment(paymentData as any).unwrap();
         Alert.alert("Success", "Payment added successfully");
       } else if (mode === "edit" && paymentId && onSave) {
         const updateData = {

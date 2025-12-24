@@ -10,9 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store';
-import { createTicket } from '../../store/slices/ticketSlice';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { useCreateTicketMutation } from '@/services/api/ticketsApi';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -26,9 +26,8 @@ interface CreateTicketScreenProps {
 }
 
 export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { loading } = useSelector((state: RootState) => state.tickets);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const [createTicketMutation, { isLoading: loading }] = useCreateTicketMutation();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -72,14 +71,14 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
     }
 
     try {
-      await dispatch(createTicket({
+      await createTicketMutation({
         title: title.trim(),
         description: description.trim(),
         category: category as any,
         priority: priority as any,
         attachments: screenshots.length > 0 ? screenshots : undefined,
         pg_id: selectedPGLocationId || undefined,
-      })).unwrap();
+      }).unwrap();
 
       Alert.alert(
         'Success',

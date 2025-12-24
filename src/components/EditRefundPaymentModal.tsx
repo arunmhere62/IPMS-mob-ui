@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 import { DatePicker } from './DatePicker';
-import { RefundPayment } from '@/services/payments/refundPaymentService';
+import { RefundPayment } from '@/services/api/paymentsApi';
 
 interface EditRefundPaymentModalProps {
   visible: boolean;
