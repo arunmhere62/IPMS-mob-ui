@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '../../store';
-import visitorService, { Visitor } from '../../services/visitors/visitorService';
+import { useGetVisitorByIdQuery, useDeleteVisitorMutation } from '../../services/api/visitorsApi';
 import { Theme } from '../../theme';
 import { showErrorAlert } from '../../utils/errorHandler';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -17,7 +15,6 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
-import { deleteVisitor } from '../../store/slices/visitorSlice';
 
 interface VisitorDetailsScreenProps {
   route: {
@@ -65,51 +62,25 @@ const DetailRow = ({
   </View>
 );
 
-export const VisitorDetailsScreen: React.FC<VisitorDetailsScreenProps> = ({
-  route,
-  navigation,
-}) => {
+export default function VisitorDetailsScreen({ route, navigation }: VisitorDetailsScreenProps) {
   const { visitorId } = route.params;
-  const dispatch = useDispatch<AppDispatch>();
-  const [visitor, setVisitor] = useState<Visitor | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: visitor, isLoading, error, refetch } = useGetVisitorByIdQuery(visitorId);
+  const [deleteVisitorMutation] = useDeleteVisitorMutation();
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadVisitorDetails();
-  }, [visitorId]);
-
-  const loadVisitorDetails = async (showLoader: boolean = true) => {
-    try {
-      if (showLoader) {
-        setLoading(true);
-      }
-      const visitorData = await visitorService.getVisitorById(visitorId);
-      setVisitor(visitorData);
-    } catch (error) {
-      showErrorAlert('Failed to load visitor details');
-      console.error('Error loading visitor details:', error);
-    } finally {
-      if (showLoader) {
-        setLoading(false);
-      }
-    }
-  };
-
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadVisitorDetails(false);
-    setRefreshing(false);
+    refetch();
   };
 
   const handleEditVisitor = () => {
     navigation.navigate('AddVisitor', { visitorId });
   };
 
-  const handleDeleteVisitor = () => {
+  const handleDelete = async () => {
     Alert.alert(
       'Delete Visitor',
-      `Are you sure you want to delete ${visitor?.visitor_name || 'this visitor'}?`,
+      'Are you sure you want to delete this visitor?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -117,11 +88,10 @@ export const VisitorDetailsScreen: React.FC<VisitorDetailsScreenProps> = ({
           style: 'destructive',
           onPress: async () => {
             try {
-              await dispatch(deleteVisitor(visitorId)).unwrap();
+              await deleteVisitorMutation(visitorId).unwrap();
               navigation.goBack();
             } catch (error) {
               showErrorAlert('Failed to delete visitor');
-              console.error('Error deleting visitor:', error);
             }
           },
         },
@@ -139,7 +109,7 @@ export const VisitorDetailsScreen: React.FC<VisitorDetailsScreenProps> = ({
         syncMobileHeaderBg={true}
       />
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
-        {loading ? (
+        {isLoading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color={Theme.colors.primary} />
             <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
@@ -213,7 +183,7 @@ export const VisitorDetailsScreen: React.FC<VisitorDetailsScreenProps> = ({
                       {visitor.convertedTo_tenant ? 'Converted' : 'Not Converted'}
                     </Text>
                   </View>
-                  <ActionButtons onEdit={handleEditVisitor} onDelete={handleDeleteVisitor} showView={false} />
+                  <ActionButtons onEdit={handleEditVisitor} onDelete={handleDelete} showView={false} />
                 </View>
               </View>
             </Card>

@@ -17,8 +17,8 @@ import { OptionSelector } from '../../components/OptionSelector';
 import { InputField } from '../../components/InputField';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import axiosInstance from '../../services/core/axiosInstance';
-import userService from '../../services/userService';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { useUpdateUserProfileMutation } from '../../services/api/userApi';
 
 interface EditProfileModalProps {
   visible: boolean;
@@ -38,6 +38,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onClose,
   onProfileUpdated,
 }) => {
+  const [updateUserProfileMutation] = useUpdateUserProfileMutation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -168,8 +169,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       console.log('profileImages.length:', profileImages.length);
       console.log('profile_images field value:', payload.profile_images);
       console.log('=== END FRONTEND DEBUG ===');
-      
-      const response = await userService.updateUserProfile(user.s_no, payload);
+
+      const response = await updateUserProfileMutation({ userId: user.s_no, data: payload }).unwrap();
       
       showSuccessAlert(response, 'Success')
       

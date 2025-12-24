@@ -1,30 +1,33 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SlideBottomModal } from '@/components/SlideBottomModal';
+import { FullScreenSlideUpModal } from '@/components/FullScreenSlideUpModal';
 import { RequestDetailsComponent } from '@/components/RequestDetailsComponent';
 import { networkLogger, type NetworkLog } from '@/utils/networkLogger';
 import { Theme } from '@/theme';
 
-export const NetworkLoggerScreen: React.FC = () => {
-  const navigation = useNavigation<any>();
+const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [logs, setLogs] = useState<NetworkLog[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLog, setSelectedLog] = useState<NetworkLog | null>(null);
+
+  const countKeys = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return 0;
+    return Object.keys(obj).length;
+  };
 
   const loadLogs = useCallback(() => {
     setLogs(networkLogger.getLogs());
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadLogs();
-      const t = setInterval(loadLogs, 800);
-      return () => clearInterval(t);
-    }, [loadLogs])
-  );
+  useEffect(() => {
+    loadLogs();
+    const t = setInterval(loadLogs, 800);
+    return () => clearInterval(t);
+  }, [loadLogs]);
 
   const stats = useMemo(() => {
     const total = logs.length;
@@ -85,7 +88,7 @@ export const NetworkLoggerScreen: React.FC = () => {
         title="Network Logs"
         subtitle={`Total: ${stats.total} | ✓ ${stats.success} | ✗ ${stats.errors}`}
         showBackButton
-        onBackPress={() => navigation.goBack()}
+        onBackPress={onClose}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg
       />
@@ -220,6 +223,19 @@ export const NetworkLoggerScreen: React.FC = () => {
                     <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontWeight: '800' }}>{item.duration}ms</Text>
                   </View>
                 )}
+
+                <View style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 999,
+                  backgroundColor: Theme.colors.background.tertiary,
+                  borderWidth: 1,
+                  borderColor: Theme.colors.border,
+                }}>
+                  <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontWeight: '800' }}>
+                    OUT {countKeys((item as any)?.headers?.request ?? (item as any)?.headers)} | IN {countKeys((item as any)?.headers?.response)}
+                  </Text>
+                </View>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, fontWeight: '600' }}>
@@ -268,4 +284,17 @@ export const NetworkLoggerScreen: React.FC = () => {
       </SlideBottomModal>
     </ScreenLayout>
   );
+};
+
+export const NetworkLoggerModal: React.FC<{ visible: boolean; onClose: () => void }> = ({ visible, onClose }) => {
+  return (
+    <FullScreenSlideUpModal visible={visible} onClose={onClose}>
+      <NetworkLoggerContent onClose={onClose} />
+    </FullScreenSlideUpModal>
+  );
+};
+
+export const NetworkLoggerScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  return <NetworkLoggerContent onClose={() => navigation.goBack()} />;
 };

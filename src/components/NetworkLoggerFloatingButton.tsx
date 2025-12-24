@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Animated, Dimensions, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Theme } from '../theme';
 import { networkLogger } from '../utils/networkLogger';
-import { navigate } from '../navigation/navigationRef';
+import { NetworkLoggerModal } from '../screens/network/NetworkLoggerScreen';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -17,6 +17,7 @@ interface NetworkLoggerFloatingButtonProps {
 
 export const NetworkLoggerFloatingButton: React.FC<NetworkLoggerFloatingButtonProps> = ({ enabled = true }) => {
   const [count, setCount] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
   const pan = useState(new Animated.ValueXY({ x: 20, y: 140 }))[0];
 
   useEffect(() => {
@@ -75,28 +76,32 @@ export const NetworkLoggerFloatingButton: React.FC<NetworkLoggerFloatingButtonPr
   if (!enabled) return null;
 
   return (
-    <Animated.View
-      style={[
-        styles.floatingButton,
-        {
-          transform: [{ translateX: pan.x }, { translateY: pan.y }],
-        },
-      ]}
-      {...panResponder.panHandlers}
-    >
-      <TouchableOpacity
-        onPress={() => navigate('NetworkLogger')}
-        style={styles.floatingButtonInner}
-        activeOpacity={0.85}
+    <>
+      <Animated.View
+        style={[
+          styles.floatingButton,
+          {
+            transform: [{ translateX: pan.x }, { translateY: pan.y }],
+          },
+        ]}
+        {...panResponder.panHandlers}
       >
-        <Text style={styles.floatingButtonText}>🔍</Text>
-        {count > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{count}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    </Animated.View>
+        <TouchableOpacity
+          onPress={() => setModalVisible(true)}
+          style={styles.floatingButtonInner}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.floatingButtonText}>🔍</Text>
+          {count > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{count}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
+
+      <NetworkLoggerModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+    </>
   );
 };
 

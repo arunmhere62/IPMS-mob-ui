@@ -9,8 +9,8 @@ export interface Bed {
   bed_no: string;
   room_id: number;
   pg_id?: number;
-  is_occupied: boolean;
-  bed_price?: number;
+  is_occupied?: boolean;
+  bed_price?: number | string;
   images?: any;
   created_at?: string;
   updated_at?: string;
@@ -43,18 +43,20 @@ export interface GetBedsParams {
   limit?: number;
   room_id?: number;
   search?: string;
+  only_unoccupied?: boolean;
 }
 
 export interface GetBedsResponse {
   success: boolean;
   data: Bed[];
-  pagination: {
+  pagination?: {
     page: number;
     limit: number;
     total: number;
     totalPages: number;
     hasMore: boolean;
   };
+  message?: string;
 }
 
 export interface BedResponse {
@@ -81,9 +83,12 @@ export interface Room {
   beds?: Array<{
     s_no: number;
     bed_no: string;
-    bed_price?: number;
+    bed_price?: number | string;
+    is_occupied?: boolean;
   }>;
   total_beds?: number;
+  occupied_beds?: number;
+  available_beds?: number;
 }
 
 export interface CreateRoomDto {
@@ -139,6 +144,36 @@ const normalizeEntityResponse = <T>(response: any): { success: boolean; data: T;
     success: (response as any)?.success ?? true,
     data: unwrapped,
     message: (response as any)?.message,
+  };
+};
+
+const normalizeListResponse = <T>(response: any): { success: boolean; data: T[]; pagination?: any; message?: string } => {
+  const unwrapped = unwrapCentralData<any>(response);
+
+  // New centralized envelope can return `data` as an array directly
+  if (Array.isArray(unwrapped)) {
+    return {
+      success: (response as any)?.success ?? true,
+      data: unwrapped as T[],
+      message: (response as any)?.message,
+    };
+  }
+
+  const extractItems = (v: any): T[] => {
+    if (Array.isArray(v)) return v as T[];
+    if (Array.isArray(v?.data)) return v.data as T[];
+    if (Array.isArray(v?.data?.data)) return v.data.data as T[];
+    if (Array.isArray(v?.data?.data?.data)) return v.data.data.data as T[];
+    return [];
+  };
+
+  // Or it can return an object that already contains `data` (and optionally pagination)
+  const items = extractItems(unwrapped?.data ?? unwrapped);
+  return {
+    success: (unwrapped as any)?.success ?? (response as any)?.success ?? true,
+    data: items as T[],
+    pagination: (unwrapped as any)?.pagination,
+    message: (unwrapped as any)?.message ?? (response as any)?.message,
   };
 };
 
@@ -198,7 +233,7 @@ export const roomsApi = baseApi.injectEndpoints({
         method: 'GET',
         params: params || undefined,
       }),
-      transformResponse: (response: ApiEnvelope<GetBedsResponse> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: ApiEnvelope<GetBedsResponse> | any) => normalizeListResponse<Bed>(response),
       providesTags: (result) => {
         const beds = (result as any)?.data || [];
         return [
@@ -210,7 +245,7 @@ export const roomsApi = baseApi.injectEndpoints({
 
     getBedsByRoomId: build.query<GetBedsResponse, number>({
       query: (roomId) => ({ url: `/beds/room/${roomId}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<GetBedsResponse> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: ApiEnvelope<GetBedsResponse> | any) => normalizeListResponse<Bed>(response),
       providesTags: (_res, _err, roomId) => [{ type: 'Beds' as const, id: roomId }],
     }),
 

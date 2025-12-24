@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_CONFIG } from '../../config/api.config';
 import { store } from '../../store';
+import type { RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice';
 import { networkLogger } from '../../utils/networkLogger';
 
@@ -27,7 +28,7 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        const state = store.getState();
+        const state = store.getState() as RootState;
         const token = state.auth.accessToken;
         const { user } = state.auth;
         const selectedPGLocationId = state.pgLocations.selectedPGLocationId;
@@ -58,8 +59,24 @@ class ApiClient {
           return Promise.reject(new Error('Missing required headers: X-PG-Location-Id'));
         }
 
+        const logId = `${Date.now()}-${Math.random()}`;
+
+        const headersObj = JSON.parse(JSON.stringify(config.headers || {}));
+        if (headersObj.Authorization && typeof headersObj.Authorization === 'string') {
+          headersObj.Authorization = 'Bearer ***';
+        }
+
         // Log request
-        (config as any).metadata = { startTime: new Date() };
+        (config as any).metadata = { startTime: Date.now(), logId };
+        const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url || '';
+        networkLogger.addLog({
+          id: logId,
+          method: config.method?.toUpperCase() || 'GET',
+          url: fullUrl,
+          headers: headersObj,
+          requestData: (config as any).data,
+          timestamp: new Date(),
+        });
 
         return config;
       },
@@ -71,40 +88,28 @@ class ApiClient {
     // Response interceptor
     this.client.interceptors.response.use(
       (response) => {
-        // Log successful response
-        const duration = new Date().getTime() - (response.config as any).metadata?.startTime?.getTime();
-        const fullUrl = response.config.baseURL 
-          ? `${response.config.baseURL}${response.config.url}` 
-          : response.config.url || '';
-        networkLogger.addLog({
-          id: Date.now().toString(),
-          method: response.config.method?.toUpperCase() || 'GET',
-          url: fullUrl,
-          status: response.status,
-          requestData: response.config.data ? JSON.parse(response.config.data) : null,
-          responseData: response.data,
-          timestamp: new Date(),
-          duration,
-        });
+        const metadata = (response.config as any).metadata;
+        const duration = metadata?.startTime ? Date.now() - metadata.startTime : undefined;
+        if (metadata?.logId) {
+          networkLogger.updateLog(metadata.logId, {
+            status: response.status,
+            responseData: response.data,
+            duration,
+          });
+        }
         return response;
       },
       async (error: AxiosError) => {
-        // Log error response
-        const duration = new Date().getTime() - (error.config as any)?.metadata?.startTime?.getTime();
-        const fullUrl = error.config?.baseURL 
-          ? `${error.config.baseURL}${error.config.url}` 
-          : error.config?.url || '';
-        networkLogger.addLog({
-          id: Date.now().toString(),
-          method: error.config?.method?.toUpperCase() || 'GET',
-          url: fullUrl,
-          status: error.response?.status,
-          requestData: error.config?.data ? JSON.parse(error.config.data as string) : null,
-          responseData: error.response?.data,
-          error: error.message,
-          timestamp: new Date(),
-          duration,
-        });
+        const metadata = (error.config as any)?.metadata;
+        const duration = metadata?.startTime ? Date.now() - metadata.startTime : undefined;
+        if (metadata?.logId) {
+          networkLogger.updateLog(metadata.logId, {
+            status: error.response?.status,
+            responseData: error.response?.data,
+            error: error.message,
+            duration,
+          });
+        }
 
         if (error.response?.status === 401) {
           // Token expired or invalid

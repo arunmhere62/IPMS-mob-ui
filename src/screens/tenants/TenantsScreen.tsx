@@ -5,7 +5,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   TextInput,
   Modal,
   ActivityIndicator,
@@ -19,6 +18,7 @@ import { RootState } from '../../store';
 import { Card } from '../../components/Card';
 import { AnimatedButton } from '../../components/AnimatedButton';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -34,13 +34,11 @@ interface TenantsScreenProps {
 export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state?.pgLocations);
 
-  const [triggerTenants, { isFetching }] = useLazyGetTenantsQuery();
+  const [triggerTenants, tenantsQuery] = useLazyGetTenantsQuery();
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [pagination, setPagination] = useState<any>(null);
-  const loading = isFetching;
 
-  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -51,9 +49,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const [pendingRentFilter, setPendingRentFilter] = useState(false);
   const [pendingAdvanceFilter, setPendingAdvanceFilter] = useState(false);
   const [partialRentFilter, setPartialRentFilter] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isPageLoading, setIsPageLoading] = useState(false);
-  const isPageLoadingRef = React.useRef(false);
 
   const [expandedPaymentCards, setExpandedPaymentCards] = useState<Set<number>>(new Set());
   const flatListRef = React.useRef<any>(null);
@@ -129,31 +124,50 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     }, [shouldReloadOnFocus, tenants.length, navigation])
   );
 
-  const loadTenants = async (page: number, reset: boolean = false) => {
+  const loadTenants = async (
+    page: number,
+    reset: boolean = false,
+    overrides?: Partial<{
+      searchQuery: string;
+      statusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE';
+      selectedRoomId: number | null;
+      pendingRentFilter: boolean;
+      pendingAdvanceFilter: boolean;
+      partialRentFilter: boolean;
+    }>
+  ) => {
     try {
-      if (isPageLoadingRef.current) return;
+      if (tenantsQuery.isFetching) return;
       if (!hasMore && !reset) return;
 
-      isPageLoadingRef.current = true;
-      setIsPageLoading(true);
+      if (reset) {
+        setTenants([]);
+        setPagination(null);
+      }
+
+      const effectiveSearchQuery = overrides?.searchQuery ?? searchQuery;
+      const effectiveStatusFilter = overrides?.statusFilter ?? statusFilter;
+      const effectiveSelectedRoomId = overrides?.selectedRoomId ?? selectedRoomId;
+      const effectivePendingRentFilter = overrides?.pendingRentFilter ?? pendingRentFilter;
+      const effectivePendingAdvanceFilter = overrides?.pendingAdvanceFilter ?? pendingAdvanceFilter;
+      const effectivePartialRentFilter = overrides?.partialRentFilter ?? partialRentFilter;
 
       // When room filter is active, fetch all tenants from that room
-      const isRoomFiltered = selectedRoomId !== null;
+      const isRoomFiltered = effectiveSelectedRoomId !== null;
 
       const params = {
         page: isRoomFiltered ? 1 : page,
         limit: isRoomFiltered ? 1000 : 20, // Increased from 10 to 20 for better infinite scroll
-        search: searchQuery || undefined,
-        status: statusFilter === 'ALL' ? undefined : statusFilter,
-        room_id: selectedRoomId !== null ? selectedRoomId : undefined,
-        pending_rent: pendingRentFilter ? true : undefined,
-        pending_advance: pendingAdvanceFilter ? true : undefined,
-        partial_rent: partialRentFilter ? true : undefined,
+        search: effectiveSearchQuery || undefined,
+        status: effectiveStatusFilter === 'ALL' ? undefined : effectiveStatusFilter,
+        room_id: effectiveSelectedRoomId !== null ? effectiveSelectedRoomId : undefined,
+        pending_rent: effectivePendingRentFilter ? true : undefined,
+        pending_advance: effectivePendingAdvanceFilter ? true : undefined,
+        partial_rent: effectivePartialRentFilter ? true : undefined,
       };
 
       console.log('Loading tenants with params:', params);
       const result = await triggerTenants(params).unwrap();
-      setFetchError(null);
 
       const nextData = Array.isArray(result?.data) ? (result.data as Tenant[]) : [];
       setTenants((prev) => {
@@ -185,23 +199,14 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
       }
     } catch (error: any) {
       console.error('Error loading tenants:', error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Unable to load tenants. Please try again.';
-      setFetchError(errorMessage);
     } finally {
-      isPageLoadingRef.current = false;
-      setIsPageLoading(false);
     }
   };
 
   const onRefresh = async () => {
-    setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
     await loadTenants(1, true);
-    setRefreshing(false);
   };
 
   const applyFilters = () => {
@@ -224,7 +229,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   };
 
   const loadMoreTenants = () => {
-    if (!hasMore || loading || selectedRoomId !== null || isPageLoading) return;
+    if (!hasMore || tenantsQuery.isFetching || selectedRoomId !== null) return;
 
     const nextPage = currentPage + 1;
     loadTenants(nextPage, false);
@@ -242,6 +247,34 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     minimumViewTime: 100,
   }).current;
 
+  const TenantsListSkeleton = React.useCallback(() => {
+    const items = Array.from({ length: 6 });
+    return (
+      <View style={{ padding: 16 }}>
+        {items.map((_, idx) => (
+          <View key={idx} style={{ marginBottom: 12 }}>
+            <Card style={{ padding: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <SkeletonLoader width={60} height={60} borderRadius={30} style={{ marginRight: 12 }} />
+                <View style={{ flex: 1 }}>
+                  <SkeletonLoader width="70%" height={16} style={{ marginBottom: 8 }} />
+                  <SkeletonLoader width="45%" height={12} />
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                <SkeletonLoader width={72} height={24} borderRadius={12} />
+                <SkeletonLoader width={90} height={24} borderRadius={12} />
+                <SkeletonLoader width={84} height={24} borderRadius={12} />
+              </View>
+              <SkeletonLoader width="100%" height={44} borderRadius={10} style={{ marginBottom: 12 }} />
+              <SkeletonLoader width="40%" height={12} />
+            </Card>
+          </View>
+        ))}
+      </View>
+    );
+  }, []);
+
 
   const clearFilters = () => {
     setStatusFilter('ALL');
@@ -249,10 +282,16 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     setPendingRentFilter(false);
     setPendingAdvanceFilter(false);
     setPartialRentFilter(false);
-    // Apply the cleared filters
-    setTimeout(() => {
-      applyFilters();
-    }, 100);
+    setShowFilters(false);
+    setCurrentPage(1);
+    setHasMore(true);
+    loadTenants(1, true, {
+      statusFilter: 'ALL',
+      selectedRoomId: null,
+      pendingRentFilter: false,
+      pendingAdvanceFilter: false,
+      partialRentFilter: false,
+    });
   };
 
   const getFilterCount = () => {
@@ -584,249 +623,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                 <Text style={{ fontSize: 11, color: '#F59E0B' }}>
                   💰 No advance payment
                 </Text>
-              )}
-            </View>
-          )}
-
-          {/* Payment Summary - Collapsible */}
-          {(item.tenant_payments?.length > 0 || item.advance_payments?.length > 0 || item.refund_payments?.length > 0) && (
-            <View style={{
-              backgroundColor: '#F9FAFB',
-              borderRadius: 8,
-              marginBottom: 12,
-              overflow: 'hidden',
-            }}>
-              {/* Header - Always Visible */}
-              <TouchableOpacity
-                onPress={() => togglePaymentDetails(item.s_no)}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: 10,
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
-                  💰 Payment History
-                </Text>
-                <Text style={{ fontSize: 16, color: Theme.colors.text.secondary }}>
-                  {showPaymentDetails ? '▼' : '▶'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Collapsible Content */}
-              {showPaymentDetails && (
-                <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
-                  {/* Regular Payments */}
-                  {item.tenant_payments && item.tenant_payments.length > 0 && (
-                    <View style={{ marginBottom: 8, paddingTop: 4, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 4 }}>
-                        Rent Payments ({item.tenant_payments.length})
-                      </Text>
-                      {item.tenant_payments.slice(0, 3).map((payment: any, index: number) => (
-                        <View key={index} style={{
-                          backgroundColor: '#fff',
-                          borderRadius: 6,
-                          padding: 8,
-                          marginBottom: 6,
-                          borderWidth: 1,
-                          borderColor: '#F1F5F9'
-                        }}>
-                          {/* Payment Header Row */}
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <Text style={{ fontSize: 10, color: Theme.colors.text.secondary, fontWeight: '500' }}>
-                                {new Date(payment.payment_date).toLocaleDateString()}
-                              </Text>
-                              {payment.status && (
-                                <View style={{
-                                  paddingHorizontal: 5,
-                                  paddingVertical: 2,
-                                  borderRadius: 4,
-                                  backgroundColor:
-                                    payment.status === 'PAID' ? '#10B98120' :
-                                      payment.status === 'PARTIAL' ? '#DC262620' :
-                                        payment.status === 'PENDING' ? '#F59E0B20' :
-                                          payment.status === 'FAILED' ? '#EF444420' : '#9CA3AF20',
-                                }}>
-                                  <Text style={{
-                                    fontSize: 8,
-                                    fontWeight: '700',
-                                    color:
-                                      payment.status === 'PAID' ? '#10B981' :
-                                        payment.status === 'PARTIAL' ? '#DC2626' :
-                                          payment.status === 'PENDING' ? '#F59E0B' :
-                                            payment.status === 'FAILED' ? '#EF4444' : '#6B7280',
-                                  }}>
-                                    {payment.status}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                            <Text style={{ fontSize: 11, color: Theme.colors.text.primary, fontWeight: '700' }}>
-                              ₹{payment.amount_paid}
-                            </Text>
-                          </View>
-
-                          {/* Rent Period Row */}
-                          {payment.start_date && payment.end_date && (
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Text style={{ fontSize: 9, color: Theme.colors.text.tertiary }}>
-                                Period: {new Date(payment.start_date).toLocaleDateString()} - {new Date(payment.end_date).toLocaleDateString()}
-                              </Text>
-                              {payment.actual_rent_amount && (
-                                <Text style={{ fontSize: 9, color: Theme.colors.text.tertiary }}>
-                                  Rent: ₹{payment.actual_rent_amount}
-                                </Text>
-                              )}
-                            </View>
-                          )}
-                        </View>
-                      ))}
-                      {item.tenant_payments.length > 3 && (
-                        <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, fontStyle: 'italic' }}>
-                          +{item.tenant_payments.length - 3} more
-                        </Text>
-                      )}
-                    </View>
-                  )}
-
-                  {/* Advance Payments */}
-                  {item.advance_payments && item.advance_payments.length > 0 && (
-                    <View style={{ marginBottom: 8, paddingTop: 4, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#10B981', marginBottom: 4 }}>
-                        Advance Payments ({item.advance_payments.length})
-                      </Text>
-                      {item.advance_payments.map((payment: any, index: number) => (
-                        <View key={index} style={{
-                          backgroundColor: '#F0FDF4',
-                          borderRadius: 6,
-                          padding: 8,
-                          marginBottom: 6,
-                          borderWidth: 1,
-                          borderColor: '#BBF7D0'
-                        }}>
-                          {/* Payment Header Row */}
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <Text style={{ fontSize: 10, color: '#15803D', fontWeight: '500' }}>
-                                {new Date(payment.payment_date).toLocaleDateString()}
-                              </Text>
-                              {payment.status && (
-                                <View style={{
-                                  paddingHorizontal: 5,
-                                  paddingVertical: 2,
-                                  borderRadius: 4,
-                                  backgroundColor:
-                                    payment.status === 'PAID' ? '#10B98130' :
-                                      payment.status === 'PARTIAL' ? '#DC262630' :
-                                        payment.status === 'PENDING' ? '#F59E0B30' :
-                                          payment.status === 'FAILED' ? '#EF444430' : '#9CA3AF30',
-                                }}>
-                                  <Text style={{
-                                    fontSize: 8,
-                                    fontWeight: '700',
-                                    color:
-                                      payment.status === 'PAID' ? '#10B981' :
-                                        payment.status === 'PARTIAL' ? '#DC2626' :
-                                          payment.status === 'PENDING' ? '#F59E0B' :
-                                            payment.status === 'FAILED' ? '#EF4444' : '#6B7280',
-                                  }}>
-                                    {payment.status}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                            <Text style={{ fontSize: 11, color: '#10B981', fontWeight: '700' }}>
-                              ₹{payment.amount_paid}
-                            </Text>
-                          </View>
-
-                          {/* Advance Details Row */}
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 9, color: '#15803D', opacity: 0.8 }}>
-                              💰 Advance Payment
-                            </Text>
-                            {payment.actual_rent_amount && (
-                              <Text style={{ fontSize: 9, color: '#15803D', opacity: 0.8 }}>
-                                Monthly Rent: ₹{payment.actual_rent_amount}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                      ))}
-                      <Text style={{ fontSize: 10, color: '#10B981', fontWeight: '600', marginTop: 2 }}>
-                        Total: ₹{item.advance_payments.reduce((sum: number, p: any) => sum + Number(p.amount_paid || 0), 0)}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Refund Payments */}
-                  {item.refund_payments && item.refund_payments.length > 0 && (
-                    <View style={{ paddingTop: 4, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#F59E0B', marginBottom: 4 }}>
-                        Refunds ({item.refund_payments.length})
-                      </Text>
-                      {item.refund_payments.map((payment: any, index: number) => (
-                        <View key={index} style={{
-                          backgroundColor: '#FFFBEB',
-                          borderRadius: 6,
-                          padding: 8,
-                          marginBottom: 6,
-                          borderWidth: 1,
-                          borderColor: '#FED7AA'
-                        }}>
-                          {/* Payment Header Row */}
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <Text style={{ fontSize: 10, color: '#D97706', fontWeight: '500' }}>
-                                {new Date(payment.payment_date).toLocaleDateString()}
-                              </Text>
-                              {payment.status && (
-                                <View style={{
-                                  paddingHorizontal: 5,
-                                  paddingVertical: 2,
-                                  borderRadius: 4,
-                                  backgroundColor:
-                                    payment.status === 'PAID' ? '#10B98130' :
-                                      payment.status === 'PENDING' ? '#F59E0B30' : '#9CA3AF30',
-                                }}>
-                                  <Text style={{
-                                    fontSize: 8,
-                                    fontWeight: '700',
-                                    color:
-                                      payment.status === 'PAID' ? '#10B981' :
-                                        payment.status === 'PENDING' ? '#F59E0B' : '#6B7280',
-                                  }}>
-                                    {payment.status}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                            <Text style={{ fontSize: 11, color: '#F59E0B', fontWeight: '700' }}>
-                              ₹{payment.amount_paid}
-                            </Text>
-                          </View>
-
-                          {/* Refund Details Row */}
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 9, color: '#D97706', opacity: 0.8 }}>
-                              🔄 Refund Payment
-                            </Text>
-                            {payment.actual_rent_amount && (
-                              <Text style={{ fontSize: 9, color: '#D97706', opacity: 0.8 }}>
-                                Original Rent: ₹{payment.actual_rent_amount}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                      ))}
-                      <Text style={{ fontSize: 10, color: '#F59E0B', fontWeight: '600', marginTop: 2 }}>
-                        Total: ₹{item.refund_payments.reduce((sum: number, p: any) => sum + p.amount_paid, 0)}
-                      </Text>
-                    </View>
-                  )}
-                </View>
               )}
             </View>
           )}
@@ -1338,14 +1134,11 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
         )}
 
         {/* Tenants List */}
-        {loading && tenants.length === 0 ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator size="large" color={Theme.colors.primary} />
-            <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>Loading tenants...</Text>
-          </View>
+        {(tenantsQuery.isUninitialized || tenantsQuery.isFetching) && tenants.length === 0 ? (
+          <TenantsListSkeleton />
         ) : (
           <>
-            {fetchError && (
+            {tenantsQuery.isError && (
               <View
                 style={{
                   marginHorizontal: 16,
@@ -1361,7 +1154,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                   Unable to refresh tenant list
                 </Text>
                 <Text style={{ color: '#B45309', fontSize: 13, marginBottom: 8 }}>
-                  {fetchError}
+                  {(tenantsQuery.error as any)?.data?.message || (tenantsQuery.error as any)?.error || 'Unable to load tenants. Please try again.'}
                 </Text>
                 <TouchableOpacity
                   onPress={() => loadTenants(currentPage, tenants.length === 0)}
@@ -1385,22 +1178,24 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
               refreshControl={
                 <RefreshControl
-                  refreshing={refreshing}
+                  refreshing={tenantsQuery.isFetching && tenants.length > 0 && currentPage === 1}
                   onRefresh={onRefresh}
                   colors={[Theme.colors.primary]}
                 />
               }
               ListEmptyComponent={
-                <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
-                  <Text style={{ fontSize: 48, marginBottom: 16 }}>👥</Text>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>No Tenants Found</Text>
-                  <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginTop: 8 }}>
-                    {selectedRoomId ? 'No tenants in this room' : 'Add your first tenant to get started'}
-                  </Text>
-                </View>
+                tenantsQuery.isSuccess && !tenantsQuery.isFetching ? (
+                  <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
+                    <Text style={{ fontSize: 48, marginBottom: 16 }}>👥</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>No Tenants Found</Text>
+                    <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginTop: 8 }}>
+                      {selectedRoomId ? 'No tenants in this room' : 'Add your first tenant to get started'}
+                    </Text>
+                  </View>
+                ) : null
               }
               ListFooterComponent={
-                loading && currentPage > 1 ? (
+                tenantsQuery.isFetching && currentPage > 1 ? (
                   <View style={{ paddingVertical: 20 }}>
                     <ActivityIndicator size="small" color={Theme.colors.primary} />
                     <Text style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: Theme.colors.text.secondary }}>

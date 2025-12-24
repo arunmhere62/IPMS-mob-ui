@@ -82,6 +82,7 @@ type ApiEnvelope<T> = {
 
 export type TenantPaymentsListParams = {
   tenant_id?: number;
+  pg_id?: number;
   status?: string;
   page?: number;
   limit?: number;

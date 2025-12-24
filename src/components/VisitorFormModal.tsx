@@ -12,9 +12,9 @@ import { Theme } from '../theme';
 import { SearchableDropdown } from './SearchableDropdown';
 import { DatePicker } from './DatePicker';
 import { SlideBottomModal } from './SlideBottomModal';
-import visitorService, { Visitor } from '../services/visitors/visitorService';
+import { useCreateVisitorMutation, useUpdateVisitorMutation, useGetVisitorByIdQuery } from '../services/api/visitorsApi';
 import { useGetAllRoomsQuery, useGetAllBedsQuery } from '../services/api/roomsApi';
-import axiosInstance from '../services/core/axiosInstance';
+import { useGetStatesQuery, useLazyGetCitiesQuery } from '../services/api/locationApi';
 import { CountryPhoneSelector } from './CountryPhoneSelector';
 import { COUNTRIES } from './CountryPhoneSelector';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
@@ -33,10 +33,12 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
   visitorId,
 }) => {
   const isEditMode = !!visitorId;
+  const [createVisitor, { isLoading: isCreating }] = useCreateVisitorMutation();
+  const [updateVisitor, { isLoading: isUpdating }] = useUpdateVisitorMutation();
+  const loading = isCreating || isUpdating;
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   
-  const [loading, setLoading] = useState(false);
-  const [loadingData, setLoadingData] = useState(false);
+  const { data: visitorData, isLoading: loadingData } = useGetVisitorByIdQuery(visitorId!, { skip: !isEditMode });
   
   // Form fields
   const [visitorName, setVisitorName] = useState('');
@@ -70,17 +72,24 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
   const [selectedBedId, setSelectedBedId] = useState<number | null>(null);
   const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null);
-  
+
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [loadingBeds, setLoadingBeds] = useState(false);
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
 
   const {
     data: roomsResponse,
     isFetching: isRoomsFetching,
     refetch: refetchRooms,
   } = useGetAllRoomsQuery({ page: 1, limit: 100 });
+
+  const {
+    data: statesResponse,
+    isFetching: isStatesFetching,
+    error: statesError,
+    refetch: refetchStates,
+  } = useGetStatesQuery({ countryCode: 'IN' });
+
+  const [triggerCities, { data: citiesResponse, isFetching: isCitiesFetching, error: citiesError }] = useLazyGetCitiesQuery();
 
   const {
     data: bedsResponse,
@@ -100,15 +109,45 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
   useEffect(() => {
     if (visible) {
       refetchRooms();
-      fetchStates();
+      refetchStates();
       
       if (isEditMode) {
-        loadVisitorData();
+        // Removed loadVisitorData - handled by RTK Query
       } else {
         resetForm();
       }
     }
-  }, [visible, isEditMode]);
+  }, [visible, isEditMode, refetchRooms, refetchStates]);
+
+  useEffect(() => {
+    if (!visible) return;
+    if (!isEditMode) return;
+    if (!visitorData) return;
+
+    const v: any = visitorData;
+
+    setVisitorName(v.visitor_name || '');
+
+    const phone = (v.phone_no || '').toString();
+    const matchedCountry = COUNTRIES.find((c) => phone.startsWith(c.phoneCode));
+    if (matchedCountry) {
+      setSelectedCountry(matchedCountry);
+      setPhoneNo(phone.replace(matchedCountry.phoneCode, '').replace(/^\+/, '').trim());
+    } else {
+      setPhoneNo(phone.replace(/^\+/, '').trim());
+    }
+
+    setPurpose(v.purpose || '');
+    setCustomPurpose('');
+    setVisitedDate(v.visited_date || new Date().toISOString().split('T')[0]);
+    setRemarks(v.remarks || '');
+    setConvertedToTenant(Boolean(v.convertedTo_tenant));
+
+    setSelectedRoomId(v.visited_room_id ?? null);
+    setSelectedBedId(v.visited_bed_id ?? null);
+    setSelectedStateId(v.state_id ?? null);
+    setSelectedCityId(v.city_id ?? null);
+  }, [visible, isEditMode, visitorData]);
 
   useEffect(() => {
     if (selectedRoomId) {
@@ -128,6 +167,22 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
   }, [isBedsFetching]);
 
   useEffect(() => {
+    if (statesError) {
+      showErrorAlert(statesError as any, 'Failed to load states');
+      return;
+    }
+    setStates((statesResponse as any)?.data || []);
+  }, [statesResponse, statesError]);
+
+  useEffect(() => {
+    if (citiesError) {
+      showErrorAlert(citiesError as any, 'Failed to load cities');
+      return;
+    }
+    setCities((citiesResponse as any)?.data || []);
+  }, [citiesResponse, citiesError]);
+
+  useEffect(() => {
     setRooms((roomsResponse as any)?.data || []);
   }, [roomsResponse]);
 
@@ -140,13 +195,13 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
     if (selectedStateId) {
       const selectedState = states.find(s => s.s_no === selectedStateId);
       if (selectedState) {
-        fetchCities(selectedState.iso_code);
+        triggerCities({ stateCode: selectedState.iso_code });
       }
     } else {
       setCities([]);
       setSelectedCityId(null);
     }
-  }, [selectedStateId]);
+  }, [selectedStateId, states, triggerCities]);
 
   const handleStateChange = (stateId: number) => {
     const selectedState = states.find(s => s.s_no === stateId);
@@ -154,7 +209,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
       setSelectedStateId(stateId);
       setSelectedCityId(null);
       setCities([]);
-      fetchCities(selectedState.iso_code);
+      triggerCities({ stateCode: selectedState.iso_code });
     }
   };
 
@@ -172,68 +227,8 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
     setSelectedCityId(null);
   };
 
-  const loadVisitorData = async () => {
-    try {
-      setLoadingData(true);
-      const visitor: Visitor = await visitorService.getVisitorById(visitorId!);
-      
-      setVisitorName(visitor.visitor_name || '');
-      setPhoneNo(visitor.phone_no || '');
-      const visitorPurpose = visitor.purpose || '';
-      const predefinedPurpose = purposeOptions.find(p => p.value === visitorPurpose);
-      if (predefinedPurpose) {
-        setPurpose(visitorPurpose);
-      } else if (visitorPurpose) {
-        setPurpose('Other');
-        setCustomPurpose(visitorPurpose);
-      }
-      setVisitedDate(visitor.visited_date || new Date().toISOString().split('T')[0]);
-      setRemarks(visitor.remarks || '');
-      setConvertedToTenant(visitor.convertedTo_tenant || false);
-      setSelectedRoomId(visitor.visited_room_id || null);
-      setSelectedBedId(visitor.visited_bed_id || null);
-      setSelectedStateId(visitor.state_id || null);
-      setSelectedCityId(visitor.city_id || null);
-    } catch (error: any) {
-      console.error('Error loading visitor data:', error);
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
-  const fetchStates = async () => {
-    setLoadingStates(true);
-    try {
-      const response = await axiosInstance.get('/location/states', {
-        params: { countryCode: 'IN' },
-      });
-      if (response.data.success) {
-        const statesData = response.data.data || [];
-        setStates(statesData);
-      }
-    } catch (error) {
-      console.error('Error fetching states:', error);
-    } finally {
-      setLoadingStates(false);
-    }
-  };
-
-  const fetchCities = async (stateCode: string) => {
-    setLoadingCities(true);
-    try {
-      const response = await axiosInstance.get('/location/cities', {
-        params: { stateCode },
-      });
-      if (response.data.success) {
-        const citiesData = response.data.data || [];
-        setCities(citiesData);
-      }
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-    } finally {
-      setLoadingCities(false);
-    }
-  };
+  const loadingStates = isStatesFetching;
+  const loadingCities = isCitiesFetching;
 
   const handleSubmit = async () => {
     if (!visitorName.trim()) {
@@ -247,7 +242,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
     }
 
     try {
-      setLoading(true);
+      // setLoading(true); // Loading now managed by RTK hooks
       
       const finalPurpose = purpose === 'Other' ? customPurpose : purpose;
       
@@ -265,19 +260,17 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
       };
 
       if (isEditMode) {
-        const response = await visitorService.updateVisitor(visitorId!, data);
-        showSuccessAlert(response);
+        await updateVisitor({ id: visitorId!, data }).unwrap();
+        showSuccessAlert('Visitor updated successfully');
       } else {
-        const response = await visitorService.createVisitor(data);
-        showSuccessAlert(response);
+        await createVisitor(data).unwrap();
+        showSuccessAlert('Visitor created successfully');
       }
       
       onSuccess();
       onClose();
     } catch (error: any) {
       showErrorAlert(error, 'Failed');
-    } finally {
-      setLoading(false);
     }
   };
 

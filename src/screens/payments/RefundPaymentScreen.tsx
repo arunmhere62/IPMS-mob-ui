@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
 import { ErrorBanner } from '../../components/ErrorBanner';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -18,6 +19,8 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+const REFUNDS_PAGE_LIMIT = 50;
+
 interface RefundPaymentScreenProps {
   navigation: any;
 }
@@ -25,20 +28,13 @@ interface RefundPaymentScreenProps {
 export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ navigation }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
 
-  const [triggerGetRefundPayments] = useLazyGetRefundPaymentsQuery();
+  const [triggerGetRefundPayments, refundPaymentsQuery] = useLazyGetRefundPaymentsQuery();
   
-  const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   
   const [refundPayments, setRefundPayments] = useState<RefundPayment[]>([]);
   const [pagination, setPagination] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [lastFailedPage, setLastFailedPage] = useState<number | null>(null);
-  const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
   
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED'>('ALL');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -49,61 +45,52 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
   
   const [visibleItemsCount, setVisibleItemsCount] = useState(0);
   const flatListRef = React.useRef<any>(null);
-  
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [beds, setBeds] = useState<Bed[]>([]);
-  const [loadingRooms, setLoadingRooms] = useState(false);
-  const [loadingBeds, setLoadingBeds] = useState(false);
+
+  const errorText = React.useMemo(() => {
+    const err: any = refundPaymentsQuery.error;
+    return (
+      err?.data?.message ||
+      err?.error ||
+      err?.message ||
+      (typeof err === 'string' ? err : null)
+    );
+  }, [refundPaymentsQuery.error]);
 
   const {
     data: roomsResponse,
-    isFetching: isRoomsFetching,
     refetch: refetchRooms,
   } = useGetAllRoomsQuery(
     selectedPGLocationId ? { page: 1, limit: 100, pg_id: selectedPGLocationId } : (undefined as any),
-    { skip: !selectedPGLocationId }
+    { skip: !selectedPGLocationId, refetchOnMountOrArgChange: true }
   );
 
   const {
     data: bedsResponse,
-    isFetching: isBedsFetching,
     refetch: refetchBeds,
   } = useGetAllBedsQuery(
     selectedRoomId && selectedPGLocationId
       ? { room_id: selectedRoomId, page: 1, limit: 100, pg_id: selectedPGLocationId }
       : (undefined as any),
-    { skip: !selectedRoomId || !selectedPGLocationId }
+    { skip: !selectedRoomId || !selectedPGLocationId, refetchOnMountOrArgChange: true }
   );
 
   useEffect(() => {
     if (selectedPGLocationId) {
       refetchRooms();
     }
-  }, [selectedPGLocationId]);
+  }, [selectedPGLocationId, refetchRooms]);
 
   useEffect(() => {
+    setSelectedBedId(null);
     if (selectedRoomId) {
       refetchBeds();
-    } else {
-      setBeds([]);
     }
-  }, [selectedRoomId]);
+  }, [selectedRoomId, refetchBeds]);
 
-  useEffect(() => {
-    setLoadingRooms(isRoomsFetching);
-  }, [isRoomsFetching]);
-
-  useEffect(() => {
-    setLoadingBeds(isBedsFetching);
-  }, [isBedsFetching]);
-
-  useEffect(() => {
-    setRooms(((roomsResponse as any)?.data || []) as Room[]);
-  }, [roomsResponse]);
-
-  useEffect(() => {
-    if (!selectedRoomId) return;
-    setBeds(((bedsResponse as any)?.data || []) as Bed[]);
+  const rooms = React.useMemo(() => (((roomsResponse as any)?.data || []) as Room[]), [roomsResponse]);
+  const beds = React.useMemo(() => {
+    if (!selectedRoomId) return [] as Bed[];
+    return (((bedsResponse as any)?.data || []) as Bed[]);
   }, [bedsResponse, selectedRoomId]);
 
   const years = React.useMemo(() => {
@@ -128,96 +115,120 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
 
   useEffect(() => {
     setCurrentPage(1);
-    setHasMore(true);
-    setLastFailedPage(null);
-    setInitialLoadCompleted(false);
-    loadRefundPayments(1, true);
+    setSelectedRoomId(null);
+    setSelectedBedId(null);
+    setRefundPayments([]);
+    setPagination(null);
+    loadRefundPayments(1, true, {
+      statusFilter: 'ALL',
+      quickFilter: 'NONE',
+      selectedMonth: null,
+      selectedYear: null,
+      selectedRoomId: null,
+      selectedBedId: null,
+    });
   }, [selectedPGLocationId]);
 
   useFocusEffect(
     React.useCallback(() => {
       if (currentPage === 1) {
-        setInitialLoadCompleted(false);
         loadRefundPayments(1, true);
       }
     }, [selectedPGLocationId])
   );
 
-  const loadRefundPayments = async (page: number, reset: boolean = false) => {
+  const loadRefundPayments = async (
+    page: number,
+    reset: boolean = false,
+    overrides?: Partial<{
+      statusFilter: 'ALL' | 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED';
+      quickFilter: 'NONE' | 'LAST_WEEK' | 'LAST_MONTH';
+      selectedMonth: string | null;
+      selectedYear: number | null;
+      selectedRoomId: number | null;
+      selectedBedId: number | null;
+    }>
+  ) => {
     try {
-      if (isPageLoading) return;
-      if (!hasMore && !reset) return;
-      if (lastFailedPage !== null && !reset && page <= lastFailedPage) return;
-      
-      setLoading(true);
-      setIsPageLoading(true);
+      if (refundPaymentsQuery.isFetching && !reset) return;
+      if (!reset && pagination && page > pagination.totalPages) return;
+
+      if (reset) {
+        setRefundPayments([]);
+        setPagination(null);
+      }
       
       const params: any = {
         page,
-        limit: 20,
+        limit: REFUNDS_PAGE_LIMIT,
       };
 
-      if (statusFilter !== 'ALL') params.status = statusFilter;
+      if (selectedPGLocationId) {
+        params.pg_id = selectedPGLocationId;
+      }
 
-      if (selectedMonth && selectedYear) {
-        params.month = selectedMonth;
-        params.year = selectedYear;
+      const effectiveStatusFilter = overrides && 'statusFilter' in overrides ? overrides.statusFilter : statusFilter;
+      const effectiveQuickFilter = overrides && 'quickFilter' in overrides ? overrides.quickFilter : quickFilter;
+      const effectiveSelectedMonth = overrides && 'selectedMonth' in overrides ? overrides.selectedMonth : selectedMonth;
+      const effectiveSelectedYear = overrides && 'selectedYear' in overrides ? overrides.selectedYear : selectedYear;
+      const effectiveSelectedRoomId = overrides && 'selectedRoomId' in overrides ? overrides.selectedRoomId : selectedRoomId;
+      const effectiveSelectedBedId = overrides && 'selectedBedId' in overrides ? overrides.selectedBedId : selectedBedId;
+
+      if (effectiveQuickFilter !== 'NONE') {
+        const toISODate = (date: Date) => date.toISOString().split('T')[0];
+        const end = new Date();
+        const start = new Date();
+        if (effectiveQuickFilter === 'LAST_WEEK') {
+          start.setDate(end.getDate() - 7);
+        } else if (effectiveQuickFilter === 'LAST_MONTH') {
+          start.setMonth(end.getMonth() - 1);
+        }
+        params.start_date = toISODate(start);
+        params.end_date = toISODate(end);
+      } else if (effectiveSelectedMonth && effectiveSelectedYear) {
+        params.month = effectiveSelectedMonth;
+        params.year = effectiveSelectedYear;
       }
       
-      if (selectedRoomId) params.room_id = selectedRoomId;
-      if (selectedBedId) params.bed_id = selectedBedId;
+      if (effectiveStatusFilter !== 'ALL') params.status = effectiveStatusFilter;
+      if (effectiveSelectedRoomId) params.room_id = effectiveSelectedRoomId;
+      if (effectiveSelectedBedId) params.bed_id = effectiveSelectedBedId;
 
-      const response = await triggerGetRefundPayments(params).unwrap();
+      params.append = !reset && page > 1;
+
+      const response = await triggerGetRefundPayments(params, false).unwrap();
       const refundPaymentsData = Array.isArray(response.data) ? response.data : [];
-      const refundPaymentsPagination = response.pagination || null;
-      
-      if (reset || page === 1) {
+
+      if (!params.append) {
         setRefundPayments(refundPaymentsData);
       } else {
         setRefundPayments((prev: RefundPayment[]) => [...prev, ...refundPaymentsData]);
       }
-      
-      setPagination(refundPaymentsPagination);
+
+      setPagination(response.pagination || null);
       setCurrentPage(page);
-      setHasMore(refundPaymentsPagination ? page < refundPaymentsPagination.totalPages : false);
-      setFetchError(null);
-      setLastFailedPage(null);
-      setInitialLoadCompleted(true);
       
       if (flatListRef.current && reset) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
     } catch (error: any) {
       console.error('Error loading refund payments:', error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Unable to load refund payments. Please try again.';
-      setFetchError(errorMessage);
-      setLastFailedPage(page);
-      if (page === 1) {
-        setHasMore(false);
-      }
     } finally {
-      setLoading(false);
-      setIsPageLoading(false);
     }
   };
 
   const onRefresh = async () => {
-    setRefreshing(true);
     setCurrentPage(1);
-    setHasMore(true);
-    setLastFailedPage(null);
-    setInitialLoadCompleted(false);
+    setRefundPayments([]);
+    setPagination(null);
     await loadRefundPayments(1, true);
-    setRefreshing(false);
   };
 
   const loadMore = () => {
-    if (!hasMore || loading || isPageLoading || !initialLoadCompleted) return;
+    if (refundPaymentsQuery.isFetching) return;
+    if (!pagination) return;
+    if (pagination.page >= pagination.totalPages) return;
     const nextPage = currentPage + 1;
-    if (lastFailedPage !== null && nextPage <= lastFailedPage) return;
     loadRefundPayments(nextPage, false);
   };
 
@@ -237,7 +248,7 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
     let count = 0;
     if (statusFilter !== 'ALL') count++;
     if (quickFilter !== 'NONE') count++;
-    if (selectedMonth && selectedYear) count++;
+    if (selectedMonth || selectedYear) count++;
     if (selectedRoomId) count++;
     if (selectedBedId) count++;
     return count;
@@ -250,15 +261,25 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
     setSelectedYear(null);
     setSelectedRoomId(null);
     setSelectedBedId(null);
+    setShowFilters(false);
     setCurrentPage(1);
-    setHasMore(true);
-    loadRefundPayments(1, true);
+    setRefundPayments([]);
+    setPagination(null);
+    loadRefundPayments(1, true, {
+      statusFilter: 'ALL',
+      quickFilter: 'NONE',
+      selectedMonth: null,
+      selectedYear: null,
+      selectedRoomId: null,
+      selectedBedId: null,
+    });
   };
 
   const applyFilters = () => {
     setShowFilters(false);
     setCurrentPage(1);
-    setHasMore(true);
+    setRefundPayments([]);
+    setPagination(null);
     loadRefundPayments(1, true);
   };
 
@@ -266,7 +287,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
     setQuickFilter(filter);
     setSelectedMonth(null);
     setSelectedYear(null);
-    setLastFailedPage(null);
   };
 
 
@@ -451,7 +471,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
         subtitle={`${pagination?.total || 0} refunds`}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
-        showPGSelector={true}
          showBackButton={true}
         onBackPress={() => navigation.goBack(-1)}
       />
@@ -495,12 +514,9 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
         
         <>
         <ErrorBanner
-          error={fetchError}
+          error={errorText}
           title="Error Loading Refund Payments"
           onRetry={() => {
-            setFetchError(null);
-            setLastFailedPage(null);
-            setInitialLoadCompleted(false);
             loadRefundPayments(1, true);
           }}
         />
@@ -509,8 +525,16 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
           data={refundPayments}
           renderItem={renderRefundPaymentItem}
           keyExtractor={(item) => item.s_no.toString()}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={false}
+              onRefresh={onRefresh}
+              tintColor="transparent"
+              colors={['transparent']}
+              progressBackgroundColor="transparent"
+            />
+          }
           ListHeaderComponent={
             <View>
               <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
@@ -550,7 +574,29 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
             </View>
           }
           ListEmptyComponent={
-            !loading ? (
+            refundPaymentsQuery.isFetching ? (
+              <View style={{ paddingTop: 16 }}>
+                {[...Array(6)].map((_, idx) => (
+                  <View key={idx} style={{ marginHorizontal: 16, marginBottom: 10 }}>
+                    <Card style={{ padding: 12 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <SkeletonLoader width="50%" height={12} />
+                        <SkeletonLoader width={70} height={18} borderRadius={8} />
+                      </View>
+                      <SkeletonLoader width="70%" height={16} style={{ marginBottom: 6 }} />
+                      <SkeletonLoader width="40%" height={10} style={{ marginBottom: 12 }} />
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <SkeletonLoader width={110} height={18} />
+                        <SkeletonLoader width={110} height={18} />
+                      </View>
+                      <SkeletonLoader width="100%" height={1} style={{ marginVertical: 12 }} />
+                      <SkeletonLoader width="60%" height={10} style={{ marginBottom: 6 }} />
+                      <SkeletonLoader width="45%" height={10} />
+                    </Card>
+                  </View>
+                ))}
+              </View>
+            ) : (
               <View style={{ paddingVertical: 60, alignItems: 'center' }}>
                 <Ionicons name="receipt-outline" size={64} color={Theme.colors.text.tertiary} />
                 <Text style={{ fontSize: 18, fontWeight: '600', color: Theme.colors.text.primary, marginTop: 16 }}>
@@ -560,22 +606,18 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
                   {getFilterCount() > 0 ? 'Try adjusting your filters' : 'No refund records available'}
                 </Text>
               </View>
-            ) : (
-              <View style={{ paddingVertical: 60, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={Theme.colors.primary} />
-                <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginTop: 16 }}>
-                  Loading refund payments...
-                </Text>
-              </View>
             )
           }
           ListFooterComponent={
-            loading && currentPage > 1 ? (
+            refundPaymentsQuery.isFetching && currentPage > 1 ? (
               <View style={{ paddingVertical: 20 }}>
-                <ActivityIndicator size="small" color={Theme.colors.primary} />
-                <Text style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: Theme.colors.text.secondary }}>
-                  Loading more...
-                </Text>
+                <View style={{ paddingHorizontal: 16 }}>
+                  <Card style={{ padding: 12 }}>
+                    <SkeletonLoader width="45%" height={12} style={{ marginBottom: 10 }} />
+                    <SkeletonLoader width="75%" height={16} style={{ marginBottom: 6 }} />
+                    <SkeletonLoader width="55%" height={10} />
+                  </Card>
+                </View>
               </View>
             ) : null
           }

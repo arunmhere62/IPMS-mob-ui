@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store';
-import { useCreateTenantMutation } from '@/services/api/tenantsApi';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { useCreateTenantMutation, useGetTenantByIdQuery, useUpdateTenantMutation } from '@/services/api/tenantsApi';
+import { useGetAllBedsQuery, useGetAllRoomsQuery } from '@/services/api/roomsApi';
+import { useGetStatesQuery, useLazyGetCitiesQuery } from '@/services/api/locationApi';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -22,9 +24,9 @@ import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { DatePicker } from '../../components/DatePicker';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
-import axiosInstance from '../../services/core/axiosInstance';
 import { getFolderConfig } from '../../config/aws.config';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert } from '@/utils/errorHandler';
 
 interface AddTenantScreenProps {
   navigation: any;
@@ -48,16 +50,20 @@ interface CityData {
 }
 
 export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, route }) => {
-  const dispatch = useDispatch<AppDispatch>();
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { user } = useSelector((state: RootState) => state.auth);
   const [createTenantMutation] = useCreateTenantMutation();
+  const [updateTenantMutation] = useUpdateTenantMutation();
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(false);
   
   // Check if we're in edit mode
   const tenantId = route?.params?.tenantId;
   const isEditMode = !!tenantId;
+
+  const {
+    data: tenantByIdResponse,
+    isFetching: tenantByIdFetching,
+    error: tenantByIdError,
+  } = useGetTenantByIdQuery(Number(tenantId), { skip: !isEditMode });
   
   // Check if we're coming from bed screen with pre-selected bed and room
   const preSelectedBedId = route?.params?.bed_id;
@@ -90,18 +96,104 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
   const [proofDocuments, setProofDocuments] = useState<string[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
-  const [loadingRooms, setLoadingRooms] = useState(false);
-  const [loadingBeds, setLoadingBeds] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState({ code: 'IN', name: 'India', flag: '🇮🇳', phoneCode: '+91', phoneLength: 10 });
+  const [selectedPhoneCountry, setSelectedPhoneCountry] = useState({ code: 'IN', name: 'India', flag: '🇮🇳', phoneCode: '+91', phoneLength: 10 });
+  const [selectedWhatsappCountry, setSelectedWhatsappCountry] = useState({ code: 'IN', name: 'India', flag: '🇮🇳', phoneCode: '+91', phoneLength: 10 });
 
-  // Fetch tenant data if in edit mode
+  const pendingStateKeyRef = useRef<any>(null);
+  const pendingCityKeyRef = useRef<any>(null);
+  const pendingBedKeyRef = useRef<any>(null);
+
+  const toDigits = (value: string) => (value || '').replace(/\D/g, '');
+
+  const toNumberOrNull = (value: any): number | null => {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const toLocalNumber = (value: string) => {
+    const digits = toDigits(value);
+    // For safety, keep last 10 digits (India) when a country code was stored
+    if (digits.length > 10) return digits.slice(-10);
+    return digits;
+  };
+
+  const withCountryCode = (countryPhoneCode: string, value: string) => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('+')) return trimmed;
+    const digits = toDigits(trimmed);
+    if (!digits) return '';
+    const code = (countryPhoneCode || '').startsWith('+') ? countryPhoneCode : `+${countryPhoneCode}`;
+    return `${code}${digits}`;
+  };
+
+  // Hydrate form data in edit mode from RTK Query
   useEffect(() => {
-    if (isEditMode && tenantId) {
-      fetchTenantData();
+    if (!isEditMode) return;
+    if (tenantByIdError) {
+      showErrorAlert(tenantByIdError as any, 'Failed to load tenant data');
+      navigation.goBack();
+      return;
     }
-  }, [tenantId]);
+
+    const tenant = (tenantByIdResponse as any)?.data;
+    if (!tenant) return;
+
+    pendingStateKeyRef.current = tenant.state_id ?? tenant.state?.iso_code ?? tenant.state?.name ?? null;
+    pendingCityKeyRef.current = tenant.city_id ?? tenant.city?.name ?? null;
+    pendingBedKeyRef.current = tenant.bed_id ?? tenant.beds?.bed_no ?? null;
+
+    setFormData({
+      name: tenant.name || '',
+      phone_no: toLocalNumber(tenant.phone_no || ''),
+      whatsapp_number: toLocalNumber(tenant.whatsapp_number || ''),
+      email: tenant.email || '',
+      occupation: tenant.occupation || '',
+      tenant_address: tenant.tenant_address || '',
+      room_id: toNumberOrNull(tenant.room_id),
+      bed_id: toNumberOrNull(tenant.bed_id),
+      check_in_date: tenant.check_in_date ? new Date(tenant.check_in_date).toISOString().split('T')[0] : '',
+      check_out_date: tenant.check_out_date ? new Date(tenant.check_out_date).toISOString().split('T')[0] : '',
+      city_id: toNumberOrNull(tenant.city_id),
+      state_id: toNumberOrNull(tenant.state_id),
+      status: tenant.status || 'ACTIVE',
+    });
+
+    setTenantImages(Array.isArray(tenant.images) ? tenant.images : []);
+    setProofDocuments(Array.isArray(tenant.proof_documents) ? tenant.proof_documents : []);
+  }, [isEditMode, tenantByIdResponse, tenantByIdError]);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (formData.state_id) return;
+    if (!pendingStateKeyRef.current) return;
+    if (!stateData || stateData.length === 0) return;
+
+    const key = pendingStateKeyRef.current;
+    const resolved = stateData.find((s) => s.s_no === Number(key))
+      ?? stateData.find((s) => s.iso_code === String(key))
+      ?? stateData.find((s) => s.name === String(key));
+
+    if (resolved) {
+      setFormData((prev) => ({ ...prev, state_id: resolved.s_no }));
+    }
+  }, [isEditMode, formData.state_id, stateData]);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (formData.city_id) return;
+    if (!pendingCityKeyRef.current) return;
+    if (!cityData || cityData.length === 0) return;
+
+    const key = pendingCityKeyRef.current;
+    const resolved = cityData.find((c) => c.s_no === Number(key))
+      ?? cityData.find((c) => c.name === String(key));
+
+    if (resolved) {
+      setFormData((prev) => ({ ...prev, city_id: resolved.s_no }));
+    }
+  }, [isEditMode, formData.city_id, cityData]);
 
   // Pre-fill room and bed if coming from bed screen
   useEffect(() => {
@@ -114,22 +206,112 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
     }
   }, [preSelectedRoomId, preSelectedBedId]);
 
-  // Fetch states on mount
-  useEffect(() => {
-    fetchStates();
-  }, []);
+  const {
+    data: statesResponse,
+    isFetching: loadingStates,
+    error: statesError,
+  } = useGetStatesQuery({ countryCode: 'IN' });
 
-  // Fetch rooms when PG location is selected
   useEffect(() => {
-    if (selectedPGLocationId) {
-      fetchRooms();
+    if (statesError) {
+      showErrorAlert(statesError as any, 'Failed to load states');
+      return;
     }
-  }, [selectedPGLocationId]);
+    if (statesResponse?.data) {
+      setStateData(statesResponse.data as any);
+    }
+  }, [statesResponse, statesError]);
+
+  const [triggerCities, { data: citiesResponse, isFetching: loadingCities, error: citiesError }] = useLazyGetCitiesQuery();
+
+  useEffect(() => {
+    if (citiesError) {
+      showErrorAlert(citiesError as any, 'Failed to load cities');
+      return;
+    }
+    if (citiesResponse?.data) {
+      setCityData(citiesResponse.data as any);
+    }
+  }, [citiesResponse, citiesError]);
+
+  const {
+    data: roomsResponse,
+    isFetching: loadingRooms,
+    error: roomsError,
+  } = useGetAllRoomsQuery(selectedPGLocationId ? ({ pg_id: selectedPGLocationId } as any) : (undefined as any), {
+    skip: !selectedPGLocationId,
+  });
+
+  useEffect(() => {
+    if (roomsError) {
+      showErrorAlert(roomsError as any, 'Failed to load rooms');
+      return;
+    }
+    const rooms = (roomsResponse as any)?.data || [];
+    // Remove duplicates based on s_no
+    const uniqueRooms = Array.from(new Map(rooms.map((room: any) => [room.s_no, room])).values());
+    setRoomList(
+      uniqueRooms.map((room: any) => ({
+        label: `Room ${room.room_no}`,
+        value: room.s_no.toString(),
+      }))
+    );
+  }, [roomsResponse, roomsError]);
+
+  const {
+    data: bedsResponse,
+    isFetching: loadingBeds,
+    error: bedsError,
+  } = useGetAllBedsQuery(
+    formData.room_id
+      ? (({
+          room_id: Number(formData.room_id),
+          ...(!isEditMode ? { only_unoccupied: true } : {}),
+        } as any))
+      : (undefined as any),
+    { skip: !formData.room_id }
+  );
+
+  useEffect(() => {
+    if (bedsError) {
+      showErrorAlert(bedsError as any, 'Failed to load beds');
+      return;
+    }
+    const beds = (bedsResponse as any)?.data || [];
+    setBedsList(
+      beds.map((bed: any) => ({
+        label: `Bed ${bed.bed_no}`,
+        value: bed.s_no.toString(),
+      }))
+    );
+  }, [bedsResponse, bedsError]);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (!formData.room_id) return;
+
+    const beds = (bedsResponse as any)?.data || [];
+    if (!beds || beds.length === 0) return;
+
+    const currentSelected = formData.bed_id;
+    const hasSelectedInList = currentSelected ? beds.some((b: any) => Number(b.s_no) === Number(currentSelected)) : false;
+    if (hasSelectedInList) return;
+
+    const key = pendingBedKeyRef.current;
+    if (!key) return;
+
+    const resolved = beds.find((b: any) => Number(b.s_no) === Number(key))
+      ?? beds.find((b: any) => String(b.bed_no) === String(key));
+
+    if (resolved?.s_no) {
+      setFormData((prev) => ({ ...prev, bed_id: Number(resolved.s_no) }));
+    }
+  }, [isEditMode, formData.room_id, formData.bed_id, bedsResponse]);
 
   // Fetch beds when room is selected
   useEffect(() => {
     if (formData.room_id) {
-      fetchBeds(formData.room_id.toString());
+      // handled by RTK query above
     } else {
       setBedsList([]);
       // Only reset bed_id if it wasn't pre-selected from bed screen
@@ -139,155 +321,17 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
     }
   }, [formData.room_id, preSelectedBedId]);
 
-  // Fetch cities when state is selected
   useEffect(() => {
     if (formData.state_id) {
       const selectedState = stateData.find(s => s.s_no === formData.state_id);
       if (selectedState) {
-        fetchCities(selectedState.iso_code);
+        triggerCities({ stateCode: selectedState.iso_code });
       }
     } else {
       setCityData([]);
       setFormData(prev => ({ ...prev, city_id: null }));
     }
-  }, [formData.state_id, stateData]);
-
-  const fetchStates = async () => {
-    setLoadingStates(true);
-    try {
-      const response = await axiosInstance.get('/location/states', {
-        params: { countryCode: 'IN' },
-      });
-      if (response.data.success) {
-        // Handle nested data structure: { success: true, data: { data: [...] } }
-        const statesData = response.data.data?.data || response.data.data || [];
-        setStateData(statesData);
-      }
-    } catch (error) {
-      console.error('Error fetching states:', error);
-      Alert.alert('Error', 'Failed to load states');
-    } finally {
-      setLoadingStates(false);
-    }
-  };
-
-  const fetchCities = async (stateCode: string) => {
-    setLoadingCities(true);
-    try {
-      const response = await axiosInstance.get('/location/cities', {
-        params: { stateCode },
-      });
-      if (response.data.success) {
-        // Handle nested data structure: { success: true, data: { data: [...] } }
-        const citiesData = response.data.data?.data || response.data.data || [];
-        setCityData(citiesData);
-      }
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-      Alert.alert('Error', 'Failed to load cities');
-    } finally {
-      setLoadingCities(false);
-    }
-  };
-
-  const fetchRooms = async () => {
-    setLoadingRooms(true);
-    try {
-      const response = await axiosInstance.get('/rooms', {
-        params: {
-          pg_id: selectedPGLocationId,
-        },
-      });
-      if (response.data.success) {
-        // Handle nested data structure: { success: true, data: { data: [...] } }
-        const rooms = response.data.data?.data || response.data.data || [];
-        // Remove duplicates based on s_no
-        const uniqueRooms = Array.from(new Map(rooms.map((room: any) => [room.s_no, room])).values());
-        setRoomList(
-          uniqueRooms.map((room: any) => ({
-            label: `Room ${room.room_no}`,
-            value: room.s_no.toString(),
-          }))
-        );
-      }
-    } catch (error) {
-      console.error('Error fetching rooms:', error);
-      Alert.alert('Error', 'Failed to load rooms');
-    } finally {
-      setLoadingRooms(false);
-    }
-  };
-
-  const fetchBeds = async (roomId: string) => {
-    setLoadingBeds(true);
-    try {
-      const response = await axiosInstance.get('/beds', {
-        params: {
-          room_id: roomId,
-          // Only show unoccupied beds when creating new tenant
-          // When editing, show all beds so user can see current bed
-          only_unoccupied: !isEditMode,
-        },
-      });
-      if (response.data.success) {
-        // Handle nested data structure: { success: true, data: { data: [...] } }
-        const beds = response.data.data?.data || response.data.data || [];
-        setBedsList(
-          beds.map((bed: any) => ({
-            label: `Bed ${bed.bed_no}`,
-            value: bed.s_no.toString(),
-          }))
-        );
-      }
-    } catch (error) {
-      console.error('Error fetching beds:', error);
-      Alert.alert('Error', 'Failed to load beds');
-    } finally {
-      setLoadingBeds(false);
-    }
-  };
-
-  const fetchTenantData = async () => {
-    try {
-      setInitialLoading(true);
-      const response = await axiosInstance.get(`/tenants/${tenantId}`);
-      // Handle nested data structure: { success: true, data: { data: tenant } }
-      const tenant = response.data.data?.data || response.data.data || response.data;
-      
-      setFormData({
-        name: tenant.name || '',
-        phone_no: tenant.phone_no || '',
-        whatsapp_number: tenant.whatsapp_number || '',
-        email: tenant.email || '',
-        occupation: tenant.occupation || '',
-        tenant_address: tenant.tenant_address || '',
-        room_id: tenant.room_id || null,
-        bed_id: tenant.bed_id || null,
-        check_in_date: tenant.check_in_date ? new Date(tenant.check_in_date).toISOString().split('T')[0] : '',
-        check_out_date: tenant.check_out_date ? new Date(tenant.check_out_date).toISOString().split('T')[0] : '',
-        city_id: tenant.city_id || null,
-        state_id: tenant.state_id || null,
-        status: tenant.status || 'ACTIVE',
-      });
-      
-      if (tenant.images) {
-        setTenantImages(Array.isArray(tenant.images) ? tenant.images : []);
-      }
-      if (tenant.proof_documents) {
-        setProofDocuments(Array.isArray(tenant.proof_documents) ? tenant.proof_documents : []);
-      }
-      
-      // Fetch cities if state is selected
-      if (tenant.state_id) {
-        fetchCities(tenant.state_id);
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to load tenant data');
-      navigation.goBack();
-    } finally {
-      setInitialLoading(false);
-    }
-  };
+  }, [formData.state_id, stateData, triggerCities]);
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -308,10 +352,14 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
       newErrors.name = 'Name is required';
     }
 
-    if (!formData.phone_no.trim()) {
+    if (!toDigits(formData.phone_no).trim()) {
       newErrors.phone_no = 'Phone number is required';
-    } else if (!/^\d{10}$/.test(formData.phone_no.trim())) {
+    } else if (!/^\d{10}$/.test(toDigits(formData.phone_no))) {
       newErrors.phone_no = 'Phone number must be 10 digits';
+    }
+
+    if (formData.whatsapp_number && !/^\d{10}$/.test(toDigits(formData.whatsapp_number))) {
+      newErrors.whatsapp_number = 'WhatsApp number must be 10 digits';
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -350,8 +398,10 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
 
       const tenantData = {
         name: formData.name.trim(),
-        phone_no: formData.phone_no.trim(),
-        whatsapp_number: formData.whatsapp_number.trim() || formData.phone_no.trim(),
+        phone_no: withCountryCode(selectedPhoneCountry.phoneCode, formData.phone_no),
+        whatsapp_number: formData.whatsapp_number.trim()
+          ? withCountryCode(selectedWhatsappCountry.phoneCode, formData.whatsapp_number)
+          : '',
         email: formData.email.trim() || undefined,
         occupation: formData.occupation.trim() || undefined,
         tenant_address: formData.tenant_address.trim() || undefined,
@@ -369,7 +419,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
       if (isEditMode) {
         // Update existing tenant
         // Backend will handle S3 deletion for removed images
-        await axiosInstance.put(`/tenants/${tenantId}`, tenantData);
+        await updateTenantMutation({ id: Number(tenantId), data: tenantData as any }).unwrap();
         Alert.alert('Success', 'Tenant updated successfully', [
           {
             text: 'OK',
@@ -396,13 +446,13 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
         ]);
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create tenant');
+      showErrorAlert(error, 'Error');
     } finally {
       setLoading(false);
     }
   };
 
-  if (initialLoading) {
+  if (tenantByIdFetching) {
     return (
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
         <ScreenHeader
@@ -485,8 +535,8 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
                 Phone Number <Text style={{ color: '#EF4444' }}>*</Text>
               </Text>
               <CountryPhoneSelector
-                selectedCountry={selectedCountry}
-                onSelectCountry={setSelectedCountry}
+                selectedCountry={selectedPhoneCountry}
+                onSelectCountry={setSelectedPhoneCountry}
                 phoneValue={formData.phone_no}
                 onPhoneChange={(phone) => updateField('phone_no', phone)}
                 size="medium"
@@ -502,12 +552,15 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
                 WhatsApp Number
               </Text>
               <CountryPhoneSelector
-                selectedCountry={selectedCountry}
-                onSelectCountry={setSelectedCountry}
+                selectedCountry={selectedWhatsappCountry}
+                onSelectCountry={setSelectedWhatsappCountry}
                 phoneValue={formData.whatsapp_number}
                 onPhoneChange={(phone) => updateField('whatsapp_number', phone)}
                 size="medium"
               />
+              {errors.whatsapp_number && (
+                <Text style={{ fontSize: 11, color: '#EF4444', marginTop: -8, marginBottom: 8 }}>{errors.whatsapp_number}</Text>
+              )}
              
             </View>
 

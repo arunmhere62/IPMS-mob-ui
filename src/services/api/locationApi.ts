@@ -39,8 +39,23 @@ export const locationApi = baseApi.injectEndpoints({
         method: 'GET',
         params: params || undefined,
       }),
-      transformResponse: (response: ApiEnvelope<LocationResponse<State>> | any) =>
-        (response as any)?.data ?? response,
+      transformResponse: (response: ApiEnvelope<any> | any): LocationResponse<State> => {
+        const payload = (response as any)?.data ?? response;
+        const extracted = payload?.data ?? payload;
+        const extractItems = (v: any) => {
+          if (Array.isArray(v)) return v;
+          if (Array.isArray(v?.data)) return v.data;
+          if (Array.isArray(v?.data?.data)) return v.data.data;
+          if (Array.isArray(v?.data?.data?.data)) return v.data.data.data;
+          return [];
+        };
+        const items = extractItems(extracted);
+        return {
+          success: Boolean((response as any)?.success ?? payload?.success ?? true),
+          data: Array.isArray(items) ? items : [],
+          message: (response as any)?.message ?? payload?.message,
+        };
+      },
       providesTags: [{ type: 'States', id: 'LIST' }],
     }),
 
@@ -50,12 +65,27 @@ export const locationApi = baseApi.injectEndpoints({
         method: 'GET',
         params,
       }),
-      transformResponse: (response: ApiEnvelope<LocationResponse<City>> | any) =>
-        (response as any)?.data ?? response,
+      transformResponse: (response: ApiEnvelope<any> | any): LocationResponse<City> => {
+        const payload = (response as any)?.data ?? response;
+        const extracted = payload?.data ?? payload;
+        const extractItems = (v: any) => {
+          if (Array.isArray(v)) return v;
+          if (Array.isArray(v?.data)) return v.data;
+          if (Array.isArray(v?.data?.data)) return v.data.data;
+          if (Array.isArray(v?.data?.data?.data)) return v.data.data.data;
+          return [];
+        };
+        const items = extractItems(extracted);
+        return {
+          success: Boolean((response as any)?.success ?? payload?.success ?? true),
+          data: Array.isArray(items) ? items : [],
+          message: (response as any)?.message ?? payload?.message,
+        };
+      },
       providesTags: (_res, _err, arg) => [{ type: 'Cities', id: arg.stateCode }],
     }),
   }),
-  overrideExisting: false,
+  overrideExisting: true,
 });
 
 export const { useGetStatesQuery, useLazyGetStatesQuery, useGetCitiesQuery, useLazyGetCitiesQuery } = locationApi;

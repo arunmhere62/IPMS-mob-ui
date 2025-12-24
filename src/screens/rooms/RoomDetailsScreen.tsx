@@ -260,18 +260,18 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
         </Card>
 
         {/* Room Images */}
-        {room.images && Array.isArray(room.images) && room.images.length > 0 && (
-          <Card style={{ margin: 16, padding: 16 }}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: '600',
-                color: Theme.colors.text.primary,
-                marginBottom: 12,
-              }}
-            >
-              📷 Room Images ({room.images.length})
-            </Text>
+        <Card style={{ margin: 16, padding: 16 }}>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: Theme.colors.text.primary,
+              marginBottom: 12,
+            }}
+          >
+            📷 Room Images {room.images && Array.isArray(room.images) ? `(${room.images.length})` : ''}
+          </Text>
+          {room.images && Array.isArray(room.images) && room.images.length > 0 ? (
             <ScrollView 
               horizontal 
               showsHorizontalScrollIndicator={true}
@@ -320,84 +320,45 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                 </View>
               ))}
             </ScrollView>
-          </Card>
-        )}
+          ) : (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ fontSize: 40, marginBottom: 8 }}>📷</Text>
+              <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, textAlign: 'center' }}>
+                No images present for this room
+              </Text>
+            </View>
+          )}
+        </Card>
 
         {/* Room Stats */}
-        <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 12, marginBottom: 16 }}>
-          <Card
-            style={{
-              flex: 1,
-              padding: 16,
-              backgroundColor: '#F0FDF4',
-              borderLeftWidth: 4,
-              borderLeftColor: '#10B981',
-            }}
-          >
-            <Text style={{ fontSize: 11, color: '#059669', fontWeight: '600', marginBottom: 4 }}>
-              BEDS
-            </Text>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: '#047857' }}>
-              {room.beds?.length || 0}
-            </Text>
-          </Card>
+        <Card style={{ marginHorizontal: 16, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, fontWeight: '600' }}>TOTAL</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginTop: 2 }}>
+                {beds.length}
+              </Text>
+            </View>
 
-          <Card
-            style={{
-              flex: 1,
-              padding: 16,
-              backgroundColor: '#EFF6FF',
-              borderLeftWidth: 4,
-              borderLeftColor: '#3B82F6',
-            }}
-          >
-            <Text style={{ fontSize: 11, color: '#2563EB', fontWeight: '600', marginBottom: 4 }}>
-              TOTAL BEDS
-            </Text>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: '#1D4ED8' }}>
-              {beds.length}
-            </Text>
-          </Card>
-        </View>
+            <View style={{ width: 1, height: 26, backgroundColor: Theme.colors.border }} />
 
-        {/* Bed Availability Stats */}
-        {beds.length > 0 && (
-          <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 12, marginBottom: 16 }}>
-            <Card
-              style={{
-                flex: 1,
-                padding: 16,
-                backgroundColor: '#D1FAE5',
-                borderLeftWidth: 4,
-                borderLeftColor: '#059669',
-              }}
-            >
-              <Text style={{ fontSize: 11, color: '#047857', fontWeight: '600', marginBottom: 4 }}>
-                AVAILABLE
+            <View style={{ alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 11, color: '#059669', fontWeight: '600' }}>AVAILABLE</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#059669', marginTop: 2 }}>
+                {beds.filter((b) => !b.is_occupied).length}
               </Text>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#047857' }}>
-                {beds.filter(b => !b.is_occupied).length}
-              </Text>
-            </Card>
+            </View>
 
-            <Card
-              style={{
-                flex: 1,
-                padding: 16,
-                backgroundColor: '#FEE2E2',
-                borderLeftWidth: 4,
-                borderLeftColor: '#DC2626',
-              }}
-            >
-              <Text style={{ fontSize: 11, color: '#B91C1C', fontWeight: '600', marginBottom: 4 }}>
-                OCCUPIED
+            <View style={{ width: 1, height: 26, backgroundColor: Theme.colors.border }} />
+
+            <View style={{ alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: '600' }}>OCCUPIED</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#DC2626', marginTop: 2 }}>
+                {beds.filter((b) => b.is_occupied).length}
               </Text>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#B91C1C' }}>
-                {beds.filter(b => b.is_occupied).length}
-              </Text>
-            </Card>
+            </View>
           </View>
-        )}
+        </Card>
 
         {/* PG Location Info */}
         {room.pg_locations && (

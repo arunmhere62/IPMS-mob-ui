@@ -3,6 +3,18 @@ import { API_BASE_URL } from '../../config';
 import { store, RootState } from '../../store';
 import { networkLogger } from '../../utils/networkLogger';
 
+const toPlainHeaders = (headers: any): Record<string, any> => {
+  if (!headers) return {};
+  if (typeof headers.toJSON === 'function') {
+    return headers.toJSON();
+  }
+  try {
+    return { ...headers };
+  } catch {
+    return {};
+  }
+};
+
 const needsPgHeader = (url?: string) => {
   if (!url) return false;
   const path = (url.split('?')[0] || '').toString();
@@ -61,8 +73,8 @@ axiosInstance.interceptors.request.use(
       logId,
     };
 
-    // Convert headers to plain object
-    const headersObj = JSON.parse(JSON.stringify(config.headers || {}));
+    // Convert headers to plain object (AxiosHeaders JSON-stringifies to {})
+    const headersObj = toPlainHeaders(config.headers);
     
     // Add to network logger
     networkLogger.addLog({
@@ -88,10 +100,13 @@ axiosInstance.interceptors.response.use(
     const metadata = (response.config as any).metadata;
     if (metadata) {
       const duration = Date.now() - metadata.startTime;
-      
-   
+
       networkLogger.updateLog(metadata.logId, {
         status: response.status,
+        headers: {
+          request: toPlainHeaders(response.config.headers),
+          response: toPlainHeaders(response.headers),
+        },
         responseData: response.data,
         duration,
       });
@@ -107,6 +122,10 @@ axiosInstance.interceptors.response.use(
       
       networkLogger.updateLog(metadata.logId, {
         status: error.response?.status,
+        headers: {
+          request: toPlainHeaders((error.config as any)?.headers),
+          response: toPlainHeaders(error.response?.headers),
+        },
         responseData: error.response?.data,
         error: error.message,
         duration,

@@ -59,18 +59,29 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
   let errorMessage = '';
   
   try {
+    if (typeof error === 'string') {
+      Alert.alert(title, error);
+      return;
+    }
+
+    const rtkData = (error as any)?.data ?? (error as any)?.error?.data;
+    const axiosData = (error as any)?.response?.data;
+    const candidateData = rtkData ?? axiosData ?? error;
+
     // First try to use API response handler for new structure
-    if (error?.response?.data) {
-      errorMessage = getApiErrorMessage(error.response.data);
+    if (candidateData) {
+      errorMessage = getApiErrorMessage(candidateData);
     }
     
     // Fallback to legacy error extraction if API handler didn't find message
     if (!errorMessage) {
-      if (error?.response?.data) {
-        const data = error.response.data;
+      if (candidateData) {
+        const data = candidateData;
         
         if (typeof data === 'string') {
           errorMessage = data;
+        } else if (data?.message && typeof data.message === 'string') {
+          errorMessage = data.message;
         } else if (data?.error) {
           // Handle case where error is an object with code/details
           if (typeof data.error === 'string') {
@@ -91,10 +102,14 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
       if (!errorMessage && error?.message) {
         errorMessage = error.message;
       }
+
+      if (!errorMessage && typeof (error as any)?.error === 'string') {
+        errorMessage = (error as any).error;
+      }
       
       // Last resort - stringify the error
       if (!errorMessage) {
-        errorMessage = JSON.stringify(error?.response?.data) || 'An error occurred. Please try again.';
+        errorMessage = JSON.stringify(candidateData) || 'An error occurred. Please try again.';
       }
     }
     

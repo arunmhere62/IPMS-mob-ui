@@ -1,6 +1,16 @@
 import { baseApi } from './baseApi';
 import type { User } from '../../types';
-import type { UpdateUserDto } from '../userService';
+
+export type UpdateUserDto = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  gender?: 'MALE' | 'FEMALE' | '';
+  state_id?: number | null;
+  city_id?: number | null;
+  profile_images?: string | null;
+};
 
 type ApiEnvelope<T> = {
   data?: T;
@@ -69,7 +79,7 @@ export const userApi = baseApi.injectEndpoints({
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
     }),
   }),
-  overrideExisting: false,
+  overrideExisting: true,
 });
 
 export const {

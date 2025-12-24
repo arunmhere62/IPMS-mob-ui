@@ -12,6 +12,24 @@ interface AccommodationDetailsProps {
 export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
   tenant,
 }) => {
+  const na = (value: any) => {
+    const v = typeof value === 'string' ? value.trim() : value;
+    return v ? String(v) : 'N/A';
+  };
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return 'N/A';
+    try {
+      return new Date(value).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch {
+      return 'N/A';
+    }
+  };
+
   return (
     <Card style={{ marginHorizontal: 16, marginBottom: 16, padding: 16 }}>
       <Text
@@ -26,76 +44,58 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
       </Text>
 
       <View style={{ gap: 12 }}>
-        {tenant.pg_locations && (
-          <View>
-            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
-              PG Location
-            </Text>
-            <Text
-              style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}
-            >
-              {tenant.pg_locations.location_name}
-            </Text>
-            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
-              {tenant.pg_locations.address}
-            </Text>
-          </View>
-        )}
+        <View>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
+            PG Location
+          </Text>
+          <Text
+            style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}
+          >
+            {na(tenant.pg_locations?.location_name)}
+          </Text>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+            {na(tenant.pg_locations?.address)}
+          </Text>
+        </View>
 
         <View style={{ flexDirection: 'row', gap: 16 }}>
-          {tenant.rooms && (
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Room</Text>
-              <Text
-                style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.primary }}
-              >
-                {tenant.rooms.room_no}
-              </Text>
-              {tenant.rooms.rent_price && (
-                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
-                  ₹{tenant.rooms.rent_price}/month
-                </Text>
-              )}
-            </View>
-          )}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Room</Text>
+            <Text
+              style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.primary }}
+            >
+              {na(tenant.rooms?.room_no)}
+            </Text>
+            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+              {tenant.rooms?.rent_price ? `₹${tenant.rooms.rent_price}/month` : 'N/A'}
+            </Text>
+          </View>
 
-          {tenant.beds && (
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Bed</Text>
-              <Text
-                style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.primary }}
-              >
-                {tenant.beds.bed_no}
-              </Text>
-            </View>
-          )}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Bed</Text>
+            <Text
+              style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.primary }}
+            >
+              {na(tenant.beds?.bed_no)}
+            </Text>
+          </View>
         </View>
 
         <View>
           <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Check-in Date</Text>
           <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-            {new Date(tenant.check_in_date).toLocaleDateString('en-IN', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
+            {formatDate(tenant.check_in_date)}
           </Text>
         </View>
 
-        {tenant.check_out_date && (
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
-              Check-out Date
-            </Text>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-              {new Date(tenant.check_out_date).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </Text>
-          </View>
-        )}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
+            Check-out Date
+          </Text>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
+            {formatDate(tenant.check_out_date)}
+          </Text>
+        </View>
       </View>
     </Card>
   );

@@ -483,7 +483,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to checkout tenant');
+      showErrorAlert(error, 'Checkout Error');
     } finally {
       setCheckoutLoading(false);
     }
@@ -623,7 +623,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: any) {
-              Alert.alert('Error', error?.response?.data?.message || 'Failed to clear checkout');
+              showErrorAlert(error, 'Clear Checkout Error');
             } finally {
               setCheckoutLoading(false);
             }
@@ -642,7 +642,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to update checkout date');
+      showErrorAlert(error, 'Update Checkout Date Error');
     } finally {
       setCheckoutLoading(false);
     }

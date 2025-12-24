@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   Clipboard,
   Alert,
   Share,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { NetworkLog } from '../utils/networkLogger';
 import { Theme } from '../theme';
@@ -21,15 +24,23 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
   log,
   onBack,
 }) => {
+  useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
   const [expandedSections, setExpandedSections] = useState<{
     request: boolean;
     response: boolean;
-    headers: boolean;
+    outgoingHeaders: boolean;
+    incomingHeaders: boolean;
     curl: boolean;
   }>({
     request: true,
     response: true,
-    headers: false,
+    outgoingHeaders: false,
+    incomingHeaders: false,
     curl: false,
   });
 
@@ -71,19 +82,27 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
     return formatJson(v);
   };
 
+  const outgoingHeaders = (log as any)?.headers?.request ?? (log as any)?.headers;
+  const incomingHeaders = (log as any)?.headers?.response;
+
+  const requestBody =
+    log.requestData && typeof log.requestData === 'object' && 'body' in (log.requestData as any)
+      ? (log.requestData as any).body
+      : log.requestData;
+
   const generateCurl = () => {
     let curl = `curl -X ${log.method} '${log.url}'`;
 
-    if (log.headers) {
-      Object.entries(log.headers).forEach(([k, v]) => {
-        curl += ` \\\n+  -H '${k}: ${String(v).replace(/'/g, "'\\''")}'`;
+    if (outgoingHeaders) {
+      Object.entries(outgoingHeaders).forEach(([k, v]) => {
+        curl += ` \\\n +  -H '${k}: ${String(v).replace(/'/g, "'\\''")}'`;
       });
     }
 
-    if (log.requestData !== undefined && log.requestData !== null) {
-      const body = safeString(log.requestData);
+    if (requestBody !== undefined && requestBody !== null) {
+      const body = safeString(requestBody);
       if (body) {
-        curl += ` \\\n+  -d '${body.replace(/'/g, "'\\''")}'`;
+        curl += ` \\\n +  -d '${body.replace(/'/g, "'\\''")}'`;
       }
     }
 
@@ -104,6 +123,7 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section],
@@ -123,7 +143,7 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
   ) => (
     <View style={styles.section}>
       <View style={styles.sectionHeaderRow}>
-        <TouchableOpacity onPress={() => toggleSection(sectionKey)} style={styles.sectionHeader}>
+        <TouchableOpacity activeOpacity={1} onPress={() => toggleSection(sectionKey)} style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, color ? { color } : {}]}>
             {expandedSections[sectionKey] ? '▼' : '▶'} {title}
           </Text>
@@ -223,7 +243,7 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
       </View>
 
       {/* Request Data */}
-      {log.requestData &&
+      {log.requestData !== undefined && log.requestData !== null &&
         renderCollapsibleSection(
           '📤 Request Data',
           'request',
@@ -236,7 +256,7 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
         )}
 
       {/* Response Data */}
-      {log.responseData &&
+      {log.responseData !== undefined && log.responseData !== null &&
         renderCollapsibleSection(
           '📥 Response Data',
           'response',
@@ -249,15 +269,27 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
         )}
 
       {/* Headers */}
-      {log.headers &&
+      {outgoingHeaders &&
         renderCollapsibleSection(
-          '📋 Headers',
-          'headers',
-          formatJson(log.headers),
+          '📤 Outgoing Headers',
+          'outgoingHeaders',
+          formatJson(outgoingHeaders),
           '#60A5FA',
           [
-            { label: 'Copy', variant: 'primary', onPress: () => handleCopyData(log.headers, 'Headers') },
-            { label: 'Share', variant: 'neutral', onPress: () => shareText(formatJson(log.headers), 'Headers') },
+            { label: 'Copy', variant: 'primary', onPress: () => handleCopyData(outgoingHeaders, 'Outgoing Headers') },
+            { label: 'Share', variant: 'neutral', onPress: () => shareText(formatJson(outgoingHeaders), 'Outgoing Headers') },
+          ]
+        )}
+
+      {incomingHeaders &&
+        renderCollapsibleSection(
+          '📥 Incoming Headers',
+          'incomingHeaders',
+          formatJson(incomingHeaders),
+          '#60A5FA',
+          [
+            { label: 'Copy', variant: 'primary', onPress: () => handleCopyData(incomingHeaders, 'Incoming Headers') },
+            { label: 'Share', variant: 'neutral', onPress: () => shareText(formatJson(incomingHeaders), 'Incoming Headers') },
           ]
         )}
 

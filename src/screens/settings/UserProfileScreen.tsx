@@ -19,9 +19,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 import { EditProfileModal } from './EditProfileModal';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal';
-import userService from '../../services/userService';
 import { updateUser } from '../../store/slices/authSlice';
 import axiosInstance from '../../services/core/axiosInstance';
+import { useGetUserProfileQuery, useChangePasswordMutation } from '../../services/api/userApi';
 
 interface UserProfileScreenProps {
   navigation: any;
@@ -30,6 +30,10 @@ interface UserProfileScreenProps {
 export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { data: profileResponse, refetch: refetchProfile, isFetching: isProfileFetching } = useGetUserProfileQuery(user?.s_no as number, {
+    skip: !user?.s_no,
+  });
+  const [changePasswordMutation] = useChangePasswordMutation();
   const [refreshing, setRefreshing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -38,62 +42,39 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
   const [profileData, setProfileData] = useState<any>(null);
 
   useEffect(() => {
-    // Fetch fresh profile data on component mount
-    if (user?.s_no) {
-      fetchProfileData();
-    }
-  }, [user?.s_no]);
+    const data =
+      (profileResponse as any)?.data?.data ||
+      (profileResponse as any)?.data ||
+      (profileResponse as any);
+    if (data) {
+      setProfileData(data);
+      dispatch(
+        updateUser({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          role_id: data.role_id,
+          role_name: data.role_name,
+          organization_id: data.organization_id,
+          organization_name: data.organization_name,
+          pg_id: data.pg_id,
+          status: data.status,
+          address: data.address,
+          city_id: data.city_id,
+          state_id: data.state_id,
+          gender: data.gender,
+          profile_images: data.profile_images,
+        })
+      );
 
-  const fetchProfileData = async () => {
-    try {
-      if (user?.s_no) {
-        const profileResponse = await userService.getUserProfile(user.s_no);
-
-        // Handle the nested API response structure
-        const data = profileResponse.data?.data || profileResponse.data;
-
-        if (data && (profileResponse.success || data.success)) {
-          // Store complete profile data in local state
-          setProfileData(data);
-
-          // Update Redux store with basic user data (excluding nested objects)
-          dispatch(updateUser({
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            role_id: data.role_id,
-            role_name: data.role_name,
-            organization_id: data.organization_id,
-            organization_name: data.organization_name,
-            pg_id: data.pg_id,
-            status: data.status,
-            address: data.address,
-            city_id: data.city_id,
-            state_id: data.state_id,
-            gender: data.gender,
-            profile_images: data.profile_images,
-          }));
-
-          // Update state and city names from the fresh data
-          if (data.state_name) {
-            setStateName(data.state_name);
-          }
-          if (data.city_name) {
-            setCityName(data.city_name);
-          }
-        }
+      if (data.state_name) {
+        setStateName(data.state_name);
       }
-    } catch (error) {
-      console.error('Error fetching profile data:', error);
-      // Fallback to existing methods on error
-      if (user?.state_id) {
-        fetchStateName(user.state_id);
-      }
-      if (user?.city_id) {
-        fetchCityName(user.city_id);
+      if (data.city_name) {
+        setCityName(data.city_name);
       }
     }
-  };
+  }, [profileResponse, dispatch]);
 
   useEffect(() => {
     if (user?.state_id) {
@@ -154,42 +135,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
     setRefreshing(true);
     try {
       if (user?.s_no) {
-        // Fetch fresh profile data from API
-        const profileResponse = await userService.getUserProfile(user.s_no);
-
-        // Handle the nested API response structure
-        const data = profileResponse.data?.data || profileResponse.data;
-
-        if (data && (profileResponse.success || data.success)) {
-          // Store complete profile data in local state
-          setProfileData(data);
-
-          // Update Redux store with basic user data (excluding nested objects)
-          dispatch(updateUser({
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            role_id: data.role_id,
-            role_name: data.role_name,
-            organization_id: data.organization_id,
-            organization_name: data.organization_name,
-            pg_id: data.pg_id,
-            status: data.status,
-            address: data.address,
-            city_id: data.city_id,
-            state_id: data.state_id,
-            gender: data.gender,
-            profile_images: data.profile_images,
-          }));
-
-          // Update state and city names from the fresh data
-          if (data.state_name) {
-            setStateName(data.state_name);
-          }
-          if (data.city_name) {
-            setCityName(data.city_name);
-          }
-        }
+        await refetchProfile();
       }
 
       // Fallback to existing methods if needed
@@ -217,7 +163,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
     try {
       if (!user) return;
 
-      await userService.changePassword(user.s_no, data);
+      await changePasswordMutation({ userId: user.s_no, data }).unwrap();
 
       setShowChangePasswordModal(false);
     } catch (error: any) {

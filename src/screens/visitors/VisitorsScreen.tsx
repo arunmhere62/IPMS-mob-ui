@@ -11,10 +11,9 @@ import {
   Modal,
   Dimensions,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
-import { AppDispatch, RootState } from '../../store';
-import { fetchVisitors, deleteVisitor } from '../../store/slices/visitorSlice';
+import { RootState } from '../../store';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
 import { showErrorAlert } from '../../utils/errorHandler';
@@ -25,6 +24,10 @@ import { VisitorFormModal } from '../../components/VisitorFormModal';
 import { ActionButtons } from '../../components/ActionButtons';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
+import {
+  useLazyGetVisitorsQuery,
+  useDeleteVisitorMutation,
+} from '../../services/api/visitorsApi';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -33,8 +36,11 @@ interface VisitorsScreenProps {
 }
 
 export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { visitors, pagination, loading } = useSelector((state: RootState) => state.visitors);
+  const [triggerGetVisitors, { isFetching: isVisitorsFetching }] = useLazyGetVisitorsQuery();
+  const [deleteVisitorMutation, { isLoading: isDeleting }] = useDeleteVisitorMutation();
+
+  const [visitors, setVisitors] = useState<any[]>([]);
+  const [pagination, setPagination] = useState<any | null>(null);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   
   const [refreshing, setRefreshing] = useState(false);
@@ -84,7 +90,6 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
         page,
         limit: 20,
         search: searchQuery || undefined,
-        append: !reset && page > 1,
       };
 
       if (convertedFilter === 'CONVERTED') {
@@ -93,9 +98,17 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
         params.converted_to_tenant = false;
       }
 
-      const result = await dispatch(fetchVisitors(params)).unwrap();
-      
-      setHasMore(result.pagination ? page < result.pagination.totalPages : false);
+      const result = await triggerGetVisitors(params).unwrap();
+
+      const nextVisitors = Array.isArray(result?.data) ? result.data : [];
+      if (reset || page === 1) {
+        setVisitors(nextVisitors);
+      } else {
+        setVisitors((prev) => [...prev, ...nextVisitors]);
+      }
+
+      setPagination(result?.pagination ?? null);
+      setHasMore(result?.pagination ? page < result.pagination.totalPages : false);
       setFetchError(null);
       setLastFailedPage(null);
 
@@ -149,7 +162,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   const loadMoreVisitors = () => {
     if (isPageLoading) return;
     if (!initialLoadCompleted) return;
-    if (!hasMore || loading) return;
+    if (!hasMore || isVisitorsFetching) return;
     if (lastFailedPage !== null && currentPage + 1 <= lastFailedPage) return;
     
     const nextPage = currentPage + 1;
@@ -179,8 +192,11 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           style: 'destructive',
           onPress: async () => {
             try {
-              await dispatch(deleteVisitor(id)).unwrap();
+              await deleteVisitorMutation(id).unwrap();
               Alert.alert('Success', 'Visitor deleted successfully');
+              setCurrentPage(1);
+              setHasMore(true);
+              loadVisitors(1, true);
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
             }
@@ -469,7 +485,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
         }}
       />
 
-      {loading && visitors.length === 0 ? (
+      {(isVisitorsFetching || isPageLoading) && visitors.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
           <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>Loading visitors...</Text>
@@ -499,7 +515,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
             </View>
           }
           ListFooterComponent={
-            loading && currentPage > 1 ? (
+            (isVisitorsFetching || isPageLoading || isDeleting) && currentPage > 1 ? (
               <View style={{ paddingVertical: 20 }}>
                 <ActivityIndicator size="small" color={Theme.colors.primary} />
                 <Text style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: Theme.colors.text.secondary }}>

@@ -138,6 +138,23 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   };
 
   const renderRoomCard = ({ item }: { item: Room }) => (
+    (() => {
+      const totalBeds = item.total_beds ?? item.beds?.length ?? 0;
+      const hasOccupancyFlag = (item.beds || []).some((b) => typeof (b as any)?.is_occupied === 'boolean');
+      const occupiedBeds =
+        typeof (item as any)?.occupied_beds === 'number'
+          ? (item as any).occupied_beds
+          : hasOccupancyFlag
+            ? (item.beds || []).filter((b) => Boolean((b as any)?.is_occupied)).length
+            : undefined;
+      const availableBeds =
+        typeof (item as any)?.available_beds === 'number'
+          ? (item as any).available_beds
+          : typeof occupiedBeds === 'number'
+            ? Math.max(totalBeds - occupiedBeds, 0)
+            : undefined;
+
+      return (
     <TouchableOpacity
       onPress={() => navigation.navigate('RoomDetails', { roomId: item.s_no })}
       activeOpacity={0.8}
@@ -191,14 +208,17 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           }}
         >
           <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
-            Beds: <Text style={{ fontWeight: '700', color: Theme.colors.text.primary }}>{item.beds?.length || 0}</Text>
+            Total Beds: <Text style={{ fontWeight: '700', color: Theme.colors.text.primary }}>{totalBeds}</Text>
             {'  |  '}
-            Total Beds: <Text style={{ fontWeight: '700', color: Theme.colors.text.primary }}>{item.total_beds || 0}</Text>
+            Available:{' '}
+            <Text style={{ fontWeight: '700', color: Theme.colors.text.primary }}>
+              {typeof availableBeds === 'number' ? availableBeds : '—'}
+            </Text>
           </Text>
           <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 4 }}>
-            {item.total_beds
-              ? `${Math.round(((item.beds?.length || 0) / item.total_beds) * 100)}% occupied`
-              : 'Capacity data pending'}
+            {typeof occupiedBeds === 'number' && totalBeds
+              ? `${Math.round((occupiedBeds / totalBeds) * 100)}% occupied`
+              : 'Occupancy data pending'}
           </Text>
         </View>
 
@@ -218,6 +238,8 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         )}
       </Card>
     </TouchableOpacity>
+      );
+    })()
   );
 
   return (

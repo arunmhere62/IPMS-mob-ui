@@ -18,7 +18,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { DatePicker } from '../../components/DatePicker';
-import visitorService from '../../services/visitors/visitorService';
+import { useCreateVisitorMutation, useUpdateVisitorMutation, useGetVisitorByIdQuery } from '../../services/api/visitorsApi';
 import { useGetAllBedsQuery, useGetAllRoomsQuery } from '../../services/api/roomsApi';
 import axiosInstance from '../../services/core/axiosInstance';
 import { CONTENT_COLOR } from '@/constant';
@@ -29,14 +29,17 @@ interface AddVisitorScreenProps {
   route?: any;
 }
 
-export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, route }) => {
-  const visitorId = route?.params?.visitorId;
-  const isEditMode = !!visitorId;
-  
+export default function AddVisitorScreen({ navigation, route }: AddVisitorScreenProps) {
+  const { visitorId } = route?.params || {};
+  const isEditMode = Boolean(visitorId);
+
+  const [createVisitor, { isLoading: isCreating }] = useCreateVisitorMutation();
+  const [updateVisitor, { isLoading: isUpdating }] = useUpdateVisitorMutation();
+  const loading = isCreating || isUpdating;
+
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   
-  const [loading, setLoading] = useState(false);
-  const [loadingData, setLoadingData] = useState(false);
+  const { data: visitorData, isLoading: loadingData } = useGetVisitorByIdQuery(visitorId, { skip: !isEditMode });
   
   // Form fields
   const [visitorName, setVisitorName] = useState('');
@@ -101,9 +104,7 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
     }
     fetchStates();
     
-    if (isEditMode) {
-      loadVisitorData();
-    }
+    // Removed loadVisitorData - handled by RTK Query
   }, []);
 
   useEffect(() => {
@@ -144,15 +145,12 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
     }
   }, [selectedStateId, states]);
 
-  const loadVisitorData = async () => {
-    try {
-      setLoadingData(true);
-      const response = await visitorService.getVisitorById(visitorId);
-      const visitor = response;
-      
-      setVisitorName(visitor.visitor_name || '');
-      setPhoneNo(visitor.phone_no || '');
-      const visitorPurpose = visitor.purpose || '';
+  // Populate form when visitor data loads
+  React.useEffect(() => {
+    if (visitorData && isEditMode) {
+      setVisitorName(visitorData.visitor_name || '');
+      setPhoneNo(visitorData.phone_no || '');
+      const visitorPurpose = visitorData.purpose || '';
       const predefinedPurpose = purposeOptions.find(p => p.value === visitorPurpose);
       if (predefinedPurpose) {
         setPurpose(visitorPurpose);
@@ -160,20 +158,15 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
         setPurpose('Other');
         setCustomPurpose(visitorPurpose);
       }
-      setVisitedDate(visitor.visited_date || new Date().toISOString().split('T')[0]);
-      setRemarks(visitor.remarks || '');
-      setConvertedToTenant(visitor.convertedTo_tenant || false);
-      setSelectedRoomId(visitor.visited_room_id || null);
-      setSelectedBedId(visitor.visited_bed_id || null);
-      setSelectedStateId(visitor.state_id || null);
-      setSelectedCityId(visitor.city_id || null);
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to load visitor data');
-      navigation.goBack();
-    } finally {
-      setLoadingData(false);
+      setVisitedDate(visitorData.visited_date || new Date().toISOString().split('T')[0]);
+      setRemarks(visitorData.remarks || '');
+      setConvertedToTenant(visitorData.convertedTo_tenant || false);
+      setSelectedRoomId(visitorData.visited_room_id || null);
+      setSelectedBedId(visitorData.visited_bed_id || null);
+      setSelectedCityId(visitorData.city_id || null);
+      setSelectedStateId(visitorData.state_id || null);
     }
-  };
+  }, [visitorData, isEditMode]);
 
   const fetchStates = async () => {
     setLoadingStates(true);
@@ -223,7 +216,7 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
     }
 
     try {
-      setLoading(true);
+      // setLoading(true); // Loading now managed by RTK hooks
       
       const finalPurpose = purpose === 'Other' ? customPurpose : purpose;
       
@@ -241,18 +234,16 @@ export const AddVisitorScreen: React.FC<AddVisitorScreenProps> = ({ navigation, 
       };
 
       if (isEditMode) {
-        let response = await visitorService.updateVisitor(visitorId, data);
-        showSuccessAlert(response);
+        await updateVisitor({ id: visitorId, data }).unwrap();
+        showSuccessAlert('Visitor updated successfully');
       } else {
-        let response = await visitorService.createVisitor(data);
-        showSuccessAlert(response);
+        await createVisitor(data).unwrap();
+        showSuccessAlert('Visitor created successfully');
       }
       
       navigation.goBack();
     } catch (error: any) {
       showErrorAlert(error, 'Error');
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -7,7 +7,8 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { apiClient } from '../core/apiClient';
+import { store } from '../../store';
+import { notificationsApi } from '../api/notificationsApi';
 import { FEATURES } from '../../config/env.config';
 import Constants from 'expo-constants';
 
@@ -176,7 +177,7 @@ class NotificationService {
         device_name: Platform.OS === 'ios' ? 'iOS Device' : 'Android Device',
       };
 
-      await apiClient.post('/notifications/register-token', deviceInfo);
+      await store.dispatch(notificationsApi.endpoints.registerNotificationToken.initiate(deviceInfo)).unwrap();
       console.log('✅ FCM token registered with backend');
     } catch (error) {
       console.error('❌ Failed to register FCM token:', error);
@@ -299,8 +300,8 @@ class NotificationService {
    */
   async getUnreadNotificationCount(): Promise<number> {
     try {
-      const response = await apiClient.get('/notifications/unread-count');
-      return (response.data as any)?.count || 0;
+      const response = await store.dispatch(notificationsApi.endpoints.getUnreadNotificationCount.initiate()).unwrap();
+      return (response as any)?.count || 0;
     } catch (error) {
       console.error('❌ Failed to get unread count:', error);
       return 0;
@@ -312,10 +313,10 @@ class NotificationService {
    */
   async getNotificationHistory(page = 1, limit = 20) {
     try {
-      const response = await apiClient.get('/notifications/history', {
-        params: { page, limit },
-      });
-      return response.data;
+      const response = await store
+        .dispatch(notificationsApi.endpoints.getNotificationHistory.initiate({ page, limit }))
+        .unwrap();
+      return response;
     } catch (error) {
       console.error('❌ Failed to get notification history:', error);
       throw error;
@@ -327,7 +328,7 @@ class NotificationService {
    */
   async markAsRead(notificationId: number) {
     try {
-      await apiClient.put(`/notifications/${notificationId}/read`);
+      await store.dispatch(notificationsApi.endpoints.markNotificationAsRead.initiate(notificationId)).unwrap();
       await this.updateBadgeCount();
     } catch (error) {
       console.error('❌ Failed to mark notification as read:', error);
@@ -340,7 +341,7 @@ class NotificationService {
    */
   async markAllAsRead() {
     try {
-      await apiClient.put('/notifications/read-all');
+      await store.dispatch(notificationsApi.endpoints.markAllNotificationsAsRead.initiate()).unwrap();
       await Notifications.setBadgeCountAsync(0);
     } catch (error) {
       console.error('❌ Failed to mark all as read:', error);
@@ -353,7 +354,7 @@ class NotificationService {
    */
   async updateSettings(settings: any) {
     try {
-      await apiClient.put('/notifications/settings', settings);
+      await store.dispatch(notificationsApi.endpoints.updateNotificationSettings.initiate(settings)).unwrap();
       console.log('✅ Notification settings updated');
     } catch (error) {
       console.error('❌ Failed to update settings:', error);
@@ -366,8 +367,8 @@ class NotificationService {
    */
   async getSettings() {
     try {
-      const response = await apiClient.get('/notifications/settings');
-      return response.data;
+      const response = await store.dispatch(notificationsApi.endpoints.getNotificationSettings.initiate()).unwrap();
+      return response;
     } catch (error) {
       console.error('❌ Failed to get settings:', error);
       throw error;
@@ -380,9 +381,13 @@ class NotificationService {
   async unregisterToken() {
     try {
       if (this.expoPushToken) {
-        await apiClient.delete('/notifications/unregister-token', {
-          data: { fcm_token: this.expoPushToken },
-        });
+        await store
+          .dispatch(
+            notificationsApi.endpoints.unregisterNotificationToken.initiate({
+              fcm_token: this.expoPushToken,
+            })
+          )
+          .unwrap();
         this.expoPushToken = null;
         console.log('✅ Expo Push token unregistered');
       }

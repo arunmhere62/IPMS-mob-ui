@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Modal, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Modal, ScrollView, Alert } from 'react-native';
+import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
-import { AppDispatch, RootState } from '../../store';
-import { fetchPayments } from '../../store/slices/paymentSlice';
+import { RootState } from '../../store';
 import { Card } from '../../components/Card';
 import { ErrorBanner } from '../../components/ErrorBanner';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -13,31 +13,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { Payment } from '../../types';
 import { Bed, Room, useGetAllBedsQuery, useGetAllRoomsQuery } from '../../services/api/roomsApi';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
-import { useUpdatePaymentStatusMutation } from '@/services/api/paymentsApi';
+import { useLazyGetTenantPaymentsQuery, useUpdatePaymentStatusMutation } from '@/services/api/paymentsApi';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+const PAYMENTS_PAGE_LIMIT = 50;
+
 interface RentPaymentsScreenProps {
   navigation: any;
 }
 
 export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { payments, pagination, loading } = useSelector((state: RootState) => state.payments);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const [updatePaymentStatus] = useUpdatePaymentStatusMutation();
+  const [triggerGetPayments, paymentsQuery] = useLazyGetTenantPaymentsQuery();
+
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [pagination, setPagination] = useState<any>(null);
   
-  const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [lastFailedPage, setLastFailedPage] = useState<number | null>(null);
-  const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
   
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED'>('ALL');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -52,61 +50,52 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
   const [visibleItemsCount, setVisibleItemsCount] = useState(0);
   
   const flatListRef = React.useRef<any>(null);
-  
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [beds, setBeds] = useState<Bed[]>([]);
-  const [loadingRooms, setLoadingRooms] = useState(false);
-  const [loadingBeds, setLoadingBeds] = useState(false);
+
+  const errorText = React.useMemo(() => {
+    const err: any = paymentsQuery.error;
+    return (
+      err?.data?.message ||
+      err?.error ||
+      err?.message ||
+      (typeof err === 'string' ? err : null)
+    );
+  }, [paymentsQuery.error]);
 
   const {
     data: roomsResponse,
-    isFetching: isRoomsFetching,
     refetch: refetchRooms,
   } = useGetAllRoomsQuery(
     selectedPGLocationId ? { page: 1, limit: 100, pg_id: selectedPGLocationId } : (undefined as any),
-    { skip: !selectedPGLocationId }
+    { skip: !selectedPGLocationId, refetchOnMountOrArgChange: true }
   );
 
   const {
     data: bedsResponse,
-    isFetching: isBedsFetching,
     refetch: refetchBeds,
   } = useGetAllBedsQuery(
     selectedRoomId && selectedPGLocationId
       ? { room_id: selectedRoomId, page: 1, limit: 100, pg_id: selectedPGLocationId }
       : (undefined as any),
-    { skip: !selectedRoomId || !selectedPGLocationId }
+    { skip: !selectedRoomId || !selectedPGLocationId, refetchOnMountOrArgChange: true }
   );
 
   useEffect(() => {
     if (selectedPGLocationId) {
       refetchRooms();
     }
-  }, [selectedPGLocationId]);
+  }, [selectedPGLocationId, refetchRooms]);
 
   useEffect(() => {
+    setSelectedBedId(null);
     if (selectedRoomId) {
       refetchBeds();
-    } else {
-      setBeds([]);
     }
-  }, [selectedRoomId]);
+  }, [selectedRoomId, refetchBeds]);
 
-  useEffect(() => {
-    setLoadingRooms(isRoomsFetching);
-  }, [isRoomsFetching]);
-
-  useEffect(() => {
-    setLoadingBeds(isBedsFetching);
-  }, [isBedsFetching]);
-
-  useEffect(() => {
-    setRooms(((roomsResponse as any)?.data || []) as Room[]);
-  }, [roomsResponse]);
-
-  useEffect(() => {
-    if (!selectedRoomId) return;
-    setBeds(((bedsResponse as any)?.data || []) as Bed[]);
+  const rooms = React.useMemo(() => (((roomsResponse as any)?.data || []) as Room[]), [roomsResponse]);
+  const beds = React.useMemo(() => {
+    if (!selectedRoomId) return [] as Bed[];
+    return (((bedsResponse as any)?.data || []) as Bed[]);
   }, [bedsResponse, selectedRoomId]);
 
   const years = React.useMemo(() => {
@@ -131,8 +120,14 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
 
   useEffect(() => {
     setCurrentPage(1);
-    setHasMore(true);
-    loadPayments(1, true);
+    setSelectedRoomId(null);
+    setSelectedBedId(null);
+    setPayments([]);
+    setPagination(null);
+    loadPayments(1, true, {
+      selectedRoomId: null,
+      selectedBedId: null,
+    });
   }, [selectedPGLocationId]);
 
   useFocusEffect(
@@ -143,72 +138,99 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     }, [selectedPGLocationId])
   );
 
-  const loadPayments = async (page: number, reset: boolean = false) => {
+  const loadPayments = async (
+    page: number,
+    reset: boolean = false,
+    overrides?: Partial<{
+      statusFilter: 'ALL' | 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED';
+      quickFilter: 'NONE' | 'LAST_WEEK' | 'LAST_MONTH';
+      selectedMonth: string | null;
+      selectedYear: number | null;
+      selectedRoomId: number | null;
+      selectedBedId: number | null;
+    }>
+  ) => {
     try {
-      if (isPageLoading) return;
-      if (!hasMore && !reset) return;
-      if (lastFailedPage !== null && !reset && page <= lastFailedPage) return;
-      
-      setIsPageLoading(true);
+      if (paymentsQuery.isFetching && !reset) return;
+      if (!reset && pagination && page > pagination.totalPages) return;
+
+      if (reset) {
+        setPayments([]);
+        setPagination(null);
+      }
+
+      const effectiveStatusFilter = overrides && 'statusFilter' in overrides ? overrides.statusFilter : statusFilter;
+      const effectiveQuickFilter = overrides && 'quickFilter' in overrides ? overrides.quickFilter : quickFilter;
+      const effectiveSelectedMonth = overrides && 'selectedMonth' in overrides ? overrides.selectedMonth : selectedMonth;
+      const effectiveSelectedYear = overrides && 'selectedYear' in overrides ? overrides.selectedYear : selectedYear;
+      const effectiveSelectedRoomId = overrides && 'selectedRoomId' in overrides ? overrides.selectedRoomId : selectedRoomId;
+      const effectiveSelectedBedId = overrides && 'selectedBedId' in overrides ? overrides.selectedBedId : selectedBedId;
       
       const params: any = {
         page,
-        limit: 20,
+        limit: PAYMENTS_PAGE_LIMIT,
       };
 
-      if (statusFilter !== 'ALL') params.status = statusFilter;
+      if (selectedPGLocationId) {
+        params.pg_id = selectedPGLocationId;
+      }
+
+      const toISODate = (date: Date) => date.toISOString().split('T')[0];
+
+      if (effectiveQuickFilter !== 'NONE') {
+        const end = new Date();
+        const start = new Date();
+        if (effectiveQuickFilter === 'LAST_WEEK') {
+          start.setDate(end.getDate() - 7);
+        } else if (effectiveQuickFilter === 'LAST_MONTH') {
+          start.setMonth(end.getMonth() - 1);
+        }
+        params.start_date = toISODate(start);
+        params.end_date = toISODate(end);
+      }
+
+      if (effectiveStatusFilter !== 'ALL') params.status = effectiveStatusFilter;
       
-      if (selectedMonth && selectedYear) {
-        params.month = selectedMonth;
-        params.year = selectedYear;
+      if (effectiveSelectedMonth && effectiveSelectedYear) {
+        params.month = effectiveSelectedMonth;
+        params.year = effectiveSelectedYear;
       }
       
-      if (selectedRoomId) params.room_id = selectedRoomId;
-      if (selectedBedId) params.bed_id = selectedBedId;
+      if (effectiveSelectedRoomId) params.room_id = effectiveSelectedRoomId;
+      if (effectiveSelectedBedId) params.bed_id = effectiveSelectedBedId;
       
       params.append = !reset && page > 1;
 
-      const result = await dispatch(fetchPayments(params)).unwrap();
-      
+      const result = await triggerGetPayments(params, false).unwrap();
+
+      if (!params.append) {
+        setPayments(result?.data || []);
+      } else {
+        setPayments((prev) => [...prev, ...(result?.data || [])]);
+      }
+      setPagination(result?.pagination || null);
       setCurrentPage(page);
-      setHasMore(result.pagination ? page < result.pagination.totalPages : false);
-      
-      setFetchError(null);
-      setLastFailedPage(null);
-      setInitialLoadCompleted(true);
       
       if (flatListRef.current && reset) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
     } catch (error: any) {
       console.error('Error loading payments:', error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Unable to load payments. Please try again.';
-      setFetchError(errorMessage);
-      setLastFailedPage(page);
-      if (page === 1) {
-        setHasMore(false);
-      }
     } finally {
-      setIsPageLoading(false);
     }
   };
 
   const onRefresh = async () => {
-    setRefreshing(true);
     setCurrentPage(1);
-    setHasMore(true);
-    setLastFailedPage(null);
-    setFetchError(null);
-    setInitialLoadCompleted(false);
+    setPayments([]);
+    setPagination(null);
     await loadPayments(1, true);
-    setRefreshing(false);
   };
 
   const loadMorePayments = () => {
-    if (!hasMore || loading || isPageLoading || !initialLoadCompleted) return;
+    if (paymentsQuery.isFetching) return;
+    if (!pagination) return;
+    if (pagination.page >= pagination.totalPages) return;
     const nextPage = currentPage + 1;
     loadPayments(nextPage, false);
   };
@@ -229,7 +251,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     let count = 0;
     if (statusFilter !== 'ALL') count++;
     if (quickFilter !== 'NONE') count++;
-    if (selectedMonth && selectedYear) count++;
+    if (selectedMonth || selectedYear) count++;
     if (selectedRoomId) count++;
     if (selectedBedId) count++;
     return count;
@@ -242,34 +264,29 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     setSelectedYear(null);
     setSelectedRoomId(null);
     setSelectedBedId(null);
+    setShowFilters(false);
     setCurrentPage(1);
-    setHasMore(true);
-    setLastFailedPage(null);
-    setFetchError(null);
-    setInitialLoadCompleted(false);
-    loadPayments(1, true);
+    setPayments([]);
+    setPagination(null);
+    loadPayments(1, true, {
+      statusFilter: 'ALL',
+      quickFilter: 'NONE',
+      selectedMonth: null,
+      selectedYear: null,
+      selectedRoomId: null,
+      selectedBedId: null,
+    });
   };
 
   const applyFilters = () => {
     setShowFilters(false);
     setCurrentPage(1);
-    setHasMore(true);
-    setLastFailedPage(null);
-    setFetchError(null);
-    setInitialLoadCompleted(false);
+    setPayments([]);
+    setPagination(null);
     loadPayments(1, true);
   };
 
   const applyQuickFilter = (filter: 'LAST_WEEK' | 'LAST_MONTH') => {
-    const today = new Date();
-    const start = new Date();
-    
-    if (filter === 'LAST_WEEK') {
-      start.setDate(today.getDate() - 7);
-    } else if (filter === 'LAST_MONTH') {
-      start.setMonth(today.getMonth() - 1);
-    }
-    
     setQuickFilter(filter);
     setSelectedMonth(null);
     setSelectedYear(null);
@@ -295,10 +312,6 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
       setShowStatusModal(false);
       setSelectedPayment(null);
       setCurrentPage(1);
-      setHasMore(true);
-      setLastFailedPage(null);
-      setFetchError(null);
-      setInitialLoadCompleted(false);
       loadPayments(1, true);
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to update payment status');
@@ -543,19 +556,15 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
         subtitle={`${pagination?.total || 0} payments`}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
-        showPGSelector={true}
         showBackButton={true}
         onBackPress={() => navigation.goBack(-1)}
       />
 
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>
         <ErrorBanner
-          error={fetchError}
+          error={errorText}
           title="Error Loading Payments"
           onRetry={() => {
-            setFetchError(null);
-            setLastFailedPage(null);
-            setInitialLoadCompleted(false);
             loadPayments(1, true);
           }}
         />
@@ -601,8 +610,16 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
           data={payments}
           renderItem={renderRentPaymentItem}
           keyExtractor={(item) => item.s_no.toString()}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={false}
+              onRefresh={onRefresh}
+              tintColor="transparent"
+              colors={['transparent']}
+              progressBackgroundColor="transparent"
+            />
+          }
           ListHeaderComponent={
             <View>
               <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
@@ -642,7 +659,29 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
             </View>
           }
           ListEmptyComponent={
-            !loading ? (
+            paymentsQuery.isFetching ? (
+              <View style={{ paddingTop: 16 }}>
+                {[...Array(6)].map((_, idx) => (
+                  <View key={idx} style={{ marginHorizontal: 16, marginBottom: 10 }}>
+                    <Card style={{ padding: 12 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <SkeletonLoader width="50%" height={12} />
+                        <SkeletonLoader width={70} height={18} borderRadius={8} />
+                      </View>
+                      <SkeletonLoader width="70%" height={16} style={{ marginBottom: 6 }} />
+                      <SkeletonLoader width="40%" height={10} style={{ marginBottom: 12 }} />
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <SkeletonLoader width={110} height={18} />
+                        <SkeletonLoader width={110} height={18} />
+                      </View>
+                      <SkeletonLoader width="100%" height={1} style={{ marginVertical: 12 }} />
+                      <SkeletonLoader width="60%" height={10} style={{ marginBottom: 6 }} />
+                      <SkeletonLoader width="45%" height={10} />
+                    </Card>
+                  </View>
+                ))}
+              </View>
+            ) : (
               <View style={{ paddingVertical: 60, alignItems: 'center' }}>
                 <Ionicons name="receipt-outline" size={64} color={Theme.colors.text.tertiary} />
                 <Text style={{ fontSize: 18, fontWeight: '600', color: Theme.colors.text.primary, marginTop: 16 }}>
@@ -652,22 +691,18 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
                   {getFilterCount() > 0 ? 'Try adjusting your filters' : 'No payment records available'}
                 </Text>
               </View>
-            ) : (
-              <View style={{ paddingVertical: 60, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={Theme.colors.primary} />
-                <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginTop: 16 }}>
-                  Loading rent payments...
-                </Text>
-              </View>
             )
           }
           ListFooterComponent={
-            loading && currentPage > 1 ? (
+            paymentsQuery.isFetching && currentPage > 1 ? (
               <View style={{ paddingVertical: 20 }}>
-                <ActivityIndicator size="small" color={Theme.colors.primary} />
-                <Text style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: Theme.colors.text.secondary }}>
-                  Loading more...
-                </Text>
+                <View style={{ paddingHorizontal: 16 }}>
+                  <Card style={{ padding: 12 }}>
+                    <SkeletonLoader width="45%" height={12} style={{ marginBottom: 10 }} />
+                    <SkeletonLoader width="75%" height={16} style={{ marginBottom: 6 }} />
+                    <SkeletonLoader width="55%" height={10} />
+                  </Card>
+                </View>
               </View>
             ) : null
           }
@@ -1063,7 +1098,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
                 }}
               >
                 {updatingStatus ? (
-                  <ActivityIndicator color="#fff" />
+                  <SkeletonLoader width={90} height={14} borderRadius={7} style={{ alignSelf: 'center' }} />
                 ) : (
                   <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
                     Confirm

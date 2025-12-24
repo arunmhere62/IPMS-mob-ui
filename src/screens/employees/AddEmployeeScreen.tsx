@@ -23,7 +23,7 @@ import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { useCreateEmployeeMutation, useLazyGetEmployeeByIdQuery, UserGender, useUpdateEmployeeMutation } from '../../services/api/employeesApi';
 import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../services/api/locationApi';
 import { useGetPGLocationsQuery } from '../../services/api/pgLocationsApi';
-import { rolesService } from '../../services/roles/rolesService';
+import { useLazyGetRolesQuery } from '../../services/api/rolesApi';
 import { getFolderConfig } from '../../config/aws.config';
 import { CONTENT_COLOR } from '@/constant';
 
@@ -91,6 +91,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingRoles, setLoadingRoles] = useState(false);
+  const [fetchRolesTrigger] = useLazyGetRolesQuery();
 
   const { data: statesResponse, isFetching: isFetchingStates } = useGetStatesQuery({ countryCode: 'IN' });
   const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
@@ -201,12 +202,9 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const fetchRoles = async () => {
     setLoadingRoles(true);
     try {
-      const response = await rolesService.getRoles();
-      if (response.success) {
-        setRoleData(response.data);
-      } else {
-        Alert.alert('Error', response.message || 'Failed to load roles');
-      }
+      const response = await fetchRolesTrigger().unwrap();
+      const roles = (response as any)?.data || [];
+      setRoleData(Array.isArray(roles) ? roles : []);
     } catch (error: any) {
       console.error('Error fetching roles:', error);
       Alert.alert('Error', 'Failed to load roles');
@@ -510,7 +508,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   required={true}
                 />
 
-                <View style={{ marginTop: 12 }}>
+                {/* <View style={{ marginTop: 12 }}>
                   <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
                     Current PG
                   </Text>
@@ -525,7 +523,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       {selectedPGLocation?.location_name || 'No PG selected'}
                     </Text>
                   </View>
-                </View>
+                </View> */}
               </Card>
 
               {/* Address Information */}
