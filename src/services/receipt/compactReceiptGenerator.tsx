@@ -20,7 +20,7 @@ interface ReceiptData {
   amountPaid: number;
   paymentMethod: string;
   remarks?: string;
-  receiptType?: 'RENT' | 'ADVANCE'; // Add receipt type
+  receiptType?: 'RENT' | 'ADVANCE' | 'REFUND';
 }
 
 export class CompactReceiptGenerator {
@@ -43,7 +43,11 @@ export class CompactReceiptGenerator {
           <Text style={styles.logo}>🏠</Text>
           <Text style={styles.companyName}>PG Management</Text>
           <Text style={styles.receiptTitle}>
-            {data.receiptType === 'ADVANCE' ? 'ADVANCE RECEIPT' : 'RENT RECEIPT'}
+            {data.receiptType === 'ADVANCE'
+              ? 'ADVANCE RECEIPT'
+              : data.receiptType === 'REFUND'
+                ? 'REFUND RECEIPT'
+                : 'RENT RECEIPT'}
           </Text>
         </View>
 
@@ -85,9 +89,11 @@ export class CompactReceiptGenerator {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PAYMENT DETAILS</Text>
           <View style={styles.row}>
-            <Text style={styles.label}>Period</Text>
+            <Text style={styles.label}>{data.receiptType === 'REFUND' ? 'Date' : 'Period'}</Text>
             <Text style={styles.valueSmall}>
-              {formatDate(data.rentPeriod.startDate)} - {formatDate(data.rentPeriod.endDate)}
+              {data.receiptType === 'REFUND'
+                ? formatDate(data.paymentDate)
+                : `${formatDate(data.rentPeriod.startDate)} - ${formatDate(data.rentPeriod.endDate)}`}
             </Text>
           </View>
           <View style={styles.row}>
@@ -99,11 +105,17 @@ export class CompactReceiptGenerator {
         {/* Amount Section */}
         <View style={styles.amountSection}>
           <View style={styles.amountRow}>
-            <Text style={styles.amountLabel}>Rent Amount</Text>
+            <Text style={styles.amountLabel}>
+              {data.receiptType === 'ADVANCE'
+                ? 'Advance Amount'
+                : data.receiptType === 'REFUND'
+                  ? 'Refund Amount'
+                  : 'Rent Amount'}
+            </Text>
             <Text style={styles.amountValue}>₹{data.actualRent.toLocaleString('en-IN')}</Text>
           </View>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Amount Paid</Text>
+            <Text style={styles.totalLabel}>{data.receiptType === 'REFUND' ? 'Refunded' : 'Amount Paid'}</Text>
             <Text style={styles.totalValue}>₹{data.amountPaid.toLocaleString('en-IN')}</Text>
           </View>
         </View>
@@ -126,23 +138,34 @@ export class CompactReceiptGenerator {
     phoneNumber: string
   ): Promise<void> {
     try {
+      if (!receiptRef.current) {
+        throw new Error('Receipt view is not ready yet');
+      }
       // Capture receipt as image
-      const uri = await captureRef(receiptRef, {
+      const uri = await captureRef(receiptRef.current, {
         format: 'png',
         quality: 1,
       });
 
       // WhatsApp message
+      const receiptTitle = data.receiptType === 'ADVANCE'
+        ? 'Advance Receipt'
+        : data.receiptType === 'REFUND'
+          ? 'Refund Receipt'
+          : 'Rent Receipt';
+
+      const periodLine = data.receiptType === 'REFUND'
+        ? `*Date:* ${new Date(data.paymentDate).toLocaleDateString('en-IN')}`
+        : `*Period:* ${new Date(data.rentPeriod.startDate).toLocaleDateString('en-IN')} - ${new Date(data.rentPeriod.endDate).toLocaleDateString('en-IN')}`;
+
       const message = `
-🏠 *PG Management - Rent Receipt*
+🏠 *PG Management - ${receiptTitle}*
 
 Hello ${data.tenantName},
 
-Thank you for your payment!
-
 *Receipt:* ${data.receiptNumber}
 *Amount:* ₹${data.amountPaid.toLocaleString('en-IN')}
-*Period:* ${new Date(data.rentPeriod.startDate).toLocaleDateString('en-IN')} - ${new Date(data.rentPeriod.endDate).toLocaleDateString('en-IN')}
+${periodLine}
 
 Receipt attached.
 
@@ -177,7 +200,11 @@ PG Management Team
    */
   static async shareImage(receiptRef: React.RefObject<View | null>): Promise<void> {
     try {
-      const uri = await captureRef(receiptRef, {
+      if (!receiptRef.current) {
+        throw new Error('Receipt view is not ready yet');
+      }
+
+      const uri = await captureRef(receiptRef.current, {
         format: 'png',
         quality: 1,
       });

@@ -17,6 +17,7 @@ import { showErrorAlert } from "@/utils/errorHandler";
 
 interface AddRefundPaymentModalProps {
   visible: boolean;
+  mode?: 'add' | 'edit';
   tenant: {
     s_no: number;
     name: string;
@@ -30,6 +31,13 @@ interface AddRefundPaymentModalProps {
     beds?: {
       bed_no: string;
     };
+  } | null;
+  existingPayment?: {
+    amount_paid: number;
+    payment_date: string;
+    payment_method: string;
+    status: string;
+    remarks?: string;
   } | null;
   onClose: () => void;
   onSave: (data: {
@@ -60,7 +68,9 @@ const PAYMENT_STATUS: Option[] = [
 
 export const AddRefundPaymentModal: React.FC<AddRefundPaymentModalProps> = ({
   visible,
+  mode = 'add',
   tenant,
+  existingPayment,
   onClose,
   onSave,
 }) => {
@@ -105,13 +115,21 @@ export const AddRefundPaymentModal: React.FC<AddRefundPaymentModalProps> = ({
   useEffect(() => {
     // Reset form when modal opens
     if (visible) {
-      setAmountPaid('');
-      setPaymentDate('');
-      setPaymentMethod('');
-      setStatus('');
-      setRemarks('');
+      if (mode === 'edit' && existingPayment) {
+        setAmountPaid(existingPayment.amount_paid ? String(existingPayment.amount_paid) : '');
+        setPaymentDate(existingPayment.payment_date || '');
+        setPaymentMethod(existingPayment.payment_method || '');
+        setStatus(existingPayment.status || '');
+        setRemarks(existingPayment.remarks || '');
+      } else {
+        setAmountPaid('');
+        setPaymentDate('');
+        setPaymentMethod('');
+        setStatus('');
+        setRemarks('');
+      }
     }
-  }, [visible, tenant]);
+  }, [visible, tenant, mode, existingPayment]);
 
   const handleSave = async () => {
     // Validation
@@ -191,10 +209,10 @@ export const AddRefundPaymentModal: React.FC<AddRefundPaymentModalProps> = ({
     <SlideBottomModal
       visible={visible}
       onClose={handleClose}
-      title="Add Refund Payment"
+      title={mode === 'edit' ? 'Edit Refund Payment' : 'Add Refund Payment'}
       subtitle={`${tenant.name} •  ${tenant.rooms?.room_no} •  ${tenant.beds?.bed_no}`}
       onSubmit={handleSave}
-      submitLabel="Save Refund"
+      submitLabel={mode === 'edit' ? 'Update Refund' : 'Save Refund'}
       cancelLabel="Cancel"
       isLoading={loading}
     >

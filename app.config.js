@@ -65,7 +65,7 @@ module.exports = {
         projectId: "0f6ecb0b-7511-427b-be33-74a4bd0207fe"
       },
       // Single source of truth for API URL - change in .env file
-      apiBaseUrl: process.env.API_BASE_URL || "http://172.20.10.2:5000/api/v1",
+      apiBaseUrl: process.env.API_BASE_URL || "https://pg-api-mobile.vercel.app/api/v1",
       // Subscription Configuration
       subscriptionMode: process.env.SUBSCRIPTION_MODE === 'true',
       showDevBanner: process.env.SHOW_DEV_BANNER === 'true'

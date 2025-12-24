@@ -18,7 +18,7 @@ import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
-import { ImageUpload } from '../../components/ImageUpload';
+import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { CONTENT_COLOR } from '@/constant';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -336,11 +336,12 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                       multiline
                       numberOfLines={4}
                     />
-                    <ImageUpload
+                    <ImageUploadS3
                       label="Attach Images (Optional)"
                       images={commentImages}
                       onImagesChange={setCommentImages}
                       maxImages={3}
+                      folder="tickets/images"
                     />
                     <TouchableOpacity
                       onPress={handleAddComment}

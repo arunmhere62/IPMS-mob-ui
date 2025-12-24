@@ -30,7 +30,6 @@ import { AddRefundPaymentModal } from './AddRefundPaymentModal';
 import { EditRefundPaymentModal } from '../../components/EditRefundPaymentModal';
 import { CheckoutTenantForm } from './CheckoutTenantForm';
 import { Ionicons } from '@expo/vector-icons';
-import { ReceiptPdfGenerator } from '@/services/receipt/receiptPdfGenerator';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import {
   TenantHeader,
@@ -807,6 +806,13 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
             payments: tenant?.refund_payments || [],
             tenantName: tenant.name,
             tenantId: tenant.s_no,
+            tenantPhone: tenant.phone_no,
+            pgName: tenant.pg_locations?.location_name || 'PG',
+            roomNumber: tenant.rooms?.room_no || '',
+            bedNumber: tenant.beds?.bed_no || '',
+            roomId: tenant.room_id || 0,
+            bedId: tenant.bed_id || 0,
+            pgId: tenant.pg_id || selectedPGLocationId || 0,
           })}
           style={{
             marginHorizontal: 16,
@@ -1160,14 +1166,6 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
         receiptData={receiptData}
         receiptRef={receiptRef}
         onClose={() => setReceiptModalVisible(false)}
-        onShare={async () => {
-          try {
-            await CompactReceiptGenerator.shareImage(receiptRef);
-            setReceiptModalVisible(false);
-          } catch (error) {
-            Alert.alert('Error', 'Failed to share');
-          }
-        }}
       />
 
       {/* Hidden receipt for capture (off-screen) */}

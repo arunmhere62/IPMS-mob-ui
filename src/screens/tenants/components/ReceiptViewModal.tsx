@@ -4,6 +4,8 @@ import {
   Modal,
   TouchableOpacity,
   Text,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 
@@ -12,7 +14,6 @@ interface ReceiptViewModalProps {
   receiptData: any;
   receiptRef: React.RefObject<View | null>;
   onClose: () => void;
-  onShare: () => Promise<void>;
 }
 
 export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
@@ -20,8 +21,14 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
   receiptData,
   receiptRef,
   onClose,
-  onShare,
 }) => {
+  const screenWidth = Dimensions.get('window').width;
+  const baseReceiptWidth = 320;
+  const modalHorizontalPadding = 20;
+  const modalMaxWidth = screenWidth * 0.9;
+  const availableReceiptWidth = Math.max(0, modalMaxWidth - modalHorizontalPadding * 2);
+  const receiptScale = Math.min(1, availableReceiptWidth / baseReceiptWidth);
+
   return (
     <Modal
       visible={visible}
@@ -30,10 +37,18 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' }}>
-        <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 20, maxWidth: '90%' }}>
-          {receiptData && (
-            <CompactReceiptGenerator.ReceiptComponent data={receiptData} />
-          )}
+        <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 20, width: '90%', maxHeight: '85%' }}>
+          <ScrollView
+            style={{ flexGrow: 0 }}
+            contentContainerStyle={{ alignItems: 'center' }}
+            showsVerticalScrollIndicator={false}
+          >
+            {receiptData && (
+              <View style={{ width: baseReceiptWidth, transform: [{ scale: receiptScale }] }}>
+                <CompactReceiptGenerator.ReceiptComponent data={receiptData} />
+              </View>
+            )}
+          </ScrollView>
           
           {/* Action Buttons */}
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
@@ -48,19 +63,6 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
               }}
             >
               <Text style={{ color: '#6B7280', fontWeight: '600' }}>Close</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={onShare}
-              style={{
-                flex: 1,
-                padding: 12,
-                backgroundColor: '#3B82F6',
-                borderRadius: 8,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: '#FFF', fontWeight: '600' }}>Share</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -18,7 +18,7 @@ import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
-import { ImageUpload } from '../../components/ImageUpload';
+import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { CONTENT_COLOR } from '@/constant';
 
 interface CreateTicketScreenProps {
@@ -197,11 +197,12 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
 
                 {/* Screenshots */}
                 <View style={{ marginBottom: 0 }}>
-                  <ImageUpload
+                  <ImageUploadS3
                     label="Screenshots (Optional)"
                     images={screenshots}
                     onImagesChange={setScreenshots}
                     maxImages={5}
+                    folder="tickets/images"
                   />
                   <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 4 }}>
                     Add screenshots to help us understand the issue better

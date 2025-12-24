@@ -52,6 +52,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const [partialRentFilter, setPartialRentFilter] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(false);
+  const isPageLoadingRef = React.useRef(false);
 
   const [expandedPaymentCards, setExpandedPaymentCards] = useState<Set<number>>(new Set());
   const flatListRef = React.useRef<any>(null);
@@ -87,7 +88,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     setCurrentPage(1);
     setHasMore(true);
     loadTenants(1, true);
-    setShouldReloadOnFocus(true); // Mark that we need to reload on next focus
+    setShouldReloadOnFocus(false);
   }, [selectedPGLocationId]); // Only reload when PG location changes, not on filter changes
 
   // Track if we need to reload data (only when filters change, not on navigation return)
@@ -129,9 +130,10 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
   const loadTenants = async (page: number, reset: boolean = false) => {
     try {
-      if (isPageLoading) return;
+      if (isPageLoadingRef.current) return;
       if (!hasMore && !reset) return;
-      
+
+      isPageLoadingRef.current = true;
       setIsPageLoading(true);
       
       // When room filter is active, fetch all tenants from that room
@@ -184,6 +186,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
         'Unable to load tenants. Please try again.';
       setFetchError(errorMessage);
     } finally {
+      isPageLoadingRef.current = false;
       setIsPageLoading(false);
     }
   };

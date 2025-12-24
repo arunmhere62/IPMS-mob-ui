@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,8 +18,12 @@ import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import refundPaymentService from '@/services/payments/refundPaymentService';
 import { showErrorAlert } from '@/utils/errorHandler';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../store';
+import { fetchTenants } from '../../store/slices/tenantSlice';
+import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
+import { ReceiptViewModal } from './components';
+import { AddRefundPaymentModal } from './AddRefundPaymentModal';
 
 interface RefundPayment {
   s_no: number;
@@ -34,14 +38,47 @@ interface RefundPayment {
 export const TenantRefundPaymentsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
 
   const payments: RefundPayment[] = route.params?.payments || [];
   const tenantName = route.params?.tenantName || 'Tenant';
   const tenantId = route.params?.tenantId || 0;
+  const tenantPhone = route.params?.tenantPhone || '';
+  const pgName = route.params?.pgName || 'PG';
+
+  const [receiptModalVisible, setReceiptModalVisible] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
+  const receiptRef = useRef<any>(null);
+
+  const [refundFormVisible, setRefundFormVisible] = useState(false);
+  const [refundFormMode, setRefundFormMode] = useState<'add' | 'edit'>('add');
+  const [editingRefundPayment, setEditingRefundPayment] = useState<RefundPayment | null>(null);
 
   const [loading, setLoading] = useState(false);
+
+  // Function to refresh tenant list
+  const refreshTenantList = async () => {
+    try {
+      await dispatch(
+        fetchTenants({
+          page: 1,
+          limit: 20,
+          pg_id: selectedPGLocationId || undefined,
+          organization_id: user?.organization_id || undefined,
+          user_id: user?.s_no || undefined,
+        })
+      ).unwrap();
+    } catch (error) {
+      console.error('Error refreshing tenant list:', error);
+    }
+  };
+
+  // Function to refresh tenant details (navigate back to tenant details)
+  const refreshTenantDetails = () => {
+    navigation.navigate('TenantDetails', { tenantId, refresh: true });
+  };
 
   const handleDeletePayment = (payment: RefundPayment) => {
     Alert.alert(
@@ -58,9 +95,15 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
           onPress: async () => {
             try {
               setLoading(true);
-              await refundPaymentService.deleteRefundPayment(payment.s_no);
+              await refundPaymentService.deleteRefundPayment(payment.s_no, {
+                pg_id: selectedPGLocationId || undefined,
+                organization_id: user?.organization_id || undefined,
+                user_id: user?.s_no || undefined,
+              });
               Alert.alert('Success', 'Refund payment deleted successfully');
-              navigation.goBack();
+
+              refreshTenantDetails();
+              refreshTenantList();
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
             } finally {
@@ -70,6 +113,86 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
         },
       ]
     );
+  };
+
+  const handleEditRefundPayment = (payment: RefundPayment) => {
+    setRefundFormMode('edit');
+    setEditingRefundPayment(payment);
+    setRefundFormVisible(true);
+  };
+
+  const handleUpdateRefundPayment = async (id: number, data: any) => {
+    await refundPaymentService.updateRefundPayment(id, data, {
+      pg_id: selectedPGLocationId || undefined,
+      organization_id: user?.organization_id || undefined,
+      user_id: user?.s_no || undefined,
+    });
+  };
+
+  const handleRefundPaymentSuccess = () => {
+    refreshTenantDetails();
+    refreshTenantList();
+  };
+
+  const prepareReceiptData = (payment: RefundPayment) => {
+    return {
+      receiptNumber: `REF-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
+      paymentDate: new Date(payment.payment_date),
+      tenantName: tenantName,
+      tenantPhone: tenantPhone,
+      pgName: pgName,
+      roomNumber: route.params?.roomNumber || '',
+      bedNumber: route.params?.bedNumber || '',
+      rentPeriod: {
+        startDate: new Date(payment.payment_date),
+        endDate: new Date(payment.payment_date),
+      },
+      actualRent: Number(payment.amount_paid || 0),
+      amountPaid: Number(payment.amount_paid || 0),
+      paymentMethod: payment.payment_method || 'CASH',
+      remarks: payment.remarks,
+      receiptType: 'REFUND' as const,
+    };
+  };
+
+  const handleViewReceipt = (payment: RefundPayment) => {
+    const data = prepareReceiptData(payment);
+    setReceiptData(data);
+    setReceiptModalVisible(true);
+  };
+
+  const handleWhatsAppReceipt = async (payment: RefundPayment) => {
+    try {
+      const data = prepareReceiptData(payment);
+      setReceiptData(data);
+
+      setTimeout(async () => {
+        await CompactReceiptGenerator.shareViaWhatsApp(
+          receiptRef,
+          data,
+          tenantPhone || ''
+        );
+        setReceiptData(null);
+      }, 100);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send via WhatsApp');
+      setReceiptData(null);
+    }
+  };
+
+  const handleShareReceipt = async (payment: RefundPayment) => {
+    try {
+      const data = prepareReceiptData(payment);
+      setReceiptData(data);
+
+      setTimeout(async () => {
+        await CompactReceiptGenerator.shareImage(receiptRef);
+        setReceiptData(null);
+      }, 100);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to share invoice');
+      setReceiptData(null);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -97,7 +220,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
         syncMobileHeaderBg={true}
       />
 
-      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR, position: 'relative' }}>
         {/* Tenant Info Header */}
         <View style={{
           paddingHorizontal: 16,
@@ -139,7 +262,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                   }}>
                     {/* Header Row */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                      <View style={{ flex: 1 }}>
+                      <View style={{ flex: 1, flexShrink: 1, paddingRight: 10 }}>
                         <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginBottom: 4 }}>
                           {new Date(payment.payment_date).toLocaleDateString('en-IN', {
                             day: '2-digit',
@@ -151,14 +274,29 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                           ₹{payment.amount_paid}
                         </Text>
                       </View>
+
                       <View style={{
+                        minWidth: 90,
                         paddingHorizontal: 8,
                         paddingVertical: 4,
                         borderRadius: 6,
                         backgroundColor: statusColor.bg,
+                        alignItems: 'center',
                       }}>
                         <Text style={{ fontSize: 10, fontWeight: '700', color: statusColor.text }}>
                           {statusColor.icon} {payment.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Amount Details */}
+                    <View style={{ marginBottom: 10 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+                          Refund Amount
+                        </Text>
+                        <Text style={{ fontSize: 11, fontWeight: '600', color: Theme.colors.text.primary }}>
+                          ₹{payment.amount_paid}
                         </Text>
                       </View>
                     </View>
@@ -184,11 +322,59 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                     </View>
 
                     {/* Action Buttons */}
-                    <ActionButtons
-                      onEdit={() => {}}
-                      onDelete={() => handleDeletePayment(payment)}
-                      showView={false}
-                    />
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                      <ActionButtons
+                        onEdit={() => handleEditRefundPayment(payment)}
+                        onDelete={() => handleDeletePayment(payment)}
+                        showView={false}
+                        showEdit={true}
+                      />
+                      <TouchableOpacity
+                        onPress={() => handleViewReceipt(payment)}
+                        style={{
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          backgroundColor: '#DBEAFE',
+                          borderRadius: 8,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#1D4ED8' }}>
+                          View Invoice
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleWhatsAppReceipt(payment)}
+                        style={{
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          backgroundColor: '#DCFCE7',
+                          borderRadius: 8,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#16A34A' }}>
+                          💬 WhatsApp
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleShareReceipt(payment)}
+                        style={{
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          backgroundColor: '#FEF3C7',
+                          borderRadius: 8,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>
+                          Share Invoice
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </Card>
                 </AnimatedPressableCard>
               );
@@ -219,6 +405,59 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
           )
         )}
       </View>
+
+      {/* Receipt View Modal */}
+      <ReceiptViewModal
+        visible={receiptModalVisible}
+        receiptData={receiptData}
+        receiptRef={receiptRef}
+        onClose={() => setReceiptModalVisible(false)}
+      />
+
+      {/* Hidden receipt for capture (off-screen) */}
+      {receiptData && !receiptModalVisible && (
+        <View style={{ position: 'absolute', left: -9999 }}>
+          <View ref={receiptRef} collapsable={false}>
+            <CompactReceiptGenerator.ReceiptComponent data={receiptData} />
+          </View>
+        </View>
+      )}
+
+      {/* Refund Payment Form Modal */}
+      <AddRefundPaymentModal
+        visible={refundFormVisible}
+        mode={refundFormMode}
+        tenant={{
+          s_no: tenantId,
+          name: tenantName,
+          room_id: route.params?.roomId,
+          bed_id: route.params?.bedId,
+          pg_id: route.params?.pgId,
+          rooms: { room_no: route.params?.roomNumber || '' },
+          beds: { bed_no: route.params?.bedNumber || '' },
+        }}
+        existingPayment={editingRefundPayment ? {
+          amount_paid: editingRefundPayment.amount_paid,
+          payment_date: editingRefundPayment.payment_date,
+          payment_method: editingRefundPayment.payment_method,
+          status: editingRefundPayment.status,
+          remarks: editingRefundPayment.remarks,
+        } : null}
+        onClose={() => {
+          setRefundFormVisible(false);
+          setEditingRefundPayment(null);
+          setRefundFormMode('add');
+        }}
+        onSave={async (data) => {
+          if (refundFormMode === 'edit' && editingRefundPayment) {
+            await handleUpdateRefundPayment(editingRefundPayment.s_no, data);
+            setRefundFormVisible(false);
+            setEditingRefundPayment(null);
+            setRefundFormMode('add');
+            handleRefundPaymentSuccess();
+          }
+        }}
+      />
     </ScreenLayout>
   );
 };

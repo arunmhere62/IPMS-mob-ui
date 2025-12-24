@@ -329,11 +329,26 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                     {/* Action Buttons */}
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                       <ActionButtons
-                        onView={() => handleViewReceipt(payment)}
                         onEdit={() => handleEditAdvancePayment(payment)}
                         onDelete={() => handleDeletePayment(payment)}
+                        showView={false}
                         showEdit={true}
                       />
+                      <TouchableOpacity
+                        onPress={() => handleViewReceipt(payment)}
+                        style={{
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          backgroundColor: '#DBEAFE',
+                          borderRadius: 8,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#1D4ED8' }}>
+                          View Invoice
+                        </Text>
+                      </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleWhatsAppReceipt(payment)}
                         style={{
@@ -361,7 +376,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                         }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>
-                          📤 Share
+                          Share Invoice
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -402,14 +417,6 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
         receiptData={receiptData}
         receiptRef={receiptRef}
         onClose={() => setReceiptModalVisible(false)}
-        onShare={async () => {
-          try {
-            await CompactReceiptGenerator.shareImage(receiptRef);
-            setReceiptModalVisible(false);
-          } catch (error) {
-            Alert.alert('Error', 'Failed to share');
-          }
-        }}
       />
 
       {/* Hidden receipt for capture (off-screen) */}
