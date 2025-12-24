@@ -3,11 +3,8 @@ import {
   View,
   Text,
   ScrollView,
-  TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
 import { User } from '../../types';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
@@ -16,9 +13,9 @@ import { CountryPhoneSelector, COUNTRIES } from '../../components/CountryPhoneSe
 import { OptionSelector } from '../../components/OptionSelector';
 import { InputField } from '../../components/InputField';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
-import axiosInstance from '../../services/core/axiosInstance';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
-import { useUpdateUserProfileMutation } from '../../services/api/userApi';
+import { useGetUserProfileQuery, useUpdateUserProfileMutation } from '../../services/api/userApi';
+import { useGetCitiesQuery, useGetStatesQuery } from '../../services/api/locationApi';
 
 interface EditProfileModalProps {
   visible: boolean;
@@ -39,6 +36,23 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onProfileUpdated,
 }) => {
   const [updateUserProfileMutation] = useUpdateUserProfileMutation();
+
+  const {
+    data: profileResponse,
+    refetch: refetchProfile,
+    isFetching: isProfileFetching,
+  } = useGetUserProfileQuery(user?.s_no as number, {
+    skip: !user?.s_no || !visible,
+  });
+
+  const profileUser: User | null =
+    ((profileResponse as any)?.data?.data as User) ||
+    ((profileResponse as any)?.data as User) ||
+    ((profileResponse as any) as User) ||
+    null;
+
+  const effectiveUser = profileUser || user;
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -51,74 +65,40 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<any>({});
 
-  // Dropdown data
-  const [stateData, setStateData] = useState<any[]>([]);
-  const [cityData, setCityData] = useState<any[]>([]);
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
+  const { data: statesResponse, isFetching: isStatesFetching } = useGetStatesQuery(
+    visible ? { countryCode: 'IN' } : undefined,
+    { skip: !visible }
+  );
+
+  const statesList = ((statesResponse as any)?.data || []) as any[];
+  const selectedState = stateId ? statesList.find((s) => s?.s_no === stateId) : null;
+  const selectedStateCode = (selectedState?.iso_code || selectedState?.state_code || null) as string | null;
+
+  const { data: citiesResponse, isFetching: isCitiesFetching } = useGetCitiesQuery(
+    { stateCode: selectedStateCode as string },
+    { skip: !visible || !selectedStateCode }
+  );
+
+  const citiesList = ((citiesResponse as any)?.data || []) as any[];
 
   useEffect(() => {
-    if (visible) {
-      fetchStates();
+    if (effectiveUser && visible) {
+      setName(effectiveUser.name || '');
+      setEmail(effectiveUser.email || '');
+      setPhone(effectiveUser.phone || '');
+      setAddress(effectiveUser.address || '');
+      setGender(effectiveUser.gender || '');
+      setStateId(effectiveUser.state_id || null);
+      setCityId(effectiveUser.city_id || null);
+      setProfileImages(effectiveUser.profile_images ? [effectiveUser.profile_images] : []);
     }
-  }, [visible]);
+  }, [effectiveUser, visible]);
 
   useEffect(() => {
-    if (user && visible) {
-      setName(user.name || '');
-      setEmail(user.email || '');
-      setPhone(user.phone || '');
-      setAddress(user.address || '');
-      setGender(user.gender || '');
-      setStateId(user.state_id || null);
-      setCityId(user.city_id || null);
-      setProfileImages(user.profile_images ? [user.profile_images] : []);
-    }
-  }, [user, visible]);
-
-  useEffect(() => {
-    if (stateId) {
-      const selectedState = stateData.find(s => s.s_no === stateId);
-      if (selectedState) {
-        fetchCities(selectedState.iso_code);
-      }
-    } else {
-      setCityData([]);
+    if (!stateId) {
       setCityId(null);
     }
-  }, [stateId, stateData]);
-
-  const fetchStates = async () => {
-    setLoadingStates(true);
-    try {
-      const response = await axiosInstance.get('/location/states', {
-        params: { countryCode: 'IN' },
-      });
-      if (response.data.success) {
-        setStateData(response.data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching states:', error);
-    } finally {
-      setLoadingStates(false);
-    }
-  };
-
-  const fetchCities = async (stateCode: string) => {
-    setLoadingCities(true);
-    try {
-      const response = await axiosInstance.get('/location/cities', {
-        params: { stateCode },
-      });
-      if (response.data.success) {
-        setCityData(response.data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-    } finally {
-      setLoadingCities(false);
-    }
-  };
+  }, [stateId]);
 
   const validate = () => {
     const newErrors: any = {};
@@ -145,7 +125,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   };
 
   const handleSave = async () => {
-    if (!validate() || !user) return;
+    if (!validate() || !effectiveUser) return;
 
     try {
       setLoading(true);
@@ -170,9 +150,14 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       console.log('profile_images field value:', payload.profile_images);
       console.log('=== END FRONTEND DEBUG ===');
 
-      const response = await updateUserProfileMutation({ userId: user.s_no, data: payload }).unwrap();
+      const response = await updateUserProfileMutation({ userId: effectiveUser.s_no, data: payload }).unwrap();
       
       showSuccessAlert(response, 'Success')
+
+      // Ensure profile query is up-to-date for all consumers
+      if (effectiveUser?.s_no) {
+        refetchProfile();
+      }
       
       // Call parent callback to refresh user data
       onProfileUpdated?.();
@@ -204,6 +189,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       cancelLabel="Cancel"
       isLoading={loading}
     >
+      {isProfileFetching && !effectiveUser ? (
+        <View style={{ paddingVertical: 24, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={Theme.colors.primary} />
+          <Text style={{ marginTop: 12, color: Theme.colors.text.secondary }}>Loading profile...</Text>
+        </View>
+      ) : null}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 0, paddingBottom: 20 }}
@@ -289,16 +280,16 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         <View style={{ marginBottom: 16 }}>
           <SearchableDropdown
             label="State"
-            items={stateData.map(state => ({
+            items={statesList.map((state) => ({
               id: state.s_no,
-              label: state.state_name,
+              label: state.state_name || state.name,
               value: state.s_no,
-              isoCode: state.iso_code
+              isoCode: state.iso_code,
             }))}
             selectedValue={stateId}
             onSelect={(item) => setStateId(item.value)}
             placeholder="Select state"
-            loading={loadingStates}
+            loading={isStatesFetching}
             error={errors.stateId}
           />
         </View>
@@ -307,16 +298,16 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         <View style={{ marginBottom: 16 }}>
           <SearchableDropdown
             label="City"
-            items={cityData.map(city => ({
+            items={citiesList.map((city) => ({
               id: city.s_no,
-              label: city.city_name,
-              value: city.s_no
+              label: city.city_name || city.name,
+              value: city.s_no,
             }))}
             selectedValue={cityId}
             onSelect={(item) => setCityId(item.value)}
             placeholder="Select city"
-            loading={loadingCities}
-            disabled={!stateId}
+            loading={isCitiesFetching}
+            disabled={!stateId || !selectedStateCode}
             error={errors.cityId}
           />
         </View>

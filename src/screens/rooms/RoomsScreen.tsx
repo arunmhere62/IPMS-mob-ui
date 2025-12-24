@@ -20,7 +20,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { RoomFormModal } from './CreateEditRoomModal';
 import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
-import { showErrorAlert } from '../../utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
 import { CONTENT_COLOR } from '@/constant';
 
 interface RoomsScreenProps {
@@ -126,12 +126,14 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
       onConfirm: async () => {
         try {
           // Delete room from database (backend will handle S3 image deletion)
-          await deleteRoomMutation(roomId).unwrap();
+          let response = await deleteRoomMutation(roomId).unwrap();
           
-          Alert.alert('Success', 'Room and all associated images deleted successfully');
-          refetchRooms();
+          showSuccessAlert(response)
+          // Optimistically remove from local state without refetching
+          setRooms(prev => prev.filter(room => room.s_no !== roomId));
         } catch (error: any) {
           showErrorAlert(error, 'Delete Error');
+          
         }
       },
     });

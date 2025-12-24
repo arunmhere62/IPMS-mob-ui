@@ -185,8 +185,8 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               ...Theme.colors.shadows.medium,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, gap: 10 }}>
+              <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 10, rowGap: 8, paddingRight: 6 }}>
                 <View style={{
                   paddingHorizontal: 10,
                   paddingVertical: 4,
@@ -237,7 +237,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                   </Text>
                 </View>
               </View>
-              <View style={{ alignItems: 'flex-end' }}>
+              <View style={{ alignItems: 'flex-end', flexShrink: 0, minWidth: 86 }}>
                 <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, fontWeight: '600' }}>
                   {item.timestamp.toLocaleTimeString()}
                 </Text>

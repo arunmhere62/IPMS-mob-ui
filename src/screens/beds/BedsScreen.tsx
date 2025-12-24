@@ -56,6 +56,9 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   const [occupancyFilter, setOccupancyFilter] = useState<'all' | 'occupied' | 'available'>('all');
   const [showFilters, setShowFilters] = useState(false);
 
+  const [draftSelectedRoomId, setDraftSelectedRoomId] = useState<number | null>(null);
+  const [draftOccupancyFilter, setDraftOccupancyFilter] = useState<'all' | 'occupied' | 'available'>('all');
+
   // Modal
   const [bedModalVisible, setBedModalVisible] = useState(false);
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
@@ -127,22 +130,22 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   // Refetch beds when screen is focused (navigating back from another screen)
   useFocusEffect(
     React.useCallback(() => {
-      if (!selectedPGLocationId) return;
-      if (selectedRoomId) {
-        refetchBedsByRoom();
-      } else {
-        refetchAllBeds();
-      }
-
+      // Don't refetch on focus - only load on PG location/room change
       return () => {
         // Cleanup if needed
       };
-    }, [selectedRoomId, occupancyFilter, selectedPGLocationId, refetchAllBeds, refetchBedsByRoom])
+    }, [selectedPGLocationId, selectedRoomId])
   );
 
   useEffect(() => {
     setRooms(((roomsResponse as any)?.data || []) as Room[]);
   }, [roomsResponse]);
+
+  useEffect(() => {
+    if (!showFilters) return;
+    setDraftSelectedRoomId(selectedRoomId);
+    setDraftOccupancyFilter(occupancyFilter);
+  }, [showFilters, selectedRoomId, occupancyFilter]);
 
   useEffect(() => {
     const nextLoading = !!selectedPGLocationId && (isRoomsFetching || isBedsAllFetching || isBedsByRoomFetching);
@@ -182,11 +185,8 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
         try {
           await deleteBedMutation(bedId).unwrap();
           Alert.alert('Success', 'Bed deleted successfully');
-          if (selectedRoomId) {
-            refetchBedsByRoom();
-          } else {
-            refetchAllBeds();
-          }
+          // Optimistically remove from local state without refetching
+          setBeds(prev => prev.filter(bed => bed.s_no !== bedId));
         } catch (error: any) {
           showErrorAlert(error, 'Delete Error');
         }
@@ -202,11 +202,42 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
     }
   };
 
+  const applyFilters = () => {
+    if (!selectedPGLocationId) {
+      setShowFilters(false);
+      return;
+    }
+
+    const nextRoomId = draftSelectedRoomId;
+    const nextOccupancy = draftOccupancyFilter;
+
+    setSelectedRoomId(nextRoomId);
+    setOccupancyFilter(nextOccupancy);
+
+    setTimeout(() => {
+      if (nextRoomId) {
+        refetchBedsByRoom();
+      } else {
+        refetchAllBeds();
+      }
+    }, 0);
+  };
+
   const clearFilters = () => {
+    setDraftSelectedRoomId(null);
+    setDraftOccupancyFilter('all');
     setSelectedRoomId(null);
     setOccupancyFilter('all');
     setSearchQuery('');
     setAppliedSearch('');
+    setShowFilters(false);
+
+    if (selectedPGLocationId) {
+      // Ensure the query is no longer skipped (selectedRoomId cleared) before refetching
+      setTimeout(() => {
+        refetchAllBeds();
+      }, 0);
+    }
   };
 
   const getFilterCount = () => {
@@ -404,7 +435,6 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
                   borderTopLeftRadius: 24,
                   borderTopRightRadius: 24,
                   maxHeight: SCREEN_HEIGHT * 0.7,
-                  ...Theme.colors.shadows.large,
                 }}
               >
                 {/* Handle Bar */}
@@ -465,21 +495,21 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
                     </Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       <TouchableOpacity
-                        onPress={() => setSelectedRoomId(null)}
+                        onPress={() => setDraftSelectedRoomId(null)}
                         style={{
                           paddingHorizontal: 16,
                           paddingVertical: 10,
                           borderRadius: 8,
-                          backgroundColor: selectedRoomId === null ? Theme.colors.primary : '#fff',
+                          backgroundColor: draftSelectedRoomId === null ? Theme.colors.primary : '#fff',
                           borderWidth: 1,
-                          borderColor: selectedRoomId === null ? Theme.colors.primary : Theme.colors.border,
+                          borderColor: draftSelectedRoomId === null ? Theme.colors.primary : Theme.colors.border,
                         }}
                       >
                         <Text
                           style={{
                             fontSize: 13,
                             fontWeight: '600',
-                            color: selectedRoomId === null ? '#fff' : Theme.colors.text.secondary,
+                            color: draftSelectedRoomId === null ? '#fff' : Theme.colors.text.secondary,
                           }}
                         >
                           All Rooms
@@ -488,21 +518,21 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
                       {rooms.map((room) => (
                         <TouchableOpacity
                           key={room.s_no}
-                          onPress={() => setSelectedRoomId(room.s_no)}
+                          onPress={() => setDraftSelectedRoomId(room.s_no)}
                           style={{
                             paddingHorizontal: 16,
                             paddingVertical: 10,
                             borderRadius: 8,
-                            backgroundColor: selectedRoomId === room.s_no ? Theme.colors.primary : '#fff',
+                            backgroundColor: draftSelectedRoomId === room.s_no ? Theme.colors.primary : '#fff',
                             borderWidth: 1,
-                            borderColor: selectedRoomId === room.s_no ? Theme.colors.primary : Theme.colors.border,
+                            borderColor: draftSelectedRoomId === room.s_no ? Theme.colors.primary : Theme.colors.border,
                           }}
                         >
                           <Text
                             style={{
                               fontSize: 13,
                               fontWeight: '600',
-                              color: selectedRoomId === room.s_no ? '#fff' : Theme.colors.text.secondary,
+                              color: draftSelectedRoomId === room.s_no ? '#fff' : Theme.colors.text.secondary,
                             }}
                           >
                             {room.room_no}
@@ -512,73 +542,98 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
                     </View>
                   </View>
 
-                  {/* Occupancy Filter */}
                   <View style={{ marginBottom: 24 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 8 }}>
                       Filter by Status
                     </Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 12 }}>
+                      Select one status filter (mutually exclusive)
+                    </Text>
+                    <View style={{ gap: 8 }}>
                       <TouchableOpacity
-                        onPress={() => setOccupancyFilter('all')}
+                        onPress={() => setDraftOccupancyFilter('all')}
                         style={{
-                          flex: 1,
-                          paddingVertical: 12,
-                          borderRadius: 8,
-                          backgroundColor: occupancyFilter === 'all' ? Theme.colors.primary : '#fff',
-                          borderWidth: 1,
-                          borderColor: occupancyFilter === 'all' ? Theme.colors.primary : Theme.colors.border,
+                          flexDirection: 'row',
                           alignItems: 'center',
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          borderRadius: 8,
+                          backgroundColor: draftOccupancyFilter === 'all' ? Theme.colors.primary : '#fff',
+                          borderWidth: 1,
+                          borderColor: draftOccupancyFilter === 'all' ? Theme.colors.primary : Theme.colors.border,
+                          gap: 8,
                         }}
                       >
+                        <Ionicons
+                          name={draftOccupancyFilter === 'all' ? 'radio-button-on' : 'radio-button-off'}
+                          size={20}
+                          color={draftOccupancyFilter === 'all' ? '#fff' : Theme.colors.text.secondary}
+                        />
                         <Text
                           style={{
                             fontSize: 13,
                             fontWeight: '600',
-                            color: occupancyFilter === 'all' ? '#fff' : Theme.colors.text.secondary,
+                            color: draftOccupancyFilter === 'all' ? '#fff' : Theme.colors.text.secondary,
                           }}
                         >
                           All
                         </Text>
                       </TouchableOpacity>
+
                       <TouchableOpacity
-                        onPress={() => setOccupancyFilter('available')}
+                        onPress={() => setDraftOccupancyFilter('available')}
                         style={{
-                          flex: 1,
-                          paddingVertical: 12,
-                          borderRadius: 8,
-                          backgroundColor: occupancyFilter === 'available' ? '#16A34A' : '#fff',
-                          borderWidth: 1,
-                          borderColor: occupancyFilter === 'available' ? '#16A34A' : Theme.colors.border,
+                          flexDirection: 'row',
                           alignItems: 'center',
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          borderRadius: 8,
+                          backgroundColor: draftOccupancyFilter === 'available' ? '#16A34A' : '#fff',
+                          borderWidth: 1,
+                          borderColor: draftOccupancyFilter === 'available' ? '#16A34A' : Theme.colors.border,
+                          gap: 8,
                         }}
                       >
+                        <Ionicons
+                          name={draftOccupancyFilter === 'available' ? 'radio-button-on' : 'radio-button-off'}
+                          size={20}
+                          color={draftOccupancyFilter === 'available' ? '#fff' : Theme.colors.text.secondary}
+                        />
                         <Text
                           style={{
                             fontSize: 13,
                             fontWeight: '600',
-                            color: occupancyFilter === 'available' ? '#fff' : Theme.colors.text.secondary,
+                            color: draftOccupancyFilter === 'available' ? '#fff' : Theme.colors.text.secondary,
                           }}
                         >
                           🟢 Available
                         </Text>
                       </TouchableOpacity>
+
                       <TouchableOpacity
-                        onPress={() => setOccupancyFilter('occupied')}
+                        onPress={() => setDraftOccupancyFilter('occupied')}
                         style={{
-                          flex: 1,
-                          paddingVertical: 12,
-                          borderRadius: 8,
-                          backgroundColor: occupancyFilter === 'occupied' ? '#DC2626' : '#fff',
-                          borderWidth: 1,
-                          borderColor: occupancyFilter === 'occupied' ? '#DC2626' : Theme.colors.border,
+                          flexDirection: 'row',
                           alignItems: 'center',
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          borderRadius: 8,
+                          backgroundColor: draftOccupancyFilter === 'occupied' ? '#DC2626' : '#fff',
+                          borderWidth: 1,
+                          borderColor: draftOccupancyFilter === 'occupied' ? '#DC2626' : Theme.colors.border,
+                          gap: 8,
                         }}
                       >
+                        <Ionicons
+                          name={draftOccupancyFilter === 'occupied' ? 'radio-button-on' : 'radio-button-off'}
+                          size={20}
+                          color={draftOccupancyFilter === 'occupied' ? '#fff' : Theme.colors.text.secondary}
+                        />
                         <Text
                           style={{
                             fontSize: 13,
                             fontWeight: '600',
-                            color: occupancyFilter === 'occupied' ? '#fff' : Theme.colors.text.secondary,
+                            color: draftOccupancyFilter === 'occupied' ? '#fff' : Theme.colors.text.secondary,
                           }}
                         >
                           🔴 Occupied
@@ -616,7 +671,10 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
-                    onPress={() => setShowFilters(false)}
+                    onPress={() => {
+                      applyFilters();
+                      setShowFilters(false);
+                    }}
                     style={{
                       flex: 1,
                       paddingVertical: 14,

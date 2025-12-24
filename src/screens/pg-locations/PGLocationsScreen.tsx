@@ -726,7 +726,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
           <ImageUploadS3
             images={formData.images}
             onImagesChange={(images: string[]) => setFormData((prev) => ({ ...prev, images }))}
-            maxImages={5}
+            maxImages={2}
             label="PG Location Images"
             disabled={submitting}
             folder={getFolderConfig().pgLocations?.images || 'pg-locations/images'}

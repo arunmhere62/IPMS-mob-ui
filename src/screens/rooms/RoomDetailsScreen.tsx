@@ -16,7 +16,6 @@ import {
   useGetRoomByIdQuery,
   useDeleteRoomMutation,
   useGetBedsByRoomIdQuery,
-  useDeleteBedMutation,
   Room,
   Bed,
 } from '../../services/api/roomsApi';
@@ -62,7 +61,6 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   } = useGetBedsByRoomIdQuery(roomId, { skip: !selectedPGLocationId });
 
   const [deleteRoomMutation] = useDeleteRoomMutation();
-  const [deleteBedMutation] = useDeleteBedMutation();
 
   useEffect(() => {
     setRoom(((roomResponse as any)?.data || null) as Room | null);
@@ -104,22 +102,6 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
     setBedModalVisible(true);
   };
 
-  const handleDeleteBed = (bedId: number, bedNo: string) => {
-    showDeleteConfirmation({
-      title: 'Delete Bed',
-      message: 'Are you sure you want to delete',
-      itemName: bedNo,
-      onConfirm: async () => {
-        try {
-          await deleteBedMutation(bedId).unwrap();
-          Alert.alert('Success', 'Bed deleted successfully');
-          await refetchBeds();
-        } catch (error: any) {
-          Alert.alert('Error', error.message || 'Failed to delete bed');
-        }
-      },
-    });
-  };
 
   const handleBedFormSuccess = async () => {
     await refetchBeds();
@@ -472,9 +454,8 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                   </View>
                   <ActionButtons
                     onEdit={() => handleEditBed(bed)}
-                    onDelete={() => handleDeleteBed(bed.s_no, bed.bed_no)}
                     showEdit={true}
-                    showDelete={true}
+                    showDelete={false}
                     showView={false}
                   />
                 </View>

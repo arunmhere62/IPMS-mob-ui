@@ -1,10 +1,9 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Theme } from '../theme';
-import { navigate } from '../navigation/navigationRef';
-import { networkLogger } from '../utils/networkLogger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { NetworkLoggerModal } from '../screens/network/NetworkLoggerScreen';
 
 interface Props {
   children: ReactNode;
@@ -14,6 +13,7 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  showNetworkLogs: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -23,6 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
+      showNetworkLogs: false,
     };
   }
 
@@ -31,6 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: true,
       error,
       errorInfo: null,
+      showNetworkLogs: false,
     };
   }
 
@@ -53,6 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
+      showNetworkLogs: false,
     });
   };
 
@@ -79,6 +82,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 hasError: false,
                 error: null,
                 errorInfo: null,
+                showNetworkLogs: false,
               });
               
               Alert.alert('Success', 'All data cleared. Please restart the app.');
@@ -197,13 +201,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <TouchableOpacity
               onPress={() => {
-                console.log('View Network Logs button pressed');
-                try {
-                  navigate('NetworkLogger');
-                } catch (error) {
-                  console.error('Error opening network logger:', error);
-                  Alert.alert('Error', 'Failed to open network logs');
-                }
+                this.setState({ showNetworkLogs: true });
               }}
               style={{
                 backgroundColor: '#0EA5E9',
@@ -230,6 +228,11 @@ export class ErrorBoundary extends Component<Props, State> {
                 View Network Logs
               </Text>
             </TouchableOpacity>
+
+            <NetworkLoggerModal
+              visible={this.state.showNetworkLogs}
+              onClose={() => this.setState({ showNetworkLogs: false })}
+            />
 
             <TouchableOpacity
               onPress={this.handleClearStorage}

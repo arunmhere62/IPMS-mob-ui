@@ -151,7 +151,7 @@ const RoomSummaryCard = ({ room }: { room: PGDetails['room_details'][0] }) => (
             width: 8, 
             height: 8, 
             borderRadius: 4, 
-            backgroundColor: room.occupancy_rate > 75 ? '#10B981' : room.occupancy_rate > 50 ? '#F59E0B' : '#EF4444',
+            backgroundColor: room.available_beds > 0 ? '#10B981' : '#EF4444',
             marginRight: 4
           }} />
           <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
@@ -224,17 +224,17 @@ const RoomCard = ({ room }: { room: PGDetails['room_details'][0] }) => (
               alignItems: 'center',
               paddingHorizontal: 8,
               paddingVertical: 4,
-              backgroundColor: bed.is_occupied ? '#F0FDF4' : '#FEF2F2',
+              backgroundColor: bed.is_occupied ? '#FEF2F2' : '#F0FDF4',
               borderRadius: 6,
               borderWidth: 1,
-              borderColor: bed.is_occupied ? '#BBF7D0' : '#FECACA',
+              borderColor: bed.is_occupied ? '#FECACA' : '#BBF7D0',
               minWidth: 80
             }}>
               <View style={{ 
                 width: 6, 
                 height: 6, 
                 borderRadius: 3, 
-                backgroundColor: bed.is_occupied ? '#10B981' : '#EF4444',
+                backgroundColor: bed.is_occupied ? '#EF4444' : '#10B981',
                 marginRight: 6
               }} />
               <View style={{ flex: 1 }}>
@@ -245,15 +245,6 @@ const RoomCard = ({ room }: { room: PGDetails['room_details'][0] }) => (
                   ₹{bed.price}
                 </Text>
               </View>
-              {bed.tenant && (
-                <View style={{ 
-                  width: 4, 
-                  height: 4, 
-                  borderRadius: 2, 
-                  backgroundColor: '#10B981',
-                  marginLeft: 4
-                }} />
-              )}
             </View>
           ))}
         </View>
@@ -331,7 +322,7 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           >
             {/* Image Gallery */}
-            {pgDetails.images && pgDetails.images.length > 0 && (
+            {pgDetails.images && pgDetails.images.length > 0 ? (
               <View style={{ marginBottom: 16 }}>
                 <ScrollView 
                   horizontal 
@@ -366,6 +357,24 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
                     </Card>
                   ))}
                 </ScrollView>
+              </View>
+            ) : (
+              <View style={{ marginBottom: 16 }}>
+                <Card style={{
+                  width: '100%',
+                  height: 200,
+                  backgroundColor: '#F9FAFB',
+                  borderRadius: 12,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: Theme.colors.border,
+                }}>
+                  <Ionicons name="image-outline" size={48} color="#9CA3AF" />
+                  <Text style={{ marginTop: 8, fontSize: 14, color: '#6B7280', fontWeight: '500' }}>
+                    No Image
+                  </Text>
+                </Card>
               </View>
             )}
 

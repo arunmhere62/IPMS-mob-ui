@@ -6,10 +6,7 @@ import {
   TouchableOpacity, 
   RefreshControl, 
   Alert,
-  TextInput,
   ActivityIndicator,
-  Modal,
-  Dimensions,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
@@ -29,8 +26,6 @@ import {
   useDeleteVisitorMutation,
 } from '../../services/api/visitorsApi';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 interface VisitorsScreenProps {
   navigation: any;
 }
@@ -44,7 +39,6 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isPageLoading, setIsPageLoading] = useState(false);
@@ -52,10 +46,8 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   const [lastFailedPage, setLastFailedPage] = useState<number | null>(null);
   const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
   const [visibleItemsCount, setVisibleItemsCount] = useState(0);
-  const [convertedFilter, setConvertedFilter] = useState<'ALL' | 'CONVERTED' | 'NOT_CONVERTED'>('ALL');
   const [visitorModalVisible, setVisitorModalVisible] = useState(false);
   const [selectedVisitorId, setSelectedVisitorId] = useState<number | undefined>();
-  const [showFilters, setShowFilters] = useState(false);
   
   const flatListRef = React.useRef<any>(null);
 
@@ -66,14 +58,14 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
     setLastFailedPage(null);
     setInitialLoadCompleted(false);
     loadVisitors(1, true);
-  }, [selectedPGLocationId, convertedFilter]);
+  }, [selectedPGLocationId]);
 
   useFocusEffect(
     React.useCallback(() => {
       if (currentPage === 1) {
         loadVisitors(1, true);
       }
-    }, [selectedPGLocationId, convertedFilter])
+    }, [selectedPGLocationId])
   );
 
   const loadVisitors = async (page: number, reset: boolean = false) => {
@@ -89,14 +81,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       const params: any = {
         page,
         limit: 20,
-        search: searchQuery || undefined,
       };
-
-      if (convertedFilter === 'CONVERTED') {
-        params.converted_to_tenant = true;
-      } else if (convertedFilter === 'NOT_CONVERTED') {
-        params.converted_to_tenant = false;
-      }
 
       const result = await triggerGetVisitors(params).unwrap();
 
@@ -148,15 +133,6 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
     setInitialLoadCompleted(false);
     await loadVisitors(1, true);
     setRefreshing(false);
-  };
-
-  const handleSearch = () => {
-    setCurrentPage(1);
-    setHasMore(true);
-    setFetchError(null);
-    setLastFailedPage(null);
-    setInitialLoadCompleted(false);
-    loadVisitors(1, true);
   };
 
   const loadMoreVisitors = () => {
@@ -230,10 +206,6 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   const handleCloseModal = () => {
     setVisitorModalVisible(false);
     setSelectedVisitorId(undefined);
-  };
-
-  const getFilterCount = () => {
-    return convertedFilter !== 'ALL' ? 1 : 0;
   };
 
   const renderVisitorCard = ({ item }: { item: any }) => {
@@ -373,67 +345,6 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
         showPGSelector={false}
       />
 
-      {/* Search & Filter Bar */}
-      <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TextInput
-            style={{
-              flex: 1,
-              backgroundColor: Theme.colors.background.secondary,
-              borderRadius: 8,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              fontSize: 14,
-            }}
-            placeholder="Search by name, phone, purpose..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearch}
-          />
-          <TouchableOpacity
-            onPress={handleSearch}
-            style={{
-              backgroundColor: Theme.colors.primary,
-              borderRadius: 8,
-              paddingHorizontal: 14,
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="search" size={18} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setShowFilters(!showFilters)}
-            style={{
-              backgroundColor: getFilterCount() > 0 ? Theme.colors.primary : Theme.colors.light,
-              borderRadius: 8,
-              paddingHorizontal: 14,
-              justifyContent: 'center',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <Ionicons name="filter" size={18} color={getFilterCount() > 0 ? '#fff' : Theme.colors.text.primary} />
-            {getFilterCount() > 0 && (
-              <View
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: 10,
-                  width: 18,
-                  height: 18,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 11, fontWeight: '700', color: Theme.colors.primary }}>
-                  {getFilterCount()}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
-
       {/* Scroll Position Indicator */}
       {visibleItemsCount > 0 && (
         <View style={{
@@ -561,144 +472,6 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
         onSuccess={handleVisitorFormSuccess}
         visitorId={selectedVisitorId}
       />
-
-      {/* Filter Modal Overlay */}
-      <Modal
-        visible={showFilters}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFilters(false)}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setShowFilters(false)}
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={{
-              backgroundColor: '#fff',
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              maxHeight: SCREEN_HEIGHT * 0.6,
-            }}
-          >
-            {/* Filter Header */}
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: 20,
-              borderBottomWidth: 1,
-              borderBottomColor: Theme.colors.border,
-            }}>
-              <View>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Filter Visitors
-                </Text>
-                {getFilterCount() > 0 && (
-                  <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginTop: 2 }}>
-                    {getFilterCount()} filter{getFilterCount() > 1 ? 's' : ''} active
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity
-                onPress={() => setShowFilters(false)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  backgroundColor: Theme.colors.background.secondary,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="close" size={18} color={Theme.colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Filter Content */}
-            <View style={{ padding: 20 }}>
-              {/* Status Filter */}
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-                  Filter by Status
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {['ALL', 'CONVERTED', 'NOT_CONVERTED'].map((status) => (
-                    <TouchableOpacity
-                      key={status}
-                      onPress={() => setConvertedFilter(status as any)}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        borderRadius: 8,
-                        backgroundColor: convertedFilter === status ? Theme.colors.primary : '#fff',
-                        borderWidth: 1,
-                        borderColor: convertedFilter === status ? Theme.colors.primary : Theme.colors.border,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '600',
-                          color: convertedFilter === status ? '#fff' : Theme.colors.text.secondary,
-                        }}
-                      >
-                        {status === 'ALL' ? 'All' : status === 'CONVERTED' ? 'Converted' : 'Not Converted'}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Filter Actions */}
-              <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setConvertedFilter('ALL');
-                    setTimeout(() => {
-                      setShowFilters(false);
-                    }, 100);
-                  }}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 14,
-                    borderRadius: 8,
-                    backgroundColor: Theme.colors.background.secondary,
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: Theme.colors.border,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.secondary }}>
-                    Clear All
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setShowFilters(false)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 14,
-                    borderRadius: 8,
-                    backgroundColor: Theme.colors.primary,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
-                    Apply Filters
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
     </ScreenLayout>
   );
 };

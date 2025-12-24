@@ -13,8 +13,10 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { OTPInput } from '../../components/OTPInput';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { PasswordInput } from '../../components/PasswordInput';
-import { SelectModal } from '../../components/SelectModal';
+import { OptionSelector } from '../../components/OptionSelector';
 import { CONTENT_COLOR } from '@/constant';
+import { useGetCitiesQuery, useGetStatesQuery } from '../../services/api/locationApi';
+import { showErrorAlert } from '@/utils/errorHandler';
 
 interface FormData {
   organizationName: string;
@@ -76,10 +78,6 @@ export const SignupScreenNew: React.FC = () => {
   });
 
   const [countries, setCountries] = useState<Country[]>([]);
-  const [states, setStates] = useState<State[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState({
     code: 'IN',
     name: 'India',
@@ -91,21 +89,25 @@ export const SignupScreenNew: React.FC = () => {
   const [showOtpVerification, setShowOtpVerification] = useState(false);
   const [otp, setOtp] = useState('');
   const [fullPhone, setFullPhone] = useState('');
-  const [activeModal, setActiveModal] = useState<'state' | 'city' | 'pgType' | null>(null);
-  const [selectedStateName, setSelectedStateName] = useState('');
-  const [selectedCityName, setSelectedCityName] = useState('');
-  const [selectedPgTypeName, setSelectedPgTypeName] = useState('COLIVING');
+  const [selectedStateCode, setSelectedStateCode] = useState<string>('');
+
+  const { data: statesResponse, isFetching: isStatesFetching } = useGetStatesQuery(
+    { countryCode: formData.countryCode || 'IN' },
+    { skip: !formData.countryCode }
+  );
+
+  const states = ((statesResponse as any)?.data || []) as State[];
+
+  const { data: citiesResponse, isFetching: isCitiesFetching } = useGetCitiesQuery(
+    { stateCode: selectedStateCode },
+    { skip: !selectedStateCode }
+  );
+
+  const cities = ((citiesResponse as any)?.data || []) as City[];
 
   useEffect(() => {
     fetchCountries();
-    fetchStates('IN');
   }, []);
-
-  useEffect(() => {
-    if (formData.countryCode && formData.countryCode !== 'IN') {
-      fetchStates(formData.countryCode);
-    }
-  }, [formData.countryCode]);
 
   const fetchCountries = async () => {
     try {
@@ -120,95 +122,6 @@ export const SignupScreenNew: React.FC = () => {
       console.error('Error fetching countries:', error);
       setCountries([]);
     }
-  };
-
-  const fetchStates = async (countryCode: string) => {
-    setLoadingStates(true);
-    try {
-      const response = await axiosInstance.get('/location/states', {
-        params: { countryCode },
-      });
-      const actualData = response.data?.data?.data || response.data?.data;
-      if (Array.isArray(actualData)) {
-        setStates(actualData);
-      } else {
-        setStates([]);
-      }
-    } catch (error) {
-      console.error('Error fetching states:', error);
-      setStates([]);
-    } finally {
-      setLoadingStates(false);
-    }
-  };
-
-  const fetchCities = async (stateCode: string) => {
-    setLoadingCities(true);
-    try {
-      const response = await axiosInstance.get('/location/cities', {
-        params: { stateCode },
-      });
-      const actualData = response.data?.data?.data || response.data?.data;
-      if (Array.isArray(actualData)) {
-        setCities(actualData);
-      } else {
-        setCities([]);
-      }
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-      setCities([]);
-    } finally {
-      setLoadingCities(false);
-    }
-  };
-
-  const handleStateChange = (item: any) => {
-    // Check if clearing (empty id)
-    if (!item.id) {
-      setFormData({ ...formData, stateId: null, cityId: null });
-      setSelectedStateName('');
-      setSelectedCityName('');
-      setCities([]);
-      setActiveModal(null);
-      return;
-    }
-
-    setFormData({ ...formData, stateId: item.id, cityId: null });
-    setSelectedStateName(item.label);
-    setSelectedCityName('');
-    setCities([]);
-    if (item.value) {
-      fetchCities(item.value);
-    }
-    setActiveModal(null);
-  };
-
-  const handleCityChange = (item: any) => {
-    // Check if clearing (empty id)
-    if (!item.id) {
-      setFormData({ ...formData, cityId: null });
-      setSelectedCityName('');
-      setActiveModal(null);
-      return;
-    }
-
-    setFormData({ ...formData, cityId: item.id });
-    setSelectedCityName(item.label);
-    setActiveModal(null);
-  };
-
-  const handlePgTypeChange = (item: any) => {
-    // Check if clearing (empty id)
-    if (!item.id) {
-      setFormData({ ...formData, pgType: 'COLIVING' });
-      setSelectedPgTypeName('COLIVING');
-      setActiveModal(null);
-      return;
-    }
-
-    setFormData({ ...formData, pgType: item.value });
-    setSelectedPgTypeName(item.label);
-    setActiveModal(null);
   };
 
   const updateFormData = (field: keyof FormData, value: any) => {
@@ -383,22 +296,7 @@ export const SignupScreenNew: React.FC = () => {
         );
       }
     } catch (error: any) {
-      console.error('❌ Signup error:', error);
-      console.error('Error response:', error.response?.data);
-
-      let errorMessage = 'Failed to create account';
-
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.status === 400) {
-        errorMessage = 'Invalid data provided. Please check all fields.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      Alert.alert('Error', errorMessage);
+      showErrorAlert(error, 'Signup failed');
     } finally {
       setLoading(false);
     }
@@ -602,6 +500,71 @@ export const SignupScreenNew: React.FC = () => {
         />
       </View>
 
+      {/* PG Type */}
+      <View style={{ marginBottom: 16 }}>
+        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+          PG Type <Text style={{ color: '#EF4444' }}>*</Text>
+        </Text>
+        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+          Type of accommodation
+        </Text>
+        <OptionSelector
+          label=""
+          options={[
+            { label: 'Co-living', value: 'COLIVING' },
+            { label: 'Mens PG', value: 'MENS' },
+            { label: 'Womens PG', value: 'WOMENS' },
+          ]}
+          selectedValue={formData.pgType || null}
+          onSelect={(value) => updateFormData('pgType', value || '')}
+          required={true}
+        />
+      </View>
+
+      {/* Location (State & City) */}
+      <View style={{ marginBottom: 16 }}>
+        <SearchableDropdown
+          label="State"
+          placeholder="Select a state"
+          items={states.map(state => ({
+            id: state.s_no,
+            label: state.name,
+            value: state.iso_code,
+          }))}
+          selectedValue={formData.stateId}
+          onSelect={(item) => {
+            if (!item?.id) {
+              updateFormData('stateId', null);
+              updateFormData('cityId', null);
+              setSelectedStateCode('');
+              return;
+            }
+            updateFormData('stateId', item.id);
+            updateFormData('cityId', null);
+            setSelectedStateCode(item.value || '');
+          }}
+          loading={isStatesFetching}
+          required={true}
+        />
+
+        {formData.stateId && (
+          <SearchableDropdown
+            label="City"
+            placeholder="Select a city"
+            items={cities.map(city => ({
+              id: city.s_no,
+              label: city.name,
+              value: city.s_no,
+            }))}
+            selectedValue={formData.cityId}
+            onSelect={(item) => updateFormData('cityId', item?.id || null)}
+            loading={isCitiesFetching}
+            disabled={!formData.stateId}
+            required={true}
+          />
+        )}
+      </View>
+
       {/* PG Address */}
       <View style={{ marginBottom: 16 }}>
         <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
@@ -631,70 +594,6 @@ export const SignupScreenNew: React.FC = () => {
           textAlignVertical="top"
         />
       </View>
-
-      {/* State Selection */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          State <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Select your state from the list
-        </Text>
-        <TouchableOpacity
-          onPress={() => setActiveModal('state')}
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{
-            fontSize: 14,
-            color: selectedStateName ? Theme.colors.text.primary : '#9CA3AF',
-          }}>
-            {selectedStateName || 'Search and select state'}
-          </Text>
-          <Text style={{ fontSize: 18 }}>▼</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* City Selection */}
-      {formData.stateId && (
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-            City <Text style={{ color: '#EF4444' }}>*</Text>
-          </Text>
-          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-            Select your city from the list
-          </Text>
-          <TouchableOpacity
-            onPress={() => setActiveModal('city')}
-            style={{
-              backgroundColor: 'white',
-              borderRadius: 8,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{
-              fontSize: 14,
-              color: selectedCityName ? Theme.colors.text.primary : '#9CA3AF',
-            }}>
-              {selectedCityName || 'Search and select city'}
-            </Text>
-            <Text style={{ fontSize: 18 }}>▼</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* Pincode */}
       <View style={{ marginBottom: 16 }}>
@@ -826,64 +725,9 @@ export const SignupScreenNew: React.FC = () => {
         </View>
       )}
 
-      {/* PG Type */}
-      <View style={{ marginBottom: 24 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          PG Type <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Type of accommodation
-        </Text>
-        <TouchableOpacity
-          onPress={() => setActiveModal('pgType')}
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{
-            fontSize: 14,
-            color: selectedPgTypeName ? Theme.colors.text.primary : '#9CA3AF',
-          }}>
-            {selectedPgTypeName || 'Select PG type'}
-          </Text>
-          <Text style={{ fontSize: 18 }}>▼</Text>
-        </TouchableOpacity>
-      </View>
     </View>
     );
   };
-
-  // Prepare state items for SelectModal
-  const stateItems = Array.isArray(states)
-    ? states.map(state => ({
-        id: state.s_no,
-        label: state.name,
-        value: state.iso_code,
-      }))
-    : [];
-
-  // Prepare city items for SelectModal
-  const cityItems = Array.isArray(cities)
-    ? cities.map(city => ({
-        id: city.s_no,
-        label: city.name,
-        value: city.s_no,
-      }))
-    : [];
-
-  // Prepare PG type items for SelectModal
-  const pgTypeItems = [
-    { id: 1, label: 'Co-living', value: 'COLIVING' },
-    { id: 2, label: 'Mens PG', value: 'MENS' },
-    { id: 3, label: 'Womens PG', value: 'WOMENS' },
-  ];
 
   // OTP Verification Modal Content
   const otpModalContent = (
@@ -1072,44 +916,6 @@ export const SignupScreenNew: React.FC = () => {
         </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* State Selection Modal */}
-      <SelectModal
-        visible={activeModal === 'state'}
-        onClose={() => setActiveModal(null)}
-        title="Select State"
-        subtitle="Choose your state"
-        items={stateItems}
-        selectedValue={formData.stateId}
-        onSelect={handleStateChange}
-        isLoading={loadingStates}
-        searchPlaceholder="Search states..."
-      />
-
-      {/* City Selection Modal */}
-      <SelectModal
-        visible={activeModal === 'city'}
-        onClose={() => setActiveModal(null)}
-        title="Select City"
-        subtitle="Choose your city"
-        items={cityItems}
-        selectedValue={formData.cityId}
-        onSelect={handleCityChange}
-        isLoading={loadingCities}
-        searchPlaceholder="Search cities..."
-      />
-
-      {/* PG Type Selection Modal */}
-      <SelectModal
-        visible={activeModal === 'pgType'}
-        onClose={() => setActiveModal(null)}
-        title="Select PG Type"
-        subtitle="Choose accommodation type"
-        items={pgTypeItems}
-        selectedValue={formData.pgType === 'COLIVING' ? 1 : formData.pgType === 'MENS' ? 2 : 3}
-        onSelect={handlePgTypeChange}
-        searchPlaceholder="Search PG types..."
-      />
 
       {/* OTP Verification Modal */}
       <SlideBottomModal

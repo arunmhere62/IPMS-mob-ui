@@ -167,7 +167,12 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
       {expandedSections[sectionKey] && (
         <View style={styles.sectionContent}>
           <ScrollView horizontal showsHorizontalScrollIndicator={true} nestedScrollEnabled={true} style={styles.jsonOuter}>
-            <ScrollView showsVerticalScrollIndicator={true} nestedScrollEnabled={true} style={styles.jsonInner}>
+            <ScrollView
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              style={styles.jsonInner}
+              contentContainerStyle={styles.jsonInnerContent}
+            >
               <Text style={[styles.dataText, color ? { color } : {}]} selectable>
                 {content}
               </Text>
@@ -179,7 +184,7 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={true}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
       {/* Summary Card */}
       <View style={styles.summaryCard}>
         <View style={styles.summaryRow}>
@@ -418,10 +423,13 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   jsonOuter: {
-    maxHeight: 320,
+    height: 320,
   },
   jsonInner: {
-    maxHeight: 320,
+    height: 320,
+  },
+  jsonInnerContent: {
+    paddingBottom: 12,
   },
   dataText: {
     fontSize: 12,
