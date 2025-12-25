@@ -80,9 +80,18 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
       console.log('💳 Subscribe result:', result);
       
       const payload: any = (result as any)?.data ?? result;
-      const paymentUrl = payload?.payment_url;
-      const orderId = payload?.order_id;
-      const subscription = payload?.subscription;
+      const paymentUrl =
+        payload?.payment_url ??
+        payload?.data?.payment_url ??
+        payload?.data?.data?.payment_url;
+      const orderId =
+        payload?.order_id ??
+        payload?.data?.order_id ??
+        payload?.data?.data?.order_id;
+      const subscription =
+        payload?.subscription ??
+        payload?.data?.subscription ??
+        payload?.data?.data?.subscription;
       const subscriptionId = subscription?.s_no ?? subscription?.id;
 
       if (paymentUrl) {
@@ -107,9 +116,30 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     }
   };
 
-  const formatPrice = (price: string | number) => {
+  const formatPrice = (price: string | number, currency?: string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+
+    if (!Number.isFinite(numPrice) || numPrice <= 0) {
+      return 'Free';
+    }
+
+    if (currency && currency.toUpperCase() !== 'INR') {
+      return `${currency.toUpperCase()} ${numPrice.toLocaleString()}`;
+    }
+
     return `₹${numPrice.toLocaleString('en-IN')}`;
+  };
+
+  const getIncludedItems = (plan: SubscriptionPlan): string[] => {
+    const included: string[] = Array.isArray(plan.features) ? [...plan.features] : [];
+
+    if (plan.max_pg_locations != null) included.push(`Up to ${plan.max_pg_locations} PG Locations`);
+    if (plan.max_tenants != null) included.push(`Up to ${plan.max_tenants} Tenants`);
+    if (plan.max_beds != null) included.push(`Up to ${plan.max_beds} Beds`);
+    if (plan.max_rooms != null) included.push(`Up to ${plan.max_rooms} Rooms`);
+    if (plan.max_employees != null) included.push(`Up to ${plan.max_employees} Employees`);
+
+    return included;
   };
 
   const formatDuration = (days: number) => {
@@ -244,7 +274,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={{ fontSize: 42, fontWeight: '900', color: '#fff' }}>
-                {formatPrice(plan.price)}
+                {formatPrice(plan.price, plan.currency)}
               </Text>
               <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginLeft: 8 }}>
                 /{formatDuration(plan.duration)}
@@ -306,7 +336,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           </Text>
           
           <View style={{ marginBottom: 20 }}>
-            {plan.features && plan.features.slice(0, 3).map((feature: string, idx: number) => (
+            {getIncludedItems(plan).slice(0, 5).map((feature: string, idx: number) => (
               <View key={`${plan.s_no}-${idx}`} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
                 <Ionicons 
                   name="checkmark-circle" 
@@ -319,35 +349,6 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                 </Text>
               </View>
             ))}
-            
-            {/* Limits */}
-            {plan.max_pg_locations && (
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
-                <Ionicons 
-                  name="business" 
-                  size={18} 
-                  color={Theme.colors.secondary} 
-                  style={{ marginRight: 10, marginTop: 2 }} 
-                />
-                <Text style={{ fontSize: 14, color: Theme.colors.text.primary, lineHeight: 20 }}>
-                  Up to {plan.max_pg_locations} PG Locations
-                </Text>
-              </View>
-            )}
-            
-            {plan.max_tenants && (
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
-                <Ionicons 
-                  name="people" 
-                  size={18} 
-                  color={Theme.colors.secondary} 
-                  style={{ marginRight: 10, marginTop: 2 }} 
-                />
-                <Text style={{ fontSize: 14, color: Theme.colors.text.primary, lineHeight: 20 }}>
-                  Up to {plan.max_tenants} Tenants
-                </Text>
-              </View>
-            )}
           </View>
 
           {/* Subscribe Button */}

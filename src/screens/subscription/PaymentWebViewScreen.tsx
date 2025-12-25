@@ -63,7 +63,11 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
     console.log('📍 Navigation URL:', navState.url);
 
     // Check if payment is successful or cancelled
-    if (navState.url.includes('/payment/callback') || navState.url.includes('payment/success')) {
+    if (
+      navState.url.includes('/payment/callback') ||
+      navState.url.includes('/api/v1/subscription/payment/callback') ||
+      navState.url.includes('payment/success')
+    ) {
       // Payment successful
       Alert.alert(
         'Payment Successful',
@@ -80,7 +84,11 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           },
         ]
       );
-    } else if (navState.url.includes('/payment/cancel') || navState.url.includes('payment/failed')) {
+    } else if (
+      navState.url.includes('/payment/cancel') ||
+      navState.url.includes('/api/v1/subscription/payment/cancel') ||
+      navState.url.includes('payment/failed')
+    ) {
       // Payment cancelled or failed
       Alert.alert(
         'Payment Cancelled',
@@ -183,11 +191,15 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           onError={(syntheticEvent) => {
             const { nativeEvent } = syntheticEvent;
             console.error('❌ WebView error:', nativeEvent);
-            Alert.alert('Error', 'Failed to load payment page. Please try again.');
+            Alert.alert(
+              'Payment Error',
+              `Failed to load: ${nativeEvent?.url || 'unknown URL'}\n\nThis usually happens when the payment gateway redirects to a callback URL that is not reachable. Please verify backend CCAVENUE_REDIRECT_URL / CCAVENUE_CANCEL_URL (should be your public API domain and typically include /api/v1/subscription/payment/callback).`
+            );
           }}
           onHttpError={(syntheticEvent) => {
             const { nativeEvent } = syntheticEvent;
-            console.error('❌ HTTP error:', nativeEvent.statusCode);
+            console.error('❌ WebView HTTP error:', nativeEvent);
+            Alert.alert('Error', 'Payment page returned an error. Please try again.');
           }}
         />
       </View>

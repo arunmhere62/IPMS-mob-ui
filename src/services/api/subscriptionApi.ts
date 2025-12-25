@@ -7,10 +7,13 @@ export interface SubscriptionPlan {
   price: string;
   duration: number;
   currency: string;
-  features: string[];
+  features: string[] | null;
   is_active: boolean;
   max_pg_locations?: number | null;
   max_tenants?: number | null;
+  max_beds?: number | null;
+  max_employees?: number | null;
+  max_rooms?: number | null;
   max_users?: number | null;
 }
 
@@ -58,6 +61,18 @@ const unwrapCentralData = <T>(response: any): T => {
     return (response as any).data as T;
   }
   return response as T;
+};
+
+const unwrapNestedData = (value: any) => {
+  let current = value;
+  for (let i = 0; i < 5; i += 1) {
+    if (current && typeof current === 'object' && 'data' in current) {
+      current = (current as any).data;
+      continue;
+    }
+    break;
+  }
+  return current;
 };
 
 const normalizeListResponse = <T>(response: any): { success: boolean; data: T; message?: string } => {
@@ -153,7 +168,8 @@ export const subscriptionApi = baseApi.injectEndpoints({
       }),
       transformResponse: (response: ApiEnvelope<SubscribeToPlanResponse> | any) => {
         const unwrapped = unwrapCentralData<any>(response);
-        return (unwrapped as any)?.data ?? unwrapped;
+        const nested = unwrapNestedData(unwrapped);
+        return nested as any;
       },
       invalidatesTags: [
         { type: 'CurrentSubscription', id: 'SINGLE' },
