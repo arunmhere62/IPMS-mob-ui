@@ -17,6 +17,12 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
     return v ? String(v) : 'N/A';
   };
 
+  const rentPrice = tenant.rooms?.rent_price;
+  const rentText =
+    rentPrice === null || rentPrice === undefined || String(rentPrice).trim() === ''
+      ? 'N/A'
+      : `₹${rentPrice}/month`;
+
   const formatDate = (value?: string | null) => {
     if (!value) return 'N/A';
     try {
@@ -66,10 +72,9 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
             >
               {na(tenant.rooms?.room_no)}
             </Text>
-            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
-              {tenant.rooms?.rent_price ? `₹${tenant.rooms.rent_price}/month` : 'N/A'}
-            </Text>
+
           </View>
+
 
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Bed</Text>
@@ -80,7 +85,29 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
             </Text>
           </View>
         </View>
+        <View style={{ flexDirection: 'column', alignItems: 'flex-start', marginTop: 4 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              color: Theme.colors.text.tertiary,
+              marginRight: 6,
+            }}
+          >
+            Rent:
+          </Text>
 
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: '600',
+              color: Theme.colors.text.primary,
+            }}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {rentText}
+          </Text>
+        </View>
         <View>
           <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Check-in Date</Text>
           <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>

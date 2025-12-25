@@ -247,10 +247,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               </View>
             </View>
 
-            <Text numberOfLines={2} style={{ fontSize: 16, color: Theme.colors.text.primary, fontWeight: '800', lineHeight: 22 }}>
-              {getPath(item.url)}
-            </Text>
-            <Text numberOfLines={2} style={{ marginTop: 6, fontSize: 13, color: Theme.colors.text.secondary, fontWeight: '500', lineHeight: 18 }}>
+            <Text numberOfLines={2} style={{ marginTop: 6, fontSize: 15, color: Theme.colors.text.secondary, fontWeight: '700', lineHeight: 18 }}>
               {item.url}
             </Text>
 

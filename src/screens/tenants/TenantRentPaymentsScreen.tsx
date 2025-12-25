@@ -360,7 +360,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                           View Invoice
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
+                      {/* <TouchableOpacity
                         onPress={() => handleWhatsAppReceipt(payment)}
                         style={{
                           paddingVertical: 8,
@@ -374,7 +374,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                         <Text style={{ fontSize: 12, fontWeight: '600', color: '#16A34A' }}>
                           💬 WhatsApp
                         </Text>
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                       <TouchableOpacity
                         onPress={() => handleShareReceipt(payment)}
                         style={{
