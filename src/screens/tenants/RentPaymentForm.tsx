@@ -23,7 +23,7 @@ import {
   useLazyDetectPaymentGapsQuery,
   useLazyGetNextPaymentDatesQuery,
 } from "@/services/api/paymentsApi";
-import { showErrorAlert } from "@/utils/errorHandler";
+import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 import { calculateRentCycleDates, calculateNextRentCycleDates } from "@/utils/rentCycleCalculator";
 
 interface RentPaymentFormProps {
@@ -356,7 +356,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       }
     } catch (error) {
       console.error("Error getting next payment dates (CALENDAR):", error);
-      Alert.alert("Error", "Failed to calculate next payment dates");
+      showErrorAlert(error, "Failed to calculate next payment dates");
     }
   };
 
@@ -389,7 +389,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       }
     } catch (error) {
       console.error("Error getting next payment dates (MIDMONTH):", error);
-      Alert.alert("Error", "Failed to calculate next payment dates");
+      showErrorAlert(error, "Failed to calculate next payment dates");
     }
   };
 
@@ -950,8 +950,8 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
           remarks: formData.remarks || undefined,
         };
 
-        await createTenantPayment(paymentData as any).unwrap();
-        Alert.alert("Success", "Payment added successfully");
+        const res = await createTenantPayment(paymentData as any).unwrap();
+        showSuccessAlert(res);
       } else if (mode === "edit" && paymentId && onSave) {
         const updateData = {
           amount_paid: parseFloat(formData.amount_paid),
@@ -964,8 +964,8 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
           remarks: formData.remarks || undefined,
         };
 
-        await onSave(paymentId, updateData);
-        Alert.alert("Success", "Payment updated successfully");
+        const res = await onSave(paymentId, updateData);
+        showSuccessAlert(res);
       }
 
       onSuccess();

@@ -21,6 +21,7 @@ import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialo
 import { Ionicons } from '@expo/vector-icons';
 import { Employee, useDeleteEmployeeMutation, useLazyGetEmployeesQuery } from '../../services/api/employeesApi';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface EmployeesScreenProps {
   navigation: any;
@@ -65,7 +66,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
         setPage(pageNum);
       }
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to load employees');
+      showErrorAlert(error, 'Employees Error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -107,10 +108,10 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
       onConfirm: async () => {
         try {
           await deleteEmployee(employee.s_no).unwrap();
-          Alert.alert('Success', 'Employee deleted successfully');
+          showSuccessAlert('Employee deleted successfully');
           loadEmployees(1, false);
         } catch (error: any) {
-          Alert.alert('Error', error?.response?.data?.message || 'Failed to delete employee');
+          showErrorAlert(error, 'Delete Error');
         }
       },
     });

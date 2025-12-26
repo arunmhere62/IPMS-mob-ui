@@ -4,6 +4,7 @@ import { Theme } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { NetworkLoggerModal } from '../screens/network/NetworkLoggerScreen';
+import { showSuccessAlert } from '@/utils/errorHandler';
 
 interface Props {
   children: ReactNode;
@@ -85,7 +86,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 showNetworkLogs: false,
               });
               
-              Alert.alert('Success', 'All data cleared. Please restart the app.');
+              showSuccessAlert('All data cleared. Please restart the app.');
             } catch (error) {
               console.error('❌ Error clearing storage:', error);
               Alert.alert('Error', 'Failed to clear storage: ' + (error instanceof Error ? error.message : String(error)));

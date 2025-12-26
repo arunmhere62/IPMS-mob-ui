@@ -29,6 +29,7 @@ import { RoomFormModal } from './CreateEditRoomModal';
 import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface RoomDetailsScreenProps {
   navigation: any;
@@ -126,10 +127,10 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
       onConfirm: async () => {
         try {
           await deleteRoomMutation(roomId).unwrap();
-          Alert.alert('Success', 'Room deleted successfully');
+          showSuccessAlert('Room deleted successfully');
           navigation.goBack();
         } catch (error: any) {
-          Alert.alert('Error', error.message || 'Failed to delete room');
+          showErrorAlert(error, 'Delete Error');
         }
       },
     });

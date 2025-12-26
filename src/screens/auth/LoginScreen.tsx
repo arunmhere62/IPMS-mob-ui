@@ -5,6 +5,7 @@ import { useSendOtpMutation } from '../../services/api/authApi';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface Country {
   code: string;
@@ -52,11 +53,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       // Send phone with country code and space
       const fullPhone = selectedCountry.phoneCode + ' ' + phone;
-      await sendOtp({ phone: fullPhone }).unwrap();
-      Alert.alert('Success', 'OTP sent successfully to your phone number');
+      const res = await sendOtp({ phone: fullPhone }).unwrap();
+      showSuccessAlert(res);
       navigation.navigate('OTPVerification', { phone: fullPhone });
     } catch (err: any) {
-      Alert.alert('Error', err || 'Failed to send OTP');
+      showErrorAlert(err, 'OTP Error');
     }
   };
 

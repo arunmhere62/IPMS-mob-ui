@@ -38,6 +38,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [pagination, setPagination] = useState<any>(null);
+  const [roomOptions, setRoomOptions] = useState<any[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,19 +72,37 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
   // Get unique rooms from tenants
   const rooms = React.useMemo(() => {
-    const uniqueRooms = tenants
-      .filter(t => t.rooms)
-      .map(t => t.rooms)
+    const uniqueRooms = roomOptions
+      .filter(Boolean)
       .filter((room, index, self) =>
         room && self.findIndex(r => r?.s_no === room.s_no) === index
       );
     return uniqueRooms;
-  }, [tenants]);
+  }, [roomOptions]);
 
   useEffect(() => {
+    // PG changed: reset filters/search to avoid carrying previous PG's filter state
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setSelectedRoomId(null);
+    setPendingRentFilter(false);
+    setPendingAdvanceFilter(false);
+    setPartialRentFilter(false);
+    setShowFilters(false);
+    setExpandedPaymentCards(new Set());
+
+    scrollPositionRef.current = 0;
     setCurrentPage(1);
     setHasMore(true);
-    loadTenants(1, true);
+    setRoomOptions([]);
+    loadTenants(1, true, {
+      searchQuery: '',
+      statusFilter: 'ALL',
+      selectedRoomId: null,
+      pendingRentFilter: false,
+      pendingAdvanceFilter: false,
+      partialRentFilter: false,
+    });
     setShouldReloadOnFocus(false);
   }, [selectedPGLocationId]); // Only reload when PG location changes, not on filter changes
 
@@ -171,8 +190,21 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
       const nextData = Array.isArray(result?.data) ? (result.data as Tenant[]) : [];
       setTenants((prev) => {
-        if (reset || page <= 1 || isRoomFiltered) return nextData;
-        return [...prev, ...nextData];
+        const nextTenants = (reset || page <= 1 || isRoomFiltered) ? nextData : [...prev, ...nextData];
+
+        // Keep room filter options stable: only update room options when we are NOT filtering by a room.
+        // This prevents the room chips list from shrinking to only the selected room.
+        if (effectiveSelectedRoomId === null) {
+          const nextRooms = nextTenants
+            .filter(t => (t as any)?.rooms)
+            .map(t => (t as any).rooms)
+            .filter((room: any, index: number, self: any[]) =>
+              room && self.findIndex(r => r?.s_no === room.s_no) === index
+            );
+          setRoomOptions(nextRooms);
+        }
+
+        return nextTenants;
       });
       setPagination(result?.pagination || null);
 
@@ -662,7 +694,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
       <ScreenHeader
       showBackButton={true}
         onBackPress={() => navigation.goBack()}
-      title="Tenants" subtitle={`${pagination?.total || 0} total`} />
+      title="Tenants" subtitle={`Showing ${tenants.length} of ${pagination?.total || 0} tenants`} />
       {/* Search & Filter Bar */}
       <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
         <View style={{ flexDirection: 'row', gap: 8 }}>

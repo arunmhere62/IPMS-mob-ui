@@ -26,6 +26,7 @@ import { useGetPGLocationsQuery } from '../../services/api/pgLocationsApi';
 import { useLazyGetRolesQuery } from '../../services/api/rolesApi';
 import { getFolderConfig } from '../../config/aws.config';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface AddEmployeeScreenProps {
   navigation: any;
@@ -178,7 +179,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
           typeof employee.proof_documents === 'string' ? JSON.parse(employee.proof_documents) : []);
       }
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to load employee data');
+      showErrorAlert(error, 'Employee Error');
       navigation.goBack();
     } finally {
       setInitialLoading(false);
@@ -207,7 +208,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
       setRoleData(Array.isArray(roles) ? roles : []);
     } catch (error: any) {
       console.error('Error fetching roles:', error);
-      Alert.alert('Error', 'Failed to load roles');
+      showErrorAlert(error, 'Roles Error');
     } finally {
       setLoadingRoles(false);
     }
@@ -301,27 +302,19 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
       if (isEditMode) {
         // Update existing employee
         await updateEmployee({ id: employeeId, data: employeeData }).unwrap();
-        Alert.alert('Success', 'Employee updated successfully', [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]);
+        showSuccessAlert('Employee updated successfully');
+        navigation.goBack();
       } else {
         // Create new employee
         employeeData.email = formData.email.trim();
         employeeData.password = formData.password.trim();
         
         await createEmployee(employeeData).unwrap();
-        Alert.alert('Success', 'Employee created successfully', [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]);
+        showSuccessAlert('Employee created successfully');
+        navigation.goBack();
       }
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to save employee');
+      showErrorAlert(error, 'Employee Error');
     } finally {
       setLoading(false);
     }

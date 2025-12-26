@@ -233,11 +233,11 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
       };
 
       if (isEditMode) {
-        await updateVisitor({ id: visitorId, data }).unwrap();
-        showSuccessAlert('Visitor updated successfully');
+        const res = await updateVisitor({ id: visitorId, data }).unwrap();
+        showSuccessAlert(res);
       } else {
-        await createVisitor(data).unwrap();
-        showSuccessAlert('Visitor created successfully');
+        const res = await createVisitor(data).unwrap();
+        showSuccessAlert(res);
       }
       
       navigation.goBack();

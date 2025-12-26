@@ -17,7 +17,7 @@ import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import { useDeleteAdvancePaymentMutation, useUpdateAdvancePaymentMutation } from '@/services/api/paymentsApi';
-import { showErrorAlert } from '@/utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import AdvancePaymentForm from '@/screens/tenants/AdvancePaymentForm';
@@ -77,7 +77,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
             try {
               setLoading(true);
               await deleteAdvancePayment(payment.s_no).unwrap();
-              Alert.alert('Success', 'Advance payment deleted successfully');
+              showSuccessAlert('Advance payment deleted successfully');
               
               // Navigate back to tenant details screen with refresh
               refreshTenantDetails();

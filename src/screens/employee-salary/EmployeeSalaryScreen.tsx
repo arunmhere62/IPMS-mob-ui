@@ -17,6 +17,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { EmployeeSalary, PaymentMethod, useDeleteEmployeeSalaryMutation, useGetEmployeeSalariesQuery } from '../../services/api/employeeSalaryApi';
 import { AddEditEmployeeSalaryModal } from '@/screens/employee-salary/AddEditEmployeeSalaryModal';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
@@ -147,11 +148,11 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
           onPress: async () => {
             try {
               await deleteSalary(salary.s_no).unwrap();
-              Alert.alert('Success', 'Salary record deleted successfully');
+              showSuccessAlert('Salary record deleted successfully');
               onRefresh();
             } catch (error) {
               console.error('Error deleting salary:', error);
-              Alert.alert('Error', 'Failed to delete salary record');
+              showErrorAlert(error, 'Delete Error');
             }
           },
         },

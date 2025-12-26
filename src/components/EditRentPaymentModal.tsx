@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 import { Payment } from '../types';
 import { DatePicker } from './DatePicker';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface EditRentPaymentModalProps {
   visible: boolean;
@@ -178,11 +179,11 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
       }
       
       // Close modal after successful save
-      Alert.alert('Success', 'Payment updated successfully');
+      showSuccessAlert('Payment updated successfully');
       onClose();
     } catch (error) {
       console.error('Error updating rent payment:', error);
-      Alert.alert('Error', 'Failed to update payment');
+      showErrorAlert(error, 'Payment Error');
     } finally {
       setLoading(false);
     }

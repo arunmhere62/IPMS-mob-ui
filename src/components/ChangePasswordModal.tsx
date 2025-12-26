@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface ChangePasswordModalProps {
   visible: boolean;
@@ -65,14 +66,11 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         currentPassword: currentPassword.trim(),
         newPassword: newPassword.trim(),
       });
-      Alert.alert('Success', 'Password changed successfully');
+      showSuccessAlert('Password changed successfully');
       handleClose();
     } catch (error: any) {
       console.error('Error changing password:', error);
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'Failed to change password'
-      );
+      showErrorAlert(error, 'Password Error');
     } finally {
       setLoading(false);
     }

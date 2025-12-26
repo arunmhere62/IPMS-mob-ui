@@ -19,6 +19,17 @@ const unwrapCentralData = <T>(response: any): T => {
   return response as T;
 };
 
+const unwrapApiOrCentralData = <T>(response: any): T => {
+  const central = unwrapCentralData<T>(response);
+  if (central && typeof central === 'object' && 'data' in (central as any)) {
+    return ((central as any).data ?? central) as T;
+  }
+  if (response && typeof response === 'object' && 'data' in response) {
+    return (response as any).data as T;
+  }
+  return response as T;
+};
+
 export type SendOtpRequest = {
   phone: string;
 };
@@ -90,8 +101,7 @@ export const authApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      transformResponse: (response: ApiEnvelope<SendOtpResponse> | SendOtpResponse) =>
-        (response as ApiEnvelope<SendOtpResponse>)?.data ?? response,
+      transformResponse: (response: CentralEnvelope<SendOtpResponse> | ApiEnvelope<SendOtpResponse> | any) => response,
     }),
 
     verifyOtp: build.mutation<VerifyOtpResponse, VerifyOtpRequest>({
@@ -100,12 +110,12 @@ export const authApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      transformResponse: (response: ApiEnvelope<VerifyOtpRawResponse> | VerifyOtpRawResponse | any) => {
-        const r = (response as ApiEnvelope<VerifyOtpRawResponse>)?.data ?? (response as VerifyOtpRawResponse);
+      transformResponse: (response: CentralEnvelope<VerifyOtpRawResponse> | ApiEnvelope<VerifyOtpRawResponse> | VerifyOtpRawResponse | any) => {
+        const r = unwrapApiOrCentralData<VerifyOtpRawResponse>(response);
         return {
-          user: r.user,
-          accessToken: (r as any).accessToken ?? r.access_token,
-          refreshToken: (r as any).refreshToken ?? r.refresh_token,
+          user: (r as any).user,
+          accessToken: (r as any).accessToken ?? (r as any).access_token,
+          refreshToken: (r as any).refreshToken ?? (r as any).refresh_token,
         };
       },
     }),
@@ -116,8 +126,7 @@ export const authApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      transformResponse: (response: ApiEnvelope<ResendOtpResponse> | ResendOtpResponse) =>
-        (response as ApiEnvelope<ResendOtpResponse>)?.data ?? response,
+      transformResponse: (response: CentralEnvelope<ResendOtpResponse> | ApiEnvelope<ResendOtpResponse> | any) => response,
     }),
 
     sendSignupOtp: build.mutation<SendSignupOtpResponse, SendSignupOtpRequest>({

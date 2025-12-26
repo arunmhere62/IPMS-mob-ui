@@ -13,7 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
-import { showErrorAlert } from '../../utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ErrorBanner } from '../../components/ErrorBanner';
@@ -168,8 +168,8 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteVisitorMutation(id).unwrap();
-              Alert.alert('Success', 'Visitor deleted successfully');
+              const res = await deleteVisitorMutation(id).unwrap();
+              showSuccessAlert(res);
               setCurrentPage(1);
               setHasMore(true);
               loadVisitors(1, true);

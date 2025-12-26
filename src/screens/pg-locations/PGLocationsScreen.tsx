@@ -26,7 +26,7 @@ import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { OptionSelector } from '../../components/OptionSelector';
 import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
 import { getFolderConfig } from '../../config/aws.config';
-import { showErrorAlert } from '../../utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
 import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../services/api/locationApi';
 import {
   useLazyGetPGLocationsQuery,
@@ -141,13 +141,17 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
     setLoading(true);
     try {
       const response = await fetchPGLocationsTrigger({ _t: Date.now() }).unwrap();
-      const items = (response as any)?.data;
-      if (Array.isArray(items)) {
-        setPgLocations(items as PGLocation[]);
-        return items as PGLocation[];
-      }
-      setPgLocations([]);
-      return [] as PGLocation[];
+      const unwrapArray = (v: any): PGLocation[] => {
+        if (Array.isArray(v)) return v as PGLocation[];
+        if (Array.isArray(v?.data)) return v.data as PGLocation[];
+        if (Array.isArray(v?.data?.data)) return v.data.data as PGLocation[];
+        if (Array.isArray(v?.data?.data?.data)) return v.data.data.data as PGLocation[];
+        return [] as PGLocation[];
+      };
+
+      const items = unwrapArray(response);
+      setPgLocations(items);
+      return items;
     } catch (error) {
       Alert.alert('Error', 'Failed to load PG locations');
       setPgLocations([]);
@@ -299,13 +303,13 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
       if (editMode && selectedPG) {
         // Update
         await updatePGLocation({ id: selectedPG.s_no, data: payload }).unwrap();
-        Alert.alert('Success', 'PG location updated successfully');
+        showSuccessAlert('PG location updated successfully');
         await loadPGLocations();
         closeModal();
       } else {
         // Create
         await createPGLocation(payload).unwrap();
-        Alert.alert('Success', 'PG location created successfully');
+        showSuccessAlert('PG location created successfully');
         await loadPGLocations();
         closeModal();
       }
@@ -335,7 +339,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
             }
           }
 
-          Alert.alert('Success', 'PG location deleted successfully');
+          showSuccessAlert('PG location deleted successfully');
         } catch (error: any) {
           showErrorAlert(error, 'Delete Error');
         }

@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
@@ -18,6 +17,7 @@ import { useLazyGetEmployeesQuery } from '../../services/api/employeesApi';
 import { DatePicker } from '../../components/DatePicker';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { OptionSelector } from '../../components/OptionSelector';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface AddEditEmployeeSalaryModalProps {
   visible: boolean;
@@ -82,7 +82,7 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
       const response = await fetchEmployeesTrigger({ page: 1, limit: 1000 }).unwrap();
       setEmployees(response?.data || []);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load employees list');
+      showErrorAlert(error, 'Employee Salary Error');
       setEmployees([]);
     } finally {
       setLoadingEmployees(false);
@@ -128,7 +128,7 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
 
       if (salary) {
         await updateSalary({ id: salary.s_no, data }).unwrap();
-        Alert.alert('Success', 'Salary record updated successfully');
+        showSuccessAlert('Salary record updated successfully');
       } else {
         const createData = {
           user_id: selectedEmployeeId!,
@@ -136,13 +136,13 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
           ...data,
         };
         await createSalary(createData).unwrap();
-        Alert.alert('Success', 'Salary record added successfully');
+        showSuccessAlert('Salary record added successfully');
       }
 
       handleClose();
       onSave();
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to save salary record');
+      showErrorAlert(error, 'Employee Salary Error');
     } finally {
       setLoading(false);
     }

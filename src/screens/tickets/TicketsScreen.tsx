@@ -12,7 +12,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
-import { showErrorAlert } from '../../utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
@@ -132,8 +132,8 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteTicketMutation(ticketId).unwrap();
-              Alert.alert('Success', 'Ticket deleted successfully');
+              const res = await deleteTicketMutation(ticketId).unwrap();
+              showSuccessAlert(res);
               loadTickets();
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');

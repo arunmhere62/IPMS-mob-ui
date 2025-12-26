@@ -14,7 +14,7 @@ import { OptionSelector, Option } from "../../components/OptionSelector";
 import { AmountInput } from "../../components/AmountInput";
 import { useCreateAdvancePaymentMutation } from "@/services/api/paymentsApi";
 import { useLazyGetBedByIdQuery } from "@/services/api/roomsApi";
-import { showErrorAlert } from "@/utils/errorHandler";
+import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 
 interface AdvancePaymentFormProps {
   visible: boolean;
@@ -174,8 +174,8 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
           remarks: formData.remarks || undefined,
         };
 
-        await createAdvancePayment(paymentData as any).unwrap();
-        Alert.alert("Success", "Advance payment added successfully");
+        const res = await createAdvancePayment(paymentData as any).unwrap();
+        showSuccessAlert(res);
       } else if (mode === "edit" && paymentId && onSave) {
         const updateData = {
           amount_paid: parseFloat(formData.amount_paid),
@@ -185,8 +185,8 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
           remarks: formData.remarks || undefined,
         };
 
-        await onSave(paymentId, updateData);
-        Alert.alert("Success", "Advance payment updated successfully");
+        const res = await onSave(paymentId, updateData);
+        showSuccessAlert(res);
       }
 
       onSuccess();

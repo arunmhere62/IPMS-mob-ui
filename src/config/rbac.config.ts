@@ -138,19 +138,50 @@ export const RolePermissions: Record<UserRole, Permission[]> = {
   [UserRole.EMPLOYEE]: [
     Permission.VIEW_DASHBOARD,
     
-    // Tenants - View and Create only
+    // PG Locations - Full access
+    Permission.VIEW_PG_LOCATIONS,
+    Permission.CREATE_PG_LOCATION,
+    Permission.EDIT_PG_LOCATION,
+    Permission.DELETE_PG_LOCATION,
+    
+    // Tenants - Full access
     Permission.VIEW_TENANTS,
     Permission.CREATE_TENANT,
     Permission.EDIT_TENANT,
+    Permission.DELETE_TENANT,
     
-    // Payments - View only
+    // Payments - Full access
     Permission.VIEW_PAYMENTS,
+    Permission.CREATE_PAYMENT,
+    Permission.EDIT_PAYMENT,
+    Permission.DELETE_PAYMENT,
+    Permission.APPROVE_PAYMENT,
     
-    // Rooms - View only
+    // Rooms - Full access
     Permission.VIEW_ROOMS,
+    Permission.CREATE_ROOM,
+    Permission.EDIT_ROOM,
+    Permission.DELETE_ROOM,
     
-    // Expenses - View only
+    // Expenses - Full access
     Permission.VIEW_EXPENSES,
+    Permission.CREATE_EXPENSE,
+    Permission.EDIT_EXPENSE,
+    Permission.DELETE_EXPENSE,
+    
+    // Users - Full access
+    Permission.VIEW_USERS,
+    Permission.CREATE_USER,
+    Permission.EDIT_USER,
+    Permission.DELETE_USER,
+    
+    // Reports
+    Permission.VIEW_REPORTS,
+    Permission.EXPORT_REPORTS,
+    
+    // Settings
+    Permission.VIEW_SETTINGS,
+    Permission.EDIT_SETTINGS,
   ],
 };
 

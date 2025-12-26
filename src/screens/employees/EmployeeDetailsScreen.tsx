@@ -17,6 +17,7 @@ import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import { useDeleteEmployeeMutation, useGetEmployeeByIdQuery } from '../../services/api/employeesApi';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 const DetailRow = ({
   label,
@@ -128,11 +129,11 @@ const EmployeeDetailsScreen: React.FC = () => {
           onPress: async () => {
             try {
               await deleteEmployee(employeeId).unwrap();
-              Alert.alert('Success', 'Employee deleted successfully');
+              showSuccessAlert('Employee deleted successfully');
               navigation.goBack();
             } catch (error: any) {
               console.error('Error deleting employee:', error);
-              Alert.alert('Error', error.response?.data?.message || 'Failed to delete employee');
+              showErrorAlert(error, 'Delete Error');
             }
           },
         },

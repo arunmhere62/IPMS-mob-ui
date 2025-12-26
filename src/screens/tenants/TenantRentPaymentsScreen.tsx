@@ -18,7 +18,7 @@ import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import { useDeleteTenantPaymentMutation, useUpdateTenantPaymentMutation } from '@/services/api/paymentsApi';
-import { showErrorAlert } from '@/utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import RentPaymentForm from './RentPaymentForm';
@@ -76,7 +76,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
             try {
               setLoading(true);
               await deleteTenantPayment(payment.s_no).unwrap();
-              Alert.alert('Success', 'Payment deleted successfully');
+              showSuccessAlert('Payment deleted successfully');
               
               // Navigate back to tenant details screen with refresh
               refreshTenantDetails();

@@ -14,6 +14,7 @@ import { Payment } from '../../types';
 import { Bed, Room, useGetAllBedsQuery, useGetAllRoomsQuery } from '../../services/api/roomsApi';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { useLazyGetTenantPaymentsQuery, useUpdatePaymentStatusMutation } from '@/services/api/paymentsApi';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -308,13 +309,13 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
         payment_date: new Date().toISOString().split('T')[0],
       }).unwrap();
 
-      Alert.alert('Success', 'Payment marked as paid successfully');
+      showSuccessAlert('Payment marked as paid successfully');
       setShowStatusModal(false);
       setSelectedPayment(null);
       setCurrentPage(1);
       loadPayments(1, true);
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to update payment status');
+      showErrorAlert(error, 'Payment Error');
     } finally {
       setUpdatingStatus(false);
     }

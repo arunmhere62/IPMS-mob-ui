@@ -13,6 +13,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import notificationService from '../../services/notifications/notificationService';
 import { FEATURES } from '../../config/env.config';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface OTPVerificationScreenProps {
   navigation: any;
@@ -80,13 +81,13 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
         console.log('ℹ️ Push notifications are disabled in development mode');
       }
       
-      Alert.alert('Success', 'Login successful!');
+      showSuccessAlert('Login successful!');
       navigation.reset({
         index: 0,
         routes: [{ name: 'Dashboard' }],
       });
     } catch (err: any) {
-      Alert.alert('Error', err || 'Invalid OTP');
+      showErrorAlert(err, 'OTP Error');
     }
   };
 
@@ -95,12 +96,12 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
 
     try {
       await resendOtp({ phone }).unwrap();
-      Alert.alert('Success', 'OTP resent successfully');
+      showSuccessAlert('OTP resent successfully');
       setResendTimer(60);
       setCanResend(false);
       setOtp('');
     } catch (err: any) {
-      Alert.alert('Error', err || 'Failed to resend OTP');
+      showErrorAlert(err, 'OTP Error');
     }
   };
 

@@ -6,8 +6,9 @@
  * npm install @react-native-community/netinfo
  */
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { Alert, AppState, AppStateStatus } from 'react-native';
+import { showSuccessAlert } from '@/utils/errorHandler';
 
 interface NetworkContextType {
   isConnected: boolean;
@@ -121,7 +122,7 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) =>
     console.log(`✅ Retry complete: ${succeeded} succeeded, ${failed} failed`);
 
     if (succeeded > 0) {
-      Alert.alert('Success', `${succeeded} request(s) completed successfully.`);
+      showSuccessAlert(`${succeeded} request(s) completed successfully.`);
     }
   }, []);
 

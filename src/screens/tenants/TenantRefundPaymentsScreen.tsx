@@ -17,7 +17,7 @@ import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import { useDeleteRefundPaymentMutation, useUpdateRefundPaymentMutation } from '@/services/api/paymentsApi';
-import { showErrorAlert } from '@/utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import { AddRefundPaymentModal } from './AddRefundPaymentModal';
@@ -76,7 +76,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
             try {
               setLoading(true);
               await deleteRefundPayment(payment.s_no).unwrap();
-              Alert.alert('Success', 'Refund payment deleted successfully');
+              showSuccessAlert('Refund payment deleted successfully');
 
               refreshTenantDetails();
             } catch (error: any) {

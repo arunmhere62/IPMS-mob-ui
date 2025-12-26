@@ -33,7 +33,7 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { BedFormModal } from './BedFormModal';
 import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
 import { Ionicons } from '@expo/vector-icons';
-import { showErrorAlert } from '../../utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
 import { CONTENT_COLOR } from '@/constant';
 
 interface BedsScreenProps {
@@ -85,6 +85,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   } = useGetAllBedsQuery(
     selectedPGLocationId
       ? {
+          pg_id: selectedPGLocationId,
           limit: 100,
           search: appliedSearch || undefined,
         }
@@ -108,6 +109,25 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false;
+      return;
+    }
+
+    // PG changed: reset filters/search so we don't keep showing data from the previous PG context
+    setBeds([]);
+    setRooms([]);
+    setSelectedRoomId(null);
+    setDraftSelectedRoomId(null);
+    setOccupancyFilter('all');
+    setDraftOccupancyFilter('all');
+    setSearchQuery('');
+    setAppliedSearch('');
+    setShowFilters(false);
+
+    if (selectedPGLocationId) {
+      // Queries will re-run due to arg change, but this ensures we fetch immediately after state resets
+      setTimeout(() => {
+        refetchAllBeds();
+      }, 0);
     }
   }, [selectedPGLocationId]);
 
@@ -184,7 +204,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
       onConfirm: async () => {
         try {
           await deleteBedMutation(bedId).unwrap();
-          Alert.alert('Success', 'Bed deleted successfully');
+          showSuccessAlert('Bed deleted successfully');
           // Optimistically remove from local state without refetching
           setBeds(prev => prev.filter(bed => bed.s_no !== bedId));
         } catch (error: any) {
@@ -346,7 +366,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
         onBackPress={() => navigation.goBack()}
         showBackButton
         title="Beds"
-        subtitle={`${pagination?.total || 0} total`}
+        subtitle={`Showing ${beds.length} of ${pagination?.total || 0} beds`}
       />
       {/* Search and Filter Bar */}
       <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>

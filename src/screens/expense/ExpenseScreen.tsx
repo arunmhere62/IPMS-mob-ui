@@ -16,6 +16,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { Expense, PaymentMethod, useDeleteExpenseMutation, useLazyGetExpensesQuery } from '../../services/api/expensesApi';
 import { AddEditExpenseModal } from '@/screens/expense/AddEditExpenseModal';
 import { ActionButtons } from '../../components/ActionButtons';
@@ -127,7 +128,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
         setPage(pageNum);
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to load expenses');
+      showErrorAlert(error, 'Expenses Error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -174,10 +175,10 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
           onPress: async () => {
             try {
               await deleteExpense(expense.s_no).unwrap();
-              Alert.alert('Success', 'Expense deleted successfully');
+              showSuccessAlert('Expense deleted successfully');
               onRefresh();
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete expense');
+              showErrorAlert(error, 'Delete Error');
             }
           },
         },

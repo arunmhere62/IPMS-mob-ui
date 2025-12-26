@@ -10,6 +10,7 @@ import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { getFolderConfig } from '../../config/aws.config';
 import { Bed, useCreateBedMutation, useUpdateBedMutation } from '../../services/api/roomsApi';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface BedFormModalProps {
   visible: boolean;
@@ -137,27 +138,16 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
 
       if (isEditMode && bed) {
         await updateBedMutation({ id: bed.s_no, data: bedData }).unwrap();
-        Alert.alert('Success', 'Bed updated successfully');
+        showSuccessAlert('Bed updated successfully');
       } else {
         await createBedMutation(bedData).unwrap();
-        Alert.alert('Success', 'Bed created successfully');
+        showSuccessAlert('Bed created successfully');
       }
 
       onSuccess();
       onClose();
     } catch (error: any) {
-      let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} bed`;
-      
-      if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      
+      const errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} bed`;
       if (__DEV__) {
         console.log('❌ Bed creation/update failed:', {
           status: error?.response?.status,
@@ -166,8 +156,8 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
           roomId: roomId,
         });
       }
-      
-      Alert.alert('Error', errorMessage);
+
+      showErrorAlert(error, errorMessage);
     } finally {
       setLoading(false);
     }

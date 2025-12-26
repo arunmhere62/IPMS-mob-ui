@@ -49,7 +49,7 @@ import {
   useUpdateRefundPaymentMutation,
   useDeleteTenantPaymentMutation,
 } from '@/services/api/paymentsApi';
-import { showErrorAlert } from '@/utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import AdvancePaymentForm from './AdvancePaymentForm';
 import {
   AdvancePayment,
@@ -180,8 +180,8 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
       }
 
       await createAdvancePayment({ ...data, pg_id: pgId }).unwrap();
-      
-      Alert.alert('Success', 'Advance payment created successfully');
+
+      showSuccessAlert('Advance payment created successfully');
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
@@ -199,8 +199,8 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
       }
 
       await createRefundPayment({ ...data, pg_id: pgId }).unwrap();
-      
-      Alert.alert('Success', 'Refund payment created successfully');
+
+      showSuccessAlert('Refund payment created successfully');
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
@@ -247,7 +247,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
           onPress: async () => {
             try {
               await deleteTenantPayment(payment.s_no).unwrap();
-              Alert.alert('Success', 'Rent payment deleted successfully');
+              showSuccessAlert('Rent payment deleted successfully');
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: any) {
@@ -425,7 +425,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
           onPress: async () => {
             try {
               await deleteAdvancePayment(payment.s_no).unwrap();
-              Alert.alert('Success', 'Advance payment deleted successfully');
+              showSuccessAlert('Advance payment deleted successfully');
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: any) {
@@ -477,7 +477,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
     try {
       setCheckoutLoading(true);
       await checkoutTenantWithDate({ id: currentTenant.s_no, check_out_date: newCheckoutDate }).unwrap();
-      Alert.alert('Success', 'Tenant checked out successfully');
+      showSuccessAlert('Tenant checked out successfully');
       setCheckoutDateModalVisible(false);
       setNewCheckoutDate('');
       refetchTenant();
@@ -509,11 +509,11 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
           onPress: async () => {
             try {
               await deleteRefundPayment(payment.s_no).unwrap();
-              Alert.alert('Success', 'Refund payment deleted successfully');
+              showSuccessAlert('Refund payment deleted successfully');
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: any) {
-              Alert.alert('Error', error?.response?.data?.message || 'Failed to delete refund payment');
+              showErrorAlert(error, 'Delete Error');
             }
           },
         },
@@ -540,7 +540,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
             onPress: async () => {
               try {
                 await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
-                Alert.alert('Success', 'Tenant deleted successfully');
+                showSuccessAlert('Tenant deleted successfully');
                 refreshTenantList(); // Refresh tenant list
                 navigation.goBack();
               } catch (error: any) {
@@ -566,7 +566,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
             onPress: async () => {
               try {
                 await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
-                Alert.alert('Success', 'Tenant deleted successfully');
+                showSuccessAlert('Tenant deleted successfully');
                 refreshTenantList(); // Refresh tenant list
                 navigation.goBack();
               } catch (error: any) {
@@ -619,7 +619,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
             try {
               setCheckoutLoading(true);
               await updateTenantCheckoutDate({ id: tenantId, clear_checkout: true }).unwrap();
-              Alert.alert('Success', 'Checkout cleared and tenant reactivated successfully');
+              showSuccessAlert('Checkout cleared and tenant reactivated successfully');
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: any) {
@@ -637,7 +637,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
     try {
       setCheckoutLoading(true);
       await updateTenantCheckoutDate({ id: tenantId, check_out_date: newCheckoutDate }).unwrap();
-      Alert.alert('Success', 'Checkout date updated successfully');
+      showSuccessAlert('Checkout date updated successfully');
       setCheckoutDateModalVisible(false);
       refetchTenant();
       refreshTenantList(); // Refresh tenant list

@@ -26,7 +26,7 @@ import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { getFolderConfig } from '../../config/aws.config';
 import { CONTENT_COLOR } from '@/constant';
-import { showErrorAlert } from '@/utils/errorHandler';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface AddTenantScreenProps {
   navigation: any;
@@ -419,31 +419,17 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
       if (isEditMode) {
         // Update existing tenant
         // Backend will handle S3 deletion for removed images
-        await updateTenantMutation({ id: Number(tenantId), data: tenantData as any }).unwrap();
-        Alert.alert('Success', 'Tenant updated successfully', [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Trigger refresh on tenant list screen
-              navigation.navigate('Tenants', { refresh: true });
-            },
-          },
-        ]);
+        const res = await updateTenantMutation({ id: Number(tenantId), data: tenantData as any }).unwrap();
+        showSuccessAlert(res);
+        navigation.navigate('Tenants', { refresh: true });
       } else {
         // Create new tenant
         // tenantsApi.createTenant does not currently accept custom headers here.
         // Base API headers (auth, pg context) are expected to be applied globally.
-        await createTenantMutation(tenantData as any).unwrap();
+        const res = await createTenantMutation(tenantData as any).unwrap();
 
-        Alert.alert('Success', 'Tenant created successfully', [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Trigger refresh on tenant list screen
-              navigation.navigate('Tenants', { refresh: true });
-            },
-          },
-        ]);
+        showSuccessAlert(res);
+        navigation.navigate('Tenants', { refresh: true });
       }
     } catch (error: any) {
       showErrorAlert(error, 'Error');

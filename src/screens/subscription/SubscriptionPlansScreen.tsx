@@ -18,6 +18,7 @@ import { Card } from '../../components/Card';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { Theme } from '../../theme';
 import { CONTENT_COLOR } from '@/constant';
+import { showSuccessAlert } from '@/utils/errorHandler';
 import {
   SubscriptionPlan,
   useGetPlansQuery,
@@ -103,7 +104,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           paymentMethod: 'ccavenue',
         });
       } else {
-        Alert.alert('Success', 'Subscription initiated successfully!');
+        showSuccessAlert('Subscription initiated successfully!');
       }
     } catch (error: any) {
       console.error('❌ Subscribe error:', error);

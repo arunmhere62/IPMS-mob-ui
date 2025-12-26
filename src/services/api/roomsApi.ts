@@ -41,6 +41,7 @@ export interface CreateBedDto {
 export interface GetBedsParams {
   page?: number;
   limit?: number;
+  pg_id?: number;
   room_id?: number;
   search?: string;
   only_unoccupied?: boolean;

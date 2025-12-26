@@ -146,6 +146,22 @@ export interface CreateTenantDto {
   proof_documents?: any;
 }
 
+export interface CreateCurrentBillDto {
+  room_id?: number;
+  tenant_id?: number;
+  bill_amount: number;
+  bill_date: string;
+  split_equally?: boolean;
+  remarks?: string;
+  pg_id?: number;
+}
+
+export type CurrentBillResponse = {
+  success: boolean;
+  data: any;
+  message?: string;
+};
+
 export interface GetTenantsParams {
   page?: number;
   limit?: number;
@@ -342,6 +358,12 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Tenant', id: arg.id },
       ],
     }),
+
+    createCurrentBill: build.mutation<CurrentBillResponse, CreateCurrentBillDto>({
+      query: (body) => ({ url: '/current-bills', method: 'POST', body }),
+      transformResponse: (response: ApiEnvelope<any> | any) => normalizeEntityResponse<any>(response),
+      invalidatesTags: [{ type: 'Tenants', id: 'LIST' }],
+    }),
   }),
   overrideExisting: false,
 });
@@ -353,6 +375,7 @@ export const {
   useCreateTenantMutation,
   useUpdateTenantMutation,
   useDeleteTenantMutation,
+  useCreateCurrentBillMutation,
   useCheckoutTenantMutation,
   useCheckoutTenantWithDateMutation,
   useUpdateTenantCheckoutDateMutation,

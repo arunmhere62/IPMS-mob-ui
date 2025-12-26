@@ -11,6 +11,7 @@ import {
   useLazyGetStatesQuery,
 } from '../../services/api/locationApi';
 import { useSendSignupOtpMutation, useSignupMutation, useVerifySignupOtpMutation } from '../../services/api/authApi';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface SignupModalProps {
   visible: boolean;
@@ -245,10 +246,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose }) =>
 
       await sendSignupOtp({ phone: phoneWithCode }).unwrap();
       setShowOtpVerification(true);
-      Alert.alert('Success', 'OTP sent to your phone number');
+      showSuccessAlert('OTP sent to your phone number');
     } catch (error: any) {
       console.error('❌ Send OTP error:', error);
-      Alert.alert('Error', 'Failed to send OTP');
+      showErrorAlert(error, 'OTP Error');
     } finally {
       setLoading(false);
     }
@@ -266,10 +267,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose }) =>
       setPhoneVerified(true);
       setShowOtpVerification(false);
       setOtp('');
-      Alert.alert('Success', 'Phone number verified successfully');
+      showSuccessAlert('Phone number verified successfully');
     } catch (error: any) {
       console.error('❌ Verify OTP error:', error);
-      Alert.alert('Error', 'Failed to verify OTP');
+      showErrorAlert(error, 'OTP Error');
     } finally {
       setLoading(false);
     }

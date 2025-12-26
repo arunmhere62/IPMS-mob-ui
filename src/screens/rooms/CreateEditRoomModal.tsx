@@ -14,6 +14,7 @@ import { Theme } from '../../theme';
 import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { getFolderConfig } from '../../config/aws.config';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface RoomModalProps {
   visible: boolean;
@@ -147,21 +148,17 @@ export const RoomModal: React.FC<RoomModalProps> = ({
       };
 
       if (roomId) {
-        await updateRoomMutation({ id: roomId, data: roomData as Partial<CreateRoomDto> }).unwrap();
-        Alert.alert('Success', 'Room updated successfully');
+        const res = await updateRoomMutation({ id: roomId, data: roomData as Partial<CreateRoomDto> }).unwrap();
+        showSuccessAlert(res);
       } else {
-        await createRoomMutation(roomData as unknown as CreateRoomDto).unwrap();
-        Alert.alert('Success', 'Room created successfully');
+        const res = await createRoomMutation(roomData as unknown as CreateRoomDto).unwrap();
+        showSuccessAlert(res);
       }
 
       onSuccess();
       onClose();
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message;
-      
-      if (errorMessage) {
-        Alert.alert('Error', errorMessage);
-      }
+      showErrorAlert(error, 'Room Error');
     } finally {
       setLoading(false);
     }

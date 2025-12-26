@@ -18,6 +18,7 @@ import { DatePicker } from '../../components/DatePicker';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { OptionSelector } from '../../components/OptionSelector';
 import { AmountInput } from '../../components/AmountInput';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface AddEditExpenseModalProps {
   visible: boolean;
@@ -136,17 +137,17 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
       if (expense) {
         // Update existing expense
         await updateExpense({ id: expense.s_no, data }).unwrap();
-        Alert.alert('Success', 'Expense updated successfully');
+        showSuccessAlert('Expense updated successfully');
       } else {
         // Create new expense
         await createExpense(data).unwrap();
-        Alert.alert('Success', 'Expense added successfully');
+        showSuccessAlert('Expense added successfully');
       }
 
       handleClose();
       onSave();
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to save expense');
+      showErrorAlert(error, 'Expense Error');
     } finally {
       setLoading(false);
     }

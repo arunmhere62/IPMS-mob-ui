@@ -20,6 +20,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { Ionicons } from '@expo/vector-icons';
 
 interface TicketDetailsScreenProps {
@@ -86,7 +87,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
 
     try {
       setSubmittingComment(true);
-      await addTicketComment({
+      const res = await addTicketComment({
         ticketId,
         data: {
           comment: commentText.trim(),
@@ -95,10 +96,10 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
       }).unwrap();
       setCommentText('');
       setCommentImages([]);
-      Alert.alert('Success', 'Comment added successfully');
+      showSuccessAlert(res);
       refetchTicket();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add comment');
+      showErrorAlert(error, 'Comment Error');
     } finally {
       setSubmittingComment(false);
     }

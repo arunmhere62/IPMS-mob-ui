@@ -13,10 +13,11 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-// import { createCurrentBill } from '../../services/bills/currentBillService';
 import { Theme } from '../../theme';
 import { DatePicker } from '../../components/DatePicker';
 import { Room } from '@/services/api';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { useCreateCurrentBillMutation } from '@/services/api/tenantsApi';
 
 interface CurrentBillModalProps {
   visible: boolean;
@@ -32,6 +33,8 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
   onSuccess,
 }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+
+  const [createCurrentBill] = useCreateCurrentBillMutation();
 
   const [loading, setLoading] = useState(false);
   const [billAmount, setBillAmount] = useState('');
@@ -87,29 +90,18 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
 
       const billData = {
         room_id: room.s_no,
-        pg_id: selectedPGLocationId,
         bill_amount: parseFloat(billAmount),
         bill_date: billDate,
         split_equally: true, // Split equally among all tenants in the room
         remarks: remarks || undefined,
       };
 
-      // await createCurrentBill(billData, {
-      //   pg_id: selectedPGLocationId,
-      //   organization_id: user?.organization_id,
-      //   user_id: user?.s_no,
-      // });
-
-      Alert.alert('Success', `Bill created and split equally among all tenants in Room ${room.room_no}`);
+      const res = await createCurrentBill(billData as any).unwrap();
+      showSuccessAlert(res);
       handleClose();
       onSuccess();
     } catch (error: any) {
-      // Extract error message from backend response
-      const errorMessage = 
-        error?.response?.data?.message || 
-        error?.message || 
-        'Failed to create bill';
-      Alert.alert('Error', errorMessage);
+      showErrorAlert(error, 'Bill Error');
     } finally {
       setLoading(false);
     }
