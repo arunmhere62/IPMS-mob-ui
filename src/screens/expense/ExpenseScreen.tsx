@@ -21,6 +21,8 @@ import { Expense, PaymentMethod, useDeleteExpenseMutation, useLazyGetExpensesQue
 import { AddEditExpenseModal } from '@/screens/expense/AddEditExpenseModal';
 import { ActionButtons } from '../../components/ActionButtons';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface ExpenseScreenProps {
   navigation: any;
@@ -44,6 +46,10 @@ const MONTHS = [
 export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { can } = usePermissions();
+  const canCreateExpense = can(Permission.CREATE_EXPENSE);
+  const canEditExpense = can(Permission.EDIT_EXPENSE);
+  const canDeleteExpense = can(Permission.DELETE_EXPENSE);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -154,16 +160,28 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   };
 
   const handleAddExpense = () => {
+    if (!canCreateExpense) {
+      Alert.alert('Access Denied', "You don't have permission to create expenses");
+      return;
+    }
     setEditingExpense(null);
     setShowAddModal(true);
   };
 
   const handleEditExpense = (expense: Expense) => {
+    if (!canEditExpense) {
+      Alert.alert('Access Denied', "You don't have permission to edit expenses");
+      return;
+    }
     setEditingExpense(expense);
     setShowAddModal(true);
   };
 
   const handleDeleteExpense = (expense: Expense) => {
+    if (!canDeleteExpense) {
+      Alert.alert('Access Denied', "You don't have permission to delete expenses");
+      return;
+    }
     Alert.alert(
       'Delete Expense',
       `Are you sure you want to delete this expense of ₹${expense.amount}?`,
@@ -440,6 +458,9 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 onDelete={() => handleDeleteExpense(expense)}
                 containerStyle={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}
                 showView={false}
+                disableEdit={!canEditExpense}
+                disableDelete={!canDeleteExpense}
+                blockPressWhenDisabled
               />
             </Card>
           ))
@@ -455,6 +476,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
       {/* Floating Add Button */}
       <TouchableOpacity
         onPress={handleAddExpense}
+        disabled={!canCreateExpense}
         style={{
           position: 'absolute',
           bottom: 20,
@@ -470,6 +492,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.25,
           shadowRadius: 3.84,
+          opacity: canCreateExpense ? 1 : 0.45,
         }}
       >
         <Ionicons name="add" size={32} color="#fff" />

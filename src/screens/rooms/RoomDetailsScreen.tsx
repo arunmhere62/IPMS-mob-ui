@@ -30,6 +30,8 @@ import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialo
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface RoomDetailsScreenProps {
   navigation: any;
@@ -39,6 +41,12 @@ interface RoomDetailsScreenProps {
 export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation, route }) => {
   const { roomId } = route.params;
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { can } = usePermissions();
+
+  const canEditRoom = can(Permission.EDIT_ROOM);
+  const canDeleteRoom = can(Permission.DELETE_ROOM);
+  const canCreateBed = can(Permission.CREATE_BED);
+  const canEditBed = can(Permission.EDIT_BED);
 
   const [room, setRoom] = useState<Room | null>(null);
   const [beds, setBeds] = useState<Bed[]>([]);
@@ -94,11 +102,19 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   };
 
   const handleAddBed = () => {
+    if (!canCreateBed) {
+      Alert.alert('Access Denied', "You don't have permission to create beds");
+      return;
+    }
     setSelectedBed(null);
     setBedModalVisible(true);
   };
 
   const handleEditBed = (bed: Bed) => {
+    if (!canEditBed) {
+      Alert.alert('Access Denied', "You don't have permission to edit beds");
+      return;
+    }
     setSelectedBed(bed);
     setBedModalVisible(true);
   };
@@ -110,6 +126,10 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   };
 
   const handleEdit = () => {
+    if (!canEditRoom) {
+      Alert.alert('Access Denied', "You don't have permission to edit rooms");
+      return;
+    }
     setRoomEditModalVisible(true);
   };
 
@@ -120,6 +140,10 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   };
 
   const handleDelete = () => {
+    if (!canDeleteRoom) {
+      Alert.alert('Access Denied', "You don't have permission to delete rooms");
+      return;
+    }
     showDeleteConfirmation({
       title: 'Delete Room',
       message: 'Are you sure you want to delete Room',
@@ -234,8 +258,9 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
             <ActionButtons
               onEdit={handleEdit}
               onDelete={handleDelete}
-              showEdit
-              showDelete
+              disableEdit={!canEditRoom}
+              disableDelete={!canDeleteRoom}
+              blockPressWhenDisabled
               showView={false}
               containerStyle={{ gap: 6 }}
             />
@@ -380,6 +405,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
             </Text>
             <TouchableOpacity
               onPress={handleAddBed}
+              disabled={!canCreateBed}
               style={{
                 backgroundColor: Theme.colors.primary,
                 paddingHorizontal: 14,
@@ -388,6 +414,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 4,
+                opacity: canCreateBed ? 1 : 0.45,
               }}
             >
               <Ionicons name="add" size={18} color="#fff" />
@@ -455,7 +482,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                   </View>
                   <ActionButtons
                     onEdit={() => handleEditBed(bed)}
-                    showEdit={true}
+                    showEdit={canEditBed}
                     showDelete={false}
                     showView={false}
                   />

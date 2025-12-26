@@ -102,7 +102,9 @@ const EmployeeDetailsScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { employeeId } = route.params;
-  const { can } = usePermissions();
+  const { can, isAdmin, isSuperAdmin } = usePermissions();
+  const canEditEmployee = can(Permission.EDIT_EMPLOYEE);
+  const canDeleteEmployee = can(Permission.DELETE_EMPLOYEE);
   const {
     data: employee,
     isLoading: loading,
@@ -118,10 +120,18 @@ const EmployeeDetailsScreen: React.FC = () => {
   };
 
   const handleEdit = useCallback(() => {
+    if (!canEditEmployee) {
+      Alert.alert('Access Denied', "You don't have permission to edit employees");
+      return;
+    }
     (navigation as any).navigate('AddEmployee', { employeeId });
-  }, [navigation, employeeId]);
+  }, [navigation, employeeId, canEditEmployee]);
 
   const handleDelete = () => {
+    if (!canDeleteEmployee) {
+      Alert.alert('Access Denied', "You don't have permission to delete employees");
+      return;
+    }
     Alert.alert(
       'Delete Employee',
       `Are you sure you want to delete ${employee?.name || 'this employee'}?`,
@@ -247,28 +257,58 @@ const EmployeeDetailsScreen: React.FC = () => {
                       {employee.status}
                     </Text>
                   </View>
-                  <ActionButtons onEdit={handleEdit} onDelete={handleDelete} showView={false} />
+                  <ActionButtons
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    showView={false}
+                    disableEdit={!canEditEmployee}
+                    disableDelete={!canDeleteEmployee}
+                    blockPressWhenDisabled
+                  />
                 </View>
               </View>
             </Card>
 
-            {can(Permission.EDIT_USER) && (
-              <TouchableOpacity
-                onPress={() => (navigation as any).navigate('EmployeePermissionOverrides', { employeeId })}
+            {(canEditEmployee || isAdmin || isSuperAdmin) && (
+              <Card
                 style={{
                   marginBottom: 12,
                   padding: 14,
                   borderRadius: 16,
-                  backgroundColor: '#111827',
+                  backgroundColor: '#fff',
+                  shadowColor: '#00000010',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 6,
+                  elevation: 1,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: Theme.colors.text.primary }}>
                   Permission Overrides
                 </Text>
-                <Text style={{ color: '#E5E7EB', marginTop: 4, fontSize: 12 }}>
-                  Allow/Deny specific permissions for this employee
+                <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
+                  Manage this employee’s access by setting per-permission overrides. You can choose:
                 </Text>
-              </TouchableOpacity>
+                <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
+                  ALLOW (force access), DENY (block access), or Clear (use role default).
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => (navigation as any).navigate('EmployeePermissionOverrides', { employeeId })}
+                  style={{
+                    marginTop: 12,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: 14,
+                    backgroundColor: Theme.colors.primary,
+                    alignSelf: 'flex-end',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                    Open Overrides
+                  </Text>
+                </TouchableOpacity>
+              </Card>
             )}
 
             <Card

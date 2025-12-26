@@ -280,9 +280,11 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     try {
       setCheckingGaps(true);
       const response = await triggerDetectPaymentGaps(tenantId).unwrap();
+
+      const success = Boolean((response as any)?.success ?? true);
+      const gapData = ((response as any)?.data ?? response) as any;
       
-      if (response.success && response.data) {
-        const gapData = response.data as any;
+      if (success && gapData) {
         const { hasGaps, gaps } = gapData;
         
         if (hasGaps && gaps && gaps.length > 0) {

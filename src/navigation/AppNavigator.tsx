@@ -9,7 +9,7 @@ import { navigationRef } from './navigationRef';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { clearPermissions } from '../store/slices/rbacSlice';
-import { useRefreshMyPermissions } from '../hooks/useRefreshMyPermissions';
+import { usePermissionsPolling } from '../hooks/usePermissionsPolling';
 
 // Use require to avoid TypeScript errors
 const { NavigationContainer, useNavigation, useNavigationState } = require('@react-navigation/native');
@@ -161,19 +161,14 @@ const MainTabs = () => {
 export const AppNavigator = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const { refresh } = useRefreshMyPermissions({ ttlMs: 10 * 60 * 1000, enableAppResume: true });
+
+  usePermissionsPolling();
 
   useEffect(() => {
-    const run = async () => {
-      if (!isAuthenticated) {
-        dispatch(clearPermissions());
-        return;
-      }
-
-      await refresh();
-    };
-    run();
-  }, [isAuthenticated, dispatch, refresh]);
+    if (!isAuthenticated) {
+      dispatch(clearPermissions());
+    }
+  }, [isAuthenticated, dispatch]);
 
   return (
     <NavigationContainer ref={navigationRef}>

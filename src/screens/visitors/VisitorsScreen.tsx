@@ -21,6 +21,8 @@ import { VisitorFormModal } from '../../components/VisitorFormModal';
 import { ActionButtons } from '../../components/ActionButtons';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 import {
   useLazyGetVisitorsQuery,
   useDeleteVisitorMutation,
@@ -31,6 +33,9 @@ interface VisitorsScreenProps {
 }
 
 export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) => {
+  const { can } = usePermissions();
+  const canEditVisitor = can(Permission.EDIT_VISITOR);
+  const canDeleteVisitor = can(Permission.DELETE_VISITOR);
   const [triggerGetVisitors, { isFetching: isVisitorsFetching }] = useLazyGetVisitorsQuery();
   const [deleteVisitorMutation, { isLoading: isDeleting }] = useDeleteVisitorMutation();
 
@@ -158,6 +163,10 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   }).current;
 
   const handleDeleteVisitor = (id: number, name: string) => {
+    if (!canDeleteVisitor) {
+      Alert.alert('Access Denied', "You don't have permission to delete visitors");
+      return;
+    }
     Alert.alert(
       'Delete Visitor',
       `Are you sure you want to delete ${name}?`,
@@ -188,6 +197,10 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   };
 
   const handleEditVisitor = (visitorId: number) => {
+    if (!canEditVisitor) {
+      Alert.alert('Access Denied', "You don't have permission to edit visitors");
+      return;
+    }
     setSelectedVisitorId(visitorId);
     setVisitorModalVisible(true);
   };
@@ -248,6 +261,9 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
             onEdit={() => handleEditVisitor(item?.s_no)}
             onDelete={() => handleDeleteVisitor(item?.s_no, visitorName)}
             containerStyle={{ gap: 6 }}
+            disableEdit={!canEditVisitor}
+            disableDelete={!canDeleteVisitor}
+            blockPressWhenDisabled
           />
         </View>
       </View>

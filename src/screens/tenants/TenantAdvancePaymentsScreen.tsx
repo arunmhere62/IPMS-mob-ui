@@ -21,6 +21,8 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import AdvancePaymentForm from '@/screens/tenants/AdvancePaymentForm';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface AdvancePayment {
   s_no: number;
@@ -35,6 +37,10 @@ interface AdvancePayment {
 export const TenantAdvancePaymentsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { can } = usePermissions();
+
+  const canEditAdvance = can(Permission.EDIT_ADVANCE);
+  const canDeleteAdvance = can(Permission.DELETE_ADVANCE);
 
   const [deleteAdvancePayment] = useDeleteAdvancePaymentMutation();
   const [updateAdvancePayment] = useUpdateAdvancePaymentMutation();
@@ -62,6 +68,10 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   };
 
   const handleDeletePayment = (payment: AdvancePayment) => {
+    if (!canDeleteAdvance) {
+      Alert.alert('Access Denied', "You don't have permission to delete advance payments");
+      return;
+    }
     Alert.alert(
       'Delete Advance Payment',
       `Are you sure you want to delete this advance payment?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
@@ -93,12 +103,20 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   };
 
   const handleEditAdvancePayment = (payment: AdvancePayment) => {
+    if (!canEditAdvance) {
+      Alert.alert('Access Denied', "You don't have permission to edit advance payments");
+      return;
+    }
     setAdvancePaymentFormMode("edit");
     setEditingAdvancePayment(payment);
     setAdvancePaymentFormVisible(true);
   };
 
   const handleUpdateAdvancePayment = async (id: number, data: any) => {
+    if (!canEditAdvance) {
+      Alert.alert('Access Denied', "You don't have permission to edit advance payments");
+      throw new Error('ACCESS_DENIED');
+    }
     try {
       await updateAdvancePayment({ id, data }).unwrap();
     } catch (error: any) {
@@ -310,7 +328,9 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                         onEdit={() => handleEditAdvancePayment(payment)}
                         onDelete={() => handleDeletePayment(payment)}
                         showView={false}
-                        showEdit={true}
+                        disableEdit={!canEditAdvance}
+                        disableDelete={!canDeleteAdvance}
+                        blockPressWhenDisabled
                       />
                       <TouchableOpacity
                         onPress={() => handleViewReceipt(payment)}

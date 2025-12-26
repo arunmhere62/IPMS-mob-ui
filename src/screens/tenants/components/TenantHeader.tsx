@@ -16,6 +16,9 @@ interface TenantHeaderProps {
   onAddAdvance: () => void;
   onAddRefund: () => void;
   onAddCurrentBill?: () => void;
+  canAddPayment?: boolean;
+  canAddAdvance?: boolean;
+  canAddRefund?: boolean;
 }
 
 export const TenantHeader: React.FC<TenantHeaderProps> = ({
@@ -29,6 +32,9 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
   onAddAdvance,
   onAddRefund,
   onAddCurrentBill,
+  canAddPayment = true,
+  canAddAdvance = true,
+  canAddRefund = true,
 }) => {
   const tenantImage =
     tenant.images && tenant.images.length > 0 ? tenant.images[0] : null;
@@ -130,12 +136,13 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
 
       {/* Action Buttons */}
       <View style={styles.actionGrid}>
-        <Action icon="wallet" text="Add Rent" onPress={onAddPayment} />
-        <Action icon="trending-up" text="Add Advance" onPress={onAddAdvance} />
+        <Action icon="wallet" text="Add Rent" onPress={onAddPayment} disabled={!canAddPayment} />
+        <Action icon="trending-up" text="Add Advance" onPress={onAddAdvance} disabled={!canAddAdvance} />
         <Action
           icon="trending-down"
           text="Add Refund"
           onPress={onAddRefund}
+          disabled={!canAddRefund}
         />
         {!!onAddCurrentBill && (
           <Action
@@ -149,12 +156,15 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
   );
 };
 
-const Action = ({ icon, text, onPress }: any) => (
+const Action = ({ icon, text, onPress, disabled }: any) => (
   <AnimatedPressableCard
-    onPress={onPress}
+    onPress={() => {
+      if (disabled) return;
+      onPress?.();
+    }}
     scaleValue={0.95}
     duration={100}
-    style={styles.actionButton}
+    style={[styles.actionButton, disabled ? { opacity: 0.45 } : null]}
   >
     <Ionicons name={icon} size={16} color="#333" />
     <Text style={styles.actionText}>{text}</Text>

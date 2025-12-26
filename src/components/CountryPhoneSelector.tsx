@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, FlatList, TextInput, StyleSheet, Keyboard } from 'react-native';
 import { Theme } from '../theme';
 
 interface Country {
@@ -245,6 +245,8 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
           }}
           keyboardType="phone-pad"
           maxLength={20}
+          blurOnSubmit
+          onSubmitEditing={() => Keyboard.dismiss()}
         />
       </View>
 

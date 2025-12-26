@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Theme } from '../theme';
 
 interface OTPInputProps {
@@ -7,6 +7,7 @@ interface OTPInputProps {
   value: string;
   onChangeText: (text: string) => void;
   error?: boolean;
+  autoFocus?: boolean;
 }
 
 export const OTPInput: React.FC<OTPInputProps> = ({ 
@@ -14,181 +15,85 @@ export const OTPInput: React.FC<OTPInputProps> = ({
   value, 
   onChangeText,
   error = false,
+  autoFocus = false,
 }) => {
-  const input1Ref = useRef<TextInput>(null);
-  const input2Ref = useRef<TextInput>(null);
-  const input3Ref = useRef<TextInput>(null);
-  const input4Ref = useRef<TextInput>(null);
-  
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-  const [input1Value, setInput1Value] = useState('');
-  const [input2Value, setInput2Value] = useState('');
-  const [input3Value, setInput3Value] = useState('');
-  const [input4Value, setInput4Value] = useState('');
+  const inputRef = useRef<TextInput>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
-  // Get ref for specific input
-  const getInputRef = (index: number) => {
-    switch(index) {
-      case 0: return input1Ref;
-      case 1: return input2Ref;
-      case 2: return input3Ref;
-      case 3: return input4Ref;
-      default: return input1Ref;
-    }
-  };
+  const digits = useMemo(() => {
+    return (value || '').replace(/[^0-9]/g, '').slice(0, length);
+  }, [value, length]);
 
-  // Get value for specific input
-  const getInputValue = (index: number) => {
-    switch(index) {
-      case 0: return input1Value;
-      case 1: return input2Value;
-      case 2: return input3Value;
-      case 3: return input4Value;
-      default: return '';
-    }
-  };
+  const focusInput = useCallback(() => {
+    const pos = digits.length;
+    inputRef.current?.focus();
+    setTimeout(() => {
+      inputRef.current?.setNativeProps({ selection: { start: pos, end: pos } });
+    }, 0);
+  }, [digits.length]);
 
-  // Set value for specific input
-  const setInputValue = (index: number, val: string) => {
-    switch(index) {
-      case 0: setInput1Value(val); break;
-      case 1: setInput2Value(val); break;
-      case 2: setInput3Value(val); break;
-      case 3: setInput4Value(val); break;
-    }
-  };
+  const activeIndex = useMemo(() => {
+    if (!isFocused) return null;
+    return Math.min(digits.length, length - 1);
+  }, [digits.length, isFocused, length]);
 
-  // Update parent with all values
-  const updateParentValue = useCallback(() => {
-    const fullValue = input1Value + input2Value + input3Value + input4Value;
-    onChangeText(fullValue);
-  }, [input1Value, input2Value, input3Value, input4Value, onChangeText]);
-
-  // Handle input change for specific input
-  const handleInputChange = useCallback((text: string, index: number) => {
-    // Only allow numbers, take last character
-    const cleanText = text.replace(/[^0-9]/g, '');
-    const char = cleanText.slice(-1);
-    
-    // Update this input
-    setInputValue(index, char);
-    
-    // Auto-focus next input if we have a character
-    if (char && index < length - 1) {
-      const nextRef = getInputRef(index + 1);
-      if (nextRef.current) {
-        nextRef.current.focus();
-      }
-    }
-  }, [length]);
-
-  // Handle key press for backspace
-  const handleKeyPress = useCallback((e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace') {
-      // If current input is empty and we're not at the first input
-      if (!getInputValue(index) && index > 0) {
-        const prevRef = getInputRef(index - 1);
-        if (prevRef.current) {
-          prevRef.current.focus();
-        }
-      }
-    }
-  }, []);
-
-  // Update parent whenever any input value changes
-  React.useEffect(() => {
-    updateParentValue();
-  }, [updateParentValue]);
-
-  // Sync with external value prop
-  React.useEffect(() => {
-    if (value.length >= 1) setInput1Value(value[0] || '');
-    if (value.length >= 2) setInput2Value(value[1] || '');
-    if (value.length >= 3) setInput3Value(value[2] || '');
-    if (value.length >= 4) setInput4Value(value[3] || '');
-  }, [value]);
-
-  // Get input style
-  const getInputStyle = useCallback((index: number) => {
-    const isFocused = focusedIndex === index;
-    const hasValue = !!getInputValue(index);
-    
-    return [
-      styles.input,
-      isFocused && styles.inputFocused,
-      hasValue && styles.inputFilled,
-      error && styles.inputError,
-    ];
-  }, [focusedIndex, error]);
+  const handleChange = useCallback(
+    (text: string) => {
+      const next = (text || '').replace(/[^0-9]/g, '').slice(0, length);
+      onChangeText(next);
+    },
+    [length, onChangeText]
+  );
 
   return (
     <View style={styles.container}>
-      {/* Input 1 */}
+      <Pressable onPressIn={focusInput} style={styles.boxRow}>
+        {Array.from({ length }).map((_, i) => {
+          const char = digits[i] || '';
+          const filled = !!char;
+          const focused = activeIndex === i;
+          return (
+            <View
+              key={i}
+              style={[
+                styles.box,
+                filled && styles.boxFilled,
+                focused && styles.boxFocused,
+                error && styles.boxError,
+              ]}
+            >
+              <Text style={styles.boxText}>{char}</Text>
+            </View>
+          );
+        })}
+      </Pressable>
+
       <TextInput
-        ref={input1Ref}
-        style={getInputStyle(0)}
-        value={input1Value}
-        onChangeText={(text) => handleInputChange(text, 0)}
-        onKeyPress={(e) => handleKeyPress(e, 0)}
-        onFocus={() => setFocusedIndex(0)}
-        onBlur={() => setFocusedIndex(null)}
-        keyboardType="number-pad"
-        selectTextOnFocus
-        textAlign="center"
-        maxLength={1}
-        importantForAccessibility="yes"
-        accessibilityLabel="OTP digit 1"
-      />
-      
-      {/* Input 2 */}
-      <TextInput
-        ref={input2Ref}
-        style={getInputStyle(1)}
-        value={input2Value}
-        onChangeText={(text) => handleInputChange(text, 1)}
-        onKeyPress={(e) => handleKeyPress(e, 1)}
-        onFocus={() => setFocusedIndex(1)}
-        onBlur={() => setFocusedIndex(null)}
-        keyboardType="number-pad"
-        selectTextOnFocus
-        textAlign="center"
-        maxLength={1}
-        importantForAccessibility="yes"
-        accessibilityLabel="OTP digit 2"
-      />
-      
-      {/* Input 3 */}
-      <TextInput
-        ref={input3Ref}
-        style={getInputStyle(2)}
-        value={input3Value}
-        onChangeText={(text) => handleInputChange(text, 2)}
-        onKeyPress={(e) => handleKeyPress(e, 2)}
-        onFocus={() => setFocusedIndex(2)}
-        onBlur={() => setFocusedIndex(null)}
-        keyboardType="number-pad"
-        selectTextOnFocus
-        textAlign="center"
-        maxLength={1}
-        importantForAccessibility="yes"
-        accessibilityLabel="OTP digit 3"
-      />
-      
-      {/* Input 4 */}
-      <TextInput
-        ref={input4Ref}
-        style={getInputStyle(3)}
-        value={input4Value}
-        onChangeText={(text) => handleInputChange(text, 3)}
-        onKeyPress={(e) => handleKeyPress(e, 3)}
-        onFocus={() => setFocusedIndex(3)}
-        onBlur={() => setFocusedIndex(null)}
-        keyboardType="number-pad"
-        selectTextOnFocus
-        textAlign="center"
-        maxLength={1}
-        importantForAccessibility="yes"
-        accessibilityLabel="OTP digit 4"
+        ref={inputRef}
+        value={digits}
+        onChangeText={handleChange}
+        keyboardType={Platform.OS === 'android' ? 'numeric' : 'number-pad'}
+        textContentType="oneTimeCode"
+        autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
+        inputMode="numeric"
+        autoCorrect={false}
+        autoCapitalize="none"
+        autoFocus={autoFocus}
+        onFocus={() => {
+          setIsFocused(true);
+          focusInput();
+        }}
+        onBlur={() => setIsFocused(false)}
+        maxLength={length}
+        onKeyPress={(e) => {
+          if (e.nativeEvent.key !== 'Backspace') return;
+          if (!digits) return;
+          onChangeText(digits.slice(0, -1));
+        }}
+        caretHidden
+        selectionColor="transparent"
+        underlineColorAndroid="transparent"
+        style={styles.hiddenInput}
       />
     </View>
   );
@@ -196,30 +101,49 @@ export const OTPInput: React.FC<OTPInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boxRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 12,
   },
-  input: {
+  box: {
     width: 56,
     height: 56,
     borderWidth: 2,
     borderColor: Theme.colors.border,
-    borderRadius: 12,
-    fontSize: Theme.typography.fontSize['2xl'],
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.text.primary,
+    borderRadius: 14,
     backgroundColor: Theme.colors.canvas,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  inputFocused: {
+  boxFocused: {
     borderColor: Theme.colors.primary,
-    borderWidth: 2,
   },
-  inputFilled: {
+  boxFilled: {
     borderColor: Theme.colors.primary,
     backgroundColor: Theme.withOpacity(Theme.colors.primary, 0.05),
   },
-  inputError: {
+  boxError: {
     borderColor: Theme.colors.danger,
+  },
+  boxText: {
+    fontSize: Theme.typography.fontSize['2xl'],
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  hiddenInput: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    opacity: Platform.OS === 'android' ? 0.02 : 0.01,
+    color: 'transparent',
+    backgroundColor: 'transparent',
   },
 });

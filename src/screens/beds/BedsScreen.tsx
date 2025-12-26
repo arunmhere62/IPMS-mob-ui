@@ -35,6 +35,8 @@ import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialo
 import { Ionicons } from '@expo/vector-icons';
 import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
 import { CONTENT_COLOR } from '@/constant';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface BedsScreenProps {
   navigation: any;
@@ -43,6 +45,10 @@ interface BedsScreenProps {
 export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state?.pgLocations);
   const { user } = useSelector((state: RootState) => state?.auth);
+  const { can } = usePermissions();
+  const canEditBed = can(Permission.EDIT_BED);
+  const canDeleteBed = can(Permission.DELETE_BED);
+  const canCreateTenant = can(Permission.CREATE_TENANT);
 
   const [beds, setBeds] = useState<Bed[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -192,11 +198,19 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   };
 
   const handleEditBed = (bed: Bed) => {
+    if (!canEditBed) {
+      Alert.alert('Access Denied', "You don't have permission to edit beds");
+      return;
+    }
     setSelectedBed(bed);
     setBedModalVisible(true);
   };
 
   const handleDeleteBed = (bedId: number, bedNo: string) => {
+    if (!canDeleteBed) {
+      Alert.alert('Access Denied', "You don't have permission to delete beds");
+      return;
+    }
     showDeleteConfirmation({
       title: 'Delete Bed',
       message: 'Are you sure you want to delete',
@@ -306,12 +320,14 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
           {!item.is_occupied && (
             <TouchableOpacity
               onPress={() => navigation.navigate('AddTenant', { bed_id: item.s_no, room_id: item.room_id })}
+              disabled={!canCreateTenant}
               style={{
                 paddingHorizontal: 10,
                 paddingVertical: 6,
                 borderRadius: 8,
                 backgroundColor: '#10B981',
                 justifyContent: 'center',
+                opacity: canCreateTenant ? 1 : 0.45,
               }}
             >
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Add Tenant</Text>
@@ -321,9 +337,12 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
             onEdit={() => handleEditBed(item)}
             onDelete={() => handleDeleteBed(item.s_no, item.bed_no)}
             onView={() => item.is_occupied && item.tenants?.[0]?.s_no && navigation.navigate('TenantDetails', { tenantId: item.tenants[0].s_no })}
-            showEdit
-            showDelete
+            showEdit={true}
+            showDelete={true}
             showView={!!(item.is_occupied && item.tenants?.[0]?.s_no)}
+            disableEdit={!canEditBed}
+            disableDelete={!canDeleteBed}
+            blockPressWhenDisabled
             containerStyle={{ gap: 6 }}
           />
         </View>

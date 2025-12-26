@@ -71,7 +71,30 @@ const TenantDetailsContent: React.FC<{
   navigation: any;
   canEditTenant: boolean;
   canDeleteTenant: boolean;
-}> = ({ tenantId, navigation, canEditTenant, canDeleteTenant }) => {
+  canCreateRent: boolean;
+  canEditRent: boolean;
+  canDeleteRent: boolean;
+  canCreateAdvance: boolean;
+  canEditAdvance: boolean;
+  canDeleteAdvance: boolean;
+  canCreateRefund: boolean;
+  canEditRefund: boolean;
+  canDeleteRefund: boolean;
+}> = ({
+  tenantId,
+  navigation,
+  canEditTenant,
+  canDeleteTenant,
+  canCreateRent,
+  canEditRent,
+  canDeleteRent,
+  canCreateAdvance,
+  canEditAdvance,
+  canDeleteAdvance,
+  canCreateRefund,
+  canEditRefund,
+  canDeleteRefund,
+}) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -178,6 +201,10 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleSaveAdvancePayment = async (data: any) => {
+    if (!canCreateAdvance) {
+      Alert.alert('Access Denied', "You don't have permission to create advance payments");
+      throw new Error('ACCESS_DENIED');
+    }
     try {
       // Ensure pg_id is available from tenant or selected location
       const pgId = currentTenant?.pg_id || selectedPGLocationId;
@@ -197,6 +224,10 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleSaveRefundPayment = async (data: any) => {
+    if (!canCreateRefund) {
+      Alert.alert('Access Denied', "You don't have permission to create refund payments");
+      throw new Error('ACCESS_DENIED');
+    }
     try {
       // Ensure pg_id is available from tenant or selected location
       const pgId = currentTenant?.pg_id || selectedPGLocationId;
@@ -216,18 +247,30 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleAddRentPayment = () => {
+    if (!canCreateRent) {
+      Alert.alert('Access Denied', "You don't have permission to create rent payments");
+      return;
+    }
     setRentPaymentFormMode("add");
     setEditingRentPayment(null);
     setRentPaymentFormVisible(true);
   };
 
   const handleEditRentPayment = (payment: any) => {
+    if (!canEditRent) {
+      Alert.alert('Access Denied', "You don't have permission to edit rent payments");
+      return;
+    }
     setRentPaymentFormMode("edit");
     setEditingRentPayment(payment);
     setRentPaymentFormVisible(true);
   };
 
   const handleSaveRentPayment = async (id: number, data: any) => {
+    if (!canEditRent) {
+      Alert.alert('Access Denied', "You don't have permission to edit rent payments");
+      throw new Error('ACCESS_DENIED');
+    }
     try {
       await updateTenantPayment({ id, data }).unwrap();
       setRentPaymentFormVisible(false);
@@ -240,6 +283,10 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleDeleteRentPayment = (payment: any) => {
+    if (!canDeleteRent) {
+      Alert.alert('Access Denied', "You don't have permission to delete rent payments");
+      return;
+    }
     Alert.alert(
       'Delete Rent Payment',
       `Are you sure you want to delete this payment?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
@@ -394,6 +441,10 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleEditAdvancePayment = (payment: any) => {
+    if (!canEditAdvance) {
+      Alert.alert('Access Denied', "You don't have permission to edit advance payments");
+      return;
+    }
     // Enrich payment with tenant, room, and bed info for display in modal
     const enrichedPayment = {
       ...payment,
@@ -406,6 +457,10 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleUpdateAdvancePayment = async (id: number, data: any) => {
+    if (!canEditAdvance) {
+      Alert.alert('Access Denied', "You don't have permission to edit advance payments");
+      throw new Error('ACCESS_DENIED');
+    }
     try {
       await updateAdvancePayment({ id, data }).unwrap();
       setEditAdvancePaymentModalVisible(false);
@@ -418,6 +473,10 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleDeleteAdvancePayment = (payment: any) => {
+    if (!canDeleteAdvance) {
+      Alert.alert('Access Denied', "You don't have permission to delete advance payments");
+      return;
+    }
     Alert.alert(
       'Delete Advance Payment',
       `Are you sure you want to delete this payment?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
@@ -445,6 +504,10 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleEditRefundPayment = (payment: any) => {
+    if (!canEditRefund) {
+      Alert.alert('Access Denied', "You don't have permission to edit refund payments");
+      return;
+    }
     // Enrich payment with tenant, room, and bed info for display in modal
     const enrichedPayment = {
       ...payment,
@@ -457,6 +520,10 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleUpdateRefundPayment = async (id: number, data: any) => {
+    if (!canEditRefund) {
+      Alert.alert('Access Denied', "You don't have permission to edit refund payments");
+      throw new Error('ACCESS_DENIED');
+    }
     try {
       await updateRefundPayment({ id, data }).unwrap();
       setEditRefundPaymentModalVisible(false);
@@ -502,6 +569,10 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleDeleteRefundPayment = (payment: any) => {
+    if (!canDeleteRefund) {
+      Alert.alert('Access Denied', "You don't have permission to delete refund payments");
+      return;
+    }
     Alert.alert(
       'Delete Refund Payment',
       `Are you sure you want to delete this refund?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
@@ -704,8 +775,23 @@ const TenantDetailsContent: React.FC<{
           onWhatsApp={handleWhatsApp}
           onEmail={handleEmail}
           onAddPayment={handleAddRentPayment}
-          onAddAdvance={() => setAdvancePaymentModalVisible(true)}
-          onAddRefund={() => setRefundPaymentModalVisible(true)}
+          onAddAdvance={() => {
+            if (!canCreateAdvance) {
+              Alert.alert('Access Denied', "You don't have permission to create advance payments");
+              return;
+            }
+            setAdvancePaymentModalVisible(true);
+          }}
+          onAddRefund={() => {
+            if (!canCreateRefund) {
+              Alert.alert('Access Denied', "You don't have permission to create refund payments");
+              return;
+            }
+            setRefundPaymentModalVisible(true);
+          }}
+          canAddPayment={canCreateRent}
+          canAddAdvance={canCreateAdvance}
+          canAddRefund={canCreateRefund}
         />
 
         {/* Pending Payment Alert */}
@@ -1180,6 +1266,18 @@ function TenantDetailsScreenWrapper() {
   const { can } = usePermissions();
   const canEditTenant = can(Permission.EDIT_TENANT);
   const canDeleteTenant = can(Permission.DELETE_TENANT);
+
+  const canCreateRent = can(Permission.CREATE_RENT);
+  const canEditRent = can(Permission.EDIT_RENT);
+  const canDeleteRent = can(Permission.DELETE_RENT);
+
+  const canCreateAdvance = can(Permission.CREATE_ADVANCE);
+  const canEditAdvance = can(Permission.EDIT_ADVANCE);
+  const canDeleteAdvance = can(Permission.DELETE_ADVANCE);
+
+  const canCreateRefund = can(Permission.CREATE_REFUND);
+  const canEditRefund = can(Permission.EDIT_REFUND);
+  const canDeleteRefund = can(Permission.DELETE_REFUND);
   
   return (
     <TenantDetailsContent 
@@ -1187,6 +1285,15 @@ function TenantDetailsScreenWrapper() {
       navigation={navigation} 
       canEditTenant={canEditTenant}
       canDeleteTenant={canDeleteTenant}
+      canCreateRent={canCreateRent}
+      canEditRent={canEditRent}
+      canDeleteRent={canDeleteRent}
+      canCreateAdvance={canCreateAdvance}
+      canEditAdvance={canEditAdvance}
+      canDeleteAdvance={canDeleteAdvance}
+      canCreateRefund={canCreateRefund}
+      canEditRefund={canEditRefund}
+      canDeleteRefund={canDeleteRefund}
     />
   );
 }

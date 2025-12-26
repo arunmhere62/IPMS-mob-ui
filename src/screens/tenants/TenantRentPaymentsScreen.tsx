@@ -22,6 +22,8 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import RentPaymentForm from './RentPaymentForm';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface RentPayment {
   s_no: number;
@@ -38,6 +40,10 @@ interface RentPayment {
 export const TenantRentPaymentsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { can } = usePermissions();
+
+  const canEditRent = can(Permission.EDIT_RENT);
+  const canDeleteRent = can(Permission.DELETE_RENT);
   const [deleteTenantPayment] = useDeleteTenantPaymentMutation();
   const [updateTenantPayment] = useUpdateTenantPaymentMutation();
 
@@ -61,6 +67,10 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const receiptRef = useRef<any>(null);
 
   const handleDeletePayment = (payment: RentPayment) => {
+    if (!canDeleteRent) {
+      Alert.alert('Access Denied', "You don't have permission to delete rent payments");
+      return;
+    }
     Alert.alert(
       'Delete Payment',
       `Are you sure you want to delete this payment?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
@@ -92,11 +102,19 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   };
 
   const handleEditPayment = (payment: RentPayment) => {
+    if (!canEditRent) {
+      Alert.alert('Access Denied', "You don't have permission to edit rent payments");
+      return;
+    }
     setEditingPayment(payment);
     setIsEditModalVisible(true);
   };
 
   const handleSavePayment = async (id: number, data: any) => {
+    if (!canEditRent) {
+      Alert.alert('Access Denied', "You don't have permission to edit rent payments");
+      return;
+    }
     try {
       setLoading(true);
       await updateTenantPayment({ id, data }).unwrap();
@@ -343,7 +361,9 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                         onEdit={() => handleEditPayment(payment)}
                         onDelete={() => handleDeletePayment(payment)}
                         showView={false}
-                        showEdit={true}
+                        disableEdit={!canEditRent}
+                        disableDelete={!canDeleteRent}
+                        blockPressWhenDisabled
                       />
                       <TouchableOpacity
                         onPress={() => handleViewReceipt(payment)}

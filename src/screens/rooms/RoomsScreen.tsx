@@ -22,6 +22,8 @@ import { RoomFormModal } from './CreateEditRoomModal';
 import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
 import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
 import { CONTENT_COLOR } from '@/constant';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface RoomsScreenProps {
   navigation: any;
@@ -29,6 +31,11 @@ interface RoomsScreenProps {
 
 export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { can } = usePermissions();
+
+  const canCreateRoom = can(Permission.CREATE_ROOM);
+  const canEditRoom = can(Permission.EDIT_ROOM);
+  const canDeleteRoom = can(Permission.DELETE_ROOM);
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,6 +111,10 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   };
 
   const handleOpenEditModal = (roomId: number) => {
+    if (!canEditRoom) {
+      Alert.alert('Access Denied', "You don't have permission to edit rooms");
+      return;
+    }
     setEditingRoomId(roomId);
     setEditModalVisible(true);
   };
@@ -119,6 +130,10 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
 
   const handleDeleteRoom = (roomId: number, roomNo: string) => {
+    if (!canDeleteRoom) {
+      Alert.alert('Access Denied', "You don't have permission to delete rooms");
+      return;
+    }
     showDeleteConfirmation({
       title: 'Delete Room',
       message: 'Are you sure you want to delete Room',
@@ -191,8 +206,9 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
               onView={() => navigation.navigate('RoomDetails', { roomId: item.s_no })}
               onEdit={() => handleOpenEditModal(item.s_no)}
               onDelete={() => handleDeleteRoom(item.s_no, item.room_no)}
-              showEdit
-              showDelete
+              disableEdit={!canEditRoom}
+              disableDelete={!canDeleteRoom}
+              blockPressWhenDisabled
               showView
               containerStyle={{ gap: 6 }}
             />
@@ -314,9 +330,14 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
       <TouchableOpacity
         onPress={() => {
+          if (!canCreateRoom) {
+            Alert.alert('Access Denied', "You don't have permission to create rooms");
+            return;
+          }
           setEditingRoomId(null);
           setEditModalVisible(true);
         }}
+        disabled={!canCreateRoom}
         style={{
           position: 'absolute',
           right: 20,
@@ -332,6 +353,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 8,
+          opacity: canCreateRoom ? 1 : 0.45,
         }}
       >
         <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>

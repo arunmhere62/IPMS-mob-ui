@@ -15,6 +15,8 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface VisitorDetailsScreenProps {
   route: {
@@ -64,6 +66,9 @@ const DetailRow = ({
 
 export default function VisitorDetailsScreen({ route, navigation }: VisitorDetailsScreenProps) {
   const { visitorId } = route.params;
+  const { can } = usePermissions();
+  const canEditVisitor = can(Permission.EDIT_VISITOR);
+  const canDeleteVisitor = can(Permission.DELETE_VISITOR);
   const { data: visitor, isLoading, error, refetch } = useGetVisitorByIdQuery(visitorId);
   const [deleteVisitorMutation] = useDeleteVisitorMutation();
   const [loading, setLoading] = useState(false);
@@ -74,10 +79,18 @@ export default function VisitorDetailsScreen({ route, navigation }: VisitorDetai
   };
 
   const handleEditVisitor = () => {
+    if (!canEditVisitor) {
+      Alert.alert('Access Denied', "You don't have permission to edit visitors");
+      return;
+    }
     navigation.navigate('AddVisitor', { visitorId });
   };
 
   const handleDelete = async () => {
+    if (!canDeleteVisitor) {
+      Alert.alert('Access Denied', "You don't have permission to delete visitors");
+      return;
+    }
     Alert.alert(
       'Delete Visitor',
       'Are you sure you want to delete this visitor?',
@@ -183,7 +196,14 @@ export default function VisitorDetailsScreen({ route, navigation }: VisitorDetai
                       {visitor.convertedTo_tenant ? 'Converted' : 'Not Converted'}
                     </Text>
                   </View>
-                  <ActionButtons onEdit={handleEditVisitor} onDelete={handleDelete} showView={false} />
+                  <ActionButtons
+                    onEdit={handleEditVisitor}
+                    onDelete={handleDelete}
+                    showView={false}
+                    disableEdit={!canEditVisitor}
+                    disableDelete={!canDeleteVisitor}
+                    blockPressWhenDisabled
+                  />
                 </View>
               </View>
             </Card>

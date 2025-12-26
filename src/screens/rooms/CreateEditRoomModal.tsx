@@ -15,6 +15,8 @@ import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { getFolderConfig } from '../../config/aws.config';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface RoomModalProps {
   visible: boolean;
@@ -30,6 +32,10 @@ export const RoomModal: React.FC<RoomModalProps> = ({
   onSuccess,
 }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { can } = usePermissions();
+
+  const canCreateRoom = can(Permission.CREATE_ROOM);
+  const canEditRoom = can(Permission.EDIT_ROOM);
 
   const { data: roomResponse, isFetching: isRoomFetching, isError: isRoomError } = useGetRoomByIdQuery(roomId as number, {
     skip: !visible || !roomId,
@@ -128,6 +134,14 @@ export const RoomModal: React.FC<RoomModalProps> = ({
 
 
   const handleSubmit = async (): Promise<void> => {
+    if (roomId && !canEditRoom) {
+      Alert.alert('Access Denied', "You don't have permission to edit rooms");
+      return;
+    }
+    if (!roomId && !canCreateRoom) {
+      Alert.alert('Access Denied', "You don't have permission to create rooms");
+      return;
+    }
     if (!validateForm()) {
       Alert.alert('Validation Error', 'Please fill in all required fields correctly');
       return;

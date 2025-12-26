@@ -21,6 +21,8 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { EmployeeSalary, PaymentMethod, useDeleteEmployeeSalaryMutation, useGetEmployeeSalariesQuery } from '../../services/api/employeeSalaryApi';
 import { AddEditEmployeeSalaryModal } from '@/screens/employee-salary/AddEditEmployeeSalaryModal';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface EmployeeSalaryScreenProps {
   navigation: any;
@@ -44,6 +46,10 @@ const MONTHS = [
 export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navigation }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { can } = usePermissions();
+  const canCreateSalary = can(Permission.CREATE_EMPLOYEE_SALARY);
+  const canEditSalary = can(Permission.EDIT_EMPLOYEE_SALARY);
+  const canDeleteSalary = can(Permission.DELETE_EMPLOYEE_SALARY);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSalary, setEditingSalary] = useState<EmployeeSalary | null>(null);
 
@@ -122,11 +128,19 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
   };
 
   const handleAddSalary = () => {
+    if (!canCreateSalary) {
+      Alert.alert('Access Denied', "You don't have permission to create employee salary records");
+      return;
+    }
     setEditingSalary(null);
     setShowAddModal(true);
   };
 
   const handleEditSalary = (salary: EmployeeSalary) => {
+    if (!canEditSalary) {
+      Alert.alert('Access Denied', "You don't have permission to edit employee salary records");
+      return;
+    }
     setEditingSalary(salary);
     setShowAddModal(true);
   };
@@ -137,6 +151,10 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
   };
 
   const handleDeleteSalary = (salary: EmployeeSalary) => {
+    if (!canDeleteSalary) {
+      Alert.alert('Access Denied', "You don't have permission to delete employee salary records");
+      return;
+    }
     Alert.alert(
       'Delete Salary Record',
       `Are you sure you want to delete this salary record of ₹${salary.salary_amount}?`,
@@ -398,6 +416,9 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
                     showEdit={true}
                     showDelete={true}
                     showView={false}
+                    disableEdit={!canEditSalary}
+                    disableDelete={!canDeleteSalary}
+                    blockPressWhenDisabled
                   />
                 </View>
               </Card>
@@ -406,7 +427,8 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
         </ScrollView>
 
         <TouchableOpacity
-          onPress={handleAddSalary}
+          onPress={canCreateSalary ? handleAddSalary : undefined}
+          disabled={!canCreateSalary}
           style={{
             position: 'absolute',
             bottom: 24,
@@ -417,6 +439,7 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
             backgroundColor: Theme.colors.primary,
             justifyContent: 'center',
             alignItems: 'center',
+            opacity: canCreateSalary ? 1 : 0.45,
             elevation: 5,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },

@@ -169,6 +169,7 @@ export const baseApi = createApi({
     'Expenses',
     'Expense',
     'ExpenseStats',
+    'Countries',
     'States',
     'Cities',
     'Organizations',

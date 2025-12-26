@@ -22,6 +22,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Employee, useDeleteEmployeeMutation, useLazyGetEmployeesQuery } from '../../services/api/employeesApi';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface EmployeesScreenProps {
   navigation: any;
@@ -30,6 +32,9 @@ interface EmployeesScreenProps {
 export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { can, isAdmin, isSuperAdmin } = usePermissions();
+  const canEditEmployee = can(Permission.EDIT_EMPLOYEE);
+  const canDeleteEmployee = can(Permission.DELETE_EMPLOYEE);
   
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -179,8 +184,12 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
           showEdit={true}
           showDelete={true}
           showView={true}
+          disableEdit={!canEditEmployee}
+          disableDelete={!canDeleteEmployee}
+          blockPressWhenDisabled
         />
       </View>
+
     </Card>
   );
 

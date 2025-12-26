@@ -17,7 +17,12 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Card } from '../../components/Card';
 import { AnimatedButton } from '../../components/AnimatedButton';
-import { useGetPGLocationDetailsQuery } from '../../services/api/pgLocationsApi';
+import { ActionButtons } from '../../components/ActionButtons';
+import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
+import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
+import { useDeletePGLocationMutation, useGetPGLocationDetailsQuery } from '../../services/api/pgLocationsApi';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface PGDetailsScreenProps {
   navigation: any;
@@ -258,6 +263,11 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
   const route = useRoute();
   const { pgId } = route.params as { pgId: number };
 
+  const { can } = usePermissions();
+  const canEdit = can(Permission.EDIT_PG_LOCATION);
+  const canDelete = can(Permission.DELETE_PG_LOCATION);
+  const [deletePGLocation] = useDeletePGLocationMutation();
+
   const [refreshing, setRefreshing] = useState(false);
   const [pgDetails, setPgDetails] = useState<PGDetails | null>(null);
   const [viewMode, setViewMode] = useState<'summary' | 'detailed'>('summary');
@@ -298,6 +308,35 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
   // Toggle room expansion
   const toggleRoomExpansion = (roomId: number) => {
     setExpandedRoom(expandedRoom === roomId ? null : roomId);
+  };
+
+  const handleEditPG = () => {
+    if (!canEdit) {
+      Alert.alert('Access Denied', "You don't have permission to edit PG locations");
+      return;
+    }
+    navigation.navigate('PGLocations', { editPgId: pgId });
+  };
+
+  const handleDeletePG = () => {
+    if (!canDelete) {
+      Alert.alert('Access Denied', "You don't have permission to delete PG locations");
+      return;
+    }
+    showDeleteConfirmation({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete',
+      itemName: pgDetails?.location_name ?? 'this PG',
+      onConfirm: async () => {
+        try {
+          await deletePGLocation(pgId).unwrap();
+          showSuccessAlert('PG location deleted successfully');
+          navigation.goBack();
+        } catch (e: any) {
+          showErrorAlert(e, 'Delete Error');
+        }
+      },
+    });
   };
 
   return (
@@ -402,6 +441,17 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({ navigation }) 
                     </View>
                   </View>
                 </View>
+
+                <ActionButtons
+                  onEdit={handleEditPG}
+                  onDelete={handleDeletePG}
+                  showView={false}
+                  showEdit={true}
+                  showDelete={true}
+                  disableEdit={!canEdit}
+                  disableDelete={!canDelete}
+                  blockPressWhenDisabled
+                />
               </View>
 
               {/* Location Info */}

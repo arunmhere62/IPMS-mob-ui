@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Alert, TouchableOpacity, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { Theme } from '../../theme';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../../store/slices/authSlice';
@@ -14,6 +14,7 @@ import notificationService from '../../services/notifications/notificationServic
 import { FEATURES } from '../../config/env.config';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { navigationRef } from '../../navigation/navigationRef';
 
 interface OTPVerificationScreenProps {
   navigation: any;
@@ -26,11 +27,13 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
   const [otpError, setOtpError] = useState('');
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const [verifyOtp, { isLoading: verifyingOtp }] = useVerifyOtpMutation();
   const [resendOtp, { isLoading: resendingOtp }] = useResendOtpMutation();
 
   useEffect(() => {
+    setOtpError('');
     if (resendTimer > 0) {
       const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
       return () => clearTimeout(timer);
@@ -38,6 +41,16 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
       setCanResend(true);
     }
   }, [resendTimer]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const validateOtp = (otpValue: string): boolean => {
     if (!otpValue) {
@@ -82,10 +95,21 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
       }
       
       showSuccessAlert('Login successful!');
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Dashboard' }],
-      });
+
+      setTimeout(() => {
+        const nav = navigationRef.current;
+        if (nav && typeof nav.resetRoot === 'function') {
+          nav.resetRoot({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          });
+        } else if (nav && typeof nav.reset === 'function') {
+          nav.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          });
+        }
+      }, 0);
     } catch (err: any) {
       showErrorAlert(err, 'OTP Error');
     }
@@ -115,25 +139,57 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
       />
-      <ScrollView 
-        contentContainerStyle={{ 
-          flexGrow: 1,
-          justifyContent: 'center', 
-          padding: Theme.spacing.lg,
-          paddingBottom: Theme.spacing.xxxl 
-        }}
-        style={{ backgroundColor: CONTENT_COLOR }}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Card style={{ padding: Theme.spacing.lg, marginBottom: Theme.spacing.lg }}>
-          <Text style={{
-            fontSize: Theme.typography.fontSize.base,
-            fontWeight: Theme.typography.fontWeight.semibold,
-            color: Theme.colors.text.primary,
-            marginBottom: Theme.spacing.md,
-            textAlign: 'center',
-          }}>
-            Enter OTP
-          </Text>
+        <ScrollView 
+          contentContainerStyle={{ 
+            flexGrow: 1,
+            justifyContent: keyboardVisible ? 'flex-start' : 'center',
+            padding: Theme.spacing.lg,
+            paddingTop: keyboardVisible ? Theme.spacing.xl : Theme.spacing.lg,
+            paddingBottom: Theme.spacing.xxxl 
+          }}
+          style={{ backgroundColor: CONTENT_COLOR }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Card
+            backgroundColor="bg-transparent"
+            shadowColor=""
+            style={{
+              padding: Theme.spacing.lg,
+              marginBottom: Theme.spacing.lg,
+              borderWidth: 1,
+              borderColor: Theme.withOpacity(Theme.colors.border, 0.25),
+              backgroundColor: Theme.withOpacity('#000000', 0.03),
+            }}
+          >
+            <Text
+              style={{
+                fontSize: Theme.typography.fontSize.xl,
+                fontWeight: Theme.typography.fontWeight.bold,
+                color: Theme.colors.text.primary,
+                marginBottom: Theme.spacing.xs,
+                textAlign: 'center',
+              }}
+            >
+              Enter verification code
+            </Text>
+
+            <Text
+              style={{
+                fontSize: Theme.typography.fontSize.sm,
+                color: Theme.colors.text.secondary,
+                textAlign: 'center',
+                marginBottom: Theme.spacing.lg,
+              }}
+            >
+              We sent a 4-digit code to{' '}
+              <Text style={{ color: Theme.colors.text.primary, fontWeight: Theme.typography.fontWeight.semibold }}>
+                {phone}
+              </Text>
+            </Text>
 
           <OTPInput
             length={4}
@@ -143,6 +199,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
               setOtpError('');
             }}
             error={!!otpError}
+            autoFocus
           />
 
           {otpError ? (
@@ -178,21 +235,22 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
               </TouchableOpacity>
             ) : (
               <Text style={{ color: Theme.colors.text.secondary }}>
-                Resend OTP in {resendTimer}s
+                Resend available in {resendTimer}s
               </Text>
             )}
           </View>
 
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ marginTop: Theme.spacing.md }}
-          >
-            <Text style={{ color: Theme.colors.text.secondary, textAlign: 'center' }}>
-              Change Phone Number
-            </Text>
-          </TouchableOpacity>
-        </Card>
-      </ScrollView>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{ marginTop: Theme.spacing.md }}
+            >
+              <Text style={{ color: Theme.colors.text.secondary, textAlign: 'center' }}>
+                Change Phone Number
+              </Text>
+            </TouchableOpacity>
+          </Card>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ScreenLayout>
   );
 };

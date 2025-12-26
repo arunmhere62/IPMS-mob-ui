@@ -58,17 +58,31 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
   }, [groupedPermissions]);
 
   const onSet = async (permission: PermissionItem, effect: Effect) => {
-    try {
-      await upsertOverride({
-        user_id: employeeId,
-        permission_id: permission.s_no,
-        effect,
-      }).unwrap();
-      showSuccessAlert('Override saved');
-      await refreshMyPermissions();
-    } catch (e: any) {
-      showErrorAlert(e, 'Override Error');
-    }
+    const permissionKey = `${permission.screen_name}_${String(permission.action).toLowerCase()}`;
+
+    Alert.alert(
+      'Confirm Permission Update',
+      `Set ${permissionKey} to ${effect} for this employee?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            try {
+              await upsertOverride({
+                user_id: employeeId,
+                permission_id: permission.s_no,
+                effect,
+              }).unwrap();
+              showSuccessAlert('Override saved');
+              await refreshMyPermissions();
+            } catch (e: any) {
+              showErrorAlert(e, 'Override Error');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const onClear = async (permission: PermissionItem) => {

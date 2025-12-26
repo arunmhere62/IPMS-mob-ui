@@ -21,6 +21,8 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import { AddRefundPaymentModal } from './AddRefundPaymentModal';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface RefundPayment {
   s_no: number;
@@ -35,6 +37,10 @@ interface RefundPayment {
 export const TenantRefundPaymentsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { can } = usePermissions();
+
+  const canEditRefund = can(Permission.EDIT_REFUND);
+  const canDeleteRefund = can(Permission.DELETE_REFUND);
 
   const [deleteRefundPayment] = useDeleteRefundPaymentMutation();
   const [updateRefundPayment] = useUpdateRefundPaymentMutation();
@@ -61,6 +67,10 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
   };
 
   const handleDeletePayment = (payment: RefundPayment) => {
+    if (!canDeleteRefund) {
+      Alert.alert('Access Denied', "You don't have permission to delete refund payments");
+      return;
+    }
     Alert.alert(
       'Delete Refund Payment',
       `Are you sure you want to delete this refund?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
@@ -91,12 +101,20 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
   };
 
   const handleEditRefundPayment = (payment: RefundPayment) => {
+    if (!canEditRefund) {
+      Alert.alert('Access Denied', "You don't have permission to edit refund payments");
+      return;
+    }
     setRefundFormMode('edit');
     setEditingRefundPayment(payment);
     setRefundFormVisible(true);
   };
 
   const handleUpdateRefundPayment = async (id: number, data: any) => {
+    if (!canEditRefund) {
+      Alert.alert('Access Denied', "You don't have permission to edit refund payments");
+      throw new Error('ACCESS_DENIED');
+    }
     await updateRefundPayment({ id, data }).unwrap();
   };
 
@@ -297,7 +315,9 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                         onEdit={() => handleEditRefundPayment(payment)}
                         onDelete={() => handleDeletePayment(payment)}
                         showView={false}
-                        showEdit={true}
+                        disableEdit={!canEditRefund}
+                        disableDelete={!canDeleteRefund}
+                        blockPressWhenDisabled
                       />
                       <TouchableOpacity
                         onPress={() => handleViewReceipt(payment)}

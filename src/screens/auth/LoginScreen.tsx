@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Alert, KeyboardAvoidingView } from 'react-native';
+import { View, Text, Alert, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
 import { Theme } from '../../theme';
 import { useSendOtpMutation } from '../../services/api/authApi';
 import { Button } from '../../components/Button';
@@ -64,81 +64,83 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: Theme.colors.background.primary }}
-      behavior="padding"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={{ 
-        flex: 1,
-        justifyContent: 'center', 
-        padding: Theme.spacing.lg 
-      }}>
-      <View style={{ marginBottom: Theme.spacing.xl }}>
-        <Text style={{ 
-          fontSize: Theme.typography.fontSize['4xl'], 
-          fontWeight: Theme.typography.fontWeight.bold, 
-          color: Theme.colors.primary, 
-          textAlign: 'center', 
-          marginBottom: Theme.spacing.sm 
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={{ 
+          flex: 1,
+          justifyContent: 'center', 
+          padding: Theme.spacing.lg 
         }}>
-          PG Management
-        </Text>
-        <Text style={{ 
-          fontSize: Theme.typography.fontSize.base, 
-          color: Theme.colors.text.secondary, 
-          textAlign: 'center' 
-        }}>
-          Login to manage your PG operations
-        </Text>
-      </View>
+          <View style={{ marginBottom: Theme.spacing.xl }}>
+            <Text style={{ 
+              fontSize: Theme.typography.fontSize['4xl'], 
+              fontWeight: Theme.typography.fontWeight.bold, 
+              color: Theme.colors.primary, 
+              textAlign: 'center', 
+              marginBottom: Theme.spacing.sm 
+            }}>
+              PG Management
+            </Text>
+            <Text style={{ 
+              fontSize: Theme.typography.fontSize.base, 
+              color: Theme.colors.text.secondary, 
+              textAlign: 'center' 
+            }}>
+              Login to manage your PG operations
+            </Text>
+          </View>
 
-      <Card className="mb-6 shadow-none">
-        <Text className="text-2xl font-semibold text-dark mb-6">Login</Text>
-        
-        {/* Country + Phone in Single Row */}
-        <CountryPhoneSelector
-          selectedCountry={selectedCountry}
-          onSelectCountry={setSelectedCountry}
-          size="large"
-          phoneValue={phone}
-          onPhoneChange={(text: string) => {
-            setPhone(text);
-            setPhoneError('');
-          }}
-        />
+          <Card className="mb-6 shadow-none">
+            <Text className="text-2xl font-semibold text-dark mb-6">Login</Text>
+            
+            {/* Country + Phone in Single Row */}
+            <CountryPhoneSelector
+              selectedCountry={selectedCountry}
+              onSelectCountry={setSelectedCountry}
+              size="large"
+              phoneValue={phone}
+              onPhoneChange={(text: string) => {
+                setPhone(text);
+                setPhoneError('');
+              }}
+            />
 
-        {/* Error Message */}
-        {phoneError && (
-          <Text style={{ fontSize: 12, color: '#EF4444', marginBottom: 12, marginLeft: 4 }}>
-            {phoneError}
-          </Text>
-        )}
+            {/* Error Message */}
+            {phoneError && (
+              <Text style={{ fontSize: 12, color: '#EF4444', marginBottom: 12, marginLeft: 4 }}>
+                {phoneError}
+              </Text>
+            )}
 
-        <Button
-          title="Send OTP"
-          onPress={handleSendOtp}
-          loading={sendingOtp}
-          variant="primary"
-          size="md"
-        />
-        
-        <Text className='mt-6' style={{ 
-          fontSize: Theme.typography.fontSize.sm, 
-          color: Theme.colors.text.secondary, 
-          textAlign: 'center', 
-          marginBottom: Theme.spacing.md 
-        }}>
-          You will receive a 6-digit OTP on your registered phone number
-        </Text>
+            <Button
+              title="Send OTP"
+              onPress={handleSendOtp}
+              loading={sendingOtp}
+              variant="primary"
+              size="md"
+            />
+            
+            <Text className='mt-6' style={{ 
+              fontSize: Theme.typography.fontSize.sm, 
+              color: Theme.colors.text.secondary, 
+              textAlign: 'center', 
+              marginBottom: Theme.spacing.md 
+            }}>
+              You will receive a 6-digit OTP on your registered phone number
+            </Text>
 
-        <View style={{ marginTop: Theme.spacing.lg }}>
-          <Button
-            title="Create New Account"
-            onPress={() => navigation.navigate('Signup')}
-            variant="outline"
-            size='md'
-          />
+            <View style={{ marginTop: Theme.spacing.lg }}>
+              <Button
+                title="Create New Account"
+                onPress={() => navigation.navigate('Signup')}
+                variant="outline"
+                size='md'
+              />
+            </View>
+          </Card>
         </View>
-      </Card>
-      </View>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };

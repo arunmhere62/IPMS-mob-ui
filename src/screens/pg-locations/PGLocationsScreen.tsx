@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppDispatch, RootState } from '../../store';
 import { setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
@@ -34,6 +35,8 @@ import {
   useUpdatePGLocationMutation,
   useDeletePGLocationMutation,
 } from '../../services/api/pgLocationsApi';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface PGLocationsScreenProps {
   navigation: any;
@@ -87,6 +90,12 @@ interface FormData {
 export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const route = useRoute<any>();
+  const { can } = usePermissions();
+
+  const canCreate = can(Permission.CREATE_PG_LOCATION);
+  const canEdit = can(Permission.EDIT_PG_LOCATION);
+  const canDelete = can(Permission.DELETE_PG_LOCATION);
   const [pgLocations, setPgLocations] = useState<PGLocation[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -126,6 +135,16 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
   useEffect(() => {
     loadPGLocations();
   }, []);
+
+  useEffect(() => {
+    const editPgId = route?.params?.editPgId;
+    if (!editPgId) return;
+    const target = pgLocations.find((p) => p.s_no === Number(editPgId));
+    if (!target) return;
+    openEditModal(target);
+    navigation.setParams({ editPgId: undefined });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route?.params?.editPgId, pgLocations]);
 
   useEffect(() => {
     setLoadingStates(isFetchingStates);
@@ -191,6 +210,10 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
   };
 
   const openCreateModal = () => {
+    if (!canCreate) {
+      Alert.alert('Access Denied', "You don't have permission to create PG locations");
+      return;
+    }
     setEditMode(false);
     setSelectedPG(null);
     setFormData({
@@ -210,6 +233,10 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
   };
 
   const openEditModal = (pg: PGLocation) => {
+    if (!canEdit) {
+      Alert.alert('Access Denied', "You don't have permission to edit PG locations");
+      return;
+    }
     setEditMode(true);
     setSelectedPG(pg);
     setFormData({
@@ -321,6 +348,10 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
   };
 
   const handleDelete = (pg: PGLocation) => {
+    if (!canDelete) {
+      Alert.alert('Access Denied', "You don't have permission to delete PG locations");
+      return;
+    }
     showDeleteConfirmation({
       title: 'Confirm Delete',
       message: 'Are you sure you want to delete',
@@ -418,6 +449,9 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
           showView={true}
           showEdit={true}
           showDelete={true}
+          disableEdit={!canEdit}
+          disableDelete={!canDelete}
+          blockPressWhenDisabled
         />
       </View>
     </Card>
@@ -476,8 +510,10 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
               shadowOpacity: 0.3,
               shadowRadius: 8,
               elevation: 8,
+              opacity: canCreate ? 1 : 0.45,
             }}
             onPress={openCreateModal}
+            disabled={!canCreate}
           >
             <Text style={{ fontSize: 32, color: 'white', lineHeight: 32 }}>+</Text>
           </TouchableOpacity>
