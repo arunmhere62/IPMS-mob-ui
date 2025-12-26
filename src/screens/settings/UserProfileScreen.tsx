@@ -20,7 +20,7 @@ import { CONTENT_COLOR } from '@/constant';
 import { EditProfileModal } from './EditProfileModal';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal';
 import { updateUser } from '../../store/slices/authSlice';
-import axiosInstance from '../../services/core/axiosInstance';
+import { useLazyGetCitiesQuery, useLazyGetStatesQuery } from '../../services/api/locationApi';
 import { useGetUserProfileQuery, useChangePasswordMutation } from '../../services/api/userApi';
 
 interface UserProfileScreenProps {
@@ -40,6 +40,9 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
   const [stateName, setStateName] = useState<string>('');
   const [cityName, setCityName] = useState<string>('');
   const [profileData, setProfileData] = useState<any>(null);
+
+  const [fetchStatesTrigger] = useLazyGetStatesQuery();
+  const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
 
   useEffect(() => {
     const data =
@@ -87,15 +90,11 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
 
   const fetchStateName = async (stateId: number) => {
     try {
-      const response = await axiosInstance.get('/location/states', {
-        params: { countryCode: 'IN' },
-      });
-      if (response.data.success) {
-        const states = response.data.data || [];
-        const state = states.find((s: any) => s.s_no === stateId);
-        if (state) {
-          setStateName(state.name);
-        }
+      const response = await fetchStatesTrigger({ countryCode: 'IN' }).unwrap();
+      if (response?.success) {
+        const items = (response as any)?.data || [];
+        const state = items.find((s: any) => s.s_no === stateId);
+        if (state) setStateName(state.name);
       }
     } catch (error) {
       console.error('Error fetching state name:', error);
@@ -106,22 +105,16 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
     try {
       // We need to get the state code first to fetch cities
       if (user?.state_id) {
-        const stateResponse = await axiosInstance.get('/location/states', {
-          params: { countryCode: 'IN' },
-        });
-        if (stateResponse.data.success) {
-          const states = stateResponse.data.data || [];
+        const stateResponse = await fetchStatesTrigger({ countryCode: 'IN' }).unwrap();
+        if (stateResponse?.success) {
+          const states = (stateResponse as any)?.data || [];
           const state = states.find((s: any) => s.s_no === user.state_id);
-          if (state) {
-            const cityResponse = await axiosInstance.get('/location/cities', {
-              params: { stateCode: state.iso_code },
-            });
-            if (cityResponse.data.success) {
-              const cities = cityResponse.data.data || [];
+          if (state?.iso_code) {
+            const cityResponse = await fetchCitiesTrigger({ stateCode: state.iso_code }).unwrap();
+            if (cityResponse?.success) {
+              const cities = (cityResponse as any)?.data || [];
               const city = cities.find((c: any) => c.s_no === cityId);
-              if (city) {
-                setCityName(city.name);
-              }
+              if (city) setCityName(city.name);
             }
           }
         }

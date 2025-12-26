@@ -24,7 +24,7 @@ export const ErrorProvider: React.FC<{ children: React.ReactNode }> = ({
     if (error?.response?.data?.success === false) {
       setError(error.response.data as ApiError);
     }
-    // Handle axios error
+    // Handle HTTP client error
     else if (error?.response?.status) {
       setError({
         success: false,

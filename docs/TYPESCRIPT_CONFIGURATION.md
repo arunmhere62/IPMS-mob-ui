@@ -135,9 +135,7 @@ catch (error: any) { // ✅ Explicit any
 }
 
 // Better
-import { AxiosError } from 'axios';
-
-catch (error: AxiosError) { // ✅ Specific type
+catch (error: any) { // ✅ Explicit any
   console.error(error.message);
 }
 ```
@@ -272,9 +270,7 @@ function handleError(error: Error) {
 }
 
 // ✅ Better
-import { AxiosError } from 'axios';
-
-function handleError(error: AxiosError) {
+function handleError(error: any) {
   console.error(error.response?.data);
 }
 ```
@@ -416,7 +412,7 @@ Start with full strict mode from day one:
 - [x] `tsconfig.json` configured with strict mode
 - [x] Type check scripts added to `package.json`
 - [x] Pre-build type checks enabled
-- [x] RootState type imported in axios instance
+- [x] RootState type imported where needed
 - [x] All type errors fixed
 - [ ] Run `npm run typecheck` to verify
 - [ ] Enable watch mode during development

@@ -16,7 +16,7 @@ export const useApiError = (): UseApiErrorReturn => {
   }, []);
 
   const handleApiError = useCallback((error: any) => {
-    // Handle axios/fetch error response
+    // Handle HTTP error response
     if (error?.response?.data) {
       const apiError = error.response.data as ApiError;
       setError(apiError);

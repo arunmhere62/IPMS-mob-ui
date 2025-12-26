@@ -1,5 +1,4 @@
 import { Alert } from 'react-native';
-import { AxiosError } from 'axios';
 import { getApiErrorMessage } from './apiResponseHandler';
 
 export type ErrorType = 'network' | 'timeout' | 'server' | 'client' | 'unknown';
@@ -65,8 +64,8 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
     }
 
     const rtkData = (error as any)?.data ?? (error as any)?.error?.data;
-    const axiosData = (error as any)?.response?.data;
-    const candidateData = rtkData ?? axiosData ?? error;
+    const httpClientData = (error as any)?.response?.data;
+    const candidateData = rtkData ?? httpClientData ?? error;
 
     // First try to use API response handler for new structure
     if (candidateData) {
@@ -124,10 +123,13 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
  * Categorize error type
  */
 export const categorizeError = (error: any): ErrorInfo => {
-  const axiosError = error as AxiosError;
-  
+  const message = (error as any)?.message;
+  const code = (error as any)?.code;
+  const status = (error as any)?.status ?? (error as any)?.response?.status;
+  const responseData = (error as any)?.data ?? (error as any)?.response?.data;
+
   // Network errors (no response from server)
-  if (axiosError.code === 'ERR_NETWORK' || axiosError.message === 'Network Error') {
+  if (code === 'ERR_NETWORK' || message === 'Network Error') {
     return {
       type: 'network',
       message: 'No internet connection. Please check your network.',
@@ -137,7 +139,7 @@ export const categorizeError = (error: any): ErrorInfo => {
   }
   
   // Timeout errors
-  if (axiosError.code === 'ECONNABORTED' || axiosError.message?.includes('timeout')) {
+  if (code === 'ECONNABORTED' || (typeof message === 'string' && message.includes('timeout'))) {
     return {
       type: 'timeout',
       message: 'Request timed out. Server is taking too long to respond.',
@@ -147,23 +149,23 @@ export const categorizeError = (error: any): ErrorInfo => {
   }
   
   // Server errors (5xx)
-  if (axiosError.response?.status && axiosError.response.status >= 500) {
+  if (typeof status === 'number' && status >= 500) {
     return {
       type: 'server',
       message: 'Server error. Please try again later.',
       isRetryable: true,
-      statusCode: axiosError.response.status,
+      statusCode: status,
       originalError: error,
     };
   }
   
   // Client errors (4xx)
-  if (axiosError.response?.status && axiosError.response.status >= 400) {
+  if (typeof status === 'number' && status >= 400) {
     return {
       type: 'client',
-      message: (axiosError.response.data as any)?.message || 'Request failed. Please check your input.',
+      message: (responseData as any)?.message || 'Request failed. Please check your input.',
       isRetryable: false,
-      statusCode: axiosError.response.status,
+      statusCode: status,
       originalError: error,
     };
   }

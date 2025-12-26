@@ -5,7 +5,7 @@ import { networkLogger } from '../../utils/networkLogger';
 
 const toPlainHeaders = (headers: any): Record<string, any> => {
   if (!headers) return {};
-  // AxiosHeaders / similar
+  // Headers-like objects / similar
   if (typeof headers.toJSON === 'function') {
     return headers.toJSON();
   }

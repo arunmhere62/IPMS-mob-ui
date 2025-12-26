@@ -9,7 +9,6 @@ import { NetworkStatusProvider } from './src/providers/NetworkStatusProvider';
 import { Theme } from './src/theme';
 import { AppNavigator } from '@/navigation/AppNavigator';
 import { setupGlobalErrorHandlers } from './src/utils/errorHandler';
-import { initializeGlobalErrorHandling } from './src/config/globalErrorHandler';
 import { ErrorProvider } from './src/providers/ErrorProvider';
 import ErrorAlert from './src/components/ErrorAlert/ErrorAlert';
 import { useError } from './src/providers/ErrorProvider';
@@ -27,8 +26,6 @@ export default function App() {
         // Initialize global error handlers
         setupGlobalErrorHandlers();
         
-        // Initialize global axios error interceptors
-        initializeGlobalErrorHandling();
         
         console.log('✅ App initialized successfully');
         setIsInitialized(true);

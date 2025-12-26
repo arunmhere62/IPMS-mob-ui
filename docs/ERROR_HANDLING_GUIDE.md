@@ -378,7 +378,7 @@ try {
 
 - **Error Utilities**: `src/utils/errorHandler.ts`
 - **Dashboard**: `src/screens/dashboard/DashboardScreen.tsx`
-- **Axios Config**: `src/services/core/axiosInstance.ts`
+- **API Setup**: `src/services/api/baseApi.ts`
 
 ---
 

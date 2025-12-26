@@ -65,9 +65,9 @@ useEffect(() => {
 }, [selectedPGLocationId, selectedMonths]);
 ```
 
-### 2. **Axios Interceptor Guard**
+### 2. **RTK Query Base Guard**
 ```typescript
-// In axiosInstance.ts
+// In baseApi.ts
 const needsPgHeader = (url?: string) => {
   if (!url) return false;
   const path = (url.split('?')[0] || '').toString();
@@ -232,8 +232,8 @@ const onRefresh = async () => {
    if (!selectedPGLocationId) return <SelectPGPrompt />;
    ```
 
-5. **Use axios interceptor for global protection**
-   - Already implemented in `axiosInstance.ts`
+5. **Use RTK Query guard for global protection**
+   - Already implemented in `src/services/api/baseApi.ts`
    - Blocks all PG-dependent APIs automatically
 
 ## 📈 Performance Benefits

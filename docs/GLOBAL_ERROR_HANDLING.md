@@ -10,15 +10,15 @@ Centralized, application-wide error handling for network issues, timeouts, and s
 ┌─────────────────────────────────────────────────────────────┐
 │                    App.tsx (Root)                            │
 │  ├─ Global Error Handler Initialization                     │
-│  ├─ Axios Interceptors Setup                                │
+│  ├─ RTK Query Setup                                          │
 │  └─ Network Provider (Optional)                             │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│            Global Axios Interceptors                         │
-│  ├─ Request Interceptor (Add metadata)                      │
-│  └─ Response Interceptor (Handle all errors)                │
+│                 Request/Response Flow                        │
+│  ├─ Base headers (auth + org + pg context)                  │
+│  └─ Error handling + retries                                │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
@@ -36,7 +36,7 @@ Centralized, application-wide error handling for network issues, timeouts, and s
 
 ### **1. Global Error Handler** (`globalErrorHandler.ts`)
 
-Centralized error handling for all axios requests.
+Centralized error handling for all API requests.
 
 **Features:**
 - ✅ Automatic error categorization
@@ -269,21 +269,14 @@ const loadSummary = async () => {
 For specific requests that need custom error handling:
 
 ```typescript
-const response = await axiosInstance.get('/api/endpoint', {
-  headers: {
-    'X-Skip-Global-Error': 'true',
-  },
-});
+// Use RTK Query and handle error in the calling component
+// (Avoid relying on a global interceptor for per-request behavior)
 ```
 
 ### **Adjust Timeout**
 
 ```typescript
-// In axiosInstance.ts
-const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000, // 30 seconds (adjust as needed)
-});
+// Timeout can be adjusted in API layer configuration (fetch/RTK Query)
 ```
 
 ### **Customize Error Messages**
@@ -433,7 +426,7 @@ Then update `NetworkProvider.tsx` to use NetInfo for real-time network monitorin
 - **Global Handler**: `src/config/globalErrorHandler.ts`
 - **Network Provider**: `src/providers/NetworkProvider.tsx`
 - **Error Utils**: `src/utils/errorHandler.ts`
-- **Axios Instance**: `src/services/core/axiosInstance.ts`
+- **API Setup**: `src/services/api/baseApi.ts`
 - **App Root**: `App.tsx`
 
 ## ✅ Testing Checklist

@@ -21,7 +21,7 @@ A comprehensive React Native mobile application for managing PG (Paying Guest) a
 - **State Management**: Redux Toolkit with Redux Persist
 - **Styling**: NativeWind (Tailwind CSS for React Native)
 - **Navigation**: React Navigation
-- **HTTP Client**: Axios
+- **HTTP Client**: RTK Query (fetch)
 - **Language**: TypeScript
 
 ## Prerequisites
@@ -202,7 +202,7 @@ Defined in `tailwind.config.js`:
 3. User enters OTP
 4. On successful verification, user is logged in
 5. Access token is stored and used for subsequent API calls
-6. Token is automatically added to all API requests via Axios interceptor
+6. Token is automatically added to all API requests via RTK Query base headers
 
 ## Building for Production
 

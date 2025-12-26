@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Theme } from '../../theme';
-import axiosInstance from '../../services/core/axiosInstance';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { OTPInput } from '../../components/OTPInput';
+import {
+  useLazyGetCitiesQuery,
+  useLazyGetCountriesQuery,
+  useLazyGetStatesQuery,
+} from '../../services/api/locationApi';
+import { useSendSignupOtpMutation, useSignupMutation, useVerifySignupOtpMutation } from '../../services/api/authApi';
 
 interface SignupModalProps {
   visible: boolean;
@@ -79,6 +84,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose }) =>
   const [otp, setOtp] = useState('');
   const [fullPhone, setFullPhone] = useState('');
 
+  const [fetchCountriesTrigger] = useLazyGetCountriesQuery();
+  const [fetchStatesTrigger] = useLazyGetStatesQuery();
+  const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
+
+  const [sendSignupOtp] = useSendSignupOtpMutation();
+  const [verifySignupOtp] = useVerifySignupOtpMutation();
+  const [signup] = useSignupMutation();
+
   useEffect(() => {
     if (visible) {
       fetchCountries();
@@ -95,16 +108,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose }) =>
 
   const fetchCountries = async () => {
     try {
-      const response = await axiosInstance.get('/location/countries');
-      // API response structure (double-wrapped):
-      // { statusCode: 200, success: true, data: { success: true, data: [...] } }
-      const actualData = response.data?.data?.data || response.data?.data;
-      if (Array.isArray(actualData)) {
-        console.log(`✅ Countries fetched:`, actualData.length, 'countries');
-        setCountries(actualData);
-      } else {
-        console.warn('Invalid countries response format:', response.data);
-        setCountries([]);
+      const response = await fetchCountriesTrigger().unwrap();
+      if (response?.success) {
+        const items = (response as any)?.data;
+        setCountries(Array.isArray(items) ? items : []);
       }
     } catch (error) {
       console.error('Error fetching countries:', error);
@@ -115,18 +122,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose }) =>
   const fetchStates = async (countryCode: string) => {
     setLoadingStates(true);
     try {
-      const response = await axiosInstance.get('/location/states', {
-        params: { countryCode },
-      });
-      // API response structure (double-wrapped):
-      // { statusCode: 200, success: true, data: { success: true, data: [...] } }
-      const actualData = response.data?.data?.data || response.data?.data;
-      if (Array.isArray(actualData)) {
-        console.log(`✅ States fetched for ${countryCode}:`, actualData.length, 'states');
-        setStates(actualData);
-      } else {
-        console.warn('Invalid states response format:', response.data);
-        setStates([]);
+      const response = await fetchStatesTrigger({ countryCode }).unwrap();
+      if (response?.success) {
+        const items = (response as any)?.data;
+        setStates(Array.isArray(items) ? items : []);
       }
     } catch (error) {
       console.error('Error fetching states:', error);
@@ -139,18 +138,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose }) =>
   const fetchCities = async (stateCode: string) => {
     setLoadingCities(true);
     try {
-      const response = await axiosInstance.get('/location/cities', {
-        params: { stateCode },
-      });
-      // API response structure (double-wrapped):
-      // { statusCode: 200, success: true, data: { success: true, data: [...] } }
-      const actualData = response.data?.data?.data || response.data?.data;
-      if (Array.isArray(actualData)) {
-        console.log(`✅ Cities fetched for ${stateCode}:`, actualData.length, 'cities');
-        setCities(actualData);
-      } else {
-        console.warn('Invalid cities response format:', response.data);
-        setCities([]);
+      const response = await fetchCitiesTrigger({ stateCode }).unwrap();
+      if (response?.success) {
+        const items = (response as any)?.data;
+        setCities(Array.isArray(items) ? items : []);
       }
     } catch (error) {
       console.error('Error fetching cities:', error);
@@ -252,18 +243,12 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose }) =>
       const phoneWithCode = selectedCountry.phoneCode + formData.phone.trim();
       setFullPhone(phoneWithCode);
 
-      const response = await axiosInstance.post('/auth/send-signup-otp', {
-        phone: phoneWithCode,
-      });
-
-      if (response.data.success) {
-        setShowOtpVerification(true);
-        Alert.alert('Success', 'OTP sent to your phone number');
-      }
+      await sendSignupOtp({ phone: phoneWithCode }).unwrap();
+      setShowOtpVerification(true);
+      Alert.alert('Success', 'OTP sent to your phone number');
     } catch (error: any) {
       console.error('❌ Send OTP error:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to send OTP';
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Error', 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
@@ -277,21 +262,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose }) =>
 
     setLoading(true);
     try {
-      const response = await axiosInstance.post('/auth/verify-signup-otp', {
-        phone: fullPhone,
-        otp: otp,
-      });
-
-      if (response.data.success) {
-        setPhoneVerified(true);
-        setShowOtpVerification(false);
-        setOtp('');
-        Alert.alert('Success', 'Phone number verified successfully');
-      }
+      await verifySignupOtp({ phone: fullPhone, otp }).unwrap();
+      setPhoneVerified(true);
+      setShowOtpVerification(false);
+      setOtp('');
+      Alert.alert('Success', 'Phone number verified successfully');
     } catch (error: any) {
       console.error('❌ Verify OTP error:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to verify OTP';
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Error', 'Failed to verify OTP');
     } finally {
       setLoading(false);
     }
@@ -323,24 +301,19 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose }) =>
 
       console.log('📤 Sending signup data:', signupData);
 
-      const response = await axiosInstance.post('/auth/signup', signupData);
-
-      console.log('✅ Signup response:', response.data);
-
-      if (response.data.success) {
-        Alert.alert(
-          'Success',
-          'Account created successfully! Please wait for admin approval.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                onClose();
-              },
+      await signup(signupData).unwrap();
+      Alert.alert(
+        'Success',
+        'Account created successfully! Please wait for admin approval.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              onClose();
             },
-          ]
-        );
-      }
+          },
+        ]
+      );
     } catch (error: any) {
       console.error('❌ Signup error:', error);
       console.error('Error response:', error.response?.data);

@@ -28,7 +28,12 @@ import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialo
 import { getFolderConfig } from '../../config/aws.config';
 import { showErrorAlert } from '../../utils/errorHandler';
 import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../services/api/locationApi';
-import axiosInstance from '../../services/core/axiosInstance';
+import {
+  useLazyGetPGLocationsQuery,
+  useCreatePGLocationMutation,
+  useUpdatePGLocationMutation,
+  useDeletePGLocationMutation,
+} from '../../services/api/pgLocationsApi';
 
 interface PGLocationsScreenProps {
   navigation: any;
@@ -113,6 +118,11 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
   const { data: statesResponse, isFetching: isFetchingStates } = useGetStatesQuery({ countryCode: 'IN' });
   const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
 
+  const [fetchPGLocationsTrigger] = useLazyGetPGLocationsQuery();
+  const [createPGLocation] = useCreatePGLocationMutation();
+  const [updatePGLocation] = useUpdatePGLocationMutation();
+  const [deletePGLocation] = useDeletePGLocationMutation();
+
   useEffect(() => {
     loadPGLocations();
   }, []);
@@ -130,14 +140,17 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
   const loadPGLocations = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get('/pg-locations');
-      if (response.data.success && Array.isArray(response.data.data)) {
-        setPgLocations(response.data.data);
-        return response.data.data as PGLocation[];
+      const response = await fetchPGLocationsTrigger({ _t: Date.now() }).unwrap();
+      const items = (response as any)?.data;
+      if (Array.isArray(items)) {
+        setPgLocations(items as PGLocation[]);
+        return items as PGLocation[];
       }
+      setPgLocations([]);
       return [] as PGLocation[];
     } catch (error) {
       Alert.alert('Error', 'Failed to load PG locations');
+      setPgLocations([]);
       return [] as PGLocation[];
     } finally {
       setLoading(false);
@@ -285,26 +298,19 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
 
       if (editMode && selectedPG) {
         // Update
-        const response = await axiosInstance.put(
-          `/pg-locations/${selectedPG.s_no}`,
-          payload
-        );
-        if (response.data.success) {
-          Alert.alert('Success', 'PG location updated successfully');
-          loadPGLocations();
-          closeModal();
-        }
+        await updatePGLocation({ id: selectedPG.s_no, data: payload }).unwrap();
+        Alert.alert('Success', 'PG location updated successfully');
+        await loadPGLocations();
+        closeModal();
       } else {
         // Create
-        const response = await axiosInstance.post('/pg-locations', payload);
-        if (response.data.success) {
-          Alert.alert('Success', 'PG location created successfully');
-          loadPGLocations();
-          closeModal();
-        }
+        await createPGLocation(payload).unwrap();
+        Alert.alert('Success', 'PG location created successfully');
+        await loadPGLocations();
+        closeModal();
       }
     } catch (error: any) {
-       showErrorAlert(error, 'Update Error');
+       showErrorAlert(error, 'Error');
     } finally {
       setSubmitting(false);
     }
@@ -317,25 +323,19 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
       itemName: pg.location_name,
       onConfirm: async () => {
         try {
-          const response = await axiosInstance.delete(
-            `/pg-locations/${pg.s_no}`
-          );
-          if (response.data.success) {
-            // Check if deleted PG was the selected one
-            const wasSelected = selectedPGLocationId === pg.s_no;
+          await deletePGLocation(pg.s_no).unwrap();
+          const wasSelected = selectedPGLocationId === pg.s_no;
+          const updatedLocations = await loadPGLocations();
 
-            const updatedLocations = await loadPGLocations();
-
-            if (wasSelected) {
-              if (updatedLocations.length > 0) {
-                dispatch(setSelectedPGLocation(updatedLocations[0].s_no));
-              } else {
-                dispatch(setSelectedPGLocation(null));
-              }
+          if (wasSelected) {
+            if (updatedLocations.length > 0) {
+              dispatch(setSelectedPGLocation(updatedLocations[0].s_no));
+            } else {
+              dispatch(setSelectedPGLocation(null));
             }
-            
-            Alert.alert('Success', 'PG location deleted successfully');
           }
+
+          Alert.alert('Success', 'PG location deleted successfully');
         } catch (error: any) {
           showErrorAlert(error, 'Delete Error');
         }

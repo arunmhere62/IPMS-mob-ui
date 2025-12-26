@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvo
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Theme } from '../../theme';
-import axiosInstance from '../../services/core/axiosInstance';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { Button } from '../../components/Button';
@@ -15,8 +14,9 @@ import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { PasswordInput } from '../../components/PasswordInput';
 import { OptionSelector } from '../../components/OptionSelector';
 import { CONTENT_COLOR } from '@/constant';
-import { useGetCitiesQuery, useGetStatesQuery } from '../../services/api/locationApi';
+import { useGetCitiesQuery, useGetCountriesQuery, useGetStatesQuery } from '../../services/api/locationApi';
 import { showErrorAlert } from '@/utils/errorHandler';
+import { useSendSignupOtpMutation, useSignupMutation, useVerifySignupOtpMutation } from '../../services/api/authApi';
 
 interface FormData {
   organizationName: string;
@@ -105,24 +105,22 @@ export const SignupScreenNew: React.FC = () => {
 
   const cities = ((citiesResponse as any)?.data || []) as City[];
 
+  const { data: countriesResponse } = useGetCountriesQuery();
+  const [sendSignupOtp] = useSendSignupOtpMutation();
+  const [verifySignupOtp] = useVerifySignupOtpMutation();
+  const [signup] = useSignupMutation();
+
   useEffect(() => {
-    fetchCountries();
+    if (countriesResponse?.success) {
+      setCountries((countriesResponse as any).data || []);
+    }
   }, []);
 
-  const fetchCountries = async () => {
-    try {
-      const response = await axiosInstance.get('/location/countries');
-      const actualData = response.data?.data?.data || response.data?.data;
-      if (Array.isArray(actualData)) {
-        setCountries(actualData);
-      } else {
-        setCountries([]);
-      }
-    } catch (error) {
-      console.error('Error fetching countries:', error);
-      setCountries([]);
+  useEffect(() => {
+    if (countriesResponse?.success) {
+      setCountries((countriesResponse as any).data || []);
     }
-  };
+  }, [countriesResponse]);
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData(prevFormData => ({ ...prevFormData, [field]: value }));
@@ -203,18 +201,12 @@ export const SignupScreenNew: React.FC = () => {
       const phoneWithCode = selectedCountry.phoneCode + formData.phone.trim();
       setFullPhone(phoneWithCode);
 
-      const response = await axiosInstance.post('/auth/send-signup-otp', {
-        phone: phoneWithCode,
-      });
-
-      if (response.data.success) {
-        setShowOtpVerification(true);
-        Alert.alert('Success', 'OTP sent to your phone number');
-      }
+      await sendSignupOtp({ phone: phoneWithCode }).unwrap();
+      setShowOtpVerification(true);
+      Alert.alert('Success', 'OTP sent to your phone number');
     } catch (error: any) {
       console.error('❌ Send OTP error:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to send OTP';
-      Alert.alert('Error', errorMessage);
+      showErrorAlert(error, 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
@@ -228,21 +220,14 @@ export const SignupScreenNew: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await axiosInstance.post('/auth/verify-signup-otp', {
-        phone: fullPhone,
-        otp: otp,
-      });
-
-      if (response.data.success) {
-        setPhoneVerified(true);
-        setShowOtpVerification(false);
-        setOtp('');
-        Alert.alert('Success', 'Phone number verified successfully');
-      }
+      await verifySignupOtp({ phone: fullPhone, otp }).unwrap();
+      setPhoneVerified(true);
+      setShowOtpVerification(false);
+      setOtp('');
+      Alert.alert('Success', 'Phone number verified successfully');
     } catch (error: any) {
       console.error('❌ Verify OTP error:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to verify OTP';
-      Alert.alert('Error', errorMessage);
+      showErrorAlert(error, 'Failed to verify OTP');
     } finally {
       setLoading(false);
     }
@@ -277,24 +262,19 @@ export const SignupScreenNew: React.FC = () => {
 
       console.log('📤 Sending signup data:', signupData);
 
-      const response = await axiosInstance.post('/auth/signup', signupData);
-
-      console.log('✅ Signup response:', response.data);
-
-      if (response.data.success) {
-        Alert.alert(
-          'Success',
-          'Account created successfully! Please wait for admin approval.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                navigation.goBack();
-              },
+      await signup(signupData).unwrap();
+      Alert.alert(
+        'Success',
+        'Account created successfully! Please wait for admin approval.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.goBack();
             },
-          ]
-        );
-      }
+          },
+        ]
+      );
     } catch (error: any) {
       showErrorAlert(error, 'Signup failed');
     } finally {

@@ -20,7 +20,7 @@ import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { DatePicker } from '../../components/DatePicker';
 import { useCreateVisitorMutation, useUpdateVisitorMutation, useGetVisitorByIdQuery } from '../../services/api/visitorsApi';
 import { useGetAllBedsQuery, useGetAllRoomsQuery } from '../../services/api/roomsApi';
-import axiosInstance from '../../services/core/axiosInstance';
+import { useLazyGetCitiesQuery, useLazyGetStatesQuery } from '../../services/api/locationApi';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
@@ -38,6 +38,9 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
   const loading = isCreating || isUpdating;
 
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+
+  const [fetchStatesTrigger] = useLazyGetStatesQuery();
+  const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
   
   const { data: visitorData, isLoading: loadingData } = useGetVisitorByIdQuery(visitorId, { skip: !isEditMode });
   
@@ -171,12 +174,10 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
   const fetchStates = async () => {
     setLoadingStates(true);
     try {
-      const response = await axiosInstance.get('/location/states', {
-        params: { countryCode: 'IN' },
-      });
-      if (response.data.success) {
-        const statesData = response.data.data || [];
-        setStates(statesData);
+      const response = await fetchStatesTrigger({ countryCode: 'IN' }).unwrap();
+      if (response?.success) {
+        const items = (response as any)?.data;
+        setStates(Array.isArray(items) ? items : []);
       }
     } catch (error) {
       console.error('Error fetching states:', error);
@@ -189,12 +190,10 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
   const fetchCities = async (stateCode: string) => {
     setLoadingCities(true);
     try {
-      const response = await axiosInstance.get('/location/cities', {
-        params: { stateCode },
-      });
-      if (response.data.success) {
-        const citiesData = response.data.data || [];
-        setCities(citiesData);
+      const response = await fetchCitiesTrigger({ stateCode }).unwrap();
+      if (response?.success) {
+        const items = (response as any)?.data;
+        setCities(Array.isArray(items) ? items : []);
       }
     } catch (error) {
       console.error('Error fetching cities:', error);

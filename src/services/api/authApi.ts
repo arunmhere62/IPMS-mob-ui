@@ -5,6 +5,20 @@ type ApiEnvelope<T> = {
   data?: T;
 };
 
+type CentralEnvelope<T> = {
+  success?: boolean;
+  statusCode?: number;
+  message?: string;
+  data?: T;
+};
+
+const unwrapCentralData = <T>(response: any): T => {
+  if (response && typeof response === 'object' && 'success' in response && 'statusCode' in response) {
+    return (response as any).data as T;
+  }
+  return response as T;
+};
+
 export type SendOtpRequest = {
   phone: string;
 };
@@ -35,6 +49,38 @@ export type ResendOtpRequest = {
 };
 
 export type ResendOtpResponse = unknown;
+
+export type SendSignupOtpRequest = {
+  phone: string;
+};
+
+export type SendSignupOtpResponse = unknown;
+
+export type VerifySignupOtpRequest = {
+  phone: string;
+  otp: string;
+};
+
+export type VerifySignupOtpResponse = unknown;
+
+export type SignupRequest = {
+  organizationName: string;
+  name: string;
+  email: string;
+  password: string;
+  pgName: string;
+  pgAddress: string;
+  stateId: number;
+  cityId: number;
+  phone?: string;
+  pgPincode?: string;
+  rentCycleType?: string;
+  rentCycleStart?: number | null;
+  rentCycleEnd?: number | null;
+  pgType?: string;
+};
+
+export type SignupResponse = unknown;
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -73,8 +119,42 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: (response: ApiEnvelope<ResendOtpResponse> | ResendOtpResponse) =>
         (response as ApiEnvelope<ResendOtpResponse>)?.data ?? response,
     }),
+
+    sendSignupOtp: build.mutation<SendSignupOtpResponse, SendSignupOtpRequest>({
+      query: (body) => ({
+        url: '/auth/send-signup-otp',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: CentralEnvelope<SendSignupOtpResponse> | any) => unwrapCentralData<any>(response),
+    }),
+
+    verifySignupOtp: build.mutation<VerifySignupOtpResponse, VerifySignupOtpRequest>({
+      query: (body) => ({
+        url: '/auth/verify-signup-otp',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: CentralEnvelope<VerifySignupOtpResponse> | any) => unwrapCentralData<any>(response),
+    }),
+
+    signup: build.mutation<SignupResponse, SignupRequest>({
+      query: (body) => ({
+        url: '/auth/signup',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: CentralEnvelope<SignupResponse> | any) => unwrapCentralData<any>(response),
+    }),
   }),
   overrideExisting: false,
 });
 
-export const { useSendOtpMutation, useVerifyOtpMutation, useResendOtpMutation } = authApi;
+export const {
+  useSendOtpMutation,
+  useVerifyOtpMutation,
+  useResendOtpMutation,
+  useSendSignupOtpMutation,
+  useVerifySignupOtpMutation,
+  useSignupMutation,
+} = authApi;
