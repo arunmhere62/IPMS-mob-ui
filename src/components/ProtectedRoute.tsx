@@ -39,12 +39,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallback,
   screenName,
 }) => {
-  const { can, canAny, canAll, canAccess } = usePermissions();
-
-  // Check screen access by name
-  if (screenName && !canAccess(screenName)) {
-    return fallback || <AccessDenied />;
-  }
+  const { can, canAny, canAll } = usePermissions();
 
   // Check single permission
   if (requiredPermission && !can(requiredPermission)) {

@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './slices/authSlice';
 import pgLocationReducer from './slices/pgLocationSlice';
 import organizationReducer from './slices/organizationSlice';
+import rbacReducer from './slices/rbacSlice';
 import { baseApi } from '../services/api/baseApi';
 
 const persistConfig = {
@@ -16,6 +17,7 @@ const rootReducer = combineReducers({
   auth: authReducer,
   pgLocations: pgLocationReducer,
   organizations: organizationReducer,
+  rbac: rbacReducer,
   [baseApi.reducerPath]: baseApi.reducer,
 });
 

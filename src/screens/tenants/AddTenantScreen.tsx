@@ -27,6 +27,8 @@ import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { getFolderConfig } from '../../config/aws.config';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface AddTenantScreenProps {
   navigation: any;
@@ -54,6 +56,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
   const [createTenantMutation] = useCreateTenantMutation();
   const [updateTenantMutation] = useUpdateTenantMutation();
   const [loading, setLoading] = useState(false);
+  const { can } = usePermissions();
   
   // Check if we're in edit mode
   const tenantId = route?.params?.tenantId;
@@ -383,6 +386,15 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
   };
 
   const handleSubmit = async () => {
+    if (isEditMode && !can(Permission.EDIT_TENANT)) {
+      Alert.alert('Access Denied', "You don't have permission to edit tenants");
+      return;
+    }
+    if (!isEditMode && !can(Permission.CREATE_TENANT)) {
+      Alert.alert('Access Denied', "You don't have permission to create tenants");
+      return;
+    }
+
     if (!validateForm()) {
       Alert.alert('Validation Error', 'Please fill in all required fields correctly');
       return;

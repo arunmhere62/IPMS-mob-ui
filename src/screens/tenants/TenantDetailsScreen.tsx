@@ -62,9 +62,16 @@ import {
   useLazyGetTenantsQuery,
   useUpdateTenantCheckoutDateMutation,
 } from '@/services/api/tenantsApi';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 // Inner component that doesn't directly interact with frozen navigation context
-const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({ tenantId, navigation }) => {
+const TenantDetailsContent: React.FC<{
+  tenantId: number;
+  navigation: any;
+  canEditTenant: boolean;
+  canDeleteTenant: boolean;
+}> = ({ tenantId, navigation, canEditTenant, canDeleteTenant }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -522,6 +529,10 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
   };
 
   const handleDeleteTenant = () => {
+    if (!canDeleteTenant) {
+      Alert.alert('Access Denied', "You don't have permission to delete tenants");
+      return;
+    }
     const hasRefundPaid = currentTenant?.is_refund_paid;
     
     if (!hasRefundPaid) {
@@ -681,7 +692,14 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
         {/* Tenant Header */}
         <TenantHeader
           tenant={tenant}
-          onEdit={() => navigation.navigate('AddTenant', { tenantId: currentTenant.s_no })}
+          showEdit={canEditTenant}
+          onEdit={() => {
+            if (!canEditTenant) {
+              Alert.alert('Access Denied', "You don't have permission to edit tenants");
+              return;
+            }
+            navigation.navigate('AddTenant', { tenantId: currentTenant.s_no });
+          }}
           onCall={handleCall}
           onWhatsApp={handleWhatsApp}
           onEmail={handleEmail}
@@ -974,6 +992,7 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
                 borderRadius: 8,
                 alignItems: 'center',
                 minHeight: 44,
+                opacity: canDeleteTenant ? 1 : 0.45,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -1157,11 +1176,17 @@ const TenantDetailsContent: React.FC<{ tenantId: number; navigation: any }> = ({
 function TenantDetailsScreenWrapper() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { tenantId } = route.params;
+  const { can } = usePermissions();
+  const canEditTenant = can(Permission.EDIT_TENANT);
+  const canDeleteTenant = can(Permission.DELETE_TENANT);
   
   return (
     <TenantDetailsContent 
-      tenantId={route?.params?.tenantId || 0} 
+      tenantId={tenantId} 
       navigation={navigation} 
+      canEditTenant={canEditTenant}
+      canDeleteTenant={canDeleteTenant}
     />
   );
 }

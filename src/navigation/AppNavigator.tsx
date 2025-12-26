@@ -6,6 +6,10 @@ import { usePermissions } from '../hooks/usePermissions';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { Permission } from '../config/rbac.config';
 import { navigationRef } from './navigationRef';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { clearPermissions } from '../store/slices/rbacSlice';
+import { useRefreshMyPermissions } from '../hooks/useRefreshMyPermissions';
 
 // Use require to avoid TypeScript errors
 const { NavigationContainer, useNavigation, useNavigationState } = require('@react-navigation/native');
@@ -39,6 +43,7 @@ import { EmployeeSalaryScreen } from '@/screens/employee-salary/EmployeeSalarySc
 import { EmployeesScreen } from '@/screens/employees/EmployeesScreen';
 import { AddEmployeeScreen } from '@/screens/employees/AddEmployeeScreen';
 import EmployeeDetailsScreen from '@/screens/employees/EmployeeDetailsScreen';
+import EmployeePermissionOverridesScreen from '@/screens/employees/EmployeePermissionOverridesScreen';
 import { VisitorsScreen } from '@/screens/visitors/VisitorsScreen';
 import AddVisitorScreen from '@/screens/visitors/AddVisitorScreen';
 import VisitorDetailsScreen from '@/screens/visitors/VisitorDetailsScreen';
@@ -61,7 +66,6 @@ const Tab = createBottomTabNavigator();
 // Main tabs component that keeps screens mounted
 const MainTabs = () => {
   const navigation = useNavigation();
-  const { can } = usePermissions();
   const currentRoute = useNavigationState((state: any) => {
     if (!state || !state.routes || state.index === undefined) {
       console.log('BottomNav currentRoute = Dashboard (fallback)');
@@ -126,9 +130,6 @@ const MainTabs = () => {
     },
   ];
 
-  // Filter screens based on permissions
-  const accessibleScreens = screens.filter(screen => can(screen.permission));
-
   return (
     <View style={{ flex: 1, position: 'relative' }}>
       <View style={{ flex: 1, }}>
@@ -142,7 +143,7 @@ const MainTabs = () => {
           sceneContainerStyle={{ backgroundColor: 'transparent' }}
           initialRouteName="Dashboard"
         >
-          {accessibleScreens.map(screen => (
+          {screens.map((screen) => (
             <Tab.Screen
               key={screen.name}
               name={screen.name}
@@ -159,6 +160,20 @@ const MainTabs = () => {
 
 export const AppNavigator = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+  const { refresh } = useRefreshMyPermissions({ ttlMs: 10 * 60 * 1000, enableAppResume: true });
+
+  useEffect(() => {
+    const run = async () => {
+      if (!isAuthenticated) {
+        dispatch(clearPermissions());
+        return;
+      }
+
+      await refresh();
+    };
+    run();
+  }, [isAuthenticated, dispatch, refresh]);
 
   return (
     <NavigationContainer ref={navigationRef}>
@@ -190,6 +205,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="Employees" component={EmployeesScreen} />
             <Stack.Screen name="AddEmployee" component={AddEmployeeScreen} />
             <Stack.Screen name="EmployeeDetails" component={EmployeeDetailsScreen} />
+            <Stack.Screen name="EmployeePermissionOverrides" component={EmployeePermissionOverridesScreen} />
             <Stack.Screen name="Visitors" component={VisitorsScreen} />
             <Stack.Screen name="AddVisitor" component={AddVisitorScreen} />
             <Stack.Screen name="VisitorDetails" component={VisitorDetailsScreen} />

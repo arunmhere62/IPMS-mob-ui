@@ -8,20 +8,7 @@
  */
 
 // Configuration
-export {
-  UserRole,
-  Permission,
-  RolePermissions,
-  ScreenAccessConfig,
-  hasPermission,
-  getRolePermissions,
-  canAccessScreen,
-  getAccessibleScreens,
-  hasAnyPermission,
-  hasAllPermissions,
-} from '../config/rbac.config';
-
-export type { ScreenConfig } from '../config/rbac.config';
+export { Permission } from '../config/rbac.config';
 
 // Hooks
 export { usePermissions } from '../hooks/usePermissions';

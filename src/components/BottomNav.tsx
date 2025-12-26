@@ -29,7 +29,6 @@ const userTabs: TabConfig[] = [
 
 export const BottomNav: React.FC<BottomNavProps> = React.memo(({ navigation, currentRoute }) => {
   const insets = useSafeAreaInsets();
-  const { can } = usePermissions();
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [paymentOptionsPosition, setPaymentOptionsPosition] = useState({ x: 0, y: 0 });
   
@@ -37,8 +36,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(({ navigation, cur
   const dropdownAnimValue = useRef(new Animated.Value(0)).current;
   const backdropAnimValue = useRef(new Animated.Value(0)).current;
   
-  // Filter tabs based on user permissions
-  const accessibleTabs = userTabs.filter(tab => can(tab.permission));
+  const accessibleTabs = userTabs;
   
   const animateDropdownIn = () => {
     Animated.parallel([

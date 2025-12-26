@@ -7,6 +7,7 @@ import {
   Alert,
   RefreshControl,
   Image,
+  TouchableOpacity,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,8 @@ import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import { useDeleteEmployeeMutation, useGetEmployeeByIdQuery } from '../../services/api/employeesApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 const DetailRow = ({
   label,
@@ -99,6 +102,7 @@ const EmployeeDetailsScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { employeeId } = route.params;
+  const { can } = usePermissions();
   const {
     data: employee,
     isLoading: loading,
@@ -247,6 +251,25 @@ const EmployeeDetailsScreen: React.FC = () => {
                 </View>
               </View>
             </Card>
+
+            {can(Permission.EDIT_USER) && (
+              <TouchableOpacity
+                onPress={() => (navigation as any).navigate('EmployeePermissionOverrides', { employeeId })}
+                style={{
+                  marginBottom: 12,
+                  padding: 14,
+                  borderRadius: 16,
+                  backgroundColor: '#111827',
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
+                  Permission Overrides
+                </Text>
+                <Text style={{ color: '#E5E7EB', marginTop: 4, fontSize: 12 }}>
+                  Allow/Deny specific permissions for this employee
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <Card
               style={{

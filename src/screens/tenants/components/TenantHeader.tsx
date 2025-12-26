@@ -8,6 +8,7 @@ import { Tenant } from "@/services/api/tenantsApi";
 interface TenantHeaderProps {
   tenant: Tenant;
   onEdit: () => void;
+  showEdit?: boolean;
   onCall: (phone: string) => void;
   onWhatsApp: (phone: string) => void;
   onEmail: (email: string) => void;
@@ -20,6 +21,7 @@ interface TenantHeaderProps {
 export const TenantHeader: React.FC<TenantHeaderProps> = ({
   tenant,
   onEdit,
+  showEdit = true,
   onCall,
   onWhatsApp,
   onEmail,
@@ -37,6 +39,8 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
       <View style={styles.editButton}>
         <ActionButtons
           onEdit={onEdit}
+          showEdit={true}
+          disableEdit={!showEdit}
           showView={false}
           showDelete={false}
           containerStyle={{ backgroundColor: "transparent", padding: 0 }}

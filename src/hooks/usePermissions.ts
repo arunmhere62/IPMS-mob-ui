@@ -1,15 +1,7 @@
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import {
-  Permission,
-  hasPermission,
-  getRolePermissions,
-  canAccessScreen,
-  getAccessibleScreens,
-  hasAnyPermission,
-  hasAllPermissions,
-  ScreenConfig,
-} from '../config/rbac.config';
+import { Permission } from '../config/rbac.config';
+import { getBackendPermissionKeyCandidates } from '../config/rbac-backend-map';
 
 /**
  * Custom hook for role-based access control
@@ -24,6 +16,9 @@ import {
 export const usePermissions = () => {
   const user = useSelector((state: RootState) => state.auth.user);
   const userRole = user?.role_name || '';
+  const permissionsMap = useSelector((state: RootState) => (state as any).rbac?.permissionsMap || {});
+  const loadedAt = useSelector((state: RootState) => (state as any).rbac?.loadedAt || null);
+  const isReady = Boolean(loadedAt);
 
 
   return {
@@ -33,7 +28,8 @@ export const usePermissions = () => {
      * @returns boolean
      */
     can: (permission: Permission): boolean => {
-      return hasPermission(userRole, permission);
+      const keys = getBackendPermissionKeyCandidates(permission);
+      return keys.some((k) => Boolean((permissionsMap as any)[k]));
     },
 
     /**
@@ -42,7 +38,10 @@ export const usePermissions = () => {
      * @returns boolean
      */
     canAny: (permissions: Permission[]): boolean => {
-      return hasAnyPermission(userRole, permissions);
+      return permissions.some((p) => {
+        const keys = getBackendPermissionKeyCandidates(p);
+        return keys.some((k) => Boolean((permissionsMap as any)[k]));
+      });
     },
 
     /**
@@ -51,7 +50,10 @@ export const usePermissions = () => {
      * @returns boolean
      */
     canAll: (permissions: Permission[]): boolean => {
-      return hasAllPermissions(userRole, permissions);
+      return permissions.every((p) => {
+        const keys = getBackendPermissionKeyCandidates(p);
+        return keys.some((k) => Boolean((permissionsMap as any)[k]));
+      });
     },
 
     /**
@@ -60,20 +62,14 @@ export const usePermissions = () => {
      * @returns boolean
      */
     canAccess: (screenPath: string): boolean => {
-      return canAccessScreen(userRole, screenPath);
+      return true;
     },
 
     /**
      * Get all permissions for current user
      * @returns Permission[]
      */
-    permissions: getRolePermissions(userRole),
-
-    /**
-     * Get all accessible screens for current user
-     * @returns ScreenConfig[]
-     */
-    accessibleScreens: getAccessibleScreens(userRole),
+    isReady,
 
     /**
      * Get current user role
