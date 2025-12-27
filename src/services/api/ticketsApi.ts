@@ -112,7 +112,21 @@ export const ticketsApi = baseApi.injectEndpoints({
 
     getTicketById: build.query<TicketResponse, number>({
       query: (id) => ({ url: `/tickets/${id}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: ApiEnvelope<any> | any): TicketResponse => {
+        const payload: any = (response as any)?.data ?? response;
+
+        // If backend already returns { success, data: Ticket }
+        if (payload && typeof payload === 'object' && 'data' in payload && 'success' in payload) {
+          return payload as TicketResponse;
+        }
+
+        // If backend returns the ticket directly (or we extracted it)
+        return {
+          success: Boolean((response as any)?.success ?? true),
+          data: payload as Ticket,
+          message: (response as any)?.message,
+        };
+      },
       providesTags: (_res, _err, id) => [{ type: 'Ticket' as const, id }],
     }),
 

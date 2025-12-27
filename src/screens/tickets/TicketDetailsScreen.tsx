@@ -265,7 +265,9 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                         <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
-                          {comment.users?.name || 'Unknown User'}
+                          {comment.author_source === 'MANAGEMENT'
+                            ? comment.management_user_name || comment.management_user_email || `Product Team #${comment.management_user_id || ''}`
+                            : comment.users?.name || (comment.user_id ? `User #${comment.user_id}` : 'User')}
                         </Text>
                         <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
                           {new Date(comment.created_at).toLocaleString()}
