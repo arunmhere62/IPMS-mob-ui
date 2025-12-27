@@ -15,7 +15,14 @@ export interface ErrorInfo {
  * Show success alert
  * Can accept either a message string or an API response object
  */
-export const showSuccessAlert = (messageOrResponse: string | any, title?: string): void => {
+export const showSuccessAlert = (
+  messageOrResponse: string | any,
+  options?: {
+    title?: string;
+    okText?: string;
+    onOk?: () => void;
+  }
+): void => {
   try {
     let message: string;
     let alertTitle: string;
@@ -23,7 +30,7 @@ export const showSuccessAlert = (messageOrResponse: string | any, title?: string
     if (typeof messageOrResponse === 'string') {
       // Direct message string
       message = messageOrResponse;
-      alertTitle = title || 'Success';
+      alertTitle = options?.title || 'Success';
     } else if (messageOrResponse && typeof messageOrResponse === 'object') {
       // API response object - extract message from response structure
       console.log('showSuccessAlert received object:', messageOrResponse);
@@ -36,17 +43,27 @@ export const showSuccessAlert = (messageOrResponse: string | any, title?: string
       } else {
         message = 'Operation completed successfully';
       }
-      alertTitle = title || (messageOrResponse.success ? 'Success' : 'Complete');
+      alertTitle = options?.title || (messageOrResponse.success ? 'Success' : 'Complete');
     } else {
       message = 'Operation completed successfully';
-      alertTitle = title || 'Success';
+      alertTitle = options?.title || 'Success';
     }
     
     console.log('Final message for alert:', message);
+    if (options?.onOk) {
+      Alert.alert(alertTitle, message, [
+        {
+          text: options?.okText || 'OK',
+          onPress: options.onOk,
+        },
+      ]);
+      return;
+    }
+
     Alert.alert(alertTitle, message);
   } catch (e) {
     console.error('Error in showSuccessAlert:', e);
-    Alert.alert(title || 'Success', typeof messageOrResponse === 'string' ? messageOrResponse : 'Operation completed successfully');
+    Alert.alert(options?.title || 'Success', typeof messageOrResponse === 'string' ? messageOrResponse : 'Operation completed successfully');
   }
 };
 

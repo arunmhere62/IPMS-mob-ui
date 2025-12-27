@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Theme } from '../../theme';
-import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -11,30 +10,21 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { OTPInput } from '../../components/OTPInput';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
-import { PasswordInput } from '../../components/PasswordInput';
-import { OptionSelector } from '../../components/OptionSelector';
 import { CONTENT_COLOR } from '@/constant';
-import { useGetCitiesQuery, useGetCountriesQuery, useGetStatesQuery } from '../../services/api/locationApi';
+import { useGetCountriesQuery } from '../../services/api/locationApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { useSendSignupOtpMutation, useSignupMutation, useVerifySignupOtpMutation } from '../../services/api/authApi';
+import { type RequiredLegalDocument, useLazyGetRequiredLegalDocumentsStatusQuery } from '../../services/api/legalDocumentsApi';
 
 interface FormData {
   organizationName: string;
   name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
   phone: string;
   pgName: string;
-  pgAddress: string;
-  pgPincode: string;
   countryCode: string;
-  stateId: number | null;
-  cityId: number | null;
   rentCycleType: 'CALENDAR' | 'MIDMONTH';
   rentCycleStart: number | null;
   rentCycleEnd: number | null;
-  pgType: string;
 }
 
 interface Country {
@@ -43,38 +33,20 @@ interface Country {
   iso_code: string;
 }
 
-interface State {
-  s_no: number;
-  name: string;
-  iso_code: string;
-}
-
-interface City {
-  s_no: number;
-  name: string;
-}
-
 export const SignupScreenNew: React.FC = () => {
   const navigation = useNavigation();
-  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [hasAgreedToLegal, setHasAgreedToLegal] = useState(false);
+  const [requiredLegalDocs, setRequiredLegalDocs] = useState<RequiredLegalDocument[]>([]);
   const [formData, setFormData] = useState<FormData>({
     organizationName: '',
     name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
     phone: '',
     pgName: '',
-    pgAddress: '',
-    pgPincode: '',
     countryCode: 'IN',
-    stateId: null,
-    cityId: null,
     rentCycleType: 'CALENDAR',
     rentCycleStart: 1,
     rentCycleEnd: 30,
-    pgType: 'COLIVING',
   });
 
   const [countries, setCountries] = useState<Country[]>([]);
@@ -89,26 +61,13 @@ export const SignupScreenNew: React.FC = () => {
   const [showOtpVerification, setShowOtpVerification] = useState(false);
   const [otp, setOtp] = useState('');
   const [fullPhone, setFullPhone] = useState('');
-  const [selectedStateCode, setSelectedStateCode] = useState<string>('');
 
-  const { data: statesResponse, isFetching: isStatesFetching } = useGetStatesQuery(
-    { countryCode: formData.countryCode || 'IN' },
-    { skip: !formData.countryCode }
-  );
-
-  const states = ((statesResponse as any)?.data || []) as State[];
-
-  const { data: citiesResponse, isFetching: isCitiesFetching } = useGetCitiesQuery(
-    { stateCode: selectedStateCode },
-    { skip: !selectedStateCode }
-  );
-
-  const cities = ((citiesResponse as any)?.data || []) as City[];
 
   const { data: countriesResponse } = useGetCountriesQuery();
   const [sendSignupOtp] = useSendSignupOtpMutation();
   const [verifySignupOtp] = useVerifySignupOtpMutation();
   const [signup] = useSignupMutation();
+  const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
 
   useEffect(() => {
     if (countriesResponse?.success) {
@@ -122,25 +81,29 @@ export const SignupScreenNew: React.FC = () => {
     }
   }, [countriesResponse]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const status = await getRequiredLegalStatus({ context: 'SIGNUP' }).unwrap();
+        const pending = (status?.pending ?? []) as RequiredLegalDocument[];
+        setRequiredLegalDocs(Array.isArray(pending) ? pending : []);
+      } catch {
+        setRequiredLegalDocs([]);
+      }
+    })();
+  }, [getRequiredLegalStatus]);
+
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData(prevFormData => ({ ...prevFormData, [field]: value }));
   };
 
-  const validateStep1 = () => {
+  const validateForm = () => {
     if (!formData.organizationName.trim()) {
       Alert.alert('Error', 'Please enter organization name');
       return false;
     }
     if (!formData.name.trim()) {
       Alert.alert('Error', 'Please enter your name');
-      return false;
-    }
-    if (!formData.email.trim()) {
-      Alert.alert('Error', 'Please enter email');
-      return false;
-    }
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      Alert.alert('Error', 'Please enter a valid email');
       return false;
     }
     if (!formData.phone.trim()) {
@@ -151,43 +114,44 @@ export const SignupScreenNew: React.FC = () => {
       Alert.alert('Error', 'Please verify your phone number first');
       return false;
     }
-    if (formData.password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return false;
-    }
-    return true;
-  };
-
-  const validateStep2 = () => {
     if (!formData.pgName.trim()) {
       Alert.alert('Error', 'Please enter PG name');
-      return false;
-    }
-    if (!formData.pgAddress.trim()) {
-      Alert.alert('Error', 'Please enter PG address');
-      return false;
-    }
-    if (!formData.stateId) {
-      Alert.alert('Error', 'Please select a state');
-      return false;
-    }
-    if (!formData.cityId) {
-      Alert.alert('Error', 'Please select a city');
       return false;
     }
     if (formData.rentCycleType === 'CALENDAR' && !formData.rentCycleEnd) {
       Alert.alert('Error', 'Please enter rent cycle end day');
       return false;
     }
-    if (!formData.pgType) {
-      Alert.alert('Error', 'Please select PG type');
+    if (!hasAgreedToLegal) {
+      Alert.alert('Error', 'Please agree to the Terms & Conditions and Privacy Policy');
       return false;
     }
     return true;
+  };
+
+  const findLegalDocUrl = (types: string | string[]) => {
+    const candidates = (Array.isArray(types) ? types : [types])
+      .map((t) => String(t || '').toUpperCase())
+      .filter(Boolean);
+
+    const doc = (requiredLegalDocs || []).find((d: any) => {
+      const dt = String(d?.type || '').toUpperCase();
+      return candidates.includes(dt);
+    });
+    return doc?.url || (doc as any)?.content_url;
+  };
+
+  const openLegalDocByType = async (types: string | string[], fallbackTitle: string) => {
+    const url = findLegalDocUrl(types);
+    if (!url) {
+      Alert.alert('Info', `${fallbackTitle} link is not available right now.`);
+      return;
+    }
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Error', `Unable to open ${fallbackTitle}`);
+    }
   };
 
   const handleSendOtp = async () => {
@@ -234,47 +198,40 @@ export const SignupScreenNew: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep2()) return;
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
       const signupData: any = {
         organizationName: formData.organizationName.trim(),
         name: formData.name.trim(),
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
         pgName: formData.pgName.trim(),
-        pgAddress: formData.pgAddress.trim(),
-        stateId: Number(formData.stateId),
-        cityId: Number(formData.cityId),
         rentCycleType: formData.rentCycleType,
         rentCycleStart: formData.rentCycleStart,
         rentCycleEnd: formData.rentCycleEnd,
-        pgType: formData.pgType,
       };
 
       if (formData.phone.trim()) {
         signupData.phone = selectedCountry.phoneCode + formData.phone.trim();
       }
-      if (formData.pgPincode.trim()) {
-        signupData.pgPincode = formData.pgPincode.trim();
-      }
-
       console.log('📤 Sending signup data:', signupData);
 
-      await signup(signupData).unwrap();
-      Alert.alert(
-        'Success',
-        'Account created successfully! Please wait for admin approval.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              navigation.goBack();
-            },
-          },
-        ]
-      );
+      const status = await getRequiredLegalStatus({ context: 'SIGNUP' }).unwrap();
+      if (status?.pending?.length) {
+        (navigation as any).navigate('LegalDocuments', {
+          context: 'SIGNUP',
+          pending: status.pending,
+          signupData,
+        });
+        return;
+      }
+
+      const response = await signup(signupData).unwrap();
+      showSuccessAlert(response, {
+        onOk: () => {
+          (navigation as any).navigate('Login');
+        },
+      });
     } catch (error: any) {
       showErrorAlert(error, 'Signup failed');
     } finally {
@@ -290,7 +247,7 @@ export const SignupScreenNew: React.FC = () => {
           Organization Name <Text style={{ color: '#EF4444' }}>*</Text>
         </Text>
         <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          e.g., "ABC PG Management", "XYZ Housing"
+         Enter your organization name. You can add and manage multiple PGs under a single organization.
         </Text>
         <TextInput
           style={{
@@ -306,6 +263,30 @@ export const SignupScreenNew: React.FC = () => {
           placeholderTextColor="#9CA3AF"
           value={formData.organizationName}
           onChangeText={(text) => updateFormData('organizationName', text)}
+        />
+      </View>
+      {/* PG Name */}
+      <View style={{ marginBottom: 16 }}>
+        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+          PG Name <Text style={{ color: '#EF4444' }}>*</Text>
+        </Text>
+        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+          Name of your first PG under this organization (you can add more PGs later)
+        </Text>
+        <TextInput
+          style={{
+            backgroundColor: 'white',
+            borderRadius: 8,
+            padding: 12,
+            borderWidth: 1,
+            borderColor: '#E5E7EB',
+            fontSize: 14,
+            color: Theme.colors.text.primary,
+          }}
+          placeholder="e.g., Green Valley PG, Comfort Homes"
+          placeholderTextColor="#9CA3AF"
+          value={formData.pgName}
+          onChangeText={(text) => updateFormData('pgName', text)}
         />
       </View>
 
@@ -334,33 +315,6 @@ export const SignupScreenNew: React.FC = () => {
         />
       </View>
 
-      {/* Email Address */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          Email Address <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          We'll use this for account recovery and notifications
-        </Text>
-        <TextInput
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            fontSize: 14,
-            color: Theme.colors.text.primary,
-          }}
-          placeholder="e.g., john@example.com"
-          placeholderTextColor="#9CA3AF"
-          value={formData.email}
-          onChangeText={(text) => updateFormData('email', text)}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-      </View>
-
       {/* Phone Number with Country Selector */}
       <View style={{ marginBottom: 16 }}>
         <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
@@ -379,7 +333,7 @@ export const SignupScreenNew: React.FC = () => {
             setPhoneVerified(false);
           }}
         />
-        
+
         {formData.phone.trim() && !phoneVerified && (
           <TouchableOpacity
             style={{
@@ -417,190 +371,6 @@ export const SignupScreenNew: React.FC = () => {
         )}
       </View>
 
-      {/* Password */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Minimum 6 characters (use mix of letters, numbers, symbols)
-        </Text>
-        <PasswordInput
-          label="Password *"
-          placeholder="Enter a strong password"
-          value={formData.password}
-          onChangeText={(text) => updateFormData('password', text)}
-        />
-      </View>
-
-      {/* Confirm Password */}
-      <View style={{ marginBottom: 24 }}>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Re-enter your password to confirm
-        </Text>
-        <PasswordInput
-          label="Confirm Password *"
-          placeholder="Re-enter your password"
-          value={formData.confirmPassword}
-          onChangeText={(text) => updateFormData('confirmPassword', text)}
-        />
-      </View>
-    </View>
-  );
-
-  const renderStep2 = () => {
-    // Check if step 1 is completed, if not redirect back to step 1
-    if (!validateStep1()) {
-      Alert.alert('Incomplete Information', 'Please complete all required fields in Step 1 before proceeding.');
-      setCurrentStep(1);
-      return null;
-    }
-
-    return (
-    <View>
-      {/* PG Name */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          PG Name <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Name of your paying guest accommodation
-        </Text>
-        <TextInput
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            fontSize: 14,
-            color: Theme.colors.text.primary,
-          }}
-          placeholder="e.g., Green Valley PG, Comfort Homes"
-          placeholderTextColor="#9CA3AF"
-          value={formData.pgName}
-          onChangeText={(text) => updateFormData('pgName', text)}
-        />
-      </View>
-
-      {/* PG Type */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          PG Type <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Type of accommodation
-        </Text>
-        <OptionSelector
-          label=""
-          options={[
-            { label: 'Co-living', value: 'COLIVING' },
-            { label: 'Mens PG', value: 'MENS' },
-            { label: 'Womens PG', value: 'WOMENS' },
-          ]}
-          selectedValue={formData.pgType || null}
-          onSelect={(value) => updateFormData('pgType', value || '')}
-          required={true}
-        />
-      </View>
-
-      {/* Location (State & City) */}
-      <View style={{ marginBottom: 16 }}>
-        <SearchableDropdown
-          label="State"
-          placeholder="Select a state"
-          items={states.map(state => ({
-            id: state.s_no,
-            label: state.name,
-            value: state.iso_code,
-          }))}
-          selectedValue={formData.stateId}
-          onSelect={(item) => {
-            if (!item?.id) {
-              updateFormData('stateId', null);
-              updateFormData('cityId', null);
-              setSelectedStateCode('');
-              return;
-            }
-            updateFormData('stateId', item.id);
-            updateFormData('cityId', null);
-            setSelectedStateCode(item.value || '');
-          }}
-          loading={isStatesFetching}
-          required={true}
-        />
-
-        {formData.stateId && (
-          <SearchableDropdown
-            label="City"
-            placeholder="Select a city"
-            items={cities.map(city => ({
-              id: city.s_no,
-              label: city.name,
-              value: city.s_no,
-            }))}
-            selectedValue={formData.cityId}
-            onSelect={(item) => updateFormData('cityId', item?.id || null)}
-            loading={isCitiesFetching}
-            disabled={!formData.stateId}
-            required={true}
-          />
-        )}
-      </View>
-
-      {/* PG Address */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          Complete Address <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Street address, building name, area (e.g., "123 Main St, Apt 4, Downtown")
-        </Text>
-        <TextInput
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 12,
-            marginBottom: 0,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            fontSize: 14,
-            color: Theme.colors.text.primary,
-            minHeight: 80,
-          }}
-          placeholder="Enter your complete address"
-          placeholderTextColor="#9CA3AF"
-          value={formData.pgAddress}
-          onChangeText={(text) => updateFormData('pgAddress', text)}
-          multiline
-          numberOfLines={3}
-          textAlignVertical="top"
-        />
-      </View>
-
-      {/* Pincode */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          Postal Code <Text style={{ color: '#9CA3AF' }}>(Optional)</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          6-digit postal/zip code of your location
-        </Text>
-        <TextInput
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            fontSize: 14,
-            color: Theme.colors.text.primary,
-          }}
-          placeholder="e.g., 560001"
-          placeholderTextColor="#9CA3AF"
-          value={formData.pgPincode}
-          onChangeText={(text) => updateFormData('pgPincode', text)}
-          keyboardType="numeric"
-          maxLength={6}
-        />
-      </View>
 
       {/* Rent Cycle Type Selection */}
       <View style={{ marginBottom: 16 }}>
@@ -704,10 +474,8 @@ export const SignupScreenNew: React.FC = () => {
           </Text>
         </View>
       )}
-
     </View>
-    );
-  };
+  );
 
   // OTP Verification Modal Content
   const otpModalContent = (
@@ -742,8 +510,8 @@ export const SignupScreenNew: React.FC = () => {
   return (
     <ScreenLayout contentBackgroundColor={CONTENT_COLOR}>
       <ScreenHeader
-        title={currentStep === 1 ? 'Create Your Account' : 'Setup Your PG'}
-        subtitle={currentStep === 1 ? 'Start completely free - no hidden charges!' : 'Tell us about your PG location'}
+        title={'Create Your Account'}
+        subtitle={'Start completely free - no hidden charges!'}
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
         backgroundColor={Theme.colors.background.blue}
@@ -754,146 +522,65 @@ export const SignupScreenNew: React.FC = () => {
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: 32, backgroundColor: CONTENT_COLOR }}
           keyboardShouldPersistTaps="handled"
         >
+          <Card>
+            {renderStep1()}
 
-        {/* Step Indicator */}
-        <View style={{ marginBottom: 24 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
-            <TouchableOpacity
-              onPress={() => setCurrentStep(1)}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: currentStep >= 1 ? Theme.colors.primary : '#F3F4F6',
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderWidth: currentStep === 1 ? 3 : 0,
-                borderColor: currentStep === 1 ? Theme.colors.primary : 'transparent',
-                shadowColor: currentStep === 1 ? Theme.colors.primary : 'transparent',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: currentStep === 1 ? 4 : 0,
-              }}
-            >
-              <Text style={{ color: currentStep >= 1 ? 'white' : Theme.colors.text.secondary, fontWeight: 'bold', fontSize: 16 }}>
-                {currentStep > 1 ? '✓' : '1'}
-              </Text>
-            </TouchableOpacity>
-            <View
-              style={{
-                flex: 1,
-                height: 3,
-                backgroundColor: currentStep >= 2 ? Theme.colors.primary : '#E5E7EB',
-                marginHorizontal: 8,
-                borderRadius: 2,
-              }}
-            />
-            <TouchableOpacity
-              onPress={() => setCurrentStep(2)}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: currentStep >= 2 ? Theme.colors.primary : '#F3F4F6',
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderWidth: currentStep === 2 ? 3 : 0,
-                borderColor: currentStep === 2 ? Theme.colors.primary : 'transparent',
-                shadowColor: currentStep === 2 ? Theme.colors.primary : 'transparent',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: currentStep === 2 ? 4 : 0,
-              }}
-            >
-              <Text style={{ color: currentStep >= 2 ? 'white' : Theme.colors.text.secondary, fontWeight: 'bold', fontSize: 16 }}>
-                2
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20 }}>
-            <Text style={{ 
-              fontSize: 12, 
-              fontWeight: currentStep === 1 ? '600' : '400',
-              color: currentStep === 1 ? Theme.colors.primary : Theme.colors.text.secondary 
-            }}>
-              Account Details
-            </Text>
-            <Text style={{ 
-              fontSize: 12, 
-              fontWeight: currentStep === 2 ? '600' : '400',
-              color: currentStep === 2 ? Theme.colors.primary : Theme.colors.text.secondary 
-            }}>
-              PG Information
-            </Text>
-          </View>
-        </View>
+            <View style={{ marginTop: 14 }}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={{ flexDirection: 'row', alignItems: 'flex-start' }}
+                onPress={() => setHasAgreedToLegal((v) => !v)}
+              >
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 4,
+                    borderWidth: 1,
+                    borderColor: hasAgreedToLegal ? Theme.colors.primary : '#D1D5DB',
+                    backgroundColor: hasAgreedToLegal ? Theme.colors.primary : 'white',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginTop: 2,
+                  }}
+                >
+                  {hasAgreedToLegal ? <Text style={{ color: 'white', fontSize: 12, fontWeight: '700' }}>✓</Text> : null}
+                </View>
 
-        {/* Welcome Message */}
-        <View style={{
-          backgroundColor: '#F0F9FF',
-          borderLeftWidth: 4,
-          borderLeftColor: Theme.colors.primary,
-          borderRadius: 8,
-          padding: 16,
-          marginBottom: 24,
-        }}>
-          <Text style={{
-            fontSize: 14,
-            fontWeight: '600',
-            color: Theme.colors.text.primary,
-            marginBottom: 4,
-          }}>
-            🎉 Quick & Easy Setup
-          </Text>
-          <Text style={{
-            fontSize: 13,
-            color: Theme.colors.text.secondary,
-            lineHeight: 18,
-          }}>
-            {currentStep === 1 
-              ? 'Create your account in just 2 simple steps. Start completely free - no hidden charges!'
-              : 'Almost done! Just tell us about your PG location and you\'re ready to go.'
-            }
-          </Text>
-        </View>
+                <Text style={{ flex: 1, marginLeft: 10, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 18 }}>
+                  I agree to the{' '}
+                  <Text
+                    style={{ color: Theme.colors.primary, fontWeight: '700' }}
+                    onPress={() => openLegalDocByType('TERMS_AND_CONDITIONS', 'Terms & Conditions')}
+                  >
+                    Terms & Conditions
+                  </Text>
+                  {' '}and{' '}
+                  <Text
+                    style={{ color: Theme.colors.primary, fontWeight: '700' }}
+                    onPress={() => openLegalDocByType('PRIVACY_POLICY', 'Privacy Policy')}
+                  >
+                    Privacy Policy
+                  </Text>
+                  .
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-        {/* Form Content */}
-        <Card>
-          {currentStep === 1 ? renderStep1() : renderStep2()}
-        </Card>
-
-        {/* Buttons */}
-        <View style={{ marginTop: 24, gap: 12 }}>
-          {currentStep === 2 && (
-            <Button
-              title="Back"
-              onPress={() => setCurrentStep(1)}
-              variant="secondary"
-              size="md"
-            />
-          )}
-          <Button
-            title={currentStep === 1 ? 'Next' : 'Create Account'}
-            onPress={() => {
-              if (currentStep === 1) {
-                if (validateStep1()) {
-                  setCurrentStep(2);
-                }
-              } else {
-                handleSubmit();
-              }
-            }}
-            loading={loading}
-            variant="primary"
-            size="md"
-          />
-        </View>
+            <View style={{ marginTop: 24 }}>
+              <Button
+                title={'Create Account'}
+                onPress={handleSubmit}
+                loading={loading}
+                variant="primary"
+                size="md"
+              />
+            </View>
+          </Card>
         </ScrollView>
       </KeyboardAvoidingView>
 

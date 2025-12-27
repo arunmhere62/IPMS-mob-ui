@@ -5,6 +5,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppDispatch, RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice';
+import { setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
+import { clearOrganizations } from '../../store/slices/organizationSlice';
+import { clearPermissions } from '../../store/slices/rbacSlice';
+import { baseApi } from '../../services/api/baseApi';
+import { persistor } from '../../store';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -69,9 +74,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               console.warn('⚠️ Failed to cleanup notifications:', error);
             }
 
-            // Dispatch logout action - this will update Redux state
-            // The AppNavigator will automatically switch to auth screens
+            // Clear RTK Query cache + all redux slice state
+            dispatch(baseApi.util.resetApiState());
+            dispatch(clearOrganizations());
+            dispatch(clearPermissions());
+            dispatch(setSelectedPGLocation(null));
             dispatch(logout());
+
+            // Remove persisted redux state from disk
+            try {
+              await persistor.purge();
+            } catch (e) {
+              console.warn('⚠️ Failed to purge persisted store:', e);
+            }
 
             console.log('✅ User logged out successfully');
           },

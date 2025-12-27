@@ -77,18 +77,11 @@ export type VerifySignupOtpResponse = unknown;
 export type SignupRequest = {
   organizationName: string;
   name: string;
-  email: string;
-  password: string;
   pgName: string;
-  pgAddress: string;
-  stateId: number;
-  cityId: number;
   phone?: string;
-  pgPincode?: string;
   rentCycleType?: string;
   rentCycleStart?: number | null;
   rentCycleEnd?: number | null;
-  pgType?: string;
 };
 
 export type SignupResponse = unknown;

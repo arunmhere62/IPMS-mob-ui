@@ -70,8 +70,9 @@ export const pgLocationsApi = baseApi.injectEndpoints({
       query: (params) => ({
         url: '/pg-locations',
         method: 'GET',
-        params: params || { _t: Date.now() },
+        params: params ?? undefined,
       }),
+      keepUnusedDataFor: 300,
       transformResponse: (response: ApiEnvelope<GetPGLocationsResponse> | GetPGLocationsResponse | any) => {
         // Backend returns an envelope: { statusCode, success, message, timestamp, data: PGLocation[] }
         // Sometimes responses may already be nested under a `data` key due to upstream wrappers.

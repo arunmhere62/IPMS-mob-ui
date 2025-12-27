@@ -52,7 +52,6 @@ export const DashboardScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       setIsMounted(true);
-      refetchPGLocations();
     }, [])
   );
 

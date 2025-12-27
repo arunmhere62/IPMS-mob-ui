@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   Alert,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '../../store';
 import { Room, useDeleteRoomMutation, useGetAllRoomsQuery } from '../../services/api/roomsApi';
 import { Card } from '../../components/Card';
@@ -45,19 +44,25 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
   const [appliedSearch, setAppliedSearch] = useState('');
 
+  const roomsQueryArgs = useMemo(() => {
+    if (!selectedPGLocationId) return undefined as any;
+    return {
+      pg_id: selectedPGLocationId,
+      limit: 100,
+      search: appliedSearch || undefined,
+    };
+  }, [selectedPGLocationId, appliedSearch]);
+
   const {
     data: roomsResponse,
     refetch: refetchRooms,
     isFetching: isRoomsFetching,
   } = useGetAllRoomsQuery(
-    selectedPGLocationId
-      ? {
-          pg_id: selectedPGLocationId,
-          limit: 100,
-          search: appliedSearch || undefined,
-        }
-      : (undefined as any),
-    { skip: !selectedPGLocationId }
+    roomsQueryArgs,
+    {
+      skip: !selectedPGLocationId,
+      refetchOnMountOrArgChange: false,
+    }
   );
 
   const [deleteRoomMutation] = useDeleteRoomMutation();
@@ -67,15 +72,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const [editingRoomId, setEditingRoomId] = useState<number | null>(null);
 
 
-  // Track if this is the first mount to load data
-  const isFirstMount = useRef(true);
-
-  useEffect(() => {
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-    }
-  }, [selectedPGLocationId]);
-
   useEffect(() => {
     setRooms(((roomsResponse as any)?.data || []) as Room[]);
     setPagination((roomsResponse as any)?.pagination || undefined);
@@ -84,16 +80,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   useEffect(() => {
     setLoading(!!selectedPGLocationId && isRoomsFetching);
   }, [isRoomsFetching, selectedPGLocationId]);
-
-  // Only reload rooms when PG location changes, not on every focus
-  useFocusEffect(
-    React.useCallback(() => {
-      // Don't reload on focus - only load on PG location change
-      return () => {
-        // Cleanup if needed
-      };
-    }, [])
-  );
 
   const handleRefresh = async () => {
     setRefreshing(true);

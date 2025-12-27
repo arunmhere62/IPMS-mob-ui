@@ -187,6 +187,7 @@ export const roomsApi = baseApi.injectEndpoints({
         method: 'GET',
         params: params || undefined,
       }),
+      keepUnusedDataFor: 300,
       transformResponse: (response: ApiEnvelope<GetRoomsResponse> | any) => (response as any)?.data ?? response,
       providesTags: (result) => {
         const rooms = (result as any)?.data || [];
@@ -234,6 +235,7 @@ export const roomsApi = baseApi.injectEndpoints({
         method: 'GET',
         params: params || undefined,
       }),
+      keepUnusedDataFor: 300,
       transformResponse: (response: ApiEnvelope<GetBedsResponse> | any) => normalizeListResponse<Bed>(response),
       providesTags: (result) => {
         const beds = (result as any)?.data || [];

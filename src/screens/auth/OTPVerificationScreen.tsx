@@ -15,6 +15,7 @@ import { FEATURES } from '../../config/env.config';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { navigationRef } from '../../navigation/navigationRef';
+import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../services/api/legalDocumentsApi';
 
 interface OTPVerificationScreenProps {
   navigation: any;
@@ -31,6 +32,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
   const dispatch = useDispatch<AppDispatch>();
   const [verifyOtp, { isLoading: verifyingOtp }] = useVerifyOtpMutation();
   const [resendOtp, { isLoading: resendingOtp }] = useResendOtpMutation();
+  const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
 
   useEffect(() => {
     setOtpError('');
@@ -95,6 +97,15 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
       }
       
       showSuccessAlert('Login successful!');
+
+      const status = await getRequiredLegalStatus({ context: 'LOGIN' }).unwrap();
+      if (status?.pending?.length) {
+        navigation.navigate('LegalDocuments', {
+          context: 'LOGIN',
+          pending: status.pending,
+        });
+        return;
+      }
 
       setTimeout(() => {
         const nav = navigationRef.current;
@@ -162,7 +173,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
               marginBottom: Theme.spacing.lg,
               borderWidth: 1,
               borderColor: Theme.withOpacity(Theme.colors.border, 0.25),
-              backgroundColor: Theme.withOpacity('#000000', 0.03),
+              // backgroundColor: Theme.withOpacity('#000000', 0.03),
             }}
           >
             <Text

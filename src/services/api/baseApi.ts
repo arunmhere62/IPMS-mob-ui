@@ -38,16 +38,16 @@ const applyAuthAndContextHeaders = (headers: Headers, state: RootState) => {
   }
 
   if (user?.s_no) {
-    headers.set('X-User-Id', user.s_no.toString());
+    headers.set('x-user-id', user.s_no.toString());
   }
 
   if (user?.organization_id) {
-    headers.set('X-Organization-Id', user.organization_id.toString());
+    headers.set('x-organization-id', user.organization_id.toString());
   }
 
   const selectedPGLocationId = state.pgLocations.selectedPGLocationId;
   if (selectedPGLocationId) {
-    headers.set('X-PG-Location-Id', selectedPGLocationId.toString());
+    headers.set('x-pg-location-id', selectedPGLocationId.toString());
   }
 };
 
@@ -208,6 +208,7 @@ export const baseApi = createApi({
     'VisitorStats',
     'S3Objects',
     'S3Object',
+    'LegalRequiredStatus',
   ],
   endpoints: () => ({}),
 });

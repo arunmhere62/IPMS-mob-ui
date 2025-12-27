@@ -36,7 +36,7 @@
 │  ├─ Fetch Tenants (Redux)                                    │
 │  └─ Fetch Payments (Redux)                                   │
 │                                                               │
-│  All requests include: X-PG-Location-Id header               │
+│  All requests include: x-pg-location-id header               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
