@@ -2,7 +2,7 @@ import React from 'react';
 import { View, ViewProps, StyleSheet } from 'react-native';
 
 interface CardProps extends ViewProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   backgroundColor?: string;
   shadowColor?: string;

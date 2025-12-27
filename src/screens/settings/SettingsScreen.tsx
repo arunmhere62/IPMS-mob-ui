@@ -9,6 +9,7 @@ import { setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
 import { clearOrganizations } from '../../store/slices/organizationSlice';
 import { clearPermissions } from '../../store/slices/rbacSlice';
 import { baseApi } from '../../services/api/baseApi';
+import { useLogoutMutation } from '../../services/api/authApi';
 import { persistor } from '../../store';
 import { Card } from '../../components/Card';
 import { Theme } from '../../theme';
@@ -25,6 +26,8 @@ interface SettingsScreenProps {
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+
+  const [serverLogout] = useLogoutMutation();
 
   const {
     data: subscriptionStatus,
@@ -66,6 +69,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           style: 'destructive',
           onPress: async () => {
             try {
+              // Best-effort server-side logout (revokes tokens)
+              try {
+                await serverLogout().unwrap();
+              } catch (e) {
+                console.warn('⚠️ Server logout failed (continuing local logout):', e);
+              }
+
               // Unregister FCM token and cleanup notification service
               await notificationService.unregisterToken();
               notificationService.cleanup();
@@ -101,7 +111,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
     { title: 'Report Issue', icon: '🐛', onPress: () => navigation.navigate('Tickets'), },
     { title: 'Notifications', icon: '🔔', onPress: () => { } },
     { title: 'Privacy', icon: '🔒', onPress: () => { } },
-    { title: 'Help & Support', icon: '❓', onPress: () => { } },
+    { title: 'Help & Support', icon: '❓', onPress: () => navigation.navigate('FaqWebView') },
     { title: 'About', icon: 'ℹ️', onPress: () => { } },
   ];
 

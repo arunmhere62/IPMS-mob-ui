@@ -186,12 +186,15 @@ export const DashboardScreen: React.FC = () => {
   }
 
   return (
-    <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+    <ScreenLayout
+      backgroundColor={Theme.colors.background.blue}
+      contentBackgroundColor={Theme.colors.background.secondary}
+    >
       <ScreenHeader 
         title="Dashboard" 
         showPGSelector={true}
       />
-      <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>
+      <View style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={{ paddingBottom: 80 }}
           refreshControl={

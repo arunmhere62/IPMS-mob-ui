@@ -33,6 +33,7 @@ interface VisitorsScreenProps {
 }
 
 export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) => {
+  const FlatListWithRef = FlatList as unknown as React.ComponentType<any>;
   const { can } = usePermissions();
   const canEditVisitor = can(Permission.EDIT_VISITOR);
   const canDeleteVisitor = can(Permission.DELETE_VISITOR);
@@ -54,7 +55,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   const [visitorModalVisible, setVisitorModalVisible] = useState(false);
   const [selectedVisitorId, setSelectedVisitorId] = useState<number | undefined>();
   
-  const flatListRef = React.useRef<any>(null);
+  const flatListRef = React.useRef<React.ElementRef<typeof FlatList> | null>(null);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -106,8 +107,8 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
         setInitialLoadCompleted(true);
       }
       
-      if (flatListRef.current && reset) {
-        flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+      if (reset) {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
       }
     } catch (error: any) {
       console.error('Error loading visitors:', error);
@@ -418,12 +419,12 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>Loading visitors...</Text>
         </View>
       ) : (
-        <FlatList
-        style={{ backgroundColor : '#ffff'}}
+        <FlatListWithRef
+          style={{ backgroundColor : '#ffff'}}
           ref={flatListRef}
           data={visitors}
           renderItem={renderVisitorCard}
-          keyExtractor={(item) => item.s_no.toString()}
+          keyExtractor={(item: any) => item.s_no.toString()}
           contentContainerStyle={{ padding: 16, paddingBottom: 0 }}
           refreshControl={
             <RefreshControl

@@ -60,6 +60,7 @@ import { TenantRentPaymentsScreen } from '@/screens/tenants/TenantRentPaymentsSc
 import { TenantRefundPaymentsScreen } from '@/screens/tenants/TenantRefundPaymentsScreen';
 import { TenantAdvancePaymentsScreen } from '@/screens/tenants/TenantAdvancePaymentsScreen';
 import { NetworkLoggerScreen } from '@/screens/network/NetworkLoggerScreen';
+import { FaqWebViewScreen } from '@/screens/settings/FaqWebViewScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -218,6 +219,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="TenantAdvancePaymentsScreen" component={TenantAdvancePaymentsScreen} />
             <Stack.Screen name="TenantRefundPaymentsScreen" component={TenantRefundPaymentsScreen} />
             <Stack.Screen name="NetworkLogger" component={NetworkLoggerScreen} />
+            <Stack.Screen name="FaqWebView" component={FaqWebViewScreen} />
           </>
 
         )}

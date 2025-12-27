@@ -551,17 +551,19 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
   };
 
   return (
-    <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+    <ScreenLayout
+      backgroundColor={Theme.colors.background.blue}
+      contentBackgroundColor={Theme.colors.background.secondary}
+    >
       <ScreenHeader
         title="Rent Payments"
         subtitle={`${pagination?.total || 0} payments`}
-        backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
         showBackButton={true}
         onBackPress={() => navigation.goBack(-1)}
       />
 
-      <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>
+      <View style={{ flex: 1 }}>
         <ErrorBanner
           error={errorText}
           title="Error Loading Payments"

@@ -690,11 +690,15 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
 
   return (
-    <ScreenLayout backgroundColor={Theme.colors.background.blue} >
+    <ScreenLayout
+      backgroundColor={Theme.colors.background.blue}
+      contentBackgroundColor={Theme.colors.background.secondary}
+    >
       <ScreenHeader
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
         title="Tenants" subtitle={`Showing ${tenants.length} of ${pagination?.total || 0} tenants`} />
+        
       {/* Search & Filter Bar */}
       <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
         <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -756,7 +760,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
         </View>
       </View>
 
-      <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+      <View style={{ flex: 1 }}>
 
 
         {/* Filter Modal Overlay */}

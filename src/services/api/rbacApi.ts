@@ -54,12 +54,22 @@ export type RemoveOverridePayload = {
   permission_id: number;
 };
 
+export type BulkUpsertOverridesPayload = {
+  overrides: UpsertOverridePayload[];
+};
+
 export const rbacApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getMyPermissions: build.query<MyPermissionsResponse, void>({
       query: () => ({ url: '/auth/me/permissions', method: 'GET' }),
       transformResponse: (response: CentralEnvelope<MyPermissionsResponse> | any) => unwrapCentralData<MyPermissionsResponse>(response),
       providesTags: [{ type: 'User' as const, id: 'ME_PERMISSIONS' } as any],
+    }),
+
+    getUserPermissions: build.query<MyPermissionsResponse, number>({
+      query: (userId) => ({ url: `/auth/users/${userId}/permissions`, method: 'GET' }),
+      transformResponse: (response: CentralEnvelope<MyPermissionsResponse> | any) => unwrapCentralData<MyPermissionsResponse>(response),
+      providesTags: (_res, _err, userId) => [{ type: 'User' as const, id: `USER_PERMISSIONS_${userId}` } as any],
     }),
 
     listPermissionsGrouped: build.query<Record<string, PermissionCatalogItem[]>, void>({
@@ -89,6 +99,20 @@ export const rbacApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [{ type: 'User' as const, id: `OVERRIDES_${arg.user_id}` } as any],
     }),
 
+    bulkUpsertUserPermissionOverrides: build.mutation<UserPermissionOverride[], BulkUpsertOverridesPayload>({
+      query: (body) => ({
+        url: '/user-permission-overrides/bulk',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: CentralEnvelope<UserPermissionOverride[]> | any) =>
+        unwrapCentralData<UserPermissionOverride[]>(response),
+      invalidatesTags: (_res, _err, arg) => {
+        const userId = (arg.overrides?.[0] as any)?.user_id;
+        return userId ? ([{ type: 'User' as const, id: `OVERRIDES_${userId}` } as any] as any) : ([] as any);
+      },
+    }),
+
     removeUserPermissionOverride: build.mutation<null, RemoveOverridePayload>({
       query: (body) => ({
         url: '/user-permission-overrides',
@@ -105,10 +129,13 @@ export const rbacApi = baseApi.injectEndpoints({
 export const {
   useGetMyPermissionsQuery,
   useLazyGetMyPermissionsQuery,
+  useGetUserPermissionsQuery,
+  useLazyGetUserPermissionsQuery,
   useListPermissionsGroupedQuery,
   useLazyListPermissionsGroupedQuery,
   useListUserPermissionOverridesQuery,
   useLazyListUserPermissionOverridesQuery,
   useUpsertUserPermissionOverrideMutation,
+  useBulkUpsertUserPermissionOverridesMutation,
   useRemoveUserPermissionOverrideMutation,
 } = rbacApi;

@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery, type BaseQueryFn, type FetchArgs, type Fetch
 import { API_BASE_URL } from '../../config';
 import type { RootState } from '../../store';
 import { networkLogger } from '../../utils/networkLogger';
+import { setCredentials, logout } from '../../store/slices/authSlice';
 
 const toPlainHeaders = (headers: any): Record<string, any> => {
   if (!headers) return {};
@@ -62,6 +63,77 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
+let refreshInFlight: Promise<{ accessToken: string; refreshToken?: string } | null> | null = null;
+
+const refreshAccessToken = async (api: any): Promise<{ accessToken: string; refreshToken?: string } | null> => {
+  const state = api.getState() as RootState;
+  const refreshToken = state.auth.refreshToken;
+  const user = state.auth.user;
+
+  if (!refreshToken || !user) return null;
+
+  const logId = `refresh-${Date.now()}-${Math.random()}`;
+  const startedAt = Date.now();
+  networkLogger.addLog({
+    id: logId,
+    method: 'POST',
+    url: `${API_BASE_URL}/auth/refresh`,
+    headers: { 'content-type': 'application/json' },
+    requestData: {
+      body: { refreshToken: '***' },
+    },
+    timestamp: new Date(),
+  });
+
+  const refreshResult = await rawBaseQuery(
+    {
+      url: '/auth/refresh',
+      method: 'POST',
+      body: { refreshToken },
+    },
+    api,
+    {}
+  );
+
+  if ('error' in refreshResult && refreshResult.error) {
+    networkLogger.updateLog(logId, {
+      status: (refreshResult.error as any).status as any,
+      responseData: (refreshResult.error as any).data,
+      error: 'RTK_QUERY_ERROR',
+      duration: Date.now() - startedAt,
+    });
+    return null;
+  }
+
+  const data: any = (refreshResult as any).data;
+  const inner = data && typeof data === 'object' && 'success' in data && 'statusCode' in data ? (data as any).data : data;
+
+  networkLogger.updateLog(logId, {
+    status: 200,
+    responseData: data,
+    duration: Date.now() - startedAt,
+  });
+
+  return {
+    accessToken: inner?.accessToken ?? inner?.access_token,
+    refreshToken: inner?.refreshToken ?? inner?.refresh_token,
+  };
+};
+
+const refreshAccessTokenLocked = async (api: any) => {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        return await refreshAccessToken(api);
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+  }
+
+  return await refreshInFlight;
+};
+
 const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
   args,
   api,
@@ -70,6 +142,11 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
   const url = typeof args === 'string' ? args : args.url;
   const state = api.getState() as RootState;
   const selectedPGLocationId = state.pgLocations.selectedPGLocationId;
+
+  const isAuthRefreshCall = (u?: string) => {
+    const path = (u || '').split('?')[0];
+    return path === '/auth/refresh' || path.endsWith('/auth/refresh');
+  };
 
   const maskAuthHeader = (headers: Record<string, any>) => {
     const h = { ...headers };
@@ -125,7 +202,28 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
     timestamp: new Date(),
   });
 
-  const result = await rawBaseQuery(args, api, extraOptions);
+  let result = await rawBaseQuery(args, api, extraOptions);
+
+  if ('error' in result && result.error && (result.error as any).status === 401 && !isAuthRefreshCall(url)) {
+    const refreshed = await refreshAccessTokenLocked(api);
+    if (refreshed?.accessToken) {
+      const currentState = api.getState() as RootState;
+      const currentUser = currentState.auth.user;
+      if (currentUser) {
+        api.dispatch(
+          setCredentials({
+            user: currentUser,
+            accessToken: refreshed.accessToken,
+            refreshToken: refreshed.refreshToken ?? currentState.auth.refreshToken ?? undefined,
+          })
+        );
+      }
+
+      result = await rawBaseQuery(args, api, extraOptions);
+    } else {
+      api.dispatch(logout());
+    }
+  }
 
   const duration = Date.now() - startedAt;
   if ('error' in result && result.error) {

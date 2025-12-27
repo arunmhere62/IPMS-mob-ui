@@ -47,6 +47,15 @@ export type VerifyOtpResponse = {
   refreshToken?: string;
 };
 
+export type RefreshTokenRequest = {
+  refreshToken: string;
+};
+
+export type RefreshTokenResponse = {
+  accessToken: string;
+  refreshToken?: string;
+};
+
 type VerifyOtpRawResponse = {
   user: User;
   access_token: string;
@@ -113,6 +122,29 @@ export const authApi = baseApi.injectEndpoints({
       },
     }),
 
+    refreshToken: build.mutation<RefreshTokenResponse, RefreshTokenRequest>({
+      query: (body) => ({
+        url: '/auth/refresh',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: CentralEnvelope<any> | ApiEnvelope<any> | any) => {
+        const r = unwrapApiOrCentralData<any>(response);
+        return {
+          accessToken: (r as any).accessToken ?? (r as any).access_token,
+          refreshToken: (r as any).refreshToken ?? (r as any).refresh_token,
+        };
+      },
+    }),
+
+    logout: build.mutation<unknown, void>({
+      query: () => ({
+        url: '/auth/logout',
+        method: 'POST',
+      }),
+      transformResponse: (response: CentralEnvelope<any> | ApiEnvelope<any> | any) => response,
+    }),
+
     resendOtp: build.mutation<ResendOtpResponse, ResendOtpRequest>({
       query: (body) => ({
         url: '/auth/resend-otp',
@@ -159,4 +191,6 @@ export const {
   useSendSignupOtpMutation,
   useVerifySignupOtpMutation,
   useSignupMutation,
+  useRefreshTokenMutation,
+  useLogoutMutation,
 } = authApi;

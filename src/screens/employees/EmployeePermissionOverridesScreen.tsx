@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Theme } from '../../theme';
@@ -7,10 +7,11 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { Card } from '../../components/Card';
 import { CONTENT_COLOR } from '@/constant';
 import {
+  useGetUserPermissionsQuery,
   useListPermissionsGroupedQuery,
   useListUserPermissionOverridesQuery,
+  useBulkUpsertUserPermissionOverridesMutation,
   useRemoveUserPermissionOverrideMutation,
-  useUpsertUserPermissionOverrideMutation,
 } from '../../services/api/rbacApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { useRefreshMyPermissions } from '@/hooks/useRefreshMyPermissions';
@@ -40,9 +41,13 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
     refetch: refetchOverrides,
   } = useListUserPermissionOverridesQuery({ user_id: employeeId });
 
-  const [upsertOverride, { isLoading: saving }] = useUpsertUserPermissionOverrideMutation();
+  const { data: employeePerms, refetch: refetchEmployeePerms } = useGetUserPermissionsQuery(employeeId);
+
+  const [bulkUpsertOverrides, { isLoading: saving }] = useBulkUpsertUserPermissionOverridesMutation();
   const [removeOverride, { isLoading: removing }] = useRemoveUserPermissionOverrideMutation();
   const { refresh: refreshMyPermissions } = useRefreshMyPermissions({ ttlMs: 0, enableAppResume: false });
+
+  const [pending, setPending] = useState<Record<number, Effect>>({});
 
   const overrideByPermissionId = useMemo(() => {
     const map = new Map<number, { effect: string }>();
@@ -57,32 +62,44 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
     return entries.sort(([a], [b]) => a.localeCompare(b));
   }, [groupedPermissions]);
 
-  const onSet = async (permission: PermissionItem, effect: Effect) => {
-    const permissionKey = `${permission.screen_name}_${String(permission.action).toLowerCase()}`;
+  const permissionsMap = (employeePerms as any)?.permissions_map ?? {};
 
-    Alert.alert(
-      'Confirm Permission Update',
-      `Set ${permissionKey} to ${effect} for this employee?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm',
-          onPress: async () => {
-            try {
-              await upsertOverride({
-                user_id: employeeId,
-                permission_id: permission.s_no,
-                effect,
-              }).unwrap();
-              showSuccessAlert('Override saved');
-              await refreshMyPermissions();
-            } catch (e: any) {
-              showErrorAlert(e, 'Override Error');
-            }
-          },
-        },
-      ]
-    );
+  const buildPermissionKey = (p: PermissionItem) => {
+    return `${p.screen_name}_${String(p.action).toLowerCase()}`;
+  };
+
+  const onSet = async (permission: PermissionItem, effect: Effect) => {
+    try {
+      setPending((prev) => ({ ...prev, [permission.s_no]: effect }));
+    } catch (e: any) {
+      showErrorAlert(e, 'Override Error');
+    }
+  };
+
+  const onSaveBulk = async () => {
+    const entries = Object.entries(pending);
+    if (entries.length === 0) {
+      showSuccessAlert('No pending changes');
+      return;
+    }
+
+    try {
+      await bulkUpsertOverrides({
+        overrides: entries.map(([permissionId, effect]) => ({
+          user_id: employeeId,
+          permission_id: Number(permissionId),
+          effect: effect as any,
+        })),
+      }).unwrap();
+
+      setPending({});
+      showSuccessAlert('Overrides saved');
+      await refetchOverrides();
+      await refetchEmployeePerms();
+      await refreshMyPermissions();
+    } catch (e: any) {
+      showErrorAlert(e, 'Bulk Save Error');
+    }
   };
 
   const onClear = async (permission: PermissionItem) => {
@@ -145,10 +162,45 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
                 </Text>
 
                 {(perms as PermissionItem[]).map((p) => {
-                  const current = overrideByPermissionId.get(p.s_no)?.effect;
+                  const current = pending[p.s_no] ?? (overrideByPermissionId.get(p.s_no)?.effect as any);
+                  const permissionKey = buildPermissionKey(p);
+                  const hasAccess = Boolean((permissionsMap as any)[permissionKey]);
+
+                  const pendingEffect = pending[p.s_no];
+                  const savedEffect = overrideByPermissionId.get(p.s_no)?.effect as any;
+                  const effectiveEffect = pendingEffect ?? savedEffect;
+
+                  const sourceLabel = effectiveEffect
+                    ? `Override (${String(effectiveEffect)})${pendingEffect ? ' - Pending' : ''}`
+                    : hasAccess
+                      ? 'Role'
+                      : 'None';
+
+                  const statusLabel = hasAccess ? 'HAS ACCESS' : 'NO ACCESS';
+                  const statusBg = hasAccess ? '#DCFCE7' : '#FEE2E2';
+                  const statusFg = hasAccess ? '#166534' : '#991B1B';
                   return (
                     <View key={p.s_no} style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: Theme.colors.border + '40' }}>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 999,
+                            backgroundColor: statusBg,
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: statusFg }}>
+                            {statusLabel}
+                          </Text>
+                        </View>
+
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: Theme.colors.text.secondary }}>
+                          {sourceLabel}
+                        </Text>
+                      </View>
+
+                      <Text style={{ marginTop: 6, fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
                         {p.screen_name}_{String(p.action).toLowerCase()}
                       </Text>
                       {p.description ? (
@@ -200,6 +252,23 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
                 })}
               </Card>
             ))}
+
+            <TouchableOpacity
+              disabled={saving || removing || Object.keys(pending).length === 0}
+              onPress={onSaveBulk}
+              style={{
+                marginTop: 4,
+                alignSelf: 'center',
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 12,
+                backgroundColor: Object.keys(pending).length ? Theme.colors.primary : '#6B7280',
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700' }}>
+                {saving ? 'Saving...' : `Save Changes (${Object.keys(pending).length})`}
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => {

@@ -18,6 +18,7 @@ import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import { useDeleteEmployeeMutation, useGetEmployeeByIdQuery } from '../../services/api/employeesApi';
+import { useGetUserPermissionsQuery } from '../../services/api/rbacApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
@@ -113,7 +114,44 @@ const EmployeeDetailsScreen: React.FC = () => {
     error,
   } = useGetEmployeeByIdQuery(employeeId);
 
+  const { data: employeePerms } = useGetUserPermissionsQuery(employeeId);
+
   const [deleteEmployee] = useDeleteEmployeeMutation();
+
+  const profileImageUri = (() => {
+    const raw = employee?.profile_images;
+    if (!raw) return null;
+
+    let candidate: unknown = raw;
+
+    if (typeof candidate === 'string') {
+      const trimmed = candidate.trim();
+      if (!trimmed) return null;
+
+      // Some APIs store arrays as JSON strings
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          candidate = parsed;
+        } catch {
+          // fall through and treat as plain string
+          candidate = trimmed;
+        }
+      } else {
+        candidate = trimmed;
+      }
+    }
+
+    const uri = Array.isArray(candidate) ? (candidate[0] as any) : (candidate as any);
+    if (typeof uri !== 'string') return null;
+
+    const finalUri = uri.trim();
+    if (!finalUri) return null;
+
+    // RN Image requires a valid URI scheme (http/https/file/content)
+    if (!/^(https?:\/\/|file:\/\/|content:\/\/)/i.test(finalUri)) return null;
+    return finalUri;
+  })();
 
   const handleRefresh = () => {
     refetch();
@@ -199,11 +237,9 @@ const EmployeeDetailsScreen: React.FC = () => {
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                  {employee.profile_images && 
-                   (typeof employee.profile_images === 'string' ? employee.profile_images.trim() !== '' : 
-                    Array.isArray(employee.profile_images) ? employee.profile_images.length > 0 : false) ? (
+                  {profileImageUri ? (
                     <Image 
-                      source={{ uri: Array.isArray(employee.profile_images) ? employee.profile_images[0] : employee.profile_images }} 
+                      source={{ uri: profileImageUri }} 
                       style={{
                         width: 42,
                         height: 42,
@@ -233,7 +269,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                     </Text>
                     {employee.roles && (
                       <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.primary }}>
-                        {employee.roles.role_name}
+                        Role:{employee.roles.role_name}
                       </Text>
                     )}
                   </View>
@@ -267,6 +303,39 @@ const EmployeeDetailsScreen: React.FC = () => {
                   />
                 </View>
               </View>
+            </Card>
+
+            <Card
+              style={{
+                marginBottom: 12,
+                padding: 14,
+                borderRadius: 16,
+                backgroundColor: '#fff',
+                shadowColor: '#00000015',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 10,
+                elevation: 2,
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
+                Operations
+              </Text>
+              <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary }}>
+                Allowed operations for this employee (role + overrides)
+              </Text>
+
+              {(employeePerms?.permissions ?? []).length ? (
+                <View style={{ marginTop: 10 }}>
+                  <Text style={{ fontSize: 12, color: Theme.colors.text.primary, marginTop: 6, lineHeight: 18 }}>
+                    {(employeePerms?.permissions ?? []).join('\n')}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={{ marginTop: 10, fontSize: 12, color: Theme.colors.text.tertiary }}>
+                  No permissions found
+                </Text>
+              )}
             </Card>
 
             {(canEditEmployee || isAdmin || isSuperAdmin) && (

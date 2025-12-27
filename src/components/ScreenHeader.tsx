@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useContext, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 import { PGLocationSelector } from './PGLocationSelector';
+import { ScreenLayoutContext } from './ScreenLayout';
 
 interface ScreenHeaderProps {
   title: string;
@@ -27,12 +28,24 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   showBackButton = false,
   onBackPress,
   children,
-  backgroundColor = Theme.colors.background.blue,
+  backgroundColor,
   textColor = Theme.colors.text.inverse,
   statusBarStyle = 'auto',
   syncMobileHeaderBg = false,
   notificationBarColor
 }) => {
+  const layout = useContext(ScreenLayoutContext);
+
+  const effectiveBackgroundColor = useMemo(() => {
+    // If the header is transparent, we still want status-bar auto detection
+    // to use the screen background color.
+    return backgroundColor ?? layout.backgroundColor;
+  }, [backgroundColor, layout.backgroundColor]);
+
+  const headerContainerBackgroundColor = useMemo(() => {
+    return backgroundColor ?? Theme.colors.background.blueDark;
+  }, [backgroundColor]);
+
   // Animation value for back button
   const backButtonScale = new Animated.Value(1);
 
@@ -60,10 +73,10 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
     if (statusBarStyle === 'auto') {
       // Check if background is light or dark
       const isDarkBackground = 
-        backgroundColor === Theme.colors.background.blue ||
-        backgroundColor === Theme.colors.background.blueDark ||
-        backgroundColor === Theme.colors.primary ||
-        backgroundColor === Theme.colors.primaryDark;
+        effectiveBackgroundColor === Theme.colors.background.blue ||
+        effectiveBackgroundColor === Theme.colors.background.blueDark ||
+        effectiveBackgroundColor === Theme.colors.primary ||
+        effectiveBackgroundColor === Theme.colors.primaryDark;
       
       style = isDarkBackground ? 'light' : 'dark';
     } else {
@@ -78,13 +91,13 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
       if (notificationBarColor) {
         StatusBar.setBackgroundColor(notificationBarColor, true);
       } else if (syncMobileHeaderBg) {
-        StatusBar.setBackgroundColor(backgroundColor, true);
+        StatusBar.setBackgroundColor(effectiveBackgroundColor, true);
       }
     }
-  }, [backgroundColor, statusBarStyle, syncMobileHeaderBg, notificationBarColor]);
+  }, [effectiveBackgroundColor, statusBarStyle, syncMobileHeaderBg, notificationBarColor]);
 
   return (
-    <View style={{ backgroundColor, padding: 14, paddingTop: 60, paddingBottom: 14 }}>
+    <View style={{ backgroundColor: headerContainerBackgroundColor, padding: 14, paddingTop: 60, paddingBottom: 14 }}>
       <View style={{ marginBottom: (children || showPGSelector) ? 4 : 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {/* Back Button */}

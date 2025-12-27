@@ -152,7 +152,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
       const response = await updateUserProfileMutation({ userId: effectiveUser.s_no, data: payload }).unwrap();
       
-      showSuccessAlert(response, 'Success')
+      showSuccessAlert(response)
 
       // Ensure profile query is up-to-date for all consumers
       if (effectiveUser?.s_no) {

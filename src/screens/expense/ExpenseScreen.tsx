@@ -323,16 +323,15 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   }
 
   return (
-    <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+    <ScreenLayout backgroundColor={Theme.colors.background.blue} contentBackgroundColor={CONTENT_COLOR}>
       <ScreenHeader
         title="Expenses"
         showBackButton
         onBackPress={() => navigation.goBack()}
-        backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
       />
 
-      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+      <View style={{ flex: 1 }}>
         <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <TouchableOpacity

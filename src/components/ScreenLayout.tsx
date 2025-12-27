@@ -1,10 +1,18 @@
-import React, { useEffect } from 'react';
-import { View, ViewStyle, StatusBar, Platform } from 'react-native';
+import React from 'react';
+import { View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Theme } from '../theme';
 
+export const ScreenLayoutContext = React.createContext<{
+  backgroundColor: string;
+  contentBackgroundColor: string;
+}>({
+  backgroundColor: Theme.colors.background.primary,
+  contentBackgroundColor: Theme.colors.background.primary,
+});
+
 interface ScreenLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   /** Background color for the SafeAreaView */
   backgroundColor?: string;
   /** Background color for the content area */
@@ -15,17 +23,23 @@ interface ScreenLayoutProps {
 export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   children,
   backgroundColor = Theme.colors.background.primary,
-  contentBackgroundColor = Theme.colors.background.primary,
+  contentBackgroundColor,
   style,
 }) => {
+  const effectiveContentBackgroundColor = contentBackgroundColor ?? backgroundColor;
+
   return (
     <SafeAreaView 
-      style={{ flex: 1,  }} 
+      style={{ flex: 1, backgroundColor }} 
       edges={['left', 'right', ]}
     >
-      <View style={{ flex: 1, backgroundColor: contentBackgroundColor }}>
-        {children}
-      </View>
+      <ScreenLayoutContext.Provider
+        value={{ backgroundColor, contentBackgroundColor: effectiveContentBackgroundColor }}
+      >
+        <View style={[{ flex: 1, backgroundColor: effectiveContentBackgroundColor }, style]}>
+          {children}
+        </View>
+      </ScreenLayoutContext.Provider>
     </SafeAreaView>
   );
 };
