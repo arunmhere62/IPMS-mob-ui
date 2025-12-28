@@ -14,7 +14,9 @@
     "web": "expo start --web",
     "lint": "tsc --noEmit && eslint . --ext .ts,.tsx",
     "clean": "powershell -Command \"Remove-Item -Recurse -Force @('android/app/.cxx', 'android/app/build', 'android/build', 'node_modules/.cache') -ErrorAction SilentlyContinue; Write-Host '✅ All builds removed!' -ForegroundColor Green\"",
-    "build:clean": "npm run clean && cd android && .\\gradlew assembleRelease"
+    "build:clean": "npm run clean && cd android && .\\gradlew assembleRelease",
+    "build:apk": "eas build -p android --profile apk",
+    "build:aab": "eas build -p android --profile production"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",

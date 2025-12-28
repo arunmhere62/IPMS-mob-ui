@@ -7,26 +7,30 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "node": "22.11.0"
+      "node": "20.19.4"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "20.19.4"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "20.19.4"
     },
     "apk": {
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "20.19.4"
     },
     "standalone-apk": {
       "android": {
         "buildType": "apk"
       },
       "distribution": "internal",
-      "developmentClient": false
+      "developmentClient": false,
+      "node": "20.19.4"
     },
     "minimal-apk": {
       "android": {
