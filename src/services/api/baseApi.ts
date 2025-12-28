@@ -38,12 +38,15 @@ const applyAuthAndContextHeaders = (headers: Headers, state: RootState) => {
     headers.set('Authorization', `Bearer ${accessToken}`);
   }
 
-  if (user?.s_no) {
-    headers.set('x-user-id', user.s_no.toString());
+  const userId = (user as any)?.s_no ?? (user as any)?.id ?? (user as any)?.user_id ?? (user as any)?.userId ?? (user as any)?.sNo;
+  if (userId !== undefined && userId !== null && String(userId).length > 0) {
+    headers.set('x-user-id', String(userId));
   }
 
-  if (user?.organization_id) {
-    headers.set('x-organization-id', user.organization_id.toString());
+  const organizationId =
+    (user as any)?.organization_id ?? (user as any)?.organizationId ?? (user as any)?.org_id ?? (user as any)?.orgId;
+  if (organizationId !== undefined && organizationId !== null && String(organizationId).length > 0) {
+    headers.set('x-organization-id', String(organizationId));
   }
 
   const selectedPGLocationId = state.pgLocations.selectedPGLocationId;

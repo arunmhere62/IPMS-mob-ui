@@ -5,7 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/app-icon.png",
     "splash": {
+      "image": "./assets/splash-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#3B82F6"
     },
@@ -26,6 +28,7 @@
     "android": {
       "package": "com.pgmanagement.app",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon.png",
         "backgroundColor": "#3B82F6"
       },
       "permissions": [
