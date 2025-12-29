@@ -9,6 +9,7 @@
       "distribution": "internal",
       "node": "20.19.4",
       "env": {
+        "NODE_ENV": "development",
         "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       }
     },
@@ -16,6 +17,7 @@
       "distribution": "internal",
       "node": "20.19.4",
       "env": {
+        "NODE_ENV": "production",
         "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       }
     },
@@ -23,6 +25,7 @@
       "autoIncrement": true,
       "node": "20.19.4",
       "env": {
+        "NODE_ENV": "production",
         "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       }
     },
@@ -33,6 +36,7 @@
       "distribution": "internal",
       "node": "20.19.4",
       "env": {
+        "NODE_ENV": "production",
         "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       }
     },
@@ -44,6 +48,7 @@
       "developmentClient": false,
       "node": "20.19.4",
       "env": {
+        "NODE_ENV": "production",
         "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       }
     },
