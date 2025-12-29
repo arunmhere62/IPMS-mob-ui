@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Alert, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
 import { Theme } from '../../theme';
 import { useSendOtpMutation } from '../../services/api/authApi';
@@ -6,6 +6,9 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import notificationService from '../../services/notifications/notificationService';
+import { FEATURES } from '../../config/env.config';
+import { API_BASE_URL } from '../../config';
 
 interface Country {
   code: string;
@@ -30,6 +33,59 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     phoneLength: 10,
   });
   const [sendOtp, { isLoading: sendingOtp }] = useSendOtpMutation();
+
+  useEffect(() => {
+    const setupPushForTesting = async () => {
+      // if (!FEATURES.PUSH_NOTIFICATIONS_ENABLED) {
+      //   return;
+      // }
+
+      try {
+        const token = await notificationService.getExpoPushTokenForTesting();
+        if (token) {
+          console.log('✅ Push token ready (pre-login):', token);
+
+            try {
+              await notificationService.sendLocalNotification(
+                'Notifications enabled',
+                'Local test notification from Login screen',
+                { type: 'TEST' },
+              );
+            } catch (e) {
+              Alert.alert('⚠️ Failed to send local test notification:', String(e));
+            }
+
+          if (__DEV__ && FEATURES.PUSH_NOTIFICATIONS_DEBUG) {
+            try {
+              const res = await fetch(`${API_BASE_URL}/notifications/test-token`, {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  'x-user-id': '1',
+                },
+                body: JSON.stringify({
+                  to: token,
+                  title: 'Backend test push',
+                  message: 'Push triggered from Login screen (pre-login)',
+                  type: 'TEST',
+                  data: { source: 'login_pre_auth', ts: new Date().toISOString() },
+                }),
+              });
+
+              const text = await res.text();
+              console.log('📤 Backend test-token response:', res.status, text);
+            } catch (e) {
+              console.warn('⚠️ Backend test-token call failed:', e);
+            }
+          }
+        }
+      } catch (e) {
+       Alert.alert('⚠️ Push setup failed on Login screen:', String(e));
+      }
+    };
+
+    setupPushForTesting();
+  }, []);
 
   const validatePhone = (phoneNumber: string): boolean => {
     const phoneRegex = /^[0-9]{10}$/;

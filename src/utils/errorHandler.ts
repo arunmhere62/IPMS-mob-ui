@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 import { getApiErrorMessage } from './apiResponseHandler';
+import { showToast } from './toastService';
 
 export type ErrorType = 'network' | 'timeout' | 'server' | 'client' | 'unknown';
 
@@ -60,7 +61,14 @@ export const showSuccessAlert = (
       return;
     }
 
-    Alert.alert(alertTitle, message);
+    const shown = showToast({
+      title: alertTitle,
+      message,
+      variant: 'success',
+    });
+    if (!shown) {
+      Alert.alert(alertTitle, message);
+    }
   } catch (e) {
     console.error('Error in showSuccessAlert:', e);
     Alert.alert(options?.title || 'Success', typeof messageOrResponse === 'string' ? messageOrResponse : 'Operation completed successfully');
@@ -76,7 +84,14 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
   
   try {
     if (typeof error === 'string') {
-      Alert.alert(title, error);
+      const shown = showToast({
+        title,
+        message: error,
+        variant: 'error',
+      });
+      if (!shown) {
+        Alert.alert(title, error);
+      }
       return;
     }
 
@@ -129,7 +144,14 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
       }
     }
     
-    Alert.alert(title, errorMessage);
+    const shown = showToast({
+      title,
+      message: errorMessage,
+      variant: 'error',
+    });
+    if (!shown) {
+      Alert.alert(title, errorMessage);
+    }
   } catch (e) {
     console.error('Error in showErrorAlert:', e);
     Alert.alert(title, 'An error occurred. Please try again.');

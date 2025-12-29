@@ -57,6 +57,18 @@ const applyAuthAndContextHeaders = (headers: Headers, state: RootState) => {
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_BASE_URL,
+  responseHandler: async (response) => {
+    // Prevent RTK Query PARSING_ERROR when server returns non-JSON (e.g. HTML 502/504 pages)
+    // by always reading text and attempting JSON parse.
+    const text = await response.text();
+    if (!text) return null as any;
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { rawText: text } as any;
+    }
+  },
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as RootState;
 

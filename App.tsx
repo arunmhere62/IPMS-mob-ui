@@ -13,6 +13,8 @@ import { ErrorProvider } from './src/providers/ErrorProvider';
 import ErrorAlert from './src/components/ErrorAlert/ErrorAlert';
 import { useError } from './src/providers/ErrorProvider';
 import { NetworkLoggerFloatingButton } from './src/components/NetworkLoggerFloatingButton';
+import notificationService from './src/services/notifications/notificationService';
+import { ToastProvider } from './src/providers/ToastProvider';
 
 export default function App() {
   const [appError, setAppError] = useState<string | null>(null);
@@ -81,7 +83,9 @@ export default function App() {
             persistor={persistor}
           >
             <ErrorProvider>
-              <AppContent />
+              <ToastProvider>
+                <AppContent />
+              </ToastProvider>
             </ErrorProvider>
           </PersistGate>
         </Provider>

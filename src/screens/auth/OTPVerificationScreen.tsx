@@ -16,6 +16,7 @@ import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { navigationRef } from '../../navigation/navigationRef';
 import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../services/api/legalDocumentsApi';
+import { API_BASE_URL } from '../../config';
 
 interface OTPVerificationScreenProps {
   navigation: any;
@@ -88,6 +89,22 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
         try {
           await notificationService.initialize(result.user.s_no);
           console.log('✅ Notification service initialized');
+
+          if (__DEV__ && FEATURES.PUSH_NOTIFICATIONS_DEBUG) {
+            try {
+              const res = await fetch(`${API_BASE_URL}/notifications/test`, {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  'x-user-id': String(result.user.s_no),
+                },
+              });
+              const text = await res.text();
+              console.log('📤 Backend /notifications/test response:', res.status, text);
+            } catch (e) {
+              console.warn('⚠️ Backend /notifications/test call failed:', e);
+            }
+          }
         } catch (notifError) {
           console.warn('⚠️ Failed to initialize notifications:', notifError);
           // Don't block login if notification setup fails
@@ -100,27 +117,20 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
 
       const status = await getRequiredLegalStatus({ context: 'LOGIN' }).unwrap();
       if (status?.pending?.length) {
-        navigation.navigate('LegalDocuments', {
-          context: 'LOGIN',
-          pending: status.pending,
-        });
+        setTimeout(() => {
+          const nav = navigationRef.current;
+          if (nav && typeof nav.navigate === 'function') {
+            nav.navigate('LegalDocuments' as never, {
+              context: 'LOGIN',
+              pending: status.pending,
+            } as never);
+          }
+        }, 0);
         return;
       }
 
-      setTimeout(() => {
-        const nav = navigationRef.current;
-        if (nav && typeof nav.resetRoot === 'function') {
-          nav.resetRoot({
-            index: 0,
-            routes: [{ name: 'MainTabs' }],
-          });
-        } else if (nav && typeof nav.reset === 'function') {
-          nav.reset({
-            index: 0,
-            routes: [{ name: 'MainTabs' }],
-          });
-        }
-      }, 0);
+      // Do not manually navigate to MainTabs here.
+      // AppNavigator will switch to the authenticated stack as soon as setCredentials() updates isAuthenticated.
     } catch (err: any) {
       showErrorAlert(err, 'OTP Error');
     }

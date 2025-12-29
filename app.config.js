@@ -1,7 +1,7 @@
 module.exports = {
   expo: {
-    name: "PG Management",
-    slug: "pgmanagement",
+    name: "Fitstreak",
+    slug: "fitstreak",
     version: "1.0.0",
     orientation: "portrait",
     userInterfaceStyle: "light",
@@ -16,7 +16,7 @@ module.exports = {
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.pgmanagement.app",
+      bundleIdentifier: "com.fitstreak.app",
       infoPlist: {
         UIBackgroundModes: [
           "remote-notification",
@@ -26,7 +26,7 @@ module.exports = {
       }
     },
     android: {
-      package: "com.pgmanagement.app",
+      package: "com.fitstreak.app",
       adaptiveIcon: {
         foregroundImage: "./assets/app-icon.png",
         backgroundColor: "#3B82F6"
@@ -67,6 +67,7 @@ module.exports = {
       eas: {
         projectId: "0f6ecb0b-7511-427b-be33-74a4bd0207fe"
       },
+      appEnv: (process.env.APP_ENV || process.env.MODE || 'dev').toLowerCase(),
       // Single source of truth for API URL - change in .env file
       // apiBaseUrl: process.env.API_BASE_URL || "https://pg-api-mobile.vercel.app/api/v1",
       apiBaseUrl: process.env.API_BASE_URL || "http://172.20.10.2:5000/api/v1",

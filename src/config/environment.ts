@@ -10,6 +10,7 @@ interface AppConfig {
   apiBaseUrl?: string;
   subscriptionMode?: boolean;
   showDevBanner?: boolean;
+  appEnv?: string;
 }
 
 const appConfig = Constants.expoConfig?.extra as AppConfig || {};
@@ -33,6 +34,8 @@ validateConfig();
  * All configuration should be accessed through these exports
  */
 export const ENV = {
+  APP_ENV: (appConfig.appEnv || 'dev') as 'dev' | 'preprod',
+
   // API Configuration
   API_BASE_URL: appConfig.apiBaseUrl!,
   
@@ -43,6 +46,8 @@ export const ENV = {
   // Environment Detection
   IS_DEV: __DEV__,
   IS_PROD: !__DEV__,
+  IS_DEV_ENV: (appConfig.appEnv || 'dev') === 'dev',
+  IS_PREPROD_ENV: (appConfig.appEnv || 'dev') === 'preprod',
 } as const;
 
 /**
@@ -54,6 +59,7 @@ export const getApiUrl = (endpoint: string = '') => {
 
 export const logConfig = () => {
   console.log('🔧 App Configuration:');
+  console.log('- APP_ENV:', ENV.APP_ENV);
   console.log('- API Base URL:', ENV.API_BASE_URL);
   console.log('- Subscription Mode:', ENV.SUBSCRIPTION_MODE);
   console.log('- Show Dev Banner:', ENV.SHOW_DEV_BANNER);

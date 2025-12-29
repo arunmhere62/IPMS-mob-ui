@@ -79,6 +79,34 @@ class NotificationService {
     }
   }
 
+  async getExpoPushTokenForTesting(): Promise<string | null> {
+    // Check if running on physical device
+    if (!Device.isDevice) {
+      console.log('⚠️ Push notifications only work on physical devices');
+      return null;
+    }
+
+    // Configure notification handler
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+
+    const hasPermission = await this.requestPermissions();
+    if (!hasPermission) return null;
+
+    if (Platform.OS === 'android') {
+      await this.setupAndroidChannels();
+    }
+
+    return this.getExpoPushToken();
+  }
+
   /**
    * Request notification permissions
    */
