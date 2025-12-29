@@ -34,8 +34,7 @@
       "permissions": [
         "NOTIFICATIONS",
         "INTERNET"
-      ],
-      "useNextNotificationsApi": true
+      ]
     },
     "web": {
       "bundler": "metro"

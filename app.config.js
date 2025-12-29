@@ -1,59 +1,36 @@
-module.exports = {
-  expo: {
-    name: "PG Management",
-    slug: "pgmanagement",
-    version: "1.0.0",
-    orientation: "portrait",
-    userInterfaceStyle: "light",
-    icon: "./assets/app-icon.png",
-    splash: {
-      image: "./assets/splash-logo.png",
-      resizeMode: "contain",
-      backgroundColor: "#3B82F6"
-    },
-    assetBundlePatterns: [
-      "**/*"
-    ],
-    ios: {
-      supportsTablet: true,
-      bundleIdentifier: "com.pgmanagement.app",
-      infoPlist: {
-        UIBackgroundModes: [
-          "remote-notification",
-          "remote-notification"
-        ],
-        ITSAppUsesNonExemptEncryption: false
+module.exports = ({ config }) => {
+  const baseExpoConfig = config ?? {};
+
+  const paymentResultIntentFilter = {
+    action: "VIEW",
+    data: [
+      {
+        scheme: "pgapp",
+        host: "payment-result"
       }
-    },
+    ],
+    category: ["BROWSABLE", "DEFAULT"]
+  };
+
+  const basePlugins = Array.isArray(baseExpoConfig.plugins) ? baseExpoConfig.plugins : [];
+  const pluginsWithoutNotifications = basePlugins.filter((plugin) => {
+    if (plugin === 'expo-notifications') return false;
+    if (Array.isArray(plugin) && plugin[0] === 'expo-notifications') return false;
+    return true;
+  });
+
+  return {
+    ...baseExpoConfig,
     android: {
-      package: "com.pgmanagement.app",
-      adaptiveIcon: {
-        foregroundImage: "./assets/app-icon.png",
-        backgroundColor: "#3B82F6"
-      },
-      permissions: [
-        "NOTIFICATIONS",
-        "INTERNET"
-      ],
-      useNextNotificationsApi: true,
+      ...(baseExpoConfig.android ?? {}),
       intentFilters: [
-        {
-          action: "VIEW",
-          data: [
-            {
-              scheme: "pgapp",
-              host: "payment-result"
-            }
-          ],
-          category: ["BROWSABLE", "DEFAULT"]
-        }
-      ]
+        ...((baseExpoConfig.android?.intentFilters ?? [])),
+        paymentResultIntentFilter,
+      ],
     },
-    web: {
-      bundler: "metro"
-    },
-    scheme: "pgapp",
     plugins: [
+      ...pluginsWithoutNotifications,
+      "expo-font",
       [
         "expo-notifications",
         {
@@ -64,7 +41,9 @@ module.exports = {
       ]
     ],
     extra: {
+      ...(baseExpoConfig.extra ?? {}),
       eas: {
+        ...(baseExpoConfig.extra?.eas ?? {}),
         projectId: "0f6ecb0b-7511-427b-be33-74a4bd0207fe"
       },
       appEnv: (process.env.APP_ENV || process.env.MODE || 'dev').toLowerCase(),
@@ -75,5 +54,5 @@ module.exports = {
       subscriptionMode: process.env.SUBSCRIPTION_MODE === 'true',
       showDevBanner: process.env.SHOW_DEV_BANNER === 'true'
     }
-  }
+  };
 };
