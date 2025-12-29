@@ -55,13 +55,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               Alert.alert('⚠️ Failed to send local test notification:', String(e));
             }
 
-          if (__DEV__ && FEATURES.PUSH_NOTIFICATIONS_DEBUG) {
             try {
               const res = await fetch(`${API_BASE_URL}/notifications/test-token`, {
                 method: 'POST',
                 headers: {
                   'content-type': 'application/json',
-                  'x-user-id': '1',
+                  'x-user-id': '34',
                 },
                 body: JSON.stringify({
                   to: token,
@@ -77,7 +76,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             } catch (e) {
               console.warn('⚠️ Backend test-token call failed:', e);
             }
-          }
         }
       } catch (e) {
        Alert.alert('⚠️ Push setup failed on Login screen:', String(e));

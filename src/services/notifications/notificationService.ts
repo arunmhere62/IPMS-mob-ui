@@ -29,6 +29,12 @@ class NotificationService {
    */
   async initialize(userId: number) {
     try {
+      console.log('[PUSH] initialize start', {
+        userId,
+        platform: Platform.OS,
+        isDevice: Device.isDevice,
+      });
+
       // Check if running on physical device
       if (!Device.isDevice) {
         console.log('⚠️ Push notifications only work on physical devices');
@@ -55,10 +61,12 @@ class NotificationService {
 
       // Setup Android notification channels
       if (Platform.OS === 'android') {
+        console.log('[PUSH] setting up android channels');
         await this.setupAndroidChannels();
       }
 
       // Get Expo Push Token
+      console.log('[PUSH] fetching expo push token');
       const token = await this.getExpoPushToken();
       if (!token) {
         console.log('❌ Failed to get Expo Push token');
@@ -66,7 +74,9 @@ class NotificationService {
       }
 
       // Register token with backend
+      console.log('[PUSH] registering token with backend', { userId, tokenPreview: token.slice(0, 14) });
       await this.registerToken(userId, token);
+      console.log('[PUSH] register-token success');
 
       // Setup notification listeners
       this.setupNotificationListeners();
@@ -178,6 +188,12 @@ class NotificationService {
   async getExpoPushToken(): Promise<string | null> {
     try {
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+
+      console.log('[PUSH] getExpoPushToken', {
+        platform: Platform.OS,
+        hasProjectId: !!projectId,
+        projectId,
+      });
       
       const token = await Notifications.getExpoPushTokenAsync({
         projectId: projectId,
