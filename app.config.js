@@ -1,7 +1,7 @@
 module.exports = {
   expo: {
     name: "PG Management",
-    slug: "pg-management",
+    slug: "pgmanagement",
     version: "1.0.0",
     orientation: "portrait",
     userInterfaceStyle: "light",
