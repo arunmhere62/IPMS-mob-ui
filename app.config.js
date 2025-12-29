@@ -57,9 +57,9 @@ module.exports = {
       [
         "expo-notifications",
         {
-          icon: "./assets/notification-icon.png",
+          icon: "./assets/app-icon.png",
           color: "#3B82F6",
-          sounds: ["./assets/notification-sound.wav"]
+          sounds: []
         }
       ]
     ],
