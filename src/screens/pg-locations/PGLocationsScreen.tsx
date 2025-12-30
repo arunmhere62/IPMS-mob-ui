@@ -396,7 +396,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
               </Text>
               {pg.pincode && (
                 <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginLeft: 8 }}>
-                  • {pg.pincode}
+                  • {pg.pincode}asdasd
                 </Text>
               )}
             </View>

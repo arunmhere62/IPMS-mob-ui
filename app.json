@@ -46,7 +46,7 @@
         "POST_NOTIFICATIONS",
         "INTERNET"
       ],
-      "googleServicesFile": "./google-services.json",
+      "googleServicesFile": "./android/app/google-services.json",
       "intentFilters": [
         {
           "action": "VIEW",
