@@ -180,6 +180,3 @@ dependencies {
         implementation jscFlavor
     }
 }
-
-// Apply Google Services plugin for Firebase/FCM
-apply plugin: 'com.google.gms.google-services'
