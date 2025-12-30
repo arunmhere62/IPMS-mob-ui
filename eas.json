@@ -12,7 +12,8 @@
       },
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
+        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       },
       "channel": "development"
     },
