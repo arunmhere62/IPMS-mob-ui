@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
@@ -28,6 +28,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [serverLogout] = useLogoutMutation();
+  const [testingNotification, setTestingNotification] = useState(false);
 
   const {
     data: subscriptionStatus,
@@ -56,6 +57,44 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const handleRefreshSubscription = async () => {
     console.log('🔄 Manual refresh triggered');
     await refetchSubscriptionStatus();
+  };
+
+  const handleTestNotification = async () => {
+    if (!user?.s_no) {
+      Alert.alert('Error', 'User ID not found');
+      return;
+    }
+
+    setTestingNotification(true);
+    try {
+      console.log('[TEST] 🧪 Manual notification test triggered');
+      
+      // Initialize notification service
+      const success = await notificationService.initialize(user.s_no);
+      
+      if (success) {
+        Alert.alert(
+          '✅ Success',
+          'Notification registration completed!\n\nCheck logs for details:\nadb logcat | findstr /i "PUSH"',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          '❌ Failed',
+          'Notification registration failed.\n\nCheck logs for error details:\nadb logcat | findstr /i "PUSH"',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error: any) {
+      console.error('[TEST] ❌ Test failed:', error);
+      Alert.alert(
+        '❌ Error',
+        `Failed to register notification:\n\n${error?.message || 'Unknown error'}\n\nCheck logs for details.`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setTestingNotification(false);
+    }
   };
 
   const handleLogout = () => {
@@ -271,6 +310,65 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                 <Text className="text-gray-400">›</Text>
               </TouchableOpacity>
             ))}
+          </Card>
+
+          {/* Test Notification Button (Dev/Testing) */}
+          <Card style={{ marginBottom: 16, padding: 16, backgroundColor: '#FFF9E6', borderColor: '#FFA500', borderWidth: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: Theme.withOpacity('#FFA500', 0.2),
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 12,
+              }}>
+                <Ionicons name="flask" size={20} color="#FFA500" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
+                  🧪 Test Push Notifications
+                </Text>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 2 }}>
+                  Manually trigger notification registration
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleTestNotification}
+              disabled={testingNotification}
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                backgroundColor: testingNotification ? Theme.colors.border : '#FFA500',
+                borderRadius: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {testingNotification ? (
+                <>
+                  <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+                    Testing...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="notifications" size={16} color="#fff" style={{ marginRight: 6 }} />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+                    Test Notification Registration
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <Text style={{ fontSize: 11, color: '#666', marginTop: 8, fontStyle: 'italic' }}>
+              Watch logs: adb logcat | findstr /i "PUSH TEST"
+            </Text>
           </Card>
 
           {/* Logout Button */}

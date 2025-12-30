@@ -33,6 +33,10 @@ class NotificationService {
         userId,
         platform: Platform.OS,
         isDevice: Device.isDevice,
+        expoConfig: Constants.expoConfig?.name,
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+        hasExtra: !!Constants.expoConfig?.extra,
+        hasEas: !!Constants.expoConfig?.extra?.eas,
       });
 
       // Check if running on physical device
@@ -183,27 +187,57 @@ class NotificationService {
   }
 
   /**
-   * Get Expo Push Token
+   * Get Expo Push Token with retry logic
    */
-  async getExpoPushToken(): Promise<string | null> {
-    try {
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  async getExpoPushToken(retryCount = 0): Promise<string | null> {
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds
 
-      console.log('[PUSH] getExpoPushToken', {
+    try {
+      // Try multiple sources for projectId (EAS builds can be tricky)
+      const projectId = 
+        Constants.expoConfig?.extra?.eas?.projectId ||
+        (Constants.manifest as any)?.extra?.eas?.projectId ||
+        (Constants as any).manifest2?.extra?.expoClient?.extra?.eas?.projectId ||
+        '0f6ecb0b-7511-427b-be33-74a4bd0207fe'; // Hardcoded fallback
+
+      console.log('[PUSH] getExpoPushToken attempt', retryCount + 1, {
         platform: Platform.OS,
         hasProjectId: !!projectId,
         projectId,
+        isDevice: Device.isDevice,
+        expoConfig: Constants.expoConfig?.name,
+        constantsKeys: Object.keys(Constants),
+        manifestKeys: Constants.manifest ? Object.keys(Constants.manifest) : 'no manifest',
       });
+
+      if (!projectId) {
+        console.error('❌ EAS projectId not found');
+        return null;
+      }
       
+      console.log('[PUSH] Calling getExpoPushTokenAsync with projectId:', projectId);
       const token = await Notifications.getExpoPushTokenAsync({
         projectId: projectId,
       });
 
       this.expoPushToken = token.data;
-      console.log('📱 Expo Push Token:', this.expoPushToken);
+      console.log('📱 Expo Push Token obtained:', this.expoPushToken);
       return this.expoPushToken;
-    } catch (error) {
-      console.error('❌ Error getting Expo Push token:', error);
+    } catch (error: any) {
+      console.error(`❌ Error getting Expo Push token (attempt ${retryCount + 1}/${maxRetries}):`, error);
+      console.error('[PUSH] Error name:', error?.name);
+      console.error('[PUSH] Error message:', error?.message);
+      console.error('[PUSH] Error code:', error?.code);
+      
+      // Retry logic
+      if (retryCount < maxRetries - 1) {
+        console.log(`[PUSH] Retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return this.getExpoPushToken(retryCount + 1);
+      }
+      
+      console.error('[PUSH] Max retries reached. Full error:', JSON.stringify(error, null, 2));
       return null;
     }
   }
@@ -221,10 +255,21 @@ class NotificationService {
         device_name: Platform.OS === 'ios' ? 'iOS Device' : 'Android Device',
       };
 
-      await store.dispatch(notificationsApi.endpoints.registerNotificationToken.initiate(deviceInfo)).unwrap();
-      console.log('✅ FCM token registered with backend');
-    } catch (error) {
+      console.log('[PUSH] Registering token with backend...', {
+        userId,
+        tokenPreview: token.slice(0, 20) + '...',
+        deviceType: deviceInfo.device_type,
+      });
+
+      const result = await store.dispatch(notificationsApi.endpoints.registerNotificationToken.initiate(deviceInfo)).unwrap();
+      console.log('✅ FCM token registered with backend successfully', result);
+    } catch (error: any) {
       console.error('❌ Failed to register FCM token:', error);
+      console.error('[PUSH] Registration error details:', {
+        message: error?.message,
+        status: error?.status,
+        data: error?.data,
+      });
       throw error;
     }
   }
@@ -234,8 +279,31 @@ class NotificationService {
    */
   private setupNotificationListeners() {
     // Listener for notifications received while app is foregrounded
-    this.notificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log('🔔 Notification received:', notification);
+    this.notificationListener = Notifications.addNotificationReceivedListener(async notification => {
+      console.log('🔔 Notification received (foreground):', notification);
+      
+      // CRITICAL: Display the notification even when app is in foreground
+      // Without this, notifications are silently ignored in EAS builds
+      try {
+        const notificationType = notification.request.content.data?.type as string | undefined;
+        const channelId = this.getChannelId(notificationType);
+        
+        console.log('[PUSH] Re-scheduling foreground notification with channel:', channelId);
+        
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: notification.request.content.title || 'Notification',
+            body: notification.request.content.body || '',
+            data: notification.request.content.data,
+            sound: 'default',
+            badge: notification.request.content.badge ?? undefined,
+          },
+          trigger: null, // Show immediately
+        });
+        console.log('✅ Foreground notification displayed on channel:', channelId);
+      } catch (error) {
+        console.error('❌ Failed to display foreground notification:', error);
+      }
     });
 
     // Listener for when user taps on notification

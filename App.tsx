@@ -106,6 +106,116 @@ function AppContent() {
     StatusBar.setBarStyle('dark-content', true);
   }, []);
 
+  // Setup notification permissions and channels on app startup (Android 13+ requirement)
+  useEffect(() => {
+    const setupNotificationInfrastructure = async () => {
+      try {
+        if (Platform.OS === 'android') {
+          console.log('[APP] 🔔 Setting up Android notification infrastructure...');
+          
+          // Import Notifications here to avoid issues
+          const Notifications = (await import('expo-notifications')).default;
+          
+          // Create notification channels FIRST (required for Android)
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'Default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#3B82F6',
+            sound: 'default',
+            showBadge: true,
+            enableVibrate: true,
+            enableLights: true,
+          });
+
+          await Notifications.setNotificationChannelAsync('rent-reminders', {
+            name: 'Rent Reminders',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#3B82F6',
+            sound: 'default',
+          });
+
+          await Notifications.setNotificationChannelAsync('payments', {
+            name: 'Payments',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#10B981',
+            sound: 'default',
+          });
+
+          await Notifications.setNotificationChannelAsync('alerts', {
+            name: 'Alerts',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#EF4444',
+            sound: 'default',
+          });
+
+          console.log('[APP] ✅ Android notification channels created');
+
+          // Request permissions (critical for Android 13+)
+          const { status: existingStatus } = await Notifications.getPermissionsAsync();
+          console.log('[APP] 📋 Current permission status:', existingStatus);
+          
+          if (existingStatus !== 'granted') {
+            console.log('[APP] 🔐 Requesting notification permissions...');
+            const { status } = await Notifications.requestPermissionsAsync();
+            console.log('[APP] 📋 Permission request result:', status);
+            
+            if (status !== 'granted') {
+              console.warn('[APP] ⚠️ Notification permission denied by user');
+            } else {
+              console.log('[APP] ✅ Notification permission granted');
+            }
+          } else {
+            console.log('[APP] ✅ Notification permission already granted');
+          }
+
+          // Set notification handler
+          Notifications.setNotificationHandler({
+            handleNotification: async () => ({
+              shouldShowAlert: true,
+              shouldPlaySound: true,
+              shouldSetBadge: true,
+              shouldShowBanner: true,
+              shouldShowList: true,
+            }),
+          });
+
+          console.log('[APP] ✅ Notification infrastructure setup complete');
+        }
+      } catch (error) {
+        console.error('[APP] ❌ Failed to setup notification infrastructure:', error);
+      }
+    };
+
+    setupNotificationInfrastructure();
+  }, []);
+
+  // Initialize notifications for already logged-in users
+  useEffect(() => {
+    const initNotificationsForLoggedInUser = async () => {
+      try {
+        // Wait for store to rehydrate and notification infrastructure
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const state = store.getState();
+        const user = state.auth?.user;
+        const isAuthenticated = state.auth?.isAuthenticated;
+        
+        if (isAuthenticated && user?.s_no) {
+          console.log('[APP] User already logged in, initializing notifications...');
+          await notificationService.initialize(user.s_no);
+        }
+      } catch (error) {
+        console.warn('[APP] Failed to initialize notifications on app start:', error);
+      }
+    };
+
+    initNotificationsForLoggedInUser();
+  }, []);
+
   return (
     <NetworkStatusProvider>
       <ErrorAlert error={error} onDismiss={clearError} />

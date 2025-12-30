@@ -86,31 +86,70 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
       
       // Initialize notification service after successful login
       if (result.user && result.user.s_no && FEATURES.PUSH_NOTIFICATIONS_ENABLED) {
-        try {
-          await notificationService.initialize(result.user.s_no);
-          console.log('✅ Notification service initialized');
-
-          if (__DEV__ && FEATURES.PUSH_NOTIFICATIONS_DEBUG) {
-            try {
-              const res = await fetch(`${API_BASE_URL}/notifications/test`, {
-                method: 'POST',
-                headers: {
-                  'content-type': 'application/json',
-                  'x-user-id': String(result.user.s_no),
-                },
-              });
-              const text = await res.text();
-              console.log('📤 Backend /notifications/test response:', res.status, text);
-            } catch (e) {
-              console.warn('⚠️ Backend /notifications/test call failed:', e);
+        console.log('[PUSH] Starting notification initialization for user:', result.user.s_no);
+        
+        // Initialize notifications (non-blocking - runs in background)
+        (async () => {
+          try {
+            console.log('[PUSH] Calling notificationService.initialize...');
+            const initSuccess = await notificationService.initialize(result.user.s_no);
+            
+            if (initSuccess) {
+              console.log('✅ Notification service initialized successfully');
+              
+              // Test notification endpoint (only in debug mode)
+              if (FEATURES.PUSH_NOTIFICATIONS_DEBUG) {
+                // Wait 2 seconds to ensure channels are fully created
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                try {
+                  console.log('[TEST] 📤 Calling /notifications/test endpoint...', {
+                    url: `${API_BASE_URL}/notifications/test`,
+                    userId: result.user.s_no,
+                  });
+                  
+                  const res = await fetch(`${API_BASE_URL}/notifications/test`, {
+                    method: 'POST',
+                    headers: {
+                      'content-type': 'application/json',
+                      'x-user-id': String(result.user.s_no),
+                    },
+                  });
+                  
+                  const text = await res.text();
+                  console.log('[TEST] 📤 Backend /notifications/test response:', {
+                    status: res.status,
+                    statusText: res.statusText,
+                    ok: res.ok,
+                    body: text,
+                  });
+                  
+                  if (!res.ok) {
+                    console.error('[TEST] ❌ Backend returned error:', res.status, text);
+                  } else {
+                    console.log('[TEST] ✅ Test notification should arrive on device now');
+                  }
+                } catch (e: any) {
+                  console.error('[TEST] ❌ Backend /notifications/test call failed:', {
+                    error: e?.message,
+                    name: e?.name,
+                    stack: e?.stack,
+                  });
+                }
+              }
+            } else {
+              console.error('❌ Notification service initialization returned false');
             }
+          } catch (notifError) {
+            console.error('❌ Failed to initialize notifications:', notifError);
+            console.error('[PUSH] Error details:', JSON.stringify(notifError, null, 2));
+            // Don't block login if notification setup fails
           }
-        } catch (notifError) {
-          console.warn('⚠️ Failed to initialize notifications:', notifError);
-          // Don't block login if notification setup fails
-        }
+        })(); // Immediately invoked async function
       } else if (!FEATURES.PUSH_NOTIFICATIONS_ENABLED) {
-        console.log('ℹ️ Push notifications are disabled in development mode');
+        console.log('ℹ️ Push notifications are disabled');
+      } else {
+        console.log('⚠️ Cannot initialize notifications - missing user data');
       }
       
       showSuccessAlert('Login successful!');
