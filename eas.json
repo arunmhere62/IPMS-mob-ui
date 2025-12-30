@@ -54,7 +54,8 @@
       "developmentClient": false,
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       }
     },
     "minimal-apk": {

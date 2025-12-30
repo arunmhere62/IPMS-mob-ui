@@ -14,11 +14,15 @@
     "preios": "npm run typecheck",
     "web": "expo start --web",
     "lint": "tsc --noEmit && eslint . --ext .ts,.tsx",
-    "clean": "powershell -Command \"Remove-Item -Recurse -Force @('android/app/.cxx', 'android/app/build', 'android/build', 'node_modules/.cache') -ErrorAction SilentlyContinue; Write-Host '✅ All builds removed!' -ForegroundColor Green\"",
+    "clean": "powershell -Command \"Remove-Item -Recurse -Force @('android/app/.cxx', 'android/app/build', 'android/build', 'node_modules/.cache') -ErrorAction SilentlyContinue; Write-Host '✅ Build artifacts cleaned!' -ForegroundColor Green\"",
+    "clean:deep": "powershell -Command \"Remove-Item -Recurse -Force @('android/app/.cxx', 'android/app/build', 'android/build', 'android/.gradle', 'node_modules/.cache', '.expo') -ErrorAction SilentlyContinue; Write-Host '✅ Deep clean completed!' -ForegroundColor Green\"",
+    "clean:all": "powershell -Command \"Remove-Item -Recurse -Force @('android/app/.cxx', 'android/app/build', 'android/build', 'android/.gradle', 'node_modules', 'node_modules/.cache', '.expo') -ErrorAction SilentlyContinue; Write-Host '✅ Full clean completed! Run npm install' -ForegroundColor Yellow\"",
     "build:clean": "npm run clean && cd android && .\\gradlew assembleRelease",
     "build:dev": "eas build -p android --profile development",
     "build:apk": "eas build -p android --profile apk",
-    "build:aab": "eas build -p android --profile production"
+    "build:aab": "eas build -p android --profile production",
+    "build:standalone": "eas build -p android --profile standalone-apk",
+    "build:minimal": "eas build -p android --profile minimal-apk"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
