@@ -23,12 +23,42 @@ class NotificationService {
   private expoPushToken: string | null = null;
   private notificationListener: any = null;
   private responseListener: any = null;
+  private isInitializing: boolean = false;
+  private isInitialized: boolean = false;
+  private lastInitializedUserId: number | null = null;
+  private lastTestSentTimestamp: number = 0;
+  
+  // Static flag to prevent multiple initializations across app restarts
+  private static _instance: NotificationService | null = null;
+  
+  constructor() {
+    if (NotificationService._instance) {
+      console.log('[PUSH] ⚠️ NotificationService instance already exists, reusing');
+      return NotificationService._instance;
+    }
+    NotificationService._instance = this;
+    console.log('[PUSH] 🔧 Created new NotificationService instance');
+  }
 
   /**
    * Initialize notification service
    */
   async initialize(userId: number) {
     try {
+      // Guard: Prevent multiple simultaneous initializations
+      if (this.isInitializing) {
+        console.log('[PUSH] ⚠️ Initialization already in progress, skipping');
+        return false;
+      }
+
+      // Guard: Prevent re-initialization for same user
+      if (this.isInitialized && this.lastInitializedUserId === userId) {
+        console.log('[PUSH] ℹ️ Already initialized for user', userId);
+        return true;
+      }
+
+      this.isInitializing = true;
+
       console.log('[PUSH] initialize start', {
         userId,
         platform: Platform.OS,
@@ -42,6 +72,7 @@ class NotificationService {
       // Check if running on physical device
       if (!Device.isDevice) {
         console.log('⚠️ Push notifications only work on physical devices');
+        this.isInitializing = false;
         return false;
       }
 
@@ -85,14 +116,82 @@ class NotificationService {
       // Setup notification listeners
       this.setupNotificationListeners();
 
+      // Mark as initialized
+      this.isInitialized = true;
+      this.lastInitializedUserId = userId;
+      this.isInitializing = false;
+
       console.log('✅ Notification service initialized');
       return true;
     } catch (error) {
       console.error('❌ Failed to initialize notifications:', error);
+      this.isInitializing = false;
       return false;
     }
   }
 
+  /**
+   * Send a test notification via backend API
+   * This method prevents notification loops by using rate limiting
+   */
+  async sendTestNotification(userId: number): Promise<{success: boolean, message: string}> {
+    try {
+      // Rate limiting: prevent multiple calls in short succession
+      const now = Date.now();
+      const timeSinceLastTest = now - this.lastTestSentTimestamp;
+      
+      if (timeSinceLastTest < 5000) { // 5 second cooldown
+        console.log('[TEST] 🛑 Test notification rate limited - please wait 5 seconds');
+        return {
+          success: false,
+          message: 'Please wait 5 seconds between test notifications'
+        };
+      }
+      
+      // Update timestamp before API call
+      this.lastTestSentTimestamp = now;
+      
+      // Get API base URL from config
+      const API_BASE_URL = (await import('../../config')).API_BASE_URL;
+      
+      console.log('[TEST] 🧪 Sending test notification to user:', userId);
+      
+      // Call backend test notification endpoint directly
+      const response = await fetch(`${API_BASE_URL}/notifications/test`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-user-id': String(userId),
+        },
+      });
+
+      const responseText = await response.text();
+      console.log('[TEST] Backend response:', {
+        status: response.status,
+        ok: response.ok,
+        body: responseText,
+      });
+
+      if (response.ok) {
+        return {
+          success: true,
+          message: 'Test notification sent! You should receive it shortly.'
+        };
+      } else {
+        return {
+          success: false,
+          message: `Backend error: ${response.status} - ${responseText}`
+        };
+      }
+    } catch (error: any) {
+      console.error('[TEST] ❌ Test notification failed:', error);
+      return {
+        success: false,
+        message: error?.message || 'Unknown error'
+      };
+    }
+  }
+  
   async getExpoPushTokenForTesting(): Promise<string | null> {
     // Check if running on physical device
     if (!Device.isDevice) {
@@ -247,18 +346,23 @@ class NotificationService {
    */
   async registerToken(userId: number, token: string) {
     try {
+      // Generate a consistent device ID based on user ID + device info
+      // This allows us to update the same device record on re-registration
+      const deviceId = `device-${Platform.OS}-${userId}-${Device.modelName?.replace(/\s+/g, '-').toLowerCase() || 'unknown'}`;
+      
       const deviceInfo = {
         user_id: userId,
         fcm_token: token,
         device_type: Platform.OS,
-        device_id: 'device-' + Math.random().toString(36).substring(7),
-        device_name: Platform.OS === 'ios' ? 'iOS Device' : 'Android Device',
+        device_id: deviceId,
+        device_name: Device.modelName || (Platform.OS === 'ios' ? 'iOS Device' : 'Android Device'),
       };
 
       console.log('[PUSH] Registering token with backend...', {
         userId,
         tokenPreview: token.slice(0, 20) + '...',
         deviceType: deviceInfo.device_type,
+        deviceId: deviceInfo.device_id,
       });
 
       const result = await store.dispatch(notificationsApi.endpoints.registerNotificationToken.initiate(deviceInfo)).unwrap();
@@ -271,6 +375,57 @@ class NotificationService {
         data: error?.data,
       });
       throw error;
+    }
+  }
+  
+  /**
+   * Unregister FCM token with backend
+   * Call this on logout to stop receiving notifications
+   */
+  async unregisterToken() {
+    try {
+      if (!this.expoPushToken) {
+        console.log('[PUSH] No token to unregister');
+        return;
+      }
+      
+      console.log('[PUSH] Unregistering token with backend...');
+      
+      // Try to call unregister endpoint if it exists
+      try {
+        await store.dispatch(
+          notificationsApi.endpoints.unregisterNotificationToken.initiate({
+            fcm_token: this.expoPushToken,
+          })
+        ).unwrap();
+        console.log('[PUSH] ✅ Token unregistered from backend');
+      } catch (e) {
+        // If endpoint doesn't exist or fails, try direct API call
+        try {
+          const API_BASE_URL = (await import('../../config')).API_BASE_URL;
+          await fetch(`${API_BASE_URL}/notifications/unregister-token`, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              fcm_token: this.expoPushToken,
+            }),
+          });
+          console.log('[PUSH] ✅ Token unregistered via direct API call');
+        } catch (directError) {
+          console.log('[PUSH] Unregister endpoint not available:', directError);
+        }
+      }
+      
+      // Clear token locally
+      this.expoPushToken = null;
+      
+      // Reset initialization flags
+      this.isInitialized = false;
+      this.lastInitializedUserId = null;
+    } catch (error) {
+      console.error('[PUSH] ❌ Failed to unregister token:', error);
     }
   }
 
@@ -488,24 +643,8 @@ class NotificationService {
   }
 
   /**
-   * Unregister token (on logout)
-   */
-  async unregisterToken() {
-    try {
-      if (this.expoPushToken) {
-        await store
-          .dispatch(
-            notificationsApi.endpoints.unregisterNotificationToken.initiate({
-              fcm_token: this.expoPushToken,
-            })
-          )
-          .unwrap();
-        this.expoPushToken = null;
-        console.log('✅ Expo Push token unregistered');
-      }
-    } catch (error) {
-      console.error('❌ Failed to unregister token:', error);
-    }
+   * Clean up all notification resources
+   * Call this on logout
   }
 
   /**

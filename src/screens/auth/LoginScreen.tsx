@@ -1,13 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Alert, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Alert, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Theme } from '../../theme';
 import { useSendOtpMutation } from '../../services/api/authApi';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
-import notificationService from '../../services/notifications/notificationService';
-import { FEATURES } from '../../config/env.config';
 import { API_BASE_URL } from '../../config';
 
 interface Country {
@@ -33,57 +31,62 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     phoneLength: 10,
   });
   const [sendOtp, { isLoading: sendingOtp }] = useSendOtpMutation();
+  const [testingNotification, setTestingNotification] = useState(false);
 
-  useEffect(() => {
-    const setupPushForTesting = async () => {
-      // if (!FEATURES.PUSH_NOTIFICATIONS_ENABLED) {
-      //   return;
-      // }
+  // Simple test notification function
+  const handleTestNotification = async () => {
+    setTestingNotification(true);
+    try {
+      console.log('[TEST] 🧪 Testing push notification with static payload...');
+      
+      // Call backend with static test payload
+      const response = await fetch(`${API_BASE_URL}/notifications/test-static`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: '🎉 Test Notification',
+          body: 'This is a static test notification from LoginScreen',
+          data: {
+            type: 'TEST',
+            source: 'login_screen',
+            timestamp: new Date().toISOString(),
+          }
+        }),
+      });
 
-      try {
-        const token = await notificationService.getExpoPushTokenForTesting();
-        if (token) {
-          console.log('✅ Push token ready (pre-login):', token);
+      const responseText = await response.text();
+      console.log('[TEST] Backend response:', {
+        status: response.status,
+        ok: response.ok,
+        body: responseText,
+      });
 
-            try {
-              await notificationService.sendLocalNotification(
-                'Notifications enabled',
-                'Local test notification from Login screen',
-                { type: 'TEST' },
-              );
-            } catch (e) {
-              Alert.alert('⚠️ Failed to send local test notification:', String(e));
-            }
-
-            try {
-              const res = await fetch(`${API_BASE_URL}/notifications/test-token`, {
-                method: 'POST',
-                headers: {
-                  'content-type': 'application/json',
-                  'x-user-id': '34',
-                },
-                body: JSON.stringify({
-                  to: token,
-                  title: 'Backend test push',
-                  message: 'Push triggered from Login screen (pre-login)',
-                  type: 'TEST',
-                  data: { source: 'login_pre_auth', ts: new Date().toISOString() },
-                }),
-              });
-
-              const text = await res.text();
-              console.log('📤 Backend test-token response:', res.status, text);
-            } catch (e) {
-              console.warn('⚠️ Backend test-token call failed:', e);
-            }
-        }
-      } catch (e) {
-       Alert.alert('⚠️ Push setup failed on Login screen:', String(e));
+      if (response.ok) {
+        Alert.alert(
+          '✅ Test Sent',
+          'Static test notification sent!\n\nCheck your device for the notification.\n\nLogs: adb logcat | findstr /i "PUSH"',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          '❌ Test Failed',
+          `Backend error: ${response.status}\n\n${responseText}`,
+          [{ text: 'OK' }]
+        );
       }
-    };
-
-    setupPushForTesting();
-  }, []);
+    } catch (error: any) {
+      console.error('[TEST] ❌ Test notification failed:', error);
+      Alert.alert(
+        '❌ Error',
+        `Failed to send test notification:\n\n${error?.message || 'Unknown error'}`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setTestingNotification(false);
+    }
+  };
 
   const validatePhone = (phoneNumber: string): boolean => {
     const phoneRegex = /^[0-9]{10}$/;
@@ -191,6 +194,55 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 variant="outline"
                 size='md'
               />
+            </View>
+
+            {/* Test Push Notification Button */}
+            <View style={{ marginTop: Theme.spacing.md, paddingTop: Theme.spacing.md, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+              <Text style={{ 
+                fontSize: 12, 
+                color: Theme.colors.text.secondary, 
+                textAlign: 'center', 
+                marginBottom: Theme.spacing.sm 
+              }}>
+                🧪 Push Notification Test
+              </Text>
+              
+              <TouchableOpacity
+                onPress={handleTestNotification}
+                disabled={testingNotification}
+                style={{
+                  backgroundColor: testingNotification ? '#9CA3AF' : '#F59E0B',
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {testingNotification ? (
+                  <>
+                    <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>
+                      Sending Test...
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>
+                    📱 Send Test Notification
+                  </Text>
+                )}
+              </TouchableOpacity>
+              
+              <Text style={{ 
+                fontSize: 10, 
+                color: '#6B7280', 
+                textAlign: 'center', 
+                marginTop: 8,
+                fontStyle: 'italic'
+              }}>
+                Tests Firebase setup & backend integration
+              </Text>
             </View>
           </Card>
         </View>

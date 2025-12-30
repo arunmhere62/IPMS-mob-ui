@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "YOUR_PROJECT_NUMBER",
-    "project_id": "pg-management-mobile",
-    "storage_bucket": "pg-management-mobile.appspot.com"
+    "project_number": "737797517297",
+    "project_id": "pg-management-875f6",
+    "storage_bucket": "pg-management-875f6.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:YOUR_APP_ID",
+        "mobilesdk_app_id": "1:737797517297:android:8bb5534a296a9414501e50",
         "android_client_info": {
           "package_name": "com.pgmanagement.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "YOUR_API_KEY"
+          "current_key": "AIzaSyBU5y4i-uO50arhZrYEPCXnLzz0Nt601Ns"
         }
       ],
       "services": {
