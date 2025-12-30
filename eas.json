@@ -8,13 +8,11 @@
       "developmentClient": true,
       "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug"
+        "buildType": "apk"
       },
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "development",
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
+        "NODE_ENV": "development"
       },
       "channel": "development"
     },
@@ -22,16 +20,14 @@
       "distribution": "internal",
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "production",
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
+        "NODE_ENV": "production"
       }
     },
     "production": {
       "autoIncrement": true,
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "production",
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
+        "NODE_ENV": "production"
       }
     },
     "apk": {
@@ -44,7 +40,6 @@
       "node": "20.19.4",
       "env": {
         "NODE_ENV": "production",
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1",
         "EXPO_OPTIMIZE_SIZE": "1",
         "EXPO_NO_DEV": "1"
       },
@@ -58,8 +53,7 @@
       "developmentClient": false,
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "production",
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
+        "NODE_ENV": "production"
       }
     },
     "minimal-apk": {
@@ -70,8 +64,7 @@
       "developmentClient": false,
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "production",
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
+        "NODE_ENV": "production"
       }
     },
     "ios-simulator": {
