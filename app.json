@@ -12,7 +12,9 @@
       "backgroundColor": "#3B82F6"
     },
     "assetBundlePatterns": [
-      "**/*"
+      "assets/fonts/**",
+      "assets/app-icon.png",
+      "assets/splash-logo.png"
     ],
     "ios": {
       "supportsTablet": true,
@@ -20,9 +22,14 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification",
+          "remote-notification",
+          "remote-notification",
           "remote-notification"
         ],
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "runtimeVersion": {
+        "policy": "appVersion"
       }
     },
     "android": {
@@ -33,8 +40,29 @@
       },
       "permissions": [
         "NOTIFICATIONS",
+        "POST_NOTIFICATIONS",
+        "INTERNET",
+        "NOTIFICATIONS",
+        "POST_NOTIFICATIONS",
         "INTERNET"
-      ]
+      ],
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "pgapp",
+              "host": "payment-result"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "runtimeVersion": "1.0.0"
     },
     "web": {
       "bundler": "metro"
@@ -44,7 +72,9 @@
       [
         "expo-notifications",
         {
-          "color": "#3B82F6"
+          "color": "#3B82F6",
+          "defaultChannel": "default",
+          "enableBackgroundRemoteNotifications": true
         }
       ]
     ],
@@ -52,6 +82,9 @@
       "eas": {
         "projectId": "0f6ecb0b-7511-427b-be33-74a4bd0207fe"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0f6ecb0b-7511-427b-be33-74a4bd0207fe"
     }
   }
 }

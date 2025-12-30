@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Theme } from '../../theme';
 import { useSendOtpMutation } from '../../services/api/authApi';
+import { useSendStaticTestNotificationMutation } from '../../services/api/notificationsApi';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
-import { API_BASE_URL } from '../../config';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 
 interface Country {
   code: string;
@@ -31,48 +34,83 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     phoneLength: 10,
   });
   const [sendOtp, { isLoading: sendingOtp }] = useSendOtpMutation();
-  const [testingNotification, setTestingNotification] = useState(false);
+  const [sendStaticTest, { isLoading: testingNotification }] = useSendStaticTestNotificationMutation();
+  const [notificationToken, setNotificationToken] = useState<string | null>(null);
+  const [permissionGranted, setPermissionGranted] = useState(false);
 
-  // Simple test notification function
-  const handleTestNotification = async () => {
-    setTestingNotification(true);
+  // Check notification permission status on component mount
+  // Permission is requested in App.tsx, here we just check status and get token
+  useEffect(() => {
+    checkNotificationStatus();
+  }, []);
+
+  const checkNotificationStatus = async () => {
     try {
-      console.log('[TEST] 🧪 Testing push notification with static payload...');
+      console.log('[LOGIN] 🔔 Checking notification status...');
+
+      // Check if running on physical device
+      if (!Device.isDevice) {
+        console.log('[LOGIN] ⚠️ Not a physical device, skipping notification check');
+        return;
+      }
+
+      // Check current permission status (permission was requested in App.tsx)
+      const { status } = await Notifications.getPermissionsAsync();
+      console.log('[LOGIN] Current permission status:', status);
       
-      // Call backend with static test payload
-      const response = await fetch(`${API_BASE_URL}/notifications/test-static`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: '🎉 Test Notification',
-          body: 'This is a static test notification from LoginScreen',
-          data: {
-            type: 'TEST',
-            source: 'login_screen',
-            timestamp: new Date().toISOString(),
-          }
-        }),
-      });
+      if (status !== 'granted') {
+        console.log('[LOGIN] ❌ Notification permission not granted');
+        // Don't show alert here - permission was already requested in App.tsx
+        return;
+      }
 
-      const responseText = await response.text();
-      console.log('[TEST] Backend response:', {
-        status: response.status,
-        ok: response.ok,
-        body: responseText,
-      });
+      console.log('[LOGIN] ✅ Notification permission granted');
+      setPermissionGranted(true);
 
-      if (response.ok) {
+      // Get Expo Push Token (only after permission is confirmed)
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId || '0f6ecb0b-7511-427b-be33-74a4bd0207fe';
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+      const token = tokenData.data;
+      
+      console.log('[LOGIN] 📱 Expo Push Token:', token);
+      setNotificationToken(token);
+      
+      // Token registration happens after login in OTPVerificationScreen
+      // Here we just confirm we have the token ready
+      console.log('[LOGIN] ✅ Push token ready, will register after login');
+
+    } catch (error) {
+      console.error('[LOGIN] ❌ Notification check failed:', error);
+    }
+  };
+
+  // Test notification function using RTK Query
+  const handleTestNotification = async () => {
+    try {
+      console.log('[TEST] 🧪 Testing push notification via RTK Query...');
+      
+      const result = await sendStaticTest({
+        title: '🎉 Test Notification',
+        body: 'This is a static test notification from LoginScreen',
+        data: {
+          type: 'TEST',
+          source: 'login_screen',
+          timestamp: new Date().toISOString(),
+        }
+      }).unwrap();
+
+      console.log('[TEST] ✅ Backend response:', result);
+
+      if (result.success) {
         Alert.alert(
           '✅ Test Sent',
-          'Static test notification sent!\n\nCheck your device for the notification.\n\nLogs: adb logcat | findstr /i "PUSH"',
+          `Notification sent to ${result.result?.successCount || 0} device(s)!\n\nCheck your device for the notification.`,
           [{ text: 'OK' }]
         );
       } else {
         Alert.alert(
           '❌ Test Failed',
-          `Backend error: ${response.status}\n\n${responseText}`,
+          result.message || 'Unknown error',
           [{ text: 'OK' }]
         );
       }
@@ -80,11 +118,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       console.error('[TEST] ❌ Test notification failed:', error);
       Alert.alert(
         '❌ Error',
-        `Failed to send test notification:\n\n${error?.message || 'Unknown error'}`,
+        `Failed to send test notification:\n\n${error?.data?.message || error?.message || 'Unknown error'}`,
         [{ text: 'OK' }]
       );
-    } finally {
-      setTestingNotification(false);
     }
   };
 
@@ -206,12 +242,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               }}>
                 🧪 Push Notification Test
               </Text>
+
+              {/* Status Indicator */}
+              {permissionGranted && notificationToken && (
+                <View style={{ 
+                  backgroundColor: '#D1FAE5', 
+                  padding: 8, 
+                  borderRadius: 6, 
+                  marginBottom: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Text style={{ fontSize: 11, color: '#065F46', fontWeight: '600' }}>
+                    ✅ Permission Granted - Token Ready
+                  </Text>
+                </View>
+              )}
               
               <TouchableOpacity
                 onPress={handleTestNotification}
-                disabled={testingNotification}
+                disabled={testingNotification || !notificationToken}
                 style={{
-                  backgroundColor: testingNotification ? '#9CA3AF' : '#F59E0B',
+                  backgroundColor: testingNotification || !notificationToken ? '#9CA3AF' : '#F59E0B',
                   paddingVertical: 12,
                   paddingHorizontal: 16,
                   borderRadius: 8,
@@ -241,8 +294,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 marginTop: 8,
                 fontStyle: 'italic'
               }}>
-                Tests Firebase setup & backend integration
+                {notificationToken 
+                  ? 'Token ready - login to register with backend' 
+                  : permissionGranted 
+                    ? 'Getting push token...'
+                    : 'Waiting for notification permission...'}
               </Text>
+
+              {/* Show token for curl testing */}
+              {notificationToken && (
+                <View style={{ marginTop: 12, padding: 8, backgroundColor: '#F3F4F6', borderRadius: 6 }}>
+                  <Text style={{ fontSize: 9, color: '#374151', textAlign: 'center', fontFamily: 'monospace' }}>
+                    Token: {notificationToken.substring(0, 30)}...
+                  </Text>
+                </View>
+              )}
             </View>
           </Card>
         </View>

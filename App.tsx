@@ -15,6 +15,19 @@ import { useError } from './src/providers/ErrorProvider';
 import { NetworkLoggerFloatingButton } from './src/components/NetworkLoggerFloatingButton';
 import notificationService from './src/services/notifications/notificationService';
 import { ToastProvider } from './src/providers/ToastProvider';
+import * as Notifications from 'expo-notifications';
+
+// CRITICAL: Set notification handler at the TOP LEVEL (outside component)
+// This ensures notifications are handled even when app is in background/killed
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 export default function App() {
   const [appError, setAppError] = useState<string | null>(null);
@@ -28,6 +41,12 @@ export default function App() {
         // Initialize global error handlers
         setupGlobalErrorHandlers();
         
+        // Request notification permission early (Android 13+ requirement)
+        // This ensures the permission dialog shows on first app open
+        // Token registration happens later after user login
+        console.log('🔔 Requesting notification permission early...');
+        const permissionGranted = await notificationService.requestPermissionEarly();
+        console.log('🔔 Notification permission result:', permissionGranted);
         
         console.log('✅ App initialized successfully');
         setIsInitialized(true);

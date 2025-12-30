@@ -4,19 +4,20 @@ import { Theme } from '../../theme';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../../store/slices/authSlice';
 import { useResendOtpMutation, useVerifyOtpMutation } from '../../services/api/authApi';
+import { useRegisterNotificationTokenMutation } from '../../services/api/notificationsApi';
 import { AppDispatch } from '../../store';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { OTPInput } from '../../components/OTPInput';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ScreenHeader } from '../../components/ScreenHeader';
-import notificationService from '../../services/notifications/notificationService';
-import { FEATURES } from '../../config/env.config';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { navigationRef } from '../../navigation/navigationRef';
 import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../services/api/legalDocumentsApi';
-import { API_BASE_URL } from '../../config';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 
 interface OTPVerificationScreenProps {
   navigation: any;
@@ -34,6 +35,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
   const [verifyOtp, { isLoading: verifyingOtp }] = useVerifyOtpMutation();
   const [resendOtp, { isLoading: resendingOtp }] = useResendOtpMutation();
   const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
+  const [registerToken] = useRegisterNotificationTokenMutation();
 
   useEffect(() => {
     setOtpError('');
@@ -84,7 +86,8 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
         })
       );
       
-      // Removed notification initialization - now handled only in LoginScreen
+      // Register push notification token after successful login
+      await registerPushToken();
       
       showSuccessAlert('Login successful!');
 
@@ -106,6 +109,46 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
       // AppNavigator will switch to the authenticated stack as soon as setCredentials() updates isAuthenticated.
     } catch (err: any) {
       showErrorAlert(err, 'OTP Error');
+    }
+  };
+
+  const registerPushToken = async () => {
+    try {
+      console.log('[OTP] 🔔 Registering push notification token after login...');
+      
+      // Check if running on physical device
+      if (!Device.isDevice) {
+        console.log('[OTP] ⚠️ Not a physical device, skipping token registration');
+        return;
+      }
+
+      // Check permission status
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('[OTP] ⚠️ Notification permission not granted, skipping token registration');
+        return;
+      }
+
+      // Get Expo Push Token
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId || '0f6ecb0b-7511-427b-be33-74a4bd0207fe';
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+      const token = tokenData.data;
+      
+      console.log('[OTP] 📱 Expo Push Token:', token);
+
+      // Register token with backend via RTK Query
+      // x-user-id header is automatically added from auth state
+      const regResult = await registerToken({
+        fcm_token: token,
+        device_type: Platform.OS,
+        device_id: Device.modelId || Device.modelName || 'unknown',
+        device_name: Device.deviceName || Device.modelName || 'Android Device',
+      }).unwrap();
+      
+      console.log('[OTP] ✅ Push token registered successfully:', regResult);
+    } catch (error) {
+      console.error('[OTP] ❌ Failed to register push token:', error);
+      // Don't block login flow for notification errors
     }
   };
 

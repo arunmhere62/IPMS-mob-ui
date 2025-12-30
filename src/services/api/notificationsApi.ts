@@ -5,11 +5,27 @@ type ApiEnvelope<T> = {
 };
 
 export type RegisterTokenRequest = {
-  user_id: number;
   fcm_token: string;
   device_type: string;
-  device_id: string;
-  device_name: string;
+  device_id?: string;
+  device_name?: string;
+};
+
+export type SendTestNotificationRequest = {
+  title: string;
+  body: string;
+  data?: Record<string, any>;
+};
+
+export type TestNotificationResponse = {
+  success: boolean;
+  message: string;
+  result?: {
+    successCount: number;
+    failureCount: number;
+    totalTokens: number;
+    tokensUsed: string[];
+  };
 };
 
 export type UnregisterTokenRequest = {
@@ -90,6 +106,23 @@ export const notificationsApi = baseApi.injectEndpoints({
       }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
     }),
+
+    sendTestNotification: build.mutation<any, void>({
+      query: () => ({
+        url: '/notifications/test',
+        method: 'POST',
+      }),
+      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+    }),
+
+    sendStaticTestNotification: build.mutation<TestNotificationResponse, SendTestNotificationRequest>({
+      query: (body) => ({
+        url: '/notifications/test-static',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+    }),
   }),
   overrideExisting: true,
 });
@@ -106,4 +139,6 @@ export const {
   useUpdateNotificationSettingsMutation,
   useGetNotificationSettingsQuery,
   useLazyGetNotificationSettingsQuery,
+  useSendTestNotificationMutation,
+  useSendStaticTestNotificationMutation,
 } = notificationsApi;

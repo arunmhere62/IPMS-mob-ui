@@ -41,6 +41,88 @@ class NotificationService {
   }
 
   /**
+   * Request notification permission early (call from App.tsx on first launch)
+   * This ensures the Android 13+ permission dialog shows on first app open
+   * Does NOT register token with backend - that happens after login
+   */
+  async requestPermissionEarly(): Promise<boolean> {
+    try {
+      console.log('[PUSH] 🚀 Early permission request starting...');
+      
+      // Check if running on physical device
+      if (!Device.isDevice) {
+        console.log('[PUSH] ⚠️ Not a physical device, skipping permission request');
+        return false;
+      }
+
+      // Configure notification handler first
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+
+      // CRITICAL for Android 13+: Create notification channels BEFORE requesting permission
+      if (Platform.OS === 'android') {
+        console.log('[PUSH] 🔧 Creating Android notification channels (required for Android 13+)');
+        await this.setupAndroidChannels();
+      }
+
+      // Check current permission status
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      console.log('[PUSH] Current permission status:', existingStatus);
+
+      if (existingStatus === 'granted') {
+        console.log('[PUSH] ✅ Permission already granted');
+        return true;
+      }
+
+      // Request permission - this will show the system dialog on Android 13+
+      console.log('[PUSH] 📋 Requesting notification permission (Android 13+ system dialog)...');
+      const { status } = await Notifications.requestPermissionsAsync();
+      console.log('[PUSH] Permission request result:', status);
+
+      if (status === 'granted') {
+        console.log('[PUSH] ✅ Permission granted by user');
+        // Send a local dummy notification to confirm it's working
+        await this.sendLocalDummyNotification();
+        return true;
+      } else {
+        console.log('[PUSH] ❌ Permission denied by user');
+        return false;
+      }
+    } catch (error) {
+      console.error('[PUSH] ❌ Early permission request failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send a local dummy notification to verify notifications are working
+   */
+  async sendLocalDummyNotification(): Promise<void> {
+    try {
+      console.log('[PUSH] 🔔 Sending local dummy notification...');
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '🎉 Notifications Enabled!',
+          body: 'You will now receive important updates about your PG.',
+          sound: 'default',
+          data: { type: 'WELCOME', local: true },
+        },
+        trigger: null, // null = immediate
+      });
+      console.log('[PUSH] ✅ Local dummy notification sent');
+    } catch (error) {
+      console.error('[PUSH] ❌ Failed to send local dummy notification:', error);
+    }
+  }
+
+  /**
    * Initialize notification service
    */
   async initialize(userId: number) {
@@ -222,19 +304,34 @@ class NotificationService {
 
   /**
    * Request notification permissions
+   * For Android 13+ (API 33+), this will show the system permission dialog
+   * IMPORTANT: On Android 13+, notification channels must be created BEFORE requesting permission
    */
   async requestPermissions(): Promise<boolean> {
     try {
+      console.log('[PUSH] 📋 Checking notification permissions...');
+      
+      // CRITICAL for Android 13+: Create notification channels BEFORE requesting permission
+      // This ensures the permission dialog appears correctly
+      if (Platform.OS === 'android') {
+        console.log('[PUSH] 🔧 Pre-creating Android notification channels (required for Android 13+)');
+        await this.setupAndroidChannels();
+      }
+      
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      console.log('[PUSH] Current permission status:', existingStatus);
+      
       let finalStatus = existingStatus;
       
       if (existingStatus !== 'granted') {
+        console.log('[PUSH] 📋 Requesting notification permissions (Android 13+ will show system dialog)...');
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
+        console.log('[PUSH] Permission request result:', status);
       }
       
       if (finalStatus !== 'granted') {
-        console.log('❌ Notification permission not granted');
+        console.log('❌ Notification permission not granted. Final status:', finalStatus);
         return false;
       }
 
