@@ -4,41 +4,33 @@ import { WebView } from 'react-native-webview';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Theme } from '../../theme';
-import { FAQ_WEB_URL } from '../../config/support.config';
 
-interface FaqWebViewScreenProps {
+interface LegalWebViewScreenProps {
   navigation: any;
+  route: any;
 }
 
-export const FaqWebViewScreen: React.FC<FaqWebViewScreenProps> = ({ navigation }) => {
+export const LegalWebViewScreen: React.FC<LegalWebViewScreenProps> = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
 
-  const addEmbedParam = (rawUrl: string) => {
-    try {
-      const u = new URL(rawUrl);
-      u.searchParams.set('embed', '1');
-      return u.toString();
-    } catch {
-      return rawUrl;
-    }
-  };
+  const title = String(route?.params?.title || 'Document');
 
-  const faqUrl = useMemo(() => {
-    return addEmbedParam((FAQ_WEB_URL || '').trim());
-  }, []);
+  const url = useMemo(() => {
+    return String(route?.params?.url || '').trim();
+  }, [route?.params?.url]);
 
   useEffect(() => {
-    if (!faqUrl) {
-      Alert.alert('FAQ URL not configured', 'Please set FAQ_WEB_URL in src/config/support.config.ts');
+    if (!url) {
+      Alert.alert('Link not available', 'This document link is not available right now.');
       navigation.goBack();
     }
-  }, [faqUrl, navigation]);
+  }, [url, navigation]);
 
-  if (!faqUrl) return null;
+  if (!url) return null;
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.primary}>
-      <ScreenHeader title="FAQ" showBackButton onBackPress={() => navigation.goBack()} />
+      <ScreenHeader title={title} showBackButton onBackPress={() => navigation.goBack()} />
 
       <View style={styles.container}>
         {loading ? (
@@ -48,7 +40,7 @@ export const FaqWebViewScreen: React.FC<FaqWebViewScreenProps> = ({ navigation }
         ) : null}
 
         <WebView
-          source={{ uri: faqUrl }}
+          source={{ uri: url }}
           onLoadStart={() => setLoading(true)}
           onLoadEnd={() => setLoading(false)}
           javaScriptEnabled={true}
@@ -57,10 +49,10 @@ export const FaqWebViewScreen: React.FC<FaqWebViewScreenProps> = ({ navigation }
           style={styles.webview}
           onError={(syntheticEvent) => {
             const { nativeEvent } = syntheticEvent;
-            Alert.alert('FAQ Error', `Failed to load FAQ page.\n\n${nativeEvent?.description || ''}`);
+            Alert.alert(title, `Failed to load page.\n\n${nativeEvent?.description || ''}`);
           }}
           onHttpError={() => {
-            Alert.alert('FAQ Error', 'FAQ page returned an error. Please try again.');
+            Alert.alert(title, 'Page returned an error. Please try again.');
           }}
         />
       </View>

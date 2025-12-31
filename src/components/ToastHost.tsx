@@ -142,7 +142,6 @@ export const ToastHost: React.FC = () => {
           },
         ]}
       >
-        <View style={[styles.accent, { backgroundColor: colors.accent }]} />
         <View style={styles.contentRow}>
           <View
             style={[
@@ -177,10 +176,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toast: {
-    borderRadius: 10,
+    borderRadius: 14,
     width: '100%',
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -189,43 +188,34 @@ const styles = StyleSheet.create({
     elevation: 6,
     overflow: 'hidden',
   },
-  accent: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-  },
   contentRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingLeft: 6,
+    alignItems: 'center',
+    gap: 10,
   },
   iconBubble: {
-    width: 24,
-    height: 24,
+    width: 28,
+    height: 28,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
   },
   iconText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
   },
   textCol: {
     flex: 1,
   },
   title: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   message: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    lineHeight: 16,
+    lineHeight: 18,
   },
 });

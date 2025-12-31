@@ -219,14 +219,34 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
                 fontSize: Theme.typography.fontSize.sm,
                 color: Theme.colors.text.secondary,
                 textAlign: 'center',
+                marginBottom: Theme.spacing.sm,
+              }}
+            >
+              We sent a 4-digit code to
+            </Text>
+
+            <View
+              style={{
+                alignSelf: 'center',
+                paddingVertical: Theme.spacing.xs,
+                paddingHorizontal: Theme.spacing.md,
+                borderRadius: 999,
+                backgroundColor: Theme.withOpacity(Theme.colors.text.primary, 0.06),
+                borderWidth: 1,
+                borderColor: Theme.withOpacity(Theme.colors.border, 0.25),
                 marginBottom: Theme.spacing.lg,
               }}
             >
-              We sent a 4-digit code to{' '}
-              <Text style={{ color: Theme.colors.text.primary, fontWeight: Theme.typography.fontWeight.semibold }}>
+              <Text
+                style={{
+                  color: Theme.colors.text.primary,
+                  fontWeight: Theme.typography.fontWeight.semibold,
+                  textAlign: 'center',
+                }}
+              >
                 {phone}
               </Text>
-            </Text>
+            </View>
 
           <OTPInput
             length={4}

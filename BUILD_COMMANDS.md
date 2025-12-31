@@ -373,6 +373,8 @@ eas build -p android --profile standalone-apk --clear-cache
 # 1. Full clean
 npm run clean:all
 
+npx expo prebuild --clean
+
 # 2. Reinstall dependencies
 npm install
 

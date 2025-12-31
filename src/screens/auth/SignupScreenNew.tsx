@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Theme } from '../../theme';
@@ -141,17 +141,23 @@ export const SignupScreenNew: React.FC = () => {
     return doc?.url || (doc as any)?.content_url;
   };
 
+  const addEmbedParam = (rawUrl: string) => {
+    try {
+      const u = new URL(rawUrl);
+      u.searchParams.set('embed', '1');
+      return u.toString();
+    } catch {
+      return rawUrl;
+    }
+  };
+
   const openLegalDocByType = async (types: string | string[], fallbackTitle: string) => {
     const url = findLegalDocUrl(types);
     if (!url) {
       Alert.alert('Info', `${fallbackTitle} link is not available right now.`);
       return;
     }
-    try {
-      await Linking.openURL(url);
-    } catch {
-      Alert.alert('Error', `Unable to open ${fallbackTitle}`);
-    }
+    (navigation as any).navigate('LegalWebView', { title: fallbackTitle, url: addEmbedParam(url) });
   };
 
   const handleSendOtp = async () => {

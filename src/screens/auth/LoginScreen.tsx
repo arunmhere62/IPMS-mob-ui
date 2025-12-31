@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView } from 'react-native';
 import { Theme } from '../../theme';
 import { useSendOtpMutation } from '../../services/api/authApi';
 import { Button } from '../../components/Button';
@@ -22,6 +22,7 @@ interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<Country>({
     code: 'IN',
     name: 'India',
@@ -30,6 +31,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     phoneLength: 10,
   });
   const [sendOtp, { isLoading: sendingOtp }] = useSendOtpMutation();
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const validatePhone = (phoneNumber: string): boolean => {
     const phoneRegex = /^[0-9]{10}$/;
@@ -67,33 +78,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={{ 
-          flex: 1,
-          justifyContent: 'center', 
-          padding: Theme.spacing.lg 
-        }}>
-          <View style={{ marginBottom: Theme.spacing.xl }}>
-            <Text style={{ 
-              fontSize: Theme.typography.fontSize['4xl'], 
-              fontWeight: Theme.typography.fontWeight.bold, 
-              color: Theme.colors.primary, 
-              textAlign: 'center', 
-              marginBottom: Theme.spacing.sm 
-            }}>
-              PG Management
-            </Text>
-            <Text style={{ 
-              fontSize: Theme.typography.fontSize.base, 
-              color: Theme.colors.text.secondary, 
-              textAlign: 'center' 
-            }}>
-              Login to manage your PG operations
-            </Text>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            padding: Theme.spacing.lg,
+          }}
+        >
+          <View style={{ alignItems: 'center', marginBottom: keyboardVisible ? Theme.spacing.md : Theme.spacing.xl }}>
+            <Image
+              source={require('../../../assets/splash-logo.png')}
+              resizeMode="contain"
+              style={{ width: 110, height: 110 }}
+            />
           </View>
-
           <Card className="mb-6 shadow-none">
-            <Text className="text-2xl font-semibold text-dark mb-6">Login</Text>
-            
             {/* Country + Phone in Single Row */}
             <CountryPhoneSelector
               selectedCountry={selectedCountry}
@@ -139,7 +139,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               />
             </View>
           </Card>
-        </View>
+        </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );

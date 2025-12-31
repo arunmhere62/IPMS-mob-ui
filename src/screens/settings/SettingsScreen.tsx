@@ -30,6 +30,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
 
   const [serverLogout] = useLogoutMutation();
   const [testingNotification, setTestingNotification] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const {
     data: subscriptionStatus,
@@ -72,37 +73,43 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
+            if (loggingOut) return;
+            setLoggingOut(true);
             try {
-              // Best-effort server-side logout (revokes tokens)
               try {
-                await serverLogout().unwrap();
-              } catch (e) {
-                console.warn('⚠️ Server logout failed (continuing local logout):', e);
+                // Best-effort server-side logout (revokes tokens)
+                try {
+                  await serverLogout().unwrap();
+                } catch (e) {
+                  console.warn('⚠️ Server logout failed (continuing local logout):', e);
+                }
+
+                // Unregister FCM token and cleanup notification service
+                await notificationService.unregisterToken();
+                notificationService.cleanup();
+                console.log('✅ Notification service cleaned up');
+              } catch (error) {
+                console.warn('⚠️ Failed to cleanup notifications:', error);
               }
 
-              // Unregister FCM token and cleanup notification service
-              await notificationService.unregisterToken();
-              notificationService.cleanup();
-              console.log('✅ Notification service cleaned up');
-            } catch (error) {
-              console.warn('⚠️ Failed to cleanup notifications:', error);
+              // Clear RTK Query cache + all redux slice state
+              dispatch(baseApi.util.resetApiState());
+              dispatch(clearOrganizations());
+              dispatch(clearPermissions());
+              dispatch(setSelectedPGLocation(null));
+              dispatch(logout());
+
+              // Remove persisted redux state from disk
+              try {
+                await persistor.purge();
+              } catch (e) {
+                console.warn('⚠️ Failed to purge persisted store:', e);
+              }
+
+              console.log('✅ User logged out successfully');
+            } finally {
+              setLoggingOut(false);
             }
-
-            // Clear RTK Query cache + all redux slice state
-            dispatch(baseApi.util.resetApiState());
-            dispatch(clearOrganizations());
-            dispatch(clearPermissions());
-            dispatch(setSelectedPGLocation(null));
-            dispatch(logout());
-
-            // Remove persisted redux state from disk
-            try {
-              await persistor.purge();
-            } catch (e) {
-              console.warn('⚠️ Failed to purge persisted store:', e);
-            }
-
-            console.log('✅ User logged out successfully');
           },
         },
       ]
@@ -281,9 +288,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           {/* Logout Button */}
           <TouchableOpacity
             onPress={handleLogout}
+            disabled={loggingOut}
             className="bg-red-500 rounded-lg py-4 mb-6"
+            style={{ opacity: loggingOut ? 0.75 : 1 }}
           >
-            <Text className="text-white text-center font-bold text-lg">Logout</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+              {loggingOut ? <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 10 }} /> : null}
+              <Text className="text-white text-center font-bold text-lg">Logout</Text>
+            </View>
           </TouchableOpacity>
 
           {/* App Version */}

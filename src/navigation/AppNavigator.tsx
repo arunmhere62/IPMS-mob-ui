@@ -21,6 +21,7 @@ import { LoginScreen } from '../screens/auth/LoginScreen';
 import { OTPVerificationScreen } from '../screens/auth/OTPVerificationScreen';
 import { SignupScreenNew } from '../screens/auth/SignupScreenNew';
 import { LegalDocumentsScreen } from '../screens/legal/LegalDocumentsScreen';
+import { LegalWebViewScreen } from '../screens/legal/LegalWebViewScreen';
 
 // Main Screens
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
@@ -185,11 +186,13 @@ export const AppNavigator = () => {
             <Stack.Screen name="Signup" component={SignupScreenNew} />
             <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
             <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen} />
+            <Stack.Screen name="LegalWebView" component={LegalWebViewScreen} />
           </>
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
             <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen} />
+            <Stack.Screen name="LegalWebView" component={LegalWebViewScreen} />
             <Stack.Screen name="PGLocations" component={PGLocationsScreen} />
             <Stack.Screen name="PGDetails" component={PGDetailsScreen} />
             <Stack.Screen name="Organizations" component={OrganizationsScreen} />
