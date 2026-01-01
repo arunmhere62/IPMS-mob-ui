@@ -242,6 +242,8 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                   flex: 1,
                   paddingVertical: 14,
                   borderRadius: 12,
+                  borderColor: Theme.colors.border,
+                  borderWidth: 1,
                   backgroundColor: Theme.colors.light,
                   alignItems: 'center',
                 }}

@@ -6,8 +6,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
-  Image,
   Alert,
   Linking,
 } from 'react-native';
@@ -24,6 +22,7 @@ import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { ActionTile } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import RentPaymentForm from './RentPaymentForm';
@@ -352,9 +351,7 @@ const TenantDetailsContent: React.FC<{
     rentPayments: false,
     advancePayments: false,
     refundPayments: false,
-    pendingMonths: false,
-    proofDocuments: false,
-    images: false,
+    transferHistory: false,
   });
 
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
@@ -918,11 +915,44 @@ const TenantDetailsContent: React.FC<{
     return (
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
         <ScreenHeader title="Tenant Details" showBackButton={true} onBackPress={handleBackPress} />
-        <View style={{backgroundColor : CONTENT_COLOR, flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
-            Loading tenant details...
-          </Text>
+        <View style={{ backgroundColor: CONTENT_COLOR, flex: 1 }}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+            <Card style={{ padding: 16, marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <SkeletonLoader width={56} height={56} borderRadius={28} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <SkeletonLoader width={'70%'} height={18} borderRadius={6} />
+                  <SkeletonLoader width={'45%'} height={14} borderRadius={6} style={{ marginTop: 10 }} />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', marginTop: 16 }}>
+                <SkeletonLoader width={44} height={44} borderRadius={10} style={{ marginRight: 10 }} />
+                <SkeletonLoader width={44} height={44} borderRadius={10} style={{ marginRight: 10 }} />
+                <SkeletonLoader width={44} height={44} borderRadius={10} style={{ marginRight: 10 }} />
+                <SkeletonLoader width={44} height={44} borderRadius={10} />
+              </View>
+            </Card>
+
+            <Card style={{ padding: 16, marginBottom: 12 }}>
+              <SkeletonLoader width={'50%'} height={16} borderRadius={6} />
+              <SkeletonLoader width={'85%'} height={14} borderRadius={6} style={{ marginTop: 10 }} />
+              <SkeletonLoader width={'75%'} height={14} borderRadius={6} style={{ marginTop: 10 }} />
+            </Card>
+
+            <Card style={{ padding: 16, marginBottom: 12 }}>
+              <SkeletonLoader width={'60%'} height={16} borderRadius={6} />
+              <SkeletonLoader width={'95%'} height={12} borderRadius={6} style={{ marginTop: 12 }} />
+              <SkeletonLoader width={'90%'} height={12} borderRadius={6} style={{ marginTop: 10 }} />
+              <SkeletonLoader width={'80%'} height={12} borderRadius={6} style={{ marginTop: 10 }} />
+            </Card>
+
+            <Card style={{ padding: 16, marginBottom: 12 }}>
+              <SkeletonLoader width={'55%'} height={16} borderRadius={6} />
+              <SkeletonLoader width={'100%'} height={48} borderRadius={10} style={{ marginTop: 12 }} />
+              <SkeletonLoader width={'100%'} height={48} borderRadius={10} style={{ marginTop: 12 }} />
+            </Card>
+          </ScrollView>
         </View>
       </ScreenLayout>
     );
@@ -1021,63 +1051,7 @@ const TenantDetailsContent: React.FC<{
           </Card>
         )}
 
-        {transferHistory.length > 0 && (
-          <CollapsibleSection
-            title="Transfer History"
-            icon="time-outline"
-            itemCount={transferHistory.length}
-            expanded={expandedSections.pendingMonths}
-            onToggle={() =>
-              setExpandedSections((prev) => ({
-                ...prev,
-                pendingMonths: !prev.pendingMonths,
-              }))
-            }
-            theme="light"
-          >
-            {transferHistory.map((a: any, idx: number) => {
-              const isCurrent = !a.effective_to;
-              const from = formatDateOnly(a.effective_from);
-              const to = a.effective_to ? formatDateOnly(a.effective_to) : 'Present';
 
-              const pgName = a.pg_locations?.location_name || `PG ${a.pg_id}`;
-              const roomNo = a.rooms?.room_no || a.room_id;
-              const bedNo = a.beds?.bed_no || a.bed_id;
-
-              return (
-                <Card
-                  key={a.s_no || idx}
-                  style={{
-                    marginHorizontal: 16,
-                    marginBottom: 8,
-                    padding: 12,
-                    borderLeftWidth: 3,
-                    borderLeftColor: isCurrent ? '#10B981' : '#9CA3AF',
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.primary }}>
-                      {from} → {to}
-                    </Text>
-                    {isCurrent && (
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#10B981' }}>CURRENT</Text>
-                    )}
-                  </View>
-
-                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
-                    {pgName} | Room {roomNo} | Bed {bedNo}
-                  </Text>
-
-                  {a.bed_price_snapshot != null && (
-                    <Text style={{ marginTop: 4, fontSize: 12, color: Theme.colors.text.secondary }}>
-                      Price snapshot: ₹{Number(a.bed_price_snapshot || 0).toLocaleString('en-IN')}
-                    </Text>
-                  )}
-                </Card>
-              );
-            })}
-          </CollapsibleSection>
-        )}
 
         {/* Accommodation Details */}
         <AccommodationDetails
@@ -1085,7 +1059,7 @@ const TenantDetailsContent: React.FC<{
         />
 
         {/* Personal Information */}
-        <PersonalInformation tenant={tenant} />
+        <PersonalInformation tenant={tenant} onOpenMedia={openImageViewer} />
 
 
         {/* Rent Payments Button - Always Show */}
@@ -1107,19 +1081,39 @@ const TenantDetailsContent: React.FC<{
             marginHorizontal: 16,
             marginBottom: 12,
             paddingVertical: 12,
-            paddingHorizontal: 16,
-            backgroundColor: '#DBEAFE',
-            borderRadius: 8,
-            borderLeftWidth: 3,
-            borderLeftColor: Theme.colors.primary,
+            paddingHorizontal: 12,
+            backgroundColor: Theme.colors.background.secondary,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: Theme.colors.border,
             opacity: tenant?.tenant_payments?.length > 0 ? 1 : 0.7,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.primary }}>
-              📋 Rent Payments ({tenant?.tenant_payments?.length || 0})
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color={Theme.colors.primary} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <View
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  backgroundColor: Theme.colors.background.blueLight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 10,
+                }}
+              >
+                <Ionicons name="receipt-outline" size={18} color={Theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
+                  Rent Payments
+                </Text>
+                <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.tertiary }}>
+                  {tenant?.tenant_payments?.length || 0} records
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
           </View>
         </TouchableOpacity>
 
@@ -1140,19 +1134,39 @@ const TenantDetailsContent: React.FC<{
             marginHorizontal: 16,
             marginBottom: 12,
             paddingVertical: 12,
-            paddingHorizontal: 16,
-            backgroundColor: '#F0FDF4',
-            borderRadius: 8,
-            borderLeftWidth: 3,
-            borderLeftColor: '#10B981',
+            paddingHorizontal: 12,
+            backgroundColor: Theme.colors.background.secondary,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: Theme.colors.border,
             opacity: tenant?.advance_payments?.length > 0 ? 1 : 0.7,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#10B981' }}>
-              💰 Advance Payments ({tenant?.advance_payments?.length || 0})
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#10B981" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <View
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  backgroundColor: '#ECFDF5',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 10,
+                }}
+              >
+                <Ionicons name="wallet-outline" size={18} color="#10B981" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
+                  Advance Payments
+                </Text>
+                <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.tertiary }}>
+                  {tenant?.advance_payments?.length || 0} records
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
           </View>
         </TouchableOpacity>
 
@@ -1174,132 +1188,181 @@ const TenantDetailsContent: React.FC<{
             marginHorizontal: 16,
             marginBottom: 12,
             paddingVertical: 12,
-            paddingHorizontal: 16,
-            backgroundColor: '#FEF3C7',
-            borderRadius: 8,
-            borderLeftWidth: 3,
-            borderLeftColor: '#F59E0B',
+            paddingHorizontal: 12,
+            backgroundColor: Theme.colors.background.secondary,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: Theme.colors.border,
             opacity: tenant?.refund_payments?.length > 0 ? 1 : 0.7,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#D97706' }}>
-              🔄 Refund Payments ({tenant?.refund_payments?.length || 0})
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#D97706" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <View
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  backgroundColor: '#FFFBEB',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 10,
+                }}
+              >
+                <Ionicons name="arrow-undo-outline" size={18} color="#F59E0B" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
+                  Refund Payments
+                </Text>
+                <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.tertiary }}>
+                  {tenant?.refund_payments?.length || 0} records
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
           </View>
         </TouchableOpacity>
 
-        {/* Proof Documents */}
-        <CollapsibleSection
-          title="Proof Documents"
-          icon="document-outline"
-          itemCount={tenant.proof_documents && Array.isArray(tenant.proof_documents) ? tenant.proof_documents.length : 0}
-          expanded={expandedSections.proofDocuments}
-          onToggle={() => toggleSection('proofDocuments')}
-          theme="lightBlue"
-        >
-          {tenant.proof_documents && Array.isArray(tenant.proof_documents) && tenant.proof_documents.length > 0 ? (
-            <View style={{ padding: 16, paddingTop: 12 }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                {tenant.proof_documents.map((doc: string, index: number) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => openImageViewer(doc)}
+        {transferHistory.length > 0 && (
+          <View style={{ marginBottom: 12 }}>
+            <TouchableOpacity
+              onPress={() =>
+                setExpandedSections((prev) => ({
+                  ...prev,
+                  transferHistory: !prev.transferHistory,
+                }))
+              }
+              style={{
+                marginHorizontal: 16,
+                paddingVertical: 12,
+                paddingHorizontal: 12,
+                backgroundColor: Theme.colors.background.secondary,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: Theme.colors.border,
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <View
                     style={{
-                      width: '48%',
-                      aspectRatio: 1,
-                      backgroundColor: '#F9FAFB',
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: '#E5E7EB',
-                      overflow: 'hidden',
-                      position: 'relative',
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      backgroundColor: '#EEF2FF',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 10,
                     }}
                   >
-                    <Image
-                      source={{ uri: doc }}
-                      style={{ width: '100%', height: '100%' }}
-                      resizeMode="cover"
-                    />
-                    <View
-                      style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        backgroundColor: 'rgba(0,0,0,0.6)',
-                        padding: 4,
-                      }}
-                    >
-                      <Text
+                    <Ionicons name="time-outline" size={18} color={Theme.colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
+                      Transfer History
+                    </Text>
+                    <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.tertiary }}>
+                      {transferHistory.length} records
+                    </Text>
+                  </View>
+                </View>
+
+                <Ionicons
+                  name={expandedSections.transferHistory ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={Theme.colors.text.tertiary}
+                />
+              </View>
+            </TouchableOpacity>
+
+            {expandedSections.transferHistory && (
+              <View style={{ marginTop: 10 }}>
+                {transferHistory.map((a: any, idx: number) => {
+                  const isCurrent = !a.effective_to;
+                  const from = formatDateOnly(a.effective_from);
+                  const to = a.effective_to ? formatDateOnly(a.effective_to) : 'Present';
+                  const isLast = idx === transferHistory.length - 1;
+
+                  const pgName = a.pg_locations?.location_name || `PG ${a.pg_id}`;
+                  const roomNo = a.rooms?.room_no || a.room_id;
+                  const bedNo = a.beds?.bed_no || a.bed_id;
+
+                  return (
+                    <View key={a.s_no || idx} style={{ marginHorizontal: 16, marginBottom: 10, flexDirection: 'row' }}>
+                      <View style={{ width: 18, alignItems: 'center' }}>
+                        
+                        {!isLast && (
+                          <View
+                            style={{
+                              width: 2,
+                              flex: 1,
+                              backgroundColor: Theme.colors.border,
+                              marginTop: 6,
+                            }}
+                          />
+                        )}
+                      </View>
+
+                      <Card
                         style={{
-                          fontSize: 10,
-                          color: '#fff',
-                          textAlign: 'center',
-                          fontWeight: '600',
+                          flex: 1,
+                          padding: 12,
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: Theme.colors.border,
+                          backgroundColor: Theme.colors.background.secondary,
                         }}
                       >
-                        Document {index + 1}
-                      </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: Theme.colors.text.primary }}>
+                            {from} - {to}
+                          </Text>
+                          {isCurrent && (
+                            <View
+                              style={{
+                                paddingHorizontal: 8,
+                                paddingVertical: 3,
+                                borderRadius: 999,
+                                backgroundColor: '#10B98120',
+                              }}
+                            >
+                              <Text style={{ fontSize: 10, fontWeight: '800', color: '#10B981' }}>CURRENT</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <View style={{ marginTop: 8, gap: 4 }}>
+                          <View style={{ flexDirection: 'row' }}>
+                            <Text style={{ width: 72, fontSize: 11, color: Theme.colors.text.tertiary }}>PG</Text>
+                            <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: Theme.colors.text.secondary }}>
+                              {pgName}
+                            </Text>
+                          </View>
+                          <View style={{ flexDirection: 'row' }}>
+                            <Text style={{ width: 72, fontSize: 11, color: Theme.colors.text.tertiary }}>Room / Bed</Text>
+                            <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: Theme.colors.text.secondary }}>
+                              Room {roomNo}  •  Bed {bedNo}
+                            </Text>
+                          </View>
+                          {a.bed_price_snapshot != null && (
+                            <View style={{ flexDirection: 'row' }}>
+                              <Text style={{ width: 72, fontSize: 11, color: Theme.colors.text.tertiary }}>Price</Text>
+                              <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', color: Theme.colors.text.secondary }}>
+                                ₹{Number(a.bed_price_snapshot || 0).toLocaleString('en-IN')}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </Card>
                     </View>
-                  </TouchableOpacity>
-                ))}
+                  );
+                })}
               </View>
-            </View>
-          ) : (
-            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: Theme.colors.text.tertiary }}>
-                No proof documents uploaded
-              </Text>
-            </View>
-          )}
-        </CollapsibleSection>
-
-        {/* Tenant Images */}
-        <CollapsibleSection
-          title="Tenant Images"
-          icon="image-outline"
-          itemCount={tenant.images && Array.isArray(tenant.images) ? tenant.images.length : 0}
-          expanded={expandedSections.images}
-          onToggle={() => toggleSection('images')}
-          theme="lightBlue"
-        >
-          {tenant.images && Array.isArray(tenant.images) && tenant.images.length > 0 ? (
-            <View style={{ padding: 16, paddingTop: 12 }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                {tenant.images.map((image: string, index: number) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => openImageViewer(image)}
-                    style={{
-                      width: '48%',
-                      aspectRatio: 1,
-                      backgroundColor: '#F9FAFB',
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: '#E5E7EB',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Image
-                      source={{ uri: image }}
-                      style={{ width: '100%', height: '100%' }}
-                      resizeMode="cover"
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          ) : (
-            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: Theme.colors.text.tertiary }}>
-                No images uploaded
-              </Text>
-            </View>
-          )}
-        </CollapsibleSection>
-
+            )}
+          </View>
+        )}
+        
         {/* Checkout Actions - Only show if there's a checkout date */}
         {(() => {
           const isCheckedOut = !!currentTenant?.check_out_date;

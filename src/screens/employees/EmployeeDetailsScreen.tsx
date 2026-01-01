@@ -1,25 +1,31 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
-  Alert,
   RefreshControl,
-  Image,
+  ActivityIndicator,
   TouchableOpacity,
+  Alert,
+  Image,
+  TextInput,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
-import { ScreenHeader } from '../../components/ScreenHeader';
-import { ScreenLayout } from '../../components/ScreenLayout';
-import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
+import { Card } from '../../components/Card';
+import { ScreenLayout } from '../../components/ScreenLayout';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { SlideBottomModal } from '@/components/SlideBottomModal';
+import { AmountInput } from '@/components/AmountInput';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store';
+import { useGetPgUserAssignmentQuery, useUpdatePgUserSalaryMutation } from '@/services/api/pgUsersApi';
 import { useDeleteEmployeeMutation, useGetEmployeeByIdQuery } from '../../services/api/employeesApi';
 import { useGetUserPermissionsQuery } from '../../services/api/rbacApi';
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
 
@@ -102,6 +108,7 @@ const EmployeeDetailsScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { employeeId } = route.params;
+  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can, isAdmin, isSuperAdmin } = usePermissions();
   const canEditEmployee = can(Permission.EDIT_EMPLOYEE);
   const canDeleteEmployee = can(Permission.DELETE_EMPLOYEE);
@@ -114,6 +121,17 @@ const EmployeeDetailsScreen: React.FC = () => {
   } = useGetEmployeeByIdQuery(employeeId);
 
   const { data: employeePerms } = useGetUserPermissionsQuery(employeeId);
+
+  const { data: assignmentResp, refetch: refetchAssignment } = useGetPgUserAssignmentQuery(
+    { userId: employeeId },
+    { skip: !employeeId || !selectedPGLocationId },
+  );
+  const assignment = (assignmentResp as any)?.data ?? assignmentResp;
+
+  const [updateSalary, { isLoading: isUpdatingSalary }] = useUpdatePgUserSalaryMutation();
+  const [salaryModalVisible, setSalaryModalVisible] = useState(false);
+  const [salaryValue, setSalaryValue] = useState('');
+  const [salaryError, setSalaryError] = useState<string | null>(null);
 
   const [deleteEmployee] = useDeleteEmployeeMutation();
 
@@ -154,6 +172,36 @@ const EmployeeDetailsScreen: React.FC = () => {
 
   const handleRefresh = () => {
     refetch();
+    refetchAssignment();
+  };
+
+  const formatAmount = useMemo(() => {
+    return (amount: number) =>
+      new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  }, []);
+
+  const openSalaryModal = () => {
+    const existing = assignment?.monthly_salary_amount;
+    setSalaryValue(existing !== null && existing !== undefined ? String(existing) : '');
+    setSalaryError(null);
+    setSalaryModalVisible(true);
+  };
+
+  const submitSalary = async () => {
+    const amt = Number(salaryValue);
+    if (!salaryValue || !Number.isFinite(amt) || amt < 0) {
+      setSalaryError('Enter a valid salary amount');
+      return;
+    }
+
+    try {
+      await updateSalary({ userId: employeeId, monthly_salary_amount: amt }).unwrap();
+      showSuccessAlert('Salary updated successfully');
+      setSalaryModalVisible(false);
+      refetchAssignment();
+    } catch (error: any) {
+      showErrorAlert(error, 'Salary Update Error');
+    }
   };
 
   const handleEdit = useCallback(() => {
@@ -413,6 +461,44 @@ const EmployeeDetailsScreen: React.FC = () => {
                 elevation: 1,
               }}
             >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 6 }}>
+                    Salary (this PG)
+                  </Text>
+                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+                    {assignment?.monthly_salary_amount !== null && assignment?.monthly_salary_amount !== undefined
+                      ? formatAmount(Number(assignment.monthly_salary_amount))
+                      : 'Not set'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={openSalaryModal}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    borderRadius: 10,
+                    backgroundColor: Theme.colors.primary,
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>Set Salary</Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+
+            <Card
+              style={{
+                marginBottom: 12,
+                padding: 14,
+                borderRadius: 16,
+                backgroundColor: '#fff',
+                shadowColor: '#00000010',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 1,
+              }}
+            >
               <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
                 Address Information
               </Text>
@@ -454,6 +540,37 @@ const EmployeeDetailsScreen: React.FC = () => {
           </ScrollView>
         )}
       </View>
+
+      <SlideBottomModal
+        visible={salaryModalVisible}
+        onClose={() => {
+          if (!isUpdatingSalary) setSalaryModalVisible(false);
+        }}
+        title="Set Monthly Salary"
+        subtitle={employee?.name}
+        onSubmit={submitSalary}
+        submitLabel={isUpdatingSalary ? 'Saving...' : 'Save'}
+        cancelLabel="Cancel"
+        isLoading={isUpdatingSalary}
+      >
+        <AmountInput
+          label="Monthly Salary"
+          value={salaryValue}
+          onChangeText={(t) => {
+            setSalaryValue(t);
+            setSalaryError(null);
+          }}
+          required
+          error={salaryError || undefined}
+          containerStyle={{ marginBottom: 16 }}
+        />
+
+        <View style={{ marginBottom: 8 }}>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+            This salary is saved per employee per PG (Option A).
+          </Text>
+        </View>
+      </SlideBottomModal>
     </ScreenLayout>
   );
 };

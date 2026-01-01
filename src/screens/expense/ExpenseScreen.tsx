@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -18,9 +18,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { Expense, PaymentMethod, useDeleteExpenseMutation, useLazyGetExpensesQuery } from '../../services/api/expensesApi';
-import { AddEditExpenseModal } from '@/screens/expense/AddEditExpenseModal';
+import { AddEditExpenseModal } from './AddEditExpenseModal';
 import { ActionButtons } from '../../components/ActionButtons';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
 
@@ -44,7 +45,6 @@ const MONTHS = [
 ];
 
 export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
   const canCreateExpense = can(Permission.CREATE_EXPENSE);
@@ -57,23 +57,18 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [pagination, setPagination] = useState<any>(null);
+  const [visibleItemsCount, setVisibleItemsCount] = useState(0);
+
+  const flatListRef = React.useRef<any>(null);
+  const scrollPositionRef = React.useRef(0);
 
   const [fetchExpensesTrigger] = useLazyGetExpensesQuery();
   const [deleteExpense] = useDeleteExpenseMutation();
 
-  const defaultMonthYear = React.useMemo(() => {
-    const now = new Date();
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return {
-      month: lastMonthDate.getMonth() + 1,
-      year: lastMonthDate.getFullYear(),
-    };
-  }, []);
-
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [appliedMonth, setAppliedMonth] = useState<number | null>(defaultMonthYear.month);
-  const [appliedYear, setAppliedYear] = useState<number | null>(defaultMonthYear.year);
+  const [appliedMonth, setAppliedMonth] = useState<number | null>(null);
+  const [appliedYear, setAppliedYear] = useState<number | null>(null);
   const [draftMonth, setDraftMonth] = useState<number | null>(null);
   const [draftYear, setDraftYear] = useState<number | null>(null);
 
@@ -114,7 +109,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
 
       const response = await fetchExpensesTrigger({
         page: pageNum,
-        limit: 10,
+        limit: 20,
         month: monthToUse || undefined,
         year: yearToUse || undefined,
       }).unwrap();
@@ -129,9 +124,13 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
         } else {
           setExpenses(serverData);
         }
-        setTotalExpenses(pagination?.total || serverData.length);
+        setPagination(pagination || null);
         setHasMore(totalPages ? pageNum < totalPages : false);
         setPage(pageNum);
+
+        if (flatListRef.current && pageNum === 1 && !append) {
+          flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+        }
       }
     } catch (error: any) {
       showErrorAlert(error, 'Expenses Error');
@@ -148,15 +147,17 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   const onRefresh = () => {
     setRefreshing(true);
     setPage(1);
+    setExpenses([]);
+    setPagination(null);
+    setHasMore(true);
     fetchExpenses(1);
   };
 
   const handleLoadMore = () => {
-    if (!loading && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchExpenses(nextPage, true);
-    }
+    if (loading || !hasMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchExpenses(nextPage, true);
   };
 
   const handleAddExpense = () => {
@@ -210,16 +211,17 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   };
 
   const clearFilters = () => {
-    setAppliedMonth(defaultMonthYear.month);
-    setAppliedYear(defaultMonthYear.year);
-    setDraftMonth(defaultMonthYear.month);
-    setDraftYear(defaultMonthYear.year);
+    setAppliedMonth(null);
+    setAppliedYear(null);
+    setDraftMonth(null);
+    setDraftYear(null);
     setFilterModalVisible(false);
     setExpenses([]);
     setPage(1);
     setHasMore(true);
+    setPagination(null);
     setRefreshing(true);
-    fetchExpenses(1, false, defaultMonthYear.month, defaultMonthYear.year);
+    fetchExpenses(1, false, null, null);
   };
 
   const applyFilters = () => {
@@ -229,9 +231,22 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
     setExpenses([]);
     setPage(1);
     setHasMore(true);
+    setPagination(null);
     setRefreshing(true);
     fetchExpenses(1, false, draftMonth, draftYear);
   };
+
+  const handleViewableItemsChanged = React.useCallback(({ viewableItems }: any) => {
+    if (viewableItems && viewableItems.length > 0) {
+      const lastVisibleIndex = viewableItems[viewableItems.length - 1]?.index || 0;
+      setVisibleItemsCount(lastVisibleIndex + 1);
+    }
+  }, []);
+
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 100,
+  }).current;
 
   const getPaymentMethodIcon = (method: PaymentMethod) => {
     switch (method) {
@@ -314,9 +329,26 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
           backgroundColor={Theme.colors.background.blue}
           syncMobileHeaderBg={true}
         />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: CONTENT_COLOR }}>
-          <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>Loading expenses...</Text>
+        <View style={{ flex: 1, backgroundColor: CONTENT_COLOR, padding: 16, paddingTop: 12 }}>
+          {Array.from({ length: 7 }).map((_, idx) => (
+            <Card key={idx} style={{ marginBottom: 12, padding: 16 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <SkeletonLoader width={34} height={34} borderRadius={10} style={{ marginRight: 10 }} />
+                  <View style={{ flex: 1 }}>
+                    <SkeletonLoader width={160} height={14} style={{ marginBottom: 6 }} />
+                    <SkeletonLoader width={120} height={10} />
+                  </View>
+                </View>
+                <SkeletonLoader width={70} height={14} borderRadius={6} />
+              </View>
+
+              <View style={{ marginTop: 10 }}>
+                <SkeletonLoader width="80%" height={10} style={{ marginBottom: 6 }} />
+                <SkeletonLoader width="55%" height={10} />
+              </View>
+            </Card>
+          ))}
         </View>
       </ScreenLayout>
     );
@@ -368,86 +400,96 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
           </View>
         </View>
 
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 80 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          onScroll={({ nativeEvent }) => {
-            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-            const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
-            if (isCloseToBottom) {
-              handleLoadMore();
-            }
-          }}
-          scrollEventThrottle={400}
-        >
-        {/* Summary Card */}
-        <Card style={{ margin: 16, padding: 20 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View>
-              <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginBottom: 4 }}>
-                Total Expenses
-              </Text>
-              <Text style={{ fontSize: 24, fontWeight: 'bold', color: Theme.colors.text.primary }}>
-                {totalExpenses}
-              </Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginBottom: 4 }}>
-                {appliedMonth ? getSelectedMonthLabel(appliedMonth) : 'Total'}
-                {appliedYear ? ` ${appliedYear}` : ''}
-              </Text>
-              <Text style={{ fontSize: 20, fontWeight: '600', color: Theme.colors.danger }}>
-                {formatAmount(expenses.reduce((sum, exp) => sum + Number(exp.amount), 0))}
-              </Text>
-            </View>
+        {/* Scroll Position Indicator */}
+        {visibleItemsCount > 0 && (
+          <View style={{
+            position: 'absolute',
+            bottom: 160,
+            right: 16,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 20,
+            zIndex: 1000,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 5,
+          }}>
+            <Text style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: '#fff',
+              textAlign: 'center',
+            }}>
+              {visibleItemsCount} of {pagination?.total || expenses.length}
+            </Text>
+            <Text style={{
+              fontSize: 10,
+              color: '#fff',
+              opacity: 0.8,
+              textAlign: 'center',
+              marginTop: 2,
+            }}>
+              {(pagination?.total || expenses.length) - visibleItemsCount} remaining
+            </Text>
           </View>
-        </Card>
+        )}
 
-        {/* Expenses List */}
-        {expenses.length === 0 ? (
-          <View style={{ padding: 40, alignItems: 'center' }}>
-            <Ionicons name="receipt-outline" size={64} color={Theme.colors.text.tertiary} />
-            <Text style={{ fontSize: 16, color: Theme.colors.text.secondary, marginTop: 16, textAlign: 'center' }}>
-              No expenses found
-            </Text>
-            <Text style={{ fontSize: 14, color: Theme.colors.text.tertiary, marginTop: 8, textAlign: 'center' }}>
-              Tap the + button to add your first expense
-            </Text>
-          </View>
-        ) : (
-          expenses.map((expense) => (
-            <Card key={expense.s_no} style={{ marginHorizontal: 16, marginBottom: 12, padding: 16 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 4 }}>
+        <FlatList
+          ref={flatListRef}
+          data={expenses}
+          keyExtractor={(item) => item.s_no.toString()}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Theme.colors.primary]} />
+          }
+          ListEmptyComponent={
+            !loading ? (
+              <View style={{ paddingVertical: 60, alignItems: 'center' }}>
+                <Ionicons name="receipt-outline" size={64} color={Theme.colors.text.tertiary} />
+                <Text style={{ fontSize: 16, color: Theme.colors.text.secondary, marginTop: 16, textAlign: 'center' }}>
+                  No expenses found
+                </Text>
+                <Text style={{ fontSize: 14, color: Theme.colors.text.tertiary, marginTop: 8, textAlign: 'center' }}>
+                  Tap the + button to add your first expense
+                </Text>
+              </View>
+            ) : null
+          }
+          renderItem={({ item: expense }) => (
+            <Card key={expense.s_no} style={{ marginBottom: 10, padding: 12 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 2 }}>
                     {expense.expense_type}
                   </Text>
-                  <Text style={{ fontSize: 14, color: Theme.colors.text.secondary }}>
+                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
                     Paid to: {expense.paid_to}
                   </Text>
                 </View>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: Theme.colors.danger }}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: Theme.colors.danger }}>
                   {formatAmount(Number(expense.amount))}
                 </Text>
               </View>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: expense.remarks ? 6 : 2 }}>
                 <Ionicons
                   name={getPaymentMethodIcon(expense.payment_method)}
-                  size={16}
+                  size={14}
                   color={getPaymentMethodColor(expense.payment_method)}
                 />
-                <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginLeft: 6 }}>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginLeft: 6 }}>
                   {expense.payment_method}
                 </Text>
-                <Text style={{ fontSize: 13, color: Theme.colors.text.tertiary, marginLeft: 12 }}>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginLeft: 10 }}>
                   • {formatDate(expense.paid_date)}
                 </Text>
               </View>
 
               {expense.remarks && (
-                <Text style={{ fontSize: 13, color: Theme.colors.text.tertiary, fontStyle: 'italic', marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, fontStyle: 'italic' }}>
                   {expense.remarks}
                 </Text>
               )}
@@ -462,15 +504,26 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 blockPressWhenDisabled
               />
             </Card>
-          ))
-        )}
-
-        {loading && expenses.length > 0 && (
-          <View style={{ padding: 20, alignItems: 'center' }}>
-            <ActivityIndicator size="small" color={Theme.colors.primary} />
-          </View>
-        )}
-      </ScrollView>
+          )}
+          ListFooterComponent={
+            loading && page > 1 ? (
+              <View style={{ paddingVertical: 20 }}>
+                <ActivityIndicator size="small" color={Theme.colors.primary} />
+                <Text style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: Theme.colors.text.secondary }}>
+                  Loading more...
+                </Text>
+              </View>
+            ) : null
+          }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          onScroll={(event) => {
+            scrollPositionRef.current = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
+        />
 
       {/* Floating Add Button */}
       <TouchableOpacity

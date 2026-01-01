@@ -222,10 +222,13 @@ export const roomsApi = baseApi.injectEndpoints({
     deleteRoom: build.mutation<{ success: boolean; message: string }, number>({
       query: (id) => ({ url: `/rooms/${id}`, method: 'DELETE' }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
-      invalidatesTags: (_res, _err, id) => [
-        { type: 'Rooms', id: 'LIST' },
-        { type: 'Room', id },
-      ],
+      invalidatesTags: (res, _err, id) =>
+        (res as any)?.success
+          ? [
+              { type: 'Rooms' as const, id: 'LIST' },
+              { type: 'Room' as const, id },
+            ]
+          : [],
     }),
 
     // Beds

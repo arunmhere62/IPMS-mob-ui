@@ -57,9 +57,25 @@ export const ActionTile: React.FC<ActionTileProps> = ({
       </TouchableOpacity>
 
       {!!disabledReason && (
-        <Text style={{ marginTop: 6, fontSize: 11, color: Theme.colors.text.tertiary }}>
-          {disabledReason}
-        </Text>
+        <View
+          style={{
+            marginTop: 6,
+            paddingVertical: 6,
+            paddingHorizontal: 8,
+            backgroundColor: Theme.colors.background.blueLight,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: Theme.colors.border,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <Ionicons name="information-circle-outline" size={14} color={Theme.colors.text.secondary} />
+          <Text style={{ flex: 1, fontSize: 11, color: Theme.colors.text.secondary, lineHeight: 14 }}>
+            {disabledReason}
+          </Text>
+        </View>
       )}
     </View>
   );

@@ -21,6 +21,7 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { Card } from '../../components/Card';
 import { AnimatedButton } from '../../components/AnimatedButton';
 import { ActionButtons } from '../../components/ActionButtons';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { ImageUploadS3 } from '../../components/ImageUploadS3';
@@ -472,11 +473,29 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           >
             {loading ? (
-              <View style={{ padding: 40, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={Theme.colors.primary} />
-                <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
-                  Loading PG locations...
-                </Text>
+              <View style={{ paddingTop: 8 }}>
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <Card key={idx} style={{ marginBottom: 12, padding: 16 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <SkeletonLoader width={36} height={36} borderRadius={10} style={{ marginRight: 10 }} />
+                        <View style={{ flex: 1 }}>
+                          <SkeletonLoader width={180} height={14} style={{ marginBottom: 6 }} />
+                          <SkeletonLoader width={140} height={10} />
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <SkeletonLoader width={28} height={28} borderRadius={8} />
+                        <SkeletonLoader width={28} height={28} borderRadius={8} />
+                      </View>
+                    </View>
+
+                    <View style={{ marginTop: 10 }}>
+                      <SkeletonLoader width="85%" height={10} style={{ marginBottom: 6 }} />
+                      <SkeletonLoader width="60%" height={10} />
+                    </View>
+                  </Card>
+                ))}
               </View>
             ) : pgLocations.length === 0 ? (
               <View style={{ padding: 40, alignItems: 'center' }}>

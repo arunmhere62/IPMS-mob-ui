@@ -62,6 +62,8 @@ import { TenantRefundPaymentsScreen } from '@/screens/tenants/TenantRefundPaymen
 import { TenantAdvancePaymentsScreen } from '@/screens/tenants/TenantAdvancePaymentsScreen';
 import { NetworkLoggerScreen } from '@/screens/network/NetworkLoggerScreen';
 import { FaqWebViewScreen } from '@/screens/settings/FaqWebViewScreen';
+import { PayrollRunsScreen } from '@/screens/payroll/PayrollRunsScreen';
+import { PayrollRunDetailsScreen } from '@/screens/payroll/PayrollRunDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -209,6 +211,8 @@ export const AppNavigator = () => {
             <Stack.Screen name="TenantRentPaymentsScreen" component={TenantRentPaymentsScreen} />
             <Stack.Screen name="TenantAdvancePaymentsScreen" component={TenantAdvancePaymentsScreen} />
             <Stack.Screen name="TenantRefundPaymentsScreen" component={TenantRefundPaymentsScreen} />
+            <Stack.Screen name="PayrollRuns" component={PayrollRunsScreen} />
+            <Stack.Screen name="PayrollRunDetails" component={PayrollRunDetailsScreen} />
             <Stack.Screen name="NetworkLogger" component={NetworkLoggerScreen} />
             <Stack.Screen name="FaqWebView" component={FaqWebViewScreen} />
           </>

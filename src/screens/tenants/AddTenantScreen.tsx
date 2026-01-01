@@ -67,6 +67,18 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
     isFetching: tenantByIdFetching,
     error: tenantByIdError,
   } = useGetTenantByIdQuery(Number(tenantId), { skip: !isEditMode });
+
+  const tenantInEdit = (tenantByIdResponse as any)?.data;
+  const lockTenancyFacts =
+    isEditMode &&
+    !!tenantInEdit &&
+    (
+      (Array.isArray(tenantInEdit?.tenant_payments) && tenantInEdit.tenant_payments.length > 0)
+      || (Array.isArray(tenantInEdit?.advance_payments) && tenantInEdit.advance_payments.length > 0)
+      || (Array.isArray(tenantInEdit?.refund_payments) && tenantInEdit.refund_payments.length > 0)
+      || (Array.isArray(tenantInEdit?.current_bills) && tenantInEdit.current_bills.length > 0)
+      || (Array.isArray(tenantInEdit?.payment_cycle_summaries) && tenantInEdit.payment_cycle_summaries.length > 0)
+    );
   
   // Check if we're coming from bed screen with pre-selected bed and room
   const preSelectedBedId = route?.params?.bed_id;
@@ -689,6 +701,23 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
               🏠 Accommodation Details
             </Text>
 
+            {lockTenancyFacts && (
+              <View
+                style={{
+                  marginBottom: 12,
+                  padding: 10,
+                  backgroundColor: Theme.colors.background.blueLight,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: Theme.colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
+                  Once rent is generated or any payment exists, Check-in date, Room, and Bed cannot be changed.
+                </Text>
+              </View>
+            )}
+
             {/* Room Select */}
             <SearchableDropdown
               label="Room"
@@ -701,7 +730,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
               selectedValue={formData.room_id}
               onSelect={(item) => setFormData(prev => ({ ...prev, room_id: item.id }))}
               loading={loadingRooms}
-              disabled={!isEditMode}
+              disabled={!isEditMode || lockTenancyFacts}
               error={errors.room_id}
               required={true}
             />
@@ -718,7 +747,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
               selectedValue={formData.bed_id}
               onSelect={(item) => setFormData(prev => ({ ...prev, bed_id: item.id }))}
               loading={loadingBeds}
-              disabled={!isEditMode || !formData.room_id}
+              disabled={!isEditMode || !formData.room_id || lockTenancyFacts}
               error={errors.bed_id}
               required={true}
             />
@@ -756,6 +785,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
                 onChange={(date) => updateField('check_in_date', date)}
                 error={errors.check_in_date}
                 required={false}
+                disabled={lockTenancyFacts}
               />
             </View>
           </Card>

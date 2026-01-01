@@ -41,6 +41,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const [roomOptions, setRoomOptions] = useState<any[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [visibleItemsCount, setVisibleItemsCount] = useState(0);
@@ -54,6 +55,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const [expandedPaymentCards, setExpandedPaymentCards] = useState<Set<number>>(new Set());
   const flatListRef = React.useRef<any>(null);
   const scrollPositionRef = React.useRef(0);
+  const hasLoadedOnceRef = React.useRef(false);
 
   // Checkout modal state
 
@@ -83,6 +85,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   useEffect(() => {
     // PG changed: reset filters/search to avoid carrying previous PG's filter state
     setSearchQuery('');
+    setAppliedSearch('');
     setStatusFilter('ALL');
     setSelectedRoomId(null);
     setPendingRentFilter(false);
@@ -95,6 +98,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     setCurrentPage(1);
     setHasMore(true);
     setRoomOptions([]);
+    hasLoadedOnceRef.current = false;
     loadTenants(1, true, {
       searchQuery: '',
       statusFilter: 'ALL',
@@ -124,7 +128,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
         loadTenants(1, true);
         // Clear the refresh parameter
         navigation.setParams({ refresh: undefined });
-      } else if (shouldReloadOnFocus || tenants.length === 0) {
+      } else if (shouldReloadOnFocus || !hasLoadedOnceRef.current) {
         setCurrentPage(1);
         setHasMore(true);
         loadTenants(1, true);
@@ -140,7 +144,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
           }
         }, 100); // Small delay to ensure list is rendered
       }
-    }, [shouldReloadOnFocus, tenants.length, navigation])
+    }, [shouldReloadOnFocus, navigation])
   );
 
   const loadTenants = async (
@@ -164,7 +168,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
         setPagination(null);
       }
 
-      const effectiveSearchQuery = overrides?.searchQuery ?? searchQuery;
+      const effectiveSearchQuery = overrides?.searchQuery ?? appliedSearch;
       const effectiveStatusFilter = overrides?.statusFilter ?? statusFilter;
       const effectiveSelectedRoomId = overrides?.selectedRoomId ?? selectedRoomId;
       const effectivePendingRentFilter = overrides?.pendingRentFilter ?? pendingRentFilter;
@@ -189,6 +193,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
       const result = await triggerTenants(params).unwrap();
 
       const nextData = Array.isArray(result?.data) ? (result.data as Tenant[]) : [];
+      hasLoadedOnceRef.current = true;
       setTenants((prev) => {
         const nextTenants = (reset || page <= 1 || isRoomFiltered) ? nextData : [...prev, ...nextData];
 
@@ -258,9 +263,19 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   };
 
   const handleSearch = () => {
+    const next = searchQuery.trim();
+    setAppliedSearch(next);
     setCurrentPage(1);
     setHasMore(true);
-    loadTenants(1, true);
+    loadTenants(1, true, { searchQuery: next });
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setAppliedSearch('');
+    setCurrentPage(1);
+    setHasMore(true);
+    loadTenants(1, true, { searchQuery: '' });
   };
 
   const loadMoreTenants = () => {
@@ -371,7 +386,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
     return (
       <AnimatedPressableCard
-        onPress={() => navigation.navigate('TenantDetails', { tenantId: item.s_no })}
+        onPress={undefined}
         scaleValue={0.97}
         duration={120}
         style={{ marginBottom: 12 }}
@@ -595,69 +610,97 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
           {/* Pending Payment Alert - Using enriched API fields */}
           {hasOutstandingAmount && (
-            <View style={{
-              backgroundColor: isRentPartial ? '#FFF7ED' : '#FEF3C7',
-              borderLeftWidth: 4,
-              borderLeftColor: isRentPartial ? '#F97316' : '#F59E0B',
-              padding: 10,
-              borderRadius: 8,
-              marginBottom: 12,
-            }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <Text style={{
-                  fontSize: 12,
-                  fontWeight: '700',
-                  color: isRentPartial ? '#EA580C' : '#D97706'
-                }}>
-                  {hasBothPartialAndPending ? '⏳ PARTIAL + PENDING' :
-                    isRentPartial ? '⏳ PARTIAL PAYMENT' : '📅 PENDING PAYMENT'}
-                </Text>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{
-                    fontSize: 14,
-                    fontWeight: '700',
-                    color: isRentPartial ? '#EA580C' : '#D97706'
-                  }}>
-                    ₹{rentDueAmount}
+            <View
+              style={{
+                backgroundColor: isRentPartial ? '#FFF7ED' : '#FEF3C7',
+                borderWidth: 1,
+                borderColor: isRentPartial ? '#FED7AA' : '#FDE68A',
+                borderRadius: 10,
+                marginBottom: 12,
+                overflow: 'hidden',
+              }}
+            >
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => togglePaymentDetails(item.s_no)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '700',
+                      color: isRentPartial ? '#EA580C' : '#B45309',
+                    }}
+                    numberOfLines={1}
+                  >
+                    {hasBothPartialAndPending
+                      ? 'Partial + Pending'
+                      : isRentPartial
+                        ? 'Partial Payment'
+                        : 'Pending Payment'}
                   </Text>
-                  <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary }}>
-                    Due Amount
+                  <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
+                    Due ₹{rentDueAmount}
+                    {unpaidMonths.length > 0 ? ` · ${unpaidMonths.length} month(s)` : ''}
+                    {!isAdvancePaid ? ' · No advance' : ''}
                   </Text>
                 </View>
-              </View>
 
-              {/* Show breakdown if both partial and pending amounts exist */}
-              {partialDueAmount > 0 && pendingDueAmount > 0 && (
-                <View style={{ marginBottom: 4 }}>
-                  <Text style={{ fontSize: 10, color: Theme.colors.text.secondary }}>
-                    Partial: ₹{partialDueAmount} • Pending: ₹{pendingDueAmount}
-                  </Text>
-                </View>
-              )}
+                <Ionicons
+                  name={expandedPaymentCards.has(item.s_no) ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={isRentPartial ? '#EA580C' : '#B45309'}
+                />
+              </TouchableOpacity>
 
-              {/* Show unpaid months info if available */}
-              {unpaidMonths.length > 0 && (
-                <View>
-                  <Text style={{ fontSize: 11, color: '#D97706', marginBottom: 4 }}>
-                    📅 {unpaidMonths.length} unpaid month(s):
-                  </Text>
-                  {unpaidMonths.slice(0, 2).map((month: any, index: number) => (
-                    <Text key={index} style={{ fontSize: 10, color: '#D97706', marginBottom: 2 }}>
-                      • {month.month_name} ({month.cycle_start} to {month.cycle_end})
-                    </Text>
-                  ))}
-                  {unpaidMonths.length > 2 && (
-                    <Text style={{ fontSize: 10, color: '#D97706' }}>
-                      +{unpaidMonths.length - 2} more
+              {expandedPaymentCards.has(item.s_no) && (
+                <View
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingBottom: 12,
+                  }}
+                >
+                  {/* Show breakdown if both partial and pending amounts exist */}
+                  {partialDueAmount > 0 && pendingDueAmount > 0 && (
+                    <View style={{ marginTop: 4 }}>
+                      <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+                        Partial: ₹{partialDueAmount} • Pending: ₹{pendingDueAmount}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Show unpaid months info if available */}
+                  {unpaidMonths.length > 0 && (
+                    <View style={{ marginTop: 10 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: isRentPartial ? '#EA580C' : '#B45309' }}>
+                        Unpaid months
+                      </Text>
+                      {unpaidMonths.slice(0, 2).map((month: any, index: number) => (
+                        <Text key={index} style={{ fontSize: 10, color: Theme.colors.text.secondary, marginTop: 4 }}>
+                          {month.month_name} ({month.cycle_start} to {month.cycle_end})
+                        </Text>
+                      ))}
+                      {unpaidMonths.length > 2 && (
+                        <Text style={{ fontSize: 10, color: Theme.colors.text.secondary, marginTop: 4 }}>
+                          +{unpaidMonths.length - 2} more
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  {!isAdvancePaid && (
+                    <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 10 }}>
+                      No advance payment
                     </Text>
                   )}
                 </View>
-              )}
-
-              {!isAdvancePaid && (
-                <Text style={{ fontSize: 11, color: '#F59E0B' }}>
-                  💰 No advance payment
-                </Text>
               )}
             </View>
           )}
@@ -714,7 +757,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               paddingVertical: 8,
               fontSize: 14,
             }}
-            placeholder="Search by name, phone, ID..."
+            placeholder="Search by name..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             onSubmitEditing={handleSearch}
@@ -730,6 +773,21 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
           >
             <Ionicons name="search" size={18} color="#fff" />
           </TouchableOpacity>
+          {!!appliedSearch && (
+            <TouchableOpacity
+              onPress={clearSearch}
+              style={{
+                backgroundColor: Theme.colors.light,
+                borderRadius: 8,
+                paddingHorizontal: 14,
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: Theme.colors.border,
+              }}
+            >
+              <Ionicons name="close" size={18} color={Theme.colors.text.secondary} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={() => setShowFilters(!showFilters)}
             style={{

@@ -2,18 +2,17 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
-  TextInput,
   RefreshControl,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -30,20 +29,23 @@ interface EmployeesScreenProps {
 }
 
 export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { can, isAdmin, isSuperAdmin } = usePermissions();
+  const { can } = usePermissions();
   const canEditEmployee = can(Permission.EDIT_EMPLOYEE);
   const canDeleteEmployee = can(Permission.DELETE_EMPLOYEE);
   
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [pagination, setPagination] = useState<any>(null);
+  const [visibleItemsCount, setVisibleItemsCount] = useState(0);
   const isFetchingRef = useRef(false);
   const isFirstFocusRef = useRef(true);
+
+  const flatListRef = React.useRef<any>(null);
+  const scrollPositionRef = React.useRef(0);
 
   const [fetchEmployees] = useLazyGetEmployeesQuery();
   const [deleteEmployee] = useDeleteEmployeeMutation();
@@ -58,7 +60,6 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
         page: pageNum,
         limit: 20,
         pg_id: selectedPGLocationId || undefined,
-        search: search || undefined,
       }).unwrap();
 
       if (response.success) {
@@ -67,8 +68,14 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
         } else {
           setEmployees(response.data);
         }
-        setHasMore(Boolean(response.pagination?.hasMore));
+        setPagination(response.pagination || null);
+        const totalPages = response.pagination?.totalPages || 0;
+        setHasMore(totalPages ? pageNum < totalPages : Boolean(response.pagination?.hasMore));
         setPage(pageNum);
+
+        if (flatListRef.current && pageNum === 1 && !append) {
+          flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+        }
       }
     } catch (error: any) {
       showErrorAlert(error, 'Employees Error');
@@ -77,11 +84,11 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
       setRefreshing(false);
       isFetchingRef.current = false;
     }
-  }, [fetchEmployees, selectedPGLocationId, search]);
+  }, [fetchEmployees, selectedPGLocationId]);
 
   useEffect(() => {
     loadEmployees(1, false);
-  }, [selectedPGLocationId, search, loadEmployees]);
+  }, [selectedPGLocationId, loadEmployees]);
 
   useFocusEffect(
     useCallback(() => {
@@ -96,14 +103,31 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
 
   const onRefresh = () => {
     setRefreshing(true);
+    setEmployees([]);
+    setPagination(null);
+    setHasMore(true);
+    setPage(1);
     loadEmployees(1, false);
   };
 
   const handleLoadMore = () => {
-    if (hasMore && !loading) {
-      loadEmployees(page + 1, true);
-    }
+    if (!hasMore || loading) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    loadEmployees(nextPage, true);
   };
+
+  const handleViewableItemsChanged = React.useCallback(({ viewableItems }: any) => {
+    if (viewableItems && viewableItems.length > 0) {
+      const lastVisibleIndex = viewableItems[viewableItems.length - 1]?.index || 0;
+      setVisibleItemsCount(lastVisibleIndex + 1);
+    }
+  }, []);
+
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 100,
+  }).current;
 
   const handleDelete = (employee: Employee) => {
     showDeleteConfirmation({
@@ -204,67 +228,107 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
       />
 
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
-        {/* Search Bar */}
-        <View style={{ padding: 16, paddingBottom: 8 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: '#fff',
-              borderRadius: 8,
-              paddingHorizontal: 12,
-              borderWidth: 1,
-              borderColor: Theme.colors.border,
-            }}
-          >
-            <Ionicons name="search" size={20} color={Theme.colors.text.tertiary} />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search employees..."
-              style={{
-                flex: 1,
-                padding: 12,
-                fontSize: 14,
-                color: Theme.colors.text.primary,
-              }}
-            />
-          </View>
-        </View>
-
         {/* Employee List */}
-        <ScrollView
-          style={{ flex: 1 }}
+        {/* Scroll Position Indicator */}
+        {visibleItemsCount > 0 && (
+          <View style={{
+            position: 'absolute',
+            bottom: 160,
+            right: 16,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 20,
+            zIndex: 1000,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 5,
+          }}>
+            <Text style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: '#fff',
+              textAlign: 'center',
+            }}>
+              {visibleItemsCount} of {pagination?.total || employees.length}
+            </Text>
+            <Text style={{
+              fontSize: 10,
+              color: '#fff',
+              opacity: 0.8,
+              textAlign: 'center',
+              marginTop: 2,
+            }}>
+              {(pagination?.total || employees.length) - visibleItemsCount} remaining
+            </Text>
+          </View>
+        )}
+
+        <FlatList
+          ref={flatListRef}
+          data={employees}
+          renderItem={({ item }) => renderEmployeeCard(item)}
+          keyExtractor={(item) => item.s_no.toString()}
           contentContainerStyle={{ padding: 16, paddingTop: 8, paddingBottom: 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          onScroll={({ nativeEvent }) => {
-            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-            const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
-            if (isCloseToBottom) {
-              handleLoadMore();
-            }
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Theme.colors.primary]} />
+          }
+          ListEmptyComponent={
+            loading && page === 1 && employees.length === 0 ? (
+              <View>
+                {Array.from({ length: 7 }).map((_, idx) => (
+                  <Card key={idx} style={{ marginBottom: 12, padding: 16 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <SkeletonLoader width={34} height={34} borderRadius={10} style={{ marginRight: 10 }} />
+                        <View style={{ flex: 1 }}>
+                          <SkeletonLoader width={160} height={14} style={{ marginBottom: 6 }} />
+                          <SkeletonLoader width={120} height={10} />
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <SkeletonLoader width={28} height={28} borderRadius={8} />
+                        <SkeletonLoader width={28} height={28} borderRadius={8} />
+                      </View>
+                    </View>
+
+                    <View style={{ marginTop: 10 }}>
+                      <SkeletonLoader width="70%" height={10} style={{ marginBottom: 6 }} />
+                      <SkeletonLoader width="55%" height={10} />
+                    </View>
+                  </Card>
+                ))}
+              </View>
+            ) : employees.length === 0 && !loading ? (
+              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                <Ionicons name="people-outline" size={64} color={Theme.colors.text.tertiary} />
+                <Text style={{ fontSize: 16, color: Theme.colors.text.secondary, marginTop: 16 }}>
+                  No employees found
+                </Text>
+              </View>
+            ) : null
+          }
+          ListFooterComponent={
+            loading && page > 1 ? (
+              <View style={{ paddingVertical: 20 }}>
+                <ActivityIndicator size="small" color={Theme.colors.primary} />
+                <Text style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: Theme.colors.text.secondary }}>
+                  Loading more...
+                </Text>
+              </View>
+            ) : null
+          }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          onScroll={(event) => {
+            scrollPositionRef.current = event.nativeEvent.contentOffset.y;
           }}
-          scrollEventThrottle={400}
-        >
-          {employees.length === 0 && !loading ? (
-            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-              <Ionicons name="people-outline" size={64} color={Theme.colors.text.tertiary} />
-              <Text style={{ fontSize: 16, color: Theme.colors.text.secondary, marginTop: 16 }}>
-                No employees found
-              </Text>
-            </View>
-          ) : (
-            employees.map(renderEmployeeCard)
-          )}
-
-          {loading && page === 1 && (
-            <ActivityIndicator size="large" color={Theme.colors.primary} style={{ marginTop: 20 }} />
-          )}
-
-          {loading && page > 1 && (
-            <ActivityIndicator size="small" color={Theme.colors.primary} style={{ marginVertical: 16 }} />
-          )}
-        </ScrollView>
+          scrollEventThrottle={16}
+        />
 
         {/* Add Button */}
         <TouchableOpacity

@@ -41,8 +41,8 @@ export enum UserStatus {
 
 export interface CreateEmployeeDto {
   name: string;
-  email: string;
-  password: string;
+  email?: string;
+  password?: string;
   phone?: string;
   role_id: number;
   gender?: UserGender;
@@ -57,6 +57,7 @@ export interface CreateEmployeeDto {
 
 export interface UpdateEmployeeDto {
   name?: string;
+  password?: string;
   phone?: string;
   role_id?: number;
   gender?: UserGender;

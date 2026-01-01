@@ -21,6 +21,8 @@ import { ImageUploadS3 } from '../../components/ImageUploadS3';
 import { OptionSelector } from '../../components/OptionSelector';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { useCreateEmployeeMutation, useLazyGetEmployeeByIdQuery, UserGender, useUpdateEmployeeMutation } from '../../services/api/employeesApi';
+import { AmountInput } from '../../components/AmountInput';
+import { useUpdatePgUserSalaryMutation } from '@/services/api/pgUsersApi';
 import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../services/api/locationApi';
 import { useGetPGLocationsQuery } from '../../services/api/pgLocationsApi';
 import { useLazyGetRolesQuery } from '../../services/api/rolesApi';
@@ -58,6 +60,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const [fetchEmployeeById] = useLazyGetEmployeeByIdQuery();
   const [createEmployee] = useCreateEmployeeMutation();
   const [updateEmployee] = useUpdateEmployeeMutation();
+  const [updatePgUserSalary] = useUpdatePgUserSalaryMutation();
   
   // Check if we're in edit mode
   const employeeId = route?.params?.employeeId;
@@ -74,6 +77,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     phone: '',
     role_id: null as number | null,
     gender: '' as UserGender | '',
@@ -86,6 +90,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
   const [profileImages, setProfileImages] = useState<string[]>([]);
   const [proofDocuments, setProofDocuments] = useState<string[]>([]);
+  const [monthlySalaryAmount, setMonthlySalaryAmount] = useState<string>('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loadingStates, setLoadingStates] = useState(false);
@@ -144,6 +149,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
         name: employee.name || '',
         email: employee.email || '',
         password: '', // Don't populate password in edit mode
+        confirmPassword: '',
         phone: employee.phone || '',
         role_id: employee.role_id || null,
         gender: employee.gender || '',
@@ -170,6 +176,9 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
         setProofDocuments(Array.isArray(employee.proof_documents) ? employee.proof_documents : 
           typeof employee.proof_documents === 'string' ? JSON.parse(employee.proof_documents) : []);
       }
+
+      // Salary is PG-specific; edited from Employee Details or set here.
+      setMonthlySalaryAmount('');
     } catch (error: any) {
       showErrorAlert(error, 'Employee Error');
       navigation.goBack();
@@ -231,17 +240,26 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
       newErrors.name = 'Name is required';
     }
 
+    const email = formData.email.trim();
+    const password = formData.password.trim();
+    const confirmPassword = formData.confirmPassword.trim();
+
     if (!isEditMode) {
-      if (!formData.email.trim()) {
-        newErrors.email = 'Email is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         newErrors.email = 'Invalid email format';
       }
+    }
 
-      if (!formData.password.trim()) {
-        newErrors.password = 'Password is required';
-      } else if (formData.password.length < 6) {
+    // Password is optional in both create and edit.
+    // If user types either field, enforce match + min length.
+    if (password || confirmPassword) {
+      if (password.length < 6) {
         newErrors.password = 'Password must be at least 6 characters';
+      }
+      if (!confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password';
+      } else if (password !== confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
       }
     }
 
@@ -276,15 +294,29 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
       return;
     }
 
+    if (monthlySalaryAmount) {
+      const amt = Number(monthlySalaryAmount);
+      if (!Number.isFinite(amt) || amt < 0) {
+        Alert.alert('Validation Error', 'Please enter a valid monthly salary amount');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
 
       const localPhoneDigits = formData.phone.trim().replace(/[^\d]/g, '');
 
+      const email = formData.email.trim();
+      const password = formData.password.trim();
+      const confirmPassword = formData.confirmPassword.trim();
+
+      const shouldSendPassword = !!password && password === confirmPassword;
+
       const payload = {
         name: formData.name.trim(),
-        email: formData.email.trim(),
-        password: formData.password,
+        email: email || undefined,
+        password: shouldSendPassword ? password : undefined,
         phone: `${selectedCountry?.phoneCode ?? '+91'}${localPhoneDigits}`,
         role_id: formData.role_id!,
         gender: formData.gender as UserGender,
@@ -299,12 +331,23 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
       if (isEditMode) {
         // Update existing employee
-        await updateEmployee({ id: employeeId, data: payload }).unwrap();
+        await updateEmployee({ id: employeeId, data: payload as any }).unwrap();
+
+        if (selectedPGLocationId && monthlySalaryAmount) {
+          await updatePgUserSalary({ userId: employeeId, monthly_salary_amount: Number(monthlySalaryAmount) }).unwrap();
+        }
+
         showSuccessAlert('Employee updated successfully');
         navigation.goBack();
       } else {
         // Create new employee
-        await createEmployee(payload).unwrap();
+        const created = await createEmployee(payload).unwrap();
+
+        const createdId = (created as any)?.s_no;
+        if (selectedPGLocationId && createdId && monthlySalaryAmount) {
+          await updatePgUserSalary({ userId: createdId, monthly_salary_amount: Number(monthlySalaryAmount) }).unwrap();
+        }
+
         showSuccessAlert('Employee created successfully');
         navigation.goBack();
       }
@@ -389,7 +432,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                 {!isEditMode && (
                   <View style={{ marginBottom: 16 }}>
                     <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-                      Email Address <Text style={{ color: '#EF4444' }}>*</Text>
+                      Email Address
                     </Text>
                     <TextInput
                       value={formData.email}
@@ -412,31 +455,53 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   </View>
                 )}
 
-                {/* Password (only in create mode) */}
-                {!isEditMode && (
-                  <View style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-                      Password <Text style={{ color: '#EF4444' }}>*</Text>
-                    </Text>
-                    <TextInput
-                      value={formData.password}
-                      onChangeText={(value) => updateField('password', value)}
-                      placeholder="Enter password (min 6 characters)"
-                      secureTextEntry
-                      style={{
-                        borderWidth: 1,
-                        borderColor: errors.password ? '#EF4444' : Theme.colors.border,
-                        borderRadius: 8,
-                        padding: 12,
-                        fontSize: 14,
-                        backgroundColor: '#fff',
-                      }}
-                    />
-                    {errors.password && (
-                      <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.password}</Text>
-                    )}
-                  </View>
-                )}
+                {/* Password */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+                    {isEditMode ? 'New Password' : 'Password'}
+                  </Text>
+                  <TextInput
+                    value={formData.password}
+                    onChangeText={(value) => updateField('password', value)}
+                    placeholder={isEditMode ? 'Enter new password (optional)' : 'Enter password (optional)'}
+                    secureTextEntry
+                    style={{
+                      borderWidth: 1,
+                      borderColor: errors.password ? '#EF4444' : Theme.colors.border,
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 14,
+                      backgroundColor: '#fff',
+                    }}
+                  />
+                  {errors.password && (
+                    <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.password}</Text>
+                  )}
+                </View>
+
+                {/* Confirm Password */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+                    Confirm Password
+                  </Text>
+                  <TextInput
+                    value={formData.confirmPassword}
+                    onChangeText={(value) => updateField('confirmPassword', value)}
+                    placeholder="Re-enter password"
+                    secureTextEntry
+                    style={{
+                      borderWidth: 1,
+                      borderColor: errors.confirmPassword ? '#EF4444' : Theme.colors.border,
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 14,
+                      backgroundColor: '#fff',
+                    }}
+                  />
+                  {errors.confirmPassword && (
+                    <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.confirmPassword}</Text>
+                  )}
+                </View>
 
                 {/* Phone Number */}
                 <View style={{ marginBottom: 16 }}>
@@ -495,6 +560,22 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   error={errors.role_id}
                   required={true}
                 />
+
+                {selectedPGLocationId ? (
+                  <View style={{ marginTop: 16 }}>
+                    <AmountInput
+                      label="Monthly Salary (this PG)"
+                      value={monthlySalaryAmount}
+                      onChangeText={setMonthlySalaryAmount}
+                      placeholder="Enter monthly salary"
+                      required={false}
+                      disabled={loading}
+                    />
+                    <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 6 }}>
+                      This is saved per employee per selected PG.
+                    </Text>
+                  </View>
+                ) : null}
 
                 {/* <View style={{ marginTop: 12 }}>
                   <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>

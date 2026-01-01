@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -11,15 +11,13 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
-import { ActionButtons } from '../../components/ActionButtons';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
-import { EmployeeSalary, PaymentMethod, useDeleteEmployeeSalaryMutation, useGetEmployeeSalariesQuery } from '../../services/api/employeeSalaryApi';
-import { AddEditEmployeeSalaryModal } from '@/screens/employee-salary/AddEditEmployeeSalaryModal';
+import { useGeneratePayrollRunMutation, useLazyGetPayrollRunsQuery, type PayrollRun } from '@/services/api/payrollApi';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
@@ -44,156 +42,123 @@ const MONTHS = [
 ];
 
 export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navigation }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
   const canCreateSalary = can(Permission.CREATE_EMPLOYEE_SALARY);
-  const canDeleteSalary = can(Permission.DELETE_EMPLOYEE_SALARY);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [generatePayrollRun, { isLoading: isGeneratingPayroll }] = useGeneratePayrollRunMutation();
+  const [generateModalVisible, setGenerateModalVisible] = useState(false);
+  const [generateMonth, setGenerateMonth] = useState<number>(new Date().getMonth() + 1);
+  const [generateYear, setGenerateYear] = useState<number>(new Date().getFullYear());
 
-  const defaultMonthYear = React.useMemo(() => {
-    const now = new Date();
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return {
-      month: lastMonthDate.getMonth() + 1,
-      year: lastMonthDate.getFullYear(),
-    };
-  }, []);
+  const [runs, setRuns] = React.useState<PayrollRun[]>([]);
+  const [pagination, setPagination] = React.useState<any>(null);
+  const [page, setPage] = React.useState(1);
+  const [hasMore, setHasMore] = React.useState(true);
+  const [loading, setLoading] = React.useState(true);
+  const [refreshing, setRefreshing] = React.useState(false);
 
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [appliedMonth, setAppliedMonth] = useState<number | null>(defaultMonthYear.month);
-  const [appliedYear, setAppliedYear] = useState<number | null>(defaultMonthYear.year);
-  const [draftMonth, setDraftMonth] = useState<number | null>(null);
-  const [draftYear, setDraftYear] = useState<number | null>(null);
+  const [triggerRuns] = useLazyGetPayrollRunsQuery();
 
-  const {
-    data: salariesResponse,
-    isLoading,
-    isFetching,
-    refetch,
-  } = useGetEmployeeSalariesQuery(
-    {
-      page: 1,
-      limit: 50,
-      month: appliedMonth || undefined,
-      year: appliedYear || undefined,
+  const loadRuns = React.useCallback(
+    async (pageNum: number = 1, append: boolean = false) => {
+      if (!selectedPGLocationId) {
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      try {
+        if (!append) setLoading(true);
+
+        const resp = await triggerRuns({ page: pageNum, limit: 20 }).unwrap();
+        const serverData = resp?.data || [];
+        const pg = resp?.pagination;
+        const totalPages = pg?.totalPages || 0;
+
+        if (resp?.success) {
+          setRuns((prev) => (append ? [...prev, ...serverData] : serverData));
+          setPagination(pg || null);
+          setHasMore(totalPages ? pageNum < totalPages : false);
+          setPage(pageNum);
+        }
+      } catch (error: any) {
+        showErrorAlert(error, 'Payroll Runs Error');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
     },
-    {
-      skip: !selectedPGLocationId,
-    }
+    [selectedPGLocationId, triggerRuns],
   );
 
-  const [deleteSalary] = useDeleteEmployeeSalaryMutation();
-
-  const salaries = salariesResponse?.data || [];
-  const totalSalaries = salariesResponse?.pagination?.total || 0;
-  const loading = isLoading || isFetching;
-  const refreshing = isFetching;
+  React.useEffect(() => {
+    loadRuns(1, false);
+  }, [loadRuns]);
 
   const years = React.useMemo(() => {
     const currentYear = new Date().getFullYear();
     return [currentYear, currentYear - 1, currentYear - 2];
   }, []);
 
+  const buildMonthString = (year: number, month: number) => {
+    const mm = String(month).padStart(2, '0');
+    return `${year}-${mm}-01`;
+  };
+
   const getSelectedMonthLabel = (month: number | null) => {
     if (!month) return '';
     return MONTHS.find(m => m.value === month)?.label || '';
   };
 
-  const clearFilters = () => {
-    setAppliedMonth(defaultMonthYear.month);
-    setAppliedYear(defaultMonthYear.year);
-    setDraftMonth(defaultMonthYear.month);
-    setDraftYear(defaultMonthYear.year);
-    setFilterModalVisible(false);
-    refetch();
-  };
-
-  const applyFilters = () => {
-    setAppliedMonth(draftMonth);
-    setAppliedYear(draftYear);
-    setFilterModalVisible(false);
-  };
-
-  const openFilters = () => {
-    setDraftMonth(appliedMonth);
-    setDraftYear(appliedYear);
-    setFilterModalVisible(true);
-  };
-
   const onRefresh = () => {
-    refetch();
+    setRefreshing(true);
+    setRuns([]);
+    setPagination(null);
+    setHasMore(true);
+    setPage(1);
+    loadRuns(1, false);
   };
 
-  const handleAddSalary = () => {
-    if (!canCreateSalary) {
-      Alert.alert('Access Denied', "You don't have permission to create employee salary records");
+  const handleLoadMore = () => {
+    if (loading || !hasMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    loadRuns(nextPage, true);
+  };
+
+  const handleGenerateSalary = () => {
+    if (!selectedPGLocationId) {
+      Alert.alert('No PG Selected', 'Please select a PG location first');
       return;
     }
-    setShowAddModal(true);
+
+    setGenerateMonth(new Date().getMonth() + 1);
+    setGenerateYear(new Date().getFullYear());
+    setGenerateModalVisible(true);
   };
 
-  const handleSaveSalary = async () => {
-    setShowAddModal(false);
-    onRefresh();
-  };
+  const submitGeneratePayroll = async () => {
+    try {
+      const monthString = buildMonthString(generateYear, generateMonth);
+      const res = await generatePayrollRun({ month: monthString }).unwrap();
+      const runId = (res as any)?.data?.run_id ?? (res as any)?.run_id;
+      showSuccessAlert('Payroll generated successfully');
+      setGenerateModalVisible(false);
 
-  const handleDeleteSalary = (salary: EmployeeSalary) => {
-    if (!canDeleteSalary) {
-      Alert.alert('Access Denied', "You don't have permission to delete employee salary records");
-      return;
-    }
-    Alert.alert(
-      'Delete Salary Record',
-      `Are you sure you want to delete this salary record of ₹${salary.salary_amount}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteSalary(salary.s_no).unwrap();
-              showSuccessAlert('Salary record deleted successfully');
-              onRefresh();
-            } catch (error) {
-              console.error('Error deleting salary:', error);
-              showErrorAlert(error, 'Delete Error');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const getPaymentMethodIcon = (method: PaymentMethod) => {
-    switch (method) {
-      case PaymentMethod.GPAY:
-        return 'logo-google';
-      case PaymentMethod.PHONEPE:
-        return 'phone-portrait-outline';
-      case PaymentMethod.CASH:
-        return 'cash-outline';
-      case PaymentMethod.BANK_TRANSFER:
-        return 'card-outline';
-      default:
-        return 'wallet-outline';
+      if (runId) {
+        navigation.navigate('PayrollRunDetails', { runId });
+      } else {
+        navigation.navigate('PayrollRuns');
+      }
+    } catch (error: any) {
+      showErrorAlert(error, 'Generate Salary Error');
     }
   };
 
-  const getPaymentMethodColor = (method: PaymentMethod) => {
-    switch (method) {
-      case PaymentMethod.GPAY:
-        return '#4285F4';
-      case PaymentMethod.PHONEPE:
-        return '#5F259F';
-      case PaymentMethod.CASH:
-        return '#10B981';
-      case PaymentMethod.BANK_TRANSFER:
-        return '#F59E0B';
-      default:
-        return Theme.colors.text.secondary;
-    }
+  const getStatusColor = (status: string) => {
+    if (status === 'LOCKED') return '#10B981';
+    if (status === 'CANCELLED') return '#EF4444';
+    return '#3B82F6';
   };
 
   const formatMonth = (monthString: string) => {
@@ -204,22 +169,39 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
     });
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const renderItem = ({ item }: { item: PayrollRun }) => (
+    <TouchableOpacity
+      onPress={() => navigation.navigate('PayrollRunDetails', { runId: item.s_no })}
+      activeOpacity={0.7}
+    >
+      <Card style={{ marginHorizontal: 12, marginBottom: 8, padding: 12, borderRadius: 8 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 4 }}>
+              {formatMonth(item.month)}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 999,
+                  backgroundColor: Theme.withOpacity(getStatusColor(item.status), 0.12),
+                  borderWidth: 1,
+                  borderColor: Theme.withOpacity(getStatusColor(item.status), 0.25),
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: getStatusColor(item.status) }}>
+                  {item.status}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={Theme.colors.text.tertiary} />
+        </View>
+      </Card>
+    </TouchableOpacity>
+  );
 
   // Show error if no PG Location selected
   if (!selectedPGLocationId && !loading) {
@@ -245,7 +227,7 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
     );
   }
 
-  if (loading && salaries.length === 0) {
+  if (loading && runs.length === 0) {
     return (
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
         <ScreenHeader
@@ -255,9 +237,8 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
           backgroundColor={Theme.colors.background.blue}
           syncMobileHeaderBg={true}
         />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: CONTENT_COLOR }}>
+        <View style={{ flex: 1, backgroundColor: CONTENT_COLOR, padding: 16, paddingTop: 12 }}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>Loading salaries...</Text>
         </View>
       </ScreenLayout>
     );
@@ -274,274 +255,143 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
       />
       
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
-        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <TouchableOpacity
-              onPress={openFilters}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: Theme.colors.border,
-                backgroundColor: '#fff',
-              }}
-            >
-              <Ionicons name="options-outline" size={18} color={Theme.colors.text.secondary} />
-              <Text style={{ marginLeft: 8, fontSize: 13, color: Theme.colors.text.primary, fontWeight: '600' }}>
-                Filters
-              </Text>
-            </TouchableOpacity>
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, flexDirection: 'row', justifyContent: 'flex-end' }}>
+          <TouchableOpacity
+            onPress={handleGenerateSalary}
+            disabled={isGeneratingPayroll || !canCreateSalary}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 8,
+              backgroundColor: Theme.colors.primary,
+              opacity: isGeneratingPayroll || !canCreateSalary ? 0.7 : 1,
+            }}
+          >
+            <Ionicons name="flash-outline" size={18} color="#fff" />
+            <Text style={{ marginLeft: 8, fontSize: 13, color: '#fff', fontWeight: '700' }}>
+              Generate
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-            {(appliedMonth || appliedYear) ? (
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
-                  {appliedMonth ? getSelectedMonthLabel(appliedMonth) : 'All months'}
-                  {appliedYear ? `, ${appliedYear}` : ''}
+        <FlatList
+          data={runs}
+          keyExtractor={(item) => item.s_no.toString()}
+          contentContainerStyle={{ paddingTop: 0, paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Theme.colors.primary]} />
+          }
+          ListEmptyComponent={
+            !loading ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Ionicons name="calendar-outline" size={64} color={Theme.colors.text.tertiary} />
+                <Text style={{ fontSize: 16, color: Theme.colors.text.secondary, marginTop: 16, textAlign: 'center' }}>
+                  No payroll runs found
                 </Text>
               </View>
-            ) : (
-              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
-                No filters
-              </Text>
-            )}
+            ) : null
+          }
+          renderItem={renderItem}
+          ListFooterComponent={
+            hasMore ? (
+              <View style={{ paddingVertical: 20 }}>
+                <ActivityIndicator size="small" color={Theme.colors.primary} />
+              </View>
+            ) : null
+          }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+        />
+      <SlideBottomModal
+        visible={generateModalVisible}
+        onClose={() => {
+          if (!isGeneratingPayroll) setGenerateModalVisible(false);
+        }}
+        title="Generate Salary"
+        subtitle="Select month to generate"
+        onSubmit={submitGeneratePayroll}
+        submitLabel={isGeneratingPayroll ? 'Generating...' : 'Generate'}
+        cancelLabel="Cancel"
+        isLoading={isGeneratingPayroll}
+      >
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+            Month
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {MONTHS.map((m) => {
+              const selected = generateMonth === m.value;
+              return (
+                <TouchableOpacity
+                  key={m.value}
+                  onPress={() => setGenerateMonth(m.value)}
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: selected ? Theme.colors.primary : Theme.colors.border,
+                    backgroundColor: selected ? Theme.withOpacity(Theme.colors.primary, 0.12) : '#fff',
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: selected ? '700' : '600',
+                    color: selected ? Theme.colors.primary : Theme.colors.text.primary,
+                  }}>
+                    {m.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        >
-          {/* Summary Card */}
-          <Card style={{ margin: 16, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <View>
-                <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginBottom: 4 }}>
-                  Total Records
-                </Text>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: Theme.colors.text.primary }}>
-                  {totalSalaries}
-                </Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginBottom: 4 }}>
-                  Total Amount
-                </Text>
-                <Text style={{ fontSize: 20, fontWeight: '600', color: Theme.colors.primary }}>
-                  {formatAmount(salaries.reduce((sum, sal) => sum + Number(sal.salary_amount), 0))}
-                </Text>
-              </View>
-            </View>
-          </Card>
-
-          {/* Salaries List */}
-          {salaries.length === 0 ? (
-            <View style={{ padding: 40, alignItems: 'center' }}>
-              <Ionicons name="wallet-outline" size={64} color={Theme.colors.text.tertiary} />
-              <Text style={{ fontSize: 16, color: Theme.colors.text.secondary, marginTop: 16, textAlign: 'center' }}>
-                No salary records found
-              </Text>
-              <Text style={{ fontSize: 14, color: Theme.colors.text.tertiary, marginTop: 8, textAlign: 'center' }}>
-                Add salary records from your admin panel
-              </Text>
-            </View>
-          ) : (
-            salaries.map((salary) => (
-              <Card key={salary.s_no} style={{ marginHorizontal: 12, marginBottom: 8, padding: 12, borderRadius: 8 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <View style={{ flex: 1, marginRight: 12 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 4 }}>
-                      {salary.users?.name || 'Unknown Employee'}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Ionicons name="calendar-outline" size={14} color={Theme.colors.text.secondary} />
-                      <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginLeft: 6 }}>
-                        {formatMonth(salary.month)}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: Theme.colors.primary }}>
-                    {formatAmount(Number(salary.salary_amount))}
-                  </Text>
-                </View>
-
-                {salary.paid_date && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: salary.remarks ? 6 : 0 }}>
-                    {salary.payment_method && (
-                      <>
-                        <Ionicons
-                          name={getPaymentMethodIcon(salary.payment_method) as any}
-                          size={14}
-                          color={getPaymentMethodColor(salary.payment_method)}
-                        />
-                        <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginLeft: 6 }}>
-                          {salary.payment_method}
-                        </Text>
-                        <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginLeft: 8 }}>
-                          • Paid on {formatDate(salary.paid_date)}
-                        </Text>
-                      </>
-                    )}
-                  </View>
-                )}
-
-                {salary.remarks && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                    <Ionicons name="document-text-outline" size={14} color={Theme.colors.text.tertiary} />
-                    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginLeft: 6, fontStyle: 'italic' }}>
-                      {salary.remarks}
-                    </Text>
-                  </View>
-                )}
-
-                <View style={{ marginTop: 8, alignItems: 'flex-end' }}>
-                  <ActionButtons
-                    onDelete={() => handleDeleteSalary(salary)}
-                    showEdit={false}
-                    showDelete={true}
-                    showView={false}
-                    disableDelete={!canDeleteSalary}
-                    blockPressWhenDisabled
-                  />
-                </View>
-              </Card>
-            ))
-          )}
-        </ScrollView>
-
-        <TouchableOpacity
-          onPress={canCreateSalary ? handleAddSalary : undefined}
-          disabled={!canCreateSalary}
-          style={{
-            position: 'absolute',
-            bottom: 24,
-            right: 20,
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            backgroundColor: Theme.colors.primary,
-            justifyContent: 'center',
-            alignItems: 'center',
-            opacity: canCreateSalary ? 1 : 0.45,
-            elevation: 5,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-          }}
-        >
-          <Ionicons name="add" size={32} color="#fff" />
-        </TouchableOpacity>
-
-        <SlideBottomModal
-          visible={filterModalVisible}
-          onClose={() => setFilterModalVisible(false)}
-          title="Filter Salaries"
-          subtitle="Filter by salary month"
-          submitLabel="Apply"
-          cancelLabel="Clear"
-          onSubmit={applyFilters}
-          onCancel={clearFilters}
-        >
-          <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 10 }}>
-            Month
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
-            <TouchableOpacity
-              onPress={() => setDraftMonth(null)}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                borderRadius: 10,
-                backgroundColor: draftMonth === null ? Theme.colors.primary : '#F3F4F6',
-              }}
-            >
-              <Text style={{
-                fontSize: 13,
-                fontWeight: '700',
-                color: draftMonth === null ? '#fff' : Theme.colors.text.primary,
-              }}>
-                All
-              </Text>
-            </TouchableOpacity>
-
-            {MONTHS.map(m => (
-              <TouchableOpacity
-                key={m.value}
-                onPress={() => setDraftMonth(m.value)}
-                style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 10,
-                  backgroundColor: draftMonth === m.value ? Theme.colors.primary : '#F3F4F6',
-                }}
-              >
-                <Text style={{
-                  fontSize: 13,
-                  fontWeight: '700',
-                  color: draftMonth === m.value ? '#fff' : Theme.colors.text.primary,
-                }}>
-                  {m.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 10 }}>
+        <View style={{ marginBottom: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
             Year
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            <TouchableOpacity
-              onPress={() => setDraftYear(null)}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                borderRadius: 10,
-                backgroundColor: draftYear === null ? Theme.colors.primary : '#F3F4F6',
-              }}
-            >
-              <Text style={{
-                fontSize: 13,
-                fontWeight: '700',
-                color: draftYear === null ? '#fff' : Theme.colors.text.primary,
-              }}>
-                All
-              </Text>
-            </TouchableOpacity>
-
-            {years.map((y: number) => (
-              <TouchableOpacity
-                key={y}
-                onPress={() => setDraftYear(y)}
-                style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 10,
-                  backgroundColor: draftYear === y ? Theme.colors.primary : '#F3F4F6',
-                }}
-              >
-                <Text style={{
-                  fontSize: 13,
-                  fontWeight: '700',
-                  color: draftYear === y ? '#fff' : Theme.colors.text.primary,
-                }}>
-                  {y}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {years.map((y) => {
+              const selected = generateYear === y;
+              return (
+                <TouchableOpacity
+                  key={String(y)}
+                  onPress={() => setGenerateYear(y)}
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: selected ? Theme.colors.primary : Theme.colors.border,
+                    backgroundColor: selected ? Theme.withOpacity(Theme.colors.primary, 0.12) : '#fff',
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: selected ? '700' : '600',
+                    color: selected ? Theme.colors.primary : Theme.colors.text.primary,
+                  }}>
+                    {y}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        </SlideBottomModal>
-      </View>
+        </View>
 
-      {/* Add/Edit Modal */}
-      <AddEditEmployeeSalaryModal
-        visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={handleSaveSalary}
-      />
+        <Card style={{ marginTop: 12, padding: 12 }}>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 4 }}>
+            Selected
+          </Text>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: Theme.colors.text.primary }}>
+            {getSelectedMonthLabel(generateMonth)}, {generateYear}
+          </Text>
+        </Card>
+      </SlideBottomModal>
+      </View>
     </ScreenLayout>
   );
 };

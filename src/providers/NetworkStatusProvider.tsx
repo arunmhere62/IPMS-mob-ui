@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { Animated, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -31,11 +31,13 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
     isOnline: true,
     isConnected: true,
     connectionType: 'unknown',
-    lastOnlineTime: new Date(),
+    lastOnlineTime: null,
   });
   const [showOfflineBanner, setShowOfflineBanner] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const bannerAnimation = useRef(new Animated.Value(-100)).current;
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isOnlineRef = useRef(true);
 
   // Check actual internet connectivity by making a lightweight request
   const checkInternetConnectivity = async (): Promise<boolean> => {
@@ -106,6 +108,8 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
       lastOnlineTime: isConnected ? new Date() : prev.lastOnlineTime,
     }));
 
+    isOnlineRef.current = isConnected;
+
     return isConnected;
   };
 
@@ -130,6 +134,11 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const dismissBanner = () => {
+    setBannerDismissed(true);
+    hideBanner();
+  };
+
   // Monitor network status changes
   useEffect(() => {
     let isActive = true;
@@ -141,16 +150,18 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
     checkIntervalRef.current = setInterval(async () => {
       if (!isActive) return;
       
-      const wasOnline = networkStatus.isOnline;
+      const wasOnline = isOnlineRef.current;
       const isNowOnline = await checkConnection();
 
       // Network state changed
       if (wasOnline !== isNowOnline) {
         if (!isNowOnline) {
           console.log('📡 Network: OFFLINE');
+          setBannerDismissed(false);
           showBanner();
         } else {
           console.log('📡 Network: ONLINE');
+          setBannerDismissed(false);
           // Show "Back Online" message briefly
           setTimeout(() => {
             hideBanner();
@@ -174,20 +185,25 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
         clearInterval(checkIntervalRef.current);
       }
     };
-  }, [networkStatus.isOnline]);
+  }, []);
 
   // Show banner when offline
   useEffect(() => {
     if (!networkStatus.isOnline) {
-      showBanner();
+      if (!bannerDismissed) {
+        showBanner();
+      }
     } else {
+      if (bannerDismissed) {
+        setBannerDismissed(false);
+      }
       // Hide banner after 2 seconds when back online
       const timer = setTimeout(() => {
         hideBanner();
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [networkStatus.isOnline]);
+  }, [networkStatus.isOnline, bannerDismissed]);
 
   return (
     <NetworkContext.Provider
@@ -205,6 +221,7 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
           isOnline={networkStatus.isOnline}
           lastOnlineTime={networkStatus.lastOnlineTime}
           animation={bannerAnimation}
+          onDismiss={dismissBanner}
         />
       )}
     </NetworkContext.Provider>
@@ -216,8 +233,41 @@ const NetworkBanner: React.FC<{
   isOnline: boolean;
   lastOnlineTime: Date | null;
   animation: Animated.Value;
-}> = ({ isOnline, lastOnlineTime, animation }) => {
+  onDismiss: () => void;
+}> = ({ isOnline, lastOnlineTime, animation, onDismiss }) => {
   const insets = useSafeAreaInsets();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (isOnline) return;
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, [isOnline]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 8;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy < 0) {
+          animation.setValue(Math.max(-100, gestureState.dy));
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy < -25) {
+          onDismiss();
+          return;
+        }
+        Animated.spring(animation, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 50,
+          friction: 8,
+        }).start();
+      },
+    })
+  ).current;
 
   return (
     <Animated.View
@@ -229,6 +279,7 @@ const NetworkBanner: React.FC<{
           transform: [{ translateY: animation }],
         },
       ]}
+      {...panResponder.panHandlers}
     >
       <View style={styles.bannerContent}>
         <Ionicons
@@ -242,7 +293,7 @@ const NetworkBanner: React.FC<{
       </View>
       {!isOnline && lastOnlineTime && (
         <Text style={styles.bannerSubtext}>
-          Last online: {getTimeAgo(lastOnlineTime)}
+          Last online: {getTimeAgo(lastOnlineTime, now)}
         </Text>
       )}
     </Animated.View>
@@ -250,8 +301,8 @@ const NetworkBanner: React.FC<{
 };
 
 // Helper function to get time ago
-const getTimeAgo = (date: Date): string => {
-  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+const getTimeAgo = (date: Date, now: Date): string => {
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
   
   if (seconds < 60) return 'just now';
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;

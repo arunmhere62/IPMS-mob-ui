@@ -100,7 +100,7 @@ export const DashboardScreen: React.FC = () => {
     { title: 'Visitors', icon: 'person-add', screen: 'Visitors', color: '#10B981' },
     { title: 'Employees', icon: 'people-circle', screen: 'Employees', color: '#F59E0B' },
     { title: 'Expenses', icon: 'receipt', screen: 'Expenses', color: '#F59E0B' },
-    { title: 'Employee Salary', icon: 'wallet', screen: 'EmployeeSalary', color: '#8B5CF6' },
+    { title: 'Payroll', icon: 'wallet', screen: 'EmployeeSalary', color: '#8B5CF6' },
     { title: 'Settings', icon: 'settings', screen: 'Settings', color: '#6B7280' },
   ];
 

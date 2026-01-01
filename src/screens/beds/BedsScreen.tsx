@@ -27,6 +27,7 @@ import {
 } from '../../services/api/roomsApi';
 import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -733,9 +734,29 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
         </Modal>
 
         {loading && !refreshing ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator size="large" color={Theme.colors.primary} />
-            <Text style={{ marginTop: 12, color: Theme.colors.text.secondary }}>Loading beds...</Text>
+          <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+            {Array.from({ length: 7 }).map((_, idx) => (
+              <Card key={idx} style={{ marginBottom: 10, padding: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <SkeletonLoader width={32} height={32} borderRadius={16} style={{ marginRight: 10 }} />
+                    <View style={{ flex: 1 }}>
+                      <SkeletonLoader width={100} height={14} style={{ marginBottom: 6 }} />
+                      <SkeletonLoader width={140} height={10} />
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <SkeletonLoader width={28} height={28} borderRadius={8} />
+                    <SkeletonLoader width={28} height={28} borderRadius={8} />
+                  </View>
+                </View>
+
+                <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <SkeletonLoader width={90} height={10} />
+                  <SkeletonLoader width={70} height={10} />
+                </View>
+              </Card>
+            ))}
           </View>
         ) : beds.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>

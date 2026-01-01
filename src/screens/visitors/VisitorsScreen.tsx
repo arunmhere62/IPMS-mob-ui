@@ -17,6 +17,7 @@ import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ErrorBanner } from '../../components/ErrorBanner';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { VisitorFormModal } from '../../components/VisitorFormModal';
 import { ActionButtons } from '../../components/ActionButtons';
 import { Ionicons } from '@expo/vector-icons';
@@ -414,9 +415,29 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       />
 
       {(isVisitorsFetching || isPageLoading) && visitors.length === 0 ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>Loading visitors...</Text>
+        <View style={{ padding: 16 }}>
+          {Array.from({ length: 7 }).map((_, idx) => (
+            <Card key={idx} style={{ marginBottom: 12, padding: 16 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <SkeletonLoader width={34} height={34} borderRadius={10} style={{ marginRight: 10 }} />
+                  <View style={{ flex: 1 }}>
+                    <SkeletonLoader width={140} height={14} style={{ marginBottom: 6 }} />
+                    <SkeletonLoader width={110} height={10} />
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <SkeletonLoader width={28} height={28} borderRadius={8} />
+                  <SkeletonLoader width={28} height={28} borderRadius={8} />
+                </View>
+              </View>
+
+              <View style={{ marginTop: 10 }}>
+                <SkeletonLoader width="80%" height={10} style={{ marginBottom: 6 }} />
+                <SkeletonLoader width="65%" height={10} />
+              </View>
+            </Card>
+          ))}
         </View>
       ) : (
         <FlatListWithRef

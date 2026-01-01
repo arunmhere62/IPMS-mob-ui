@@ -17,6 +17,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { EditProfileModal } from './EditProfileModal';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal';
 import { updateUser } from '../../store/slices/authSlice';
@@ -30,6 +31,7 @@ interface UserProfileScreenProps {
 export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { data: profileResponse, refetch: refetchProfile, isFetching: isProfileFetching } = useGetUserProfileQuery(user?.s_no as number, {
     skip: !user?.s_no,
   });
@@ -198,6 +200,15 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
   const userData = user;
   const roleBadge = getRoleBadgeColor(userData?.role_name);
 
+  const showSkeleton = isProfileFetching && !refreshing && !profileData;
+
+  const selectedPg = React.useMemo(() => {
+    const pgs = (profileData as any)?.pg_locations;
+    if (!Array.isArray(pgs) || pgs.length === 0) return null;
+    const match = selectedPGLocationId ? pgs.find((p: any) => Number(p?.s_no) === Number(selectedPGLocationId)) : null;
+    return match || pgs[0] || null;
+  }, [profileData, selectedPGLocationId]);
+
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
       <ScreenHeader
@@ -213,6 +224,32 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
         contentContainerStyle={{ paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        {showSkeleton ? (
+          <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+            <Card style={{ padding: 20, borderRadius: 16, marginBottom: 16 }}>
+              <View style={{ alignItems: 'center' }}>
+                <SkeletonLoader width={80} height={80} borderRadius={40} style={{ marginBottom: 16 }} />
+                <SkeletonLoader width={180} height={16} style={{ marginBottom: 8 }} />
+                <SkeletonLoader width={120} height={12} style={{ marginBottom: 14 }} />
+                <SkeletonLoader width={140} height={12} />
+              </View>
+            </Card>
+
+            <Card style={{ padding: 16, borderRadius: 16, marginBottom: 16 }}>
+              <SkeletonLoader width={140} height={14} style={{ marginBottom: 12 }} />
+              <SkeletonLoader width="90%" height={12} style={{ marginBottom: 10 }} />
+              <SkeletonLoader width="70%" height={12} style={{ marginBottom: 10 }} />
+              <SkeletonLoader width="80%" height={12} />
+            </Card>
+
+            <Card style={{ padding: 16, borderRadius: 16, marginBottom: 16 }}>
+              <SkeletonLoader width={160} height={14} style={{ marginBottom: 12 }} />
+              <SkeletonLoader width="75%" height={12} style={{ marginBottom: 10 }} />
+              <SkeletonLoader width="65%" height={12} />
+            </Card>
+          </View>
+        ) : (
+          <>
         {/* Profile Header Card */}
         <Card
           style={{
@@ -400,7 +437,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
             )}
 
             {/* PG Locations */}
-            {Array.isArray(profileData?.pg_locations) && profileData.pg_locations.length > 0 && (
+            {!!selectedPg && (
               <View
                 style={{
                   width: '100%',
@@ -435,9 +472,9 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                         marginBottom: 2,
                       }}
                     >
-                      {profileData.pg_locations[0]?.location_name}
+                      {selectedPg?.location_name}
                     </Text>
-                    {profileData.pg_locations[0]?.address ? (
+                    {selectedPg?.address ? (
                       <Text
                         style={{
                           fontSize: 12,
@@ -445,12 +482,12 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                           marginBottom: 4,
                         }}
                       >
-                        {profileData.pg_locations[0].address}
+                        {selectedPg.address}
                       </Text>
                     ) : null}
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-                      {profileData.pg_locations[0]?.pg_type ? (
+                      {selectedPg?.pg_type ? (
                         <View
                           style={{
                             paddingHorizontal: 8,
@@ -468,12 +505,12 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                               fontWeight: '500',
                             }}
                           >
-                            {profileData.pg_locations[0].pg_type}
+                            {selectedPg.pg_type}
                           </Text>
                         </View>
                       ) : null}
 
-                      {profileData.pg_locations[0]?.rent_cycle_type ? (
+                      {selectedPg?.rent_cycle_type ? (
                         <View
                           style={{
                             paddingHorizontal: 8,
@@ -491,30 +528,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                               fontWeight: '500',
                             }}
                           >
-                            {profileData.pg_locations[0].rent_cycle_type}
-                          </Text>
-                        </View>
-                      ) : null}
-
-                      {profileData.pg_locations.length > 1 ? (
-                        <View
-                          style={{
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
-                            borderRadius: 8,
-                            backgroundColor: '#F3F4F6',
-                            marginRight: 6,
-                            marginBottom: 4,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 10,
-                              color: Theme.colors.text.secondary,
-                              fontWeight: '500',
-                            }}
-                          >
-                            +{profileData.pg_locations.length - 1} more
+                            {selectedPg.rent_cycle_type}
                           </Text>
                         </View>
                       ) : null}
@@ -555,13 +569,18 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
               </View>
 
               <View style={{ alignItems: 'center' }}>
-                <Text style={{
-                  fontSize: 16,
-                  fontWeight: '700',
-                  color: Theme.colors.primary,
-                  marginBottom: 2
-                }}>
-                  {Array.isArray((userData as any)?.pg_locations) ? (userData as any).pg_locations.length : 0}
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color: Theme.colors.text.primary,
+                    marginBottom: 2,
+                    maxWidth: 100,
+                    textAlign: 'center',
+                  }}
+                  numberOfLines={2}
+                >
+                  {selectedPg?.location_name || '--'}
                 </Text>
                 <Text style={{
                   fontSize: 10,
@@ -569,7 +588,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
                 }}>
-                  PGs
+                  Selected PG
                 </Text>
               </View>
 
@@ -594,7 +613,11 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
             </View>
           </View>
         </Card>
+          </>
+        )}
 
+        {!showSkeleton && (
+        <>
         {/* Contact Information */}
         <Card style={{ marginHorizontal: 16, marginBottom: 16, padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
@@ -824,33 +847,10 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
             <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: 16,
-            }}
-            onPress={() => {
-              // Navigate to privacy settings
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="shield-checkmark-outline" size={20} color={Theme.colors.text.secondary} />
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: '500',
-                  color: Theme.colors.text.primary,
-                  marginLeft: 12,
-                }}
-              >
-                Privacy & Security
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
-          </TouchableOpacity>
         </Card>
+
+        </>
+        )}
       </ScrollView>
 
       {/* Edit Profile Modal */}

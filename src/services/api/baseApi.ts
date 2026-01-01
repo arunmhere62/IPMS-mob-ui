@@ -28,7 +28,7 @@ const toPlainHeaders = (headers: any): Record<string, any> => {
 const needsPgHeader = (url?: string) => {
   if (!url) return false;
   const path = (url.split('?')[0] || '').toString();
-  return /^\/(tenants|rooms|beds|advance-payments|refund-payments|payments|pending-payments)(\/|$)/.test(path);
+  return /^\/(tenants|rooms|beds|advance-payments|refund-payments|payments|pending-payments|payroll)(\/|$)/.test(path);
 };
 
 const applyAuthAndContextHeaders = (headers: Headers, state: RootState) => {
@@ -267,9 +267,6 @@ export const baseApi = createApi({
     'Employees',
     'Employee',
     'EmployeeStats',
-    'EmployeeSalaries',
-    'EmployeeSalary',
-    'EmployeeSalaryStats',
     'Expenses',
     'Expense',
     'ExpenseStats',
@@ -311,6 +308,8 @@ export const baseApi = createApi({
     'S3Objects',
     'S3Object',
     'LegalRequiredStatus',
+    'PayrollRuns',
+    'PayrollRun',
   ],
   endpoints: () => ({}),
 });
