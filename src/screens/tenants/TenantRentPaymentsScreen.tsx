@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -17,13 +16,11 @@ import { Card } from '../../components/Card';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
-import { useDeleteTenantPaymentMutation, useUpdateTenantPaymentMutation } from '@/services/api/paymentsApi';
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
-import RentPaymentForm from './RentPaymentForm';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
+import { useDeleteTenantPaymentMutation } from '@/services/api/paymentsApi';
 
 interface RentPayment {
   s_no: number;
@@ -42,16 +39,18 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const route = useRoute<any>();
   const { can } = usePermissions();
 
-  const canEditRent = can(Permission.EDIT_RENT);
+  can(Permission.EDIT_RENT);
   const canDeleteRent = can(Permission.DELETE_RENT);
   const [deleteTenantPayment] = useDeleteTenantPaymentMutation();
-  const [updateTenantPayment] = useUpdateTenantPaymentMutation();
 
   const payments: RentPayment[] = route.params?.payments || [];
   const tenantName = route.params?.tenantName || 'Tenant';
   const tenantId = route.params?.tenantId || 0;
   const tenantPhone = route.params?.tenantPhone || '';
   const pgName = route.params?.pgName || 'PG';
+  const roomNumber = route.params?.roomNumber || '';
+  const bedNumber = route.params?.bedNumber || '';
+  const accommodationLabel = `${pgName}${roomNumber ? ` | Room ${roomNumber}` : ''}${bedNumber ? ` | Bed ${bedNumber}` : ''}`;
 
   const [loading, setLoading] = useState(false);
 
@@ -62,8 +61,6 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   };
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
-  const [editingPayment, setEditingPayment] = useState<RentPayment | null>(null);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const receiptRef = useRef<any>(null);
 
   const handleDeletePayment = (payment: RentPayment) => {
@@ -71,6 +68,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
       Alert.alert('Access Denied', "You don't have permission to delete rent payments");
       return;
     }
+
     Alert.alert(
       'Delete Payment',
       `Are you sure you want to delete this payment?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
@@ -86,48 +84,17 @@ export const TenantRentPaymentsScreen: React.FC = () => {
             try {
               setLoading(true);
               await deleteTenantPayment(payment.s_no).unwrap();
-              showSuccessAlert('Payment deleted successfully');
-              
-              // Navigate back to tenant details screen with refresh
+              Alert.alert('Success', 'Payment deleted successfully');
               refreshTenantDetails();
             } catch (error: any) {
-              showErrorAlert(error, 'Delete Error');
+              Alert.alert('Delete Error', error?.data?.message || error?.message || 'Failed to delete payment');
             } finally {
               setLoading(false);
             }
           },
         },
-      ]
+      ],
     );
-  };
-
-  const handleEditPayment = (payment: RentPayment) => {
-    if (!canEditRent) {
-      Alert.alert('Access Denied', "You don't have permission to edit rent payments");
-      return;
-    }
-    setEditingPayment(payment);
-    setIsEditModalVisible(true);
-  };
-
-  const handleSavePayment = async (id: number, data: any) => {
-    if (!canEditRent) {
-      Alert.alert('Access Denied', "You don't have permission to edit rent payments");
-      return;
-    }
-    try {
-      setLoading(true);
-      await updateTenantPayment({ id, data }).unwrap();
-      setIsEditModalVisible(false);
-      setEditingPayment(null);
-      
-      // Navigate back to tenant details screen
-      refreshTenantDetails();
-    } catch (error: any) {
-      showErrorAlert(error, 'Update Error');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const prepareReceiptData = (payment: RentPayment) => {
@@ -230,6 +197,9 @@ export const TenantRentPaymentsScreen: React.FC = () => {
           <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 4 }}>
             {payments.length} payment(s)
           </Text>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 4 }}>
+            {accommodationLabel}
+          </Text>
         </View>
 
         {loading && (
@@ -243,6 +213,17 @@ export const TenantRentPaymentsScreen: React.FC = () => {
             {payments.map((payment, index) => {
               const statusColor = getStatusColor(payment.status);
               const dueAmount = payment.actual_rent_amount - payment.amount_paid;
+
+              const paymentPg = (payment as any)?.pg_id ?? '';
+              const paymentRoom = (payment as any)?.room_id ?? '';
+              const paymentBed = (payment as any)?.bed_id ?? '';
+              const paymentPgName = (payment as any)?.pg_locations?.location_name;
+              const paymentRoomNo = (payment as any)?.rooms?.room_no;
+              const paymentBedNo = (payment as any)?.beds?.bed_no;
+              const paymentAccommodationLabel =
+                paymentPgName || paymentRoomNo || paymentBedNo || paymentPg || paymentRoom || paymentBed
+                  ? `${paymentPgName || (paymentPg ? `PG ${paymentPg}` : pgName)}${(paymentRoomNo || paymentRoom) ? ` | Room ${paymentRoomNo || paymentRoom}` : ''}${(paymentBedNo || paymentBed) ? ` | Bed ${paymentBedNo || paymentBed}` : ''}`
+                  : accommodationLabel;
 
               return (
                 <AnimatedPressableCard
@@ -265,6 +246,9 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                             month: 'short',
                             year: 'numeric',
                           })}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 4 }}>
+                          {paymentAccommodationLabel}
                         </Text>
                         <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
                           ₹{payment.amount_paid}
@@ -358,12 +342,12 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                     {/* Action Buttons */}
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                       <ActionButtons
-                        onEdit={() => handleEditPayment(payment)}
                         onDelete={() => handleDeletePayment(payment)}
                         showView={false}
-                        disableEdit={!canEditRent}
+                        showEdit={false}
+                        showDelete={canDeleteRent}
                         disableDelete={!canDeleteRent}
-                        blockPressWhenDisabled
+                        blockPressWhenDisabled={true}
                       />
                       <TouchableOpacity
                         onPress={() => handleViewReceipt(payment)}
@@ -380,21 +364,6 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                           View Invoice
                         </Text>
                       </TouchableOpacity>
-                      {/* <TouchableOpacity
-                        onPress={() => handleWhatsAppReceipt(payment)}
-                        style={{
-                          paddingVertical: 8,
-                          paddingHorizontal: 12,
-                          backgroundColor: '#DCFCE7',
-                          borderRadius: 8,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#16A34A' }}>
-                          💬 WhatsApp
-                        </Text>
-                      </TouchableOpacity> */}
                       <TouchableOpacity
                         onPress={() => handleShareReceipt(payment)}
                         style={{
@@ -459,37 +428,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Edit Payment Modal */}
-      {editingPayment && (
-        <RentPaymentForm
-          visible={isEditModalVisible}
-          mode="edit"
-          tenantId={tenantId}
-          tenantName={tenantName}
-          roomId={route.params?.roomId || 0}
-          bedId={route.params?.bedId || 0}
-          pgId={route.params?.pgId || 0}
-          rentAmount={editingPayment.actual_rent_amount}
-          joiningDate={route.params?.joiningDate}
-          lastPaymentStartDate={editingPayment.start_date}
-          lastPaymentEndDate={editingPayment.end_date}
-          previousPayments={payments.filter(p => p.s_no !== editingPayment.s_no)}
-          paymentId={editingPayment.s_no}
-          existingPayment={editingPayment}
-          onClose={() => {
-            setIsEditModalVisible(false);
-            setEditingPayment(null);
-          }}
-          onSuccess={() => {
-            setIsEditModalVisible(false);
-            setEditingPayment(null);
-            
-            // Navigate back to tenant details screen
-            refreshTenantDetails();
-          }}
-          onSave={handleSavePayment}
-        />
-      )}
+      {/* Payments are immutable: editing is disabled */}
     </ScreenLayout>
   );
 };

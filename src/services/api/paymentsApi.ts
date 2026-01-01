@@ -252,7 +252,10 @@ export const paymentsApi = baseApi.injectEndpoints({
     createTenantPayment: build.mutation<TenantPaymentResponse, Partial<Payment>>({
       query: (body) => ({ url: '/tenant-payments', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
-      invalidatesTags: [{ type: 'TenantPayments', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'TenantPayments', id: 'LIST' },
+        { type: 'Tenants', id: 'LIST' },
+      ],
     }),
 
     updateTenantPayment: build.mutation<TenantPaymentResponse, { id: number; data: Partial<Payment> }>({
@@ -261,6 +264,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'TenantPayments', id: 'LIST' },
         { type: 'TenantPayment', id: arg.id },
+        { type: 'Tenants', id: 'LIST' },
       ],
     }),
 
@@ -274,6 +278,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'TenantPayments', id: 'LIST' },
         { type: 'TenantPayment', id: arg.id },
+        { type: 'Tenants', id: 'LIST' },
       ],
     }),
 
@@ -282,6 +287,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, id) => [
         { type: 'TenantPayments', id: 'LIST' },
         { type: 'TenantPayment', id },
+        { type: 'Tenants', id: 'LIST' },
       ],
     }),
 
@@ -344,15 +350,23 @@ export const paymentsApi = baseApi.injectEndpoints({
     createAdvancePayment: build.mutation<AdvancePaymentResponse, CreateAdvancePaymentDto>({
       query: (body) => ({ url: '/advance-payments', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
-      invalidatesTags: [{ type: 'AdvancePayments', id: 'LIST' }],
+      invalidatesTags: (_res, _err, arg) => [
+        { type: 'AdvancePayments' as const, id: 'LIST' },
+        { type: 'Tenants' as const, id: 'LIST' },
+        ...(typeof (arg as any)?.tenant_id === 'number' ? [{ type: 'Tenant' as const, id: (arg as any).tenant_id }] : []),
+      ],
     }),
 
     updateAdvancePayment: build.mutation<AdvancePaymentResponse, { id: number; data: Partial<CreateAdvancePaymentDto> }>({
       query: ({ id, data }) => ({ url: `/advance-payments/${id}`, method: 'PATCH', body: data }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
       invalidatesTags: (_res, _err, arg) => [
-        { type: 'AdvancePayments', id: 'LIST' },
-        { type: 'AdvancePayment', id: arg.id },
+        { type: 'AdvancePayments' as const, id: 'LIST' },
+        { type: 'AdvancePayment' as const, id: arg.id },
+        { type: 'Tenants' as const, id: 'LIST' },
+        ...(typeof (arg as any)?.data?.tenant_id === 'number'
+          ? [{ type: 'Tenant' as const, id: (arg as any).data.tenant_id }]
+          : []),
       ],
     }),
 
@@ -364,16 +378,18 @@ export const paymentsApi = baseApi.injectEndpoints({
       }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
       invalidatesTags: (_res, _err, arg) => [
-        { type: 'AdvancePayments', id: 'LIST' },
-        { type: 'AdvancePayment', id: arg.id },
+        { type: 'AdvancePayments' as const, id: 'LIST' },
+        { type: 'AdvancePayment' as const, id: arg.id },
+        { type: 'Tenants' as const, id: 'LIST' },
       ],
     }),
 
     deleteAdvancePayment: build.mutation<any, number>({
       query: (id) => ({ url: `/advance-payments/${id}`, method: 'DELETE' }),
       invalidatesTags: (_res, _err, id) => [
-        { type: 'AdvancePayments', id: 'LIST' },
-        { type: 'AdvancePayment', id },
+        { type: 'AdvancePayments' as const, id: 'LIST' },
+        { type: 'AdvancePayment' as const, id },
+        { type: 'Tenants' as const, id: 'LIST' },
       ],
     }),
 
@@ -416,15 +432,23 @@ export const paymentsApi = baseApi.injectEndpoints({
         headers: { 'X-Skip-Global-Error': 'true' },
       }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
-      invalidatesTags: [{ type: 'RefundPayments', id: 'LIST' }],
+      invalidatesTags: (_res, _err, arg) => [
+        { type: 'RefundPayments' as const, id: 'LIST' },
+        { type: 'Tenants' as const, id: 'LIST' },
+        ...(typeof (arg as any)?.tenant_id === 'number' ? [{ type: 'Tenant' as const, id: (arg as any).tenant_id }] : []),
+      ],
     }),
 
     updateRefundPayment: build.mutation<any, { id: number; data: Partial<CreateRefundPaymentDto> }>({
       query: ({ id, data }) => ({ url: `/refund-payments/${id}`, method: 'PATCH', body: data }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
       invalidatesTags: (_res, _err, arg) => [
-        { type: 'RefundPayments', id: 'LIST' },
-        { type: 'RefundPayment', id: arg.id },
+        { type: 'RefundPayments' as const, id: 'LIST' },
+        { type: 'RefundPayment' as const, id: arg.id },
+        { type: 'Tenants' as const, id: 'LIST' },
+        ...(typeof (arg as any)?.data?.tenant_id === 'number'
+          ? [{ type: 'Tenant' as const, id: (arg as any).data.tenant_id }]
+          : []),
       ],
     }),
 
@@ -432,8 +456,9 @@ export const paymentsApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/refund-payments/${id}`, method: 'DELETE' }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
       invalidatesTags: (_res, _err, id) => [
-        { type: 'RefundPayments', id: 'LIST' },
-        { type: 'RefundPayment', id },
+        { type: 'RefundPayments' as const, id: 'LIST' },
+        { type: 'RefundPayment' as const, id },
+        { type: 'Tenants' as const, id: 'LIST' },
       ],
     }),
   }),

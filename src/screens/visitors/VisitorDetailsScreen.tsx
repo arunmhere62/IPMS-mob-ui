@@ -229,7 +229,7 @@ export default function VisitorDetailsScreen({ route, navigation }: VisitorDetai
                 label="Visit Date"
                 value={visitor.visited_date ? new Date(visitor.visited_date).toLocaleDateString('en-IN') : 'N/A'}
               />
-              <DetailRow label="PG ID" value={visitor.pg_id ?? 'N/A'} isLast={true} />
+              <DetailRow label="PG" value={visitor.pg_locations?.location_name ?? 'N/A'} isLast={true} />
             </Card>
 
             <Card

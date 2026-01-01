@@ -48,10 +48,8 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
   const canCreateSalary = can(Permission.CREATE_EMPLOYEE_SALARY);
-  const canEditSalary = can(Permission.EDIT_EMPLOYEE_SALARY);
   const canDeleteSalary = can(Permission.DELETE_EMPLOYEE_SALARY);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingSalary, setEditingSalary] = useState<EmployeeSalary | null>(null);
 
   const defaultMonthYear = React.useMemo(() => {
     const now = new Date();
@@ -132,16 +130,6 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
       Alert.alert('Access Denied', "You don't have permission to create employee salary records");
       return;
     }
-    setEditingSalary(null);
-    setShowAddModal(true);
-  };
-
-  const handleEditSalary = (salary: EmployeeSalary) => {
-    if (!canEditSalary) {
-      Alert.alert('Access Denied', "You don't have permission to edit employee salary records");
-      return;
-    }
-    setEditingSalary(salary);
     setShowAddModal(true);
   };
 
@@ -411,12 +399,10 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
 
                 <View style={{ marginTop: 8, alignItems: 'flex-end' }}>
                   <ActionButtons
-                    onEdit={() => handleEditSalary(salary)}
                     onDelete={() => handleDeleteSalary(salary)}
-                    showEdit={true}
+                    showEdit={false}
                     showDelete={true}
                     showView={false}
-                    disableEdit={!canEditSalary}
                     disableDelete={!canDeleteSalary}
                     blockPressWhenDisabled
                   />
@@ -553,11 +539,7 @@ export const EmployeeSalaryScreen: React.FC<EmployeeSalaryScreenProps> = ({ navi
       {/* Add/Edit Modal */}
       <AddEditEmployeeSalaryModal
         visible={showAddModal}
-        salary={editingSalary}
-        onClose={() => {
-          setShowAddModal(false);
-          setEditingSalary(null);
-        }}
+        onClose={() => setShowAddModal(false)}
         onSave={handleSaveSalary}
       />
     </ScreenLayout>

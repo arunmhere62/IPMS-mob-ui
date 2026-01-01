@@ -3,7 +3,9 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressableCard } from "../../../components/AnimatedPressableCard";
 import { ActionButtons } from "../../../components/ActionButtons";
+import { ActionTile } from "../../../components/ActionButtons";
 import { Tenant } from "@/services/api/tenantsApi";
+import { Theme } from "../../../theme";
 
 interface TenantHeaderProps {
   tenant: Tenant;
@@ -47,6 +49,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
           onEdit={onEdit}
           showEdit={true}
           disableEdit={!showEdit}
+          blockPressWhenDisabled={true}
           showView={false}
           showDelete={false}
           containerStyle={{ backgroundColor: "transparent", padding: 0 }}
@@ -136,40 +139,22 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
 
       {/* Action Buttons */}
       <View style={styles.actionGrid}>
-        <Action icon="wallet" text="Add Rent" onPress={onAddPayment} disabled={!canAddPayment} />
-        <Action icon="trending-up" text="Add Advance" onPress={onAddAdvance} disabled={!canAddAdvance} />
-        <Action
-          icon="trending-down"
-          text="Add Refund"
-          onPress={onAddRefund}
-          disabled={!canAddRefund}
-        />
-        {!!onAddCurrentBill && (
-          <Action
-            icon="document-text"
-            text="Add Bill"
-            onPress={onAddCurrentBill}
-          />
-        )}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+          <ActionTile title="Add Rent" icon="wallet" onPress={onAddPayment} disabled={!canAddPayment} />
+          <ActionTile title="Add Advance" icon="trending-up" onPress={onAddAdvance} disabled={!canAddAdvance} />
+        </View>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <ActionTile title="Add Refund" icon="trending-down" onPress={onAddRefund} disabled={!canAddRefund} />
+          {!!onAddCurrentBill ? (
+            <ActionTile title="Add Bill" icon="document-text" onPress={onAddCurrentBill} />
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
+        </View>
       </View>
     </View>
   );
 };
-
-const Action = ({ icon, text, onPress, disabled }: any) => (
-  <AnimatedPressableCard
-    onPress={() => {
-      if (disabled) return;
-      onPress?.();
-    }}
-    scaleValue={0.95}
-    duration={100}
-    style={[styles.actionButton, disabled ? { opacity: 0.45 } : null]}
-  >
-    <Ionicons name={icon} size={16} color="#333" />
-    <Text style={styles.actionText}>{text}</Text>
-  </AnimatedPressableCard>
-);
 
 const styles = StyleSheet.create({
   card: {
@@ -177,8 +162,8 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     padding: 22,
     borderRadius: 18,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
+    backgroundColor: Theme.colors.card.background,
+    shadowColor: Theme.colors.card.shadow,
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
@@ -197,13 +182,13 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: Theme.colors.background.tertiary,
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: "#e5e5e5",
+    borderColor: Theme.colors.border,
   },
 
   avatar: {
@@ -214,13 +199,13 @@ const styles = StyleSheet.create({
   avatarFallback: {
     fontSize: 40,
     fontWeight: "700",
-    color: "#444",
+    color: Theme.colors.text.secondary,
   },
 
   name: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111",
+    color: Theme.colors.text.primary,
     marginBottom: 6,
   },
 
@@ -233,13 +218,13 @@ const styles = StyleSheet.create({
   },
 
   statusActive: {
-    backgroundColor: "rgba(22, 163, 74, 0.12)",
-    borderColor: "rgba(22, 163, 74, 0.35)",
+    backgroundColor: Theme.withOpacity(Theme.colors.secondary, 0.12),
+    borderColor: Theme.withOpacity(Theme.colors.secondary, 0.35),
   },
 
   statusInactive: {
-    backgroundColor: "rgba(220, 38, 38, 0.12)",
-    borderColor: "rgba(220, 38, 38, 0.35)",
+    backgroundColor: Theme.withOpacity(Theme.colors.danger, 0.12),
+    borderColor: Theme.withOpacity(Theme.colors.danger, 0.35),
   },
 
   statusText: {
@@ -258,22 +243,22 @@ const styles = StyleSheet.create({
 
   contactButton: {
     flex: 1,
-    backgroundColor: "#F7F7F7",
+    backgroundColor: Theme.colors.background.secondary,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E5E5E5",
+    borderColor: Theme.colors.border,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
   },
 
   emailButton: {
-    backgroundColor: "#F7F7F7",
+    backgroundColor: Theme.colors.background.secondary,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E5E5E5",
+    borderColor: Theme.colors.border,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -282,35 +267,13 @@ const styles = StyleSheet.create({
 
   contactText: {
     marginLeft: 6,
-    color: "#333",
+    color: Theme.colors.text.primary,
     fontSize: 13,
     fontWeight: "600",
   },
 
   actionGrid: {
     width: "100%",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F7F7F7",
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-    paddingVertical: 10,
-    borderRadius: 10,
-    flex: 1,
-    minWidth: "48%",
-  },
-
-  actionText: {
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "600",
-    color: "#333",
+    flexDirection: "column",
   },
 });

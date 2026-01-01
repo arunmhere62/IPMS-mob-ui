@@ -31,18 +31,6 @@ export type GetPGLocationDetailsResponse = {
   message?: string;
 };
 
-export type GetPGLocationSummaryResponse = {
-  success: boolean;
-  data: any;
-  message?: string;
-};
-
-export type GetPGLocationFinancialAnalyticsResponse = {
-  success: boolean;
-  data: any;
-  message?: string;
-};
-
 const unwrapCentralData = <T>(response: any): T => {
   if (response && typeof response === 'object' && 'success' in response && 'statusCode' in response) {
     return (response as any).data as T;
@@ -118,22 +106,6 @@ export const pgLocationsApi = baseApi.injectEndpoints({
       transformResponse: (response: ApiEnvelope<GetPGLocationDetailsResponse> | any) => normalizeEntityResponse<any>(response),
       providesTags: (_res, _err, pgId) => [{ type: 'PGLocationDetails' as const, id: pgId }],
     }),
-
-    getPGLocationSummary: build.query<GetPGLocationSummaryResponse, number>({
-      query: (pgId) => ({ url: `/pg-locations/${pgId}/summary`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<GetPGLocationSummaryResponse> | any) => normalizeEntityResponse<any>(response),
-      providesTags: (_res, _err, pgId) => [{ type: 'PGLocationSummary' as const, id: pgId }],
-    }),
-
-    getPGLocationFinancialAnalytics: build.query<GetPGLocationFinancialAnalyticsResponse, { pgId: number; months?: number }>({
-      query: ({ pgId, months }) => ({
-        url: `/pg-locations/${pgId}/financial-analytics`,
-        method: 'GET',
-        params: months ? { months } : undefined,
-      }),
-      transformResponse: (response: ApiEnvelope<GetPGLocationFinancialAnalyticsResponse> | any) => normalizeEntityResponse<any>(response),
-      providesTags: (_res, _err, arg) => [{ type: 'PGLocationFinancialAnalytics' as const, id: arg.pgId }],
-    }),
   }),
   overrideExisting: false,
 });
@@ -146,8 +118,4 @@ export const {
   useDeletePGLocationMutation,
   useGetPGLocationDetailsQuery,
   useLazyGetPGLocationDetailsQuery,
-  useGetPGLocationSummaryQuery,
-  useLazyGetPGLocationSummaryQuery,
-  useGetPGLocationFinancialAnalyticsQuery,
-  useLazyGetPGLocationFinancialAnalyticsQuery,
 } = pgLocationsApi;

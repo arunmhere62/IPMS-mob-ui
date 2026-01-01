@@ -207,15 +207,15 @@ export const roomsApi = baseApi.injectEndpoints({
     createRoom: build.mutation<RoomResponse, CreateRoomDto>({
       query: (body) => ({ url: '/rooms', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<RoomResponse> | any) => normalizeEntityResponse<Room>(response),
-      invalidatesTags: [{ type: 'Rooms', id: 'LIST' }],
+      invalidatesTags: [{ type: 'Rooms' as const, id: 'LIST' }],
     }),
 
     updateRoom: build.mutation<RoomResponse, { id: number; data: Partial<CreateRoomDto> }>({
       query: ({ id, data }) => ({ url: `/rooms/${id}`, method: 'PATCH', body: data }),
       transformResponse: (response: ApiEnvelope<RoomResponse> | any) => normalizeEntityResponse<Room>(response),
       invalidatesTags: (_res, _err, arg) => [
-        { type: 'Rooms', id: 'LIST' },
-        { type: 'Room', id: arg.id },
+        { type: 'Rooms' as const, id: 'LIST' },
+        { type: 'Room' as const, id: arg.id },
       ],
     }),
 
@@ -261,15 +261,23 @@ export const roomsApi = baseApi.injectEndpoints({
     createBed: build.mutation<BedResponse, CreateBedDto>({
       query: (body) => ({ url: '/beds', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<BedResponse> | any) => normalizeEntityResponse<Bed>(response),
-      invalidatesTags: [{ type: 'Beds', id: 'LIST' }],
+      invalidatesTags: (_res, _err, arg) => [
+        { type: 'Beds' as const, id: 'LIST' },
+        { type: 'Beds' as const, id: arg.room_id },
+        { type: 'Rooms' as const, id: 'LIST' },
+        { type: 'Room' as const, id: arg.room_id },
+      ],
     }),
 
     updateBed: build.mutation<BedResponse, { id: number; data: Partial<CreateBedDto> }>({
       query: ({ id, data }) => ({ url: `/beds/${id}`, method: 'PATCH', body: data }),
       transformResponse: (response: ApiEnvelope<BedResponse> | any) => normalizeEntityResponse<Bed>(response),
       invalidatesTags: (_res, _err, arg) => [
-        { type: 'Beds', id: 'LIST' },
-        { type: 'Bed', id: arg.id },
+        { type: 'Beds' as const, id: 'LIST' },
+        ...(typeof arg.data.room_id === 'number' ? [{ type: 'Beds' as const, id: arg.data.room_id }] : []),
+        { type: 'Bed' as const, id: arg.id },
+        { type: 'Rooms' as const, id: 'LIST' },
+        ...(typeof arg.data.room_id === 'number' ? [{ type: 'Room' as const, id: arg.data.room_id }] : []),
       ],
     }),
 

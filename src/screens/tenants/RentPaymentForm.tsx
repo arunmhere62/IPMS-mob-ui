@@ -24,7 +24,7 @@ import {
   useLazyGetNextPaymentDatesQuery,
 } from "@/services/api/paymentsApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
-import { calculateRentCycleDates, calculateNextRentCycleDates } from "@/utils/rentCycleCalculator";
+import { calculateNextRentCycleDates } from "@/utils/rentCycleCalculator";
 
 interface RentPaymentFormProps {
   visible: boolean;
@@ -814,52 +814,9 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.end_date);
 
-      if (startDate >= endDate) {
-        newErrors.end_date = "End date must be after start date";
-      }
-
-      // Validate rent period duration matches cycle pattern
-      if (rentCycleData) {
-        if (rentCycleData.type === 'CALENDAR') {
-          // CALENDAR: Full calendar month (1st to last day)
-          const startDay = startDate.getDate();
-          const startMonth = startDate.getMonth();
-          const startYear = startDate.getFullYear();
-
-          const endDay = endDate.getDate();
-          const endMonth = endDate.getMonth();
-          const endYear = endDate.getFullYear();
-
-          // Check if start is 1st of month and end is last day of month
-          const isFirstOfMonth = startDay === 1;
-          const lastDayOfMonth = new Date(endYear, endMonth + 1, 0).getDate();
-          const isLastDayOfMonth = endDay === lastDayOfMonth && endMonth === startMonth && endYear === startYear;
-
-          if (!isFirstOfMonth || !isLastDayOfMonth) {
-            newErrors.end_date = "CALENDAR cycle: Period must be from 1st to last day of the month";
-          }
-        } else {
-          // MIDMONTH: Same day to same day next month minus 1 (e.g., 15th to 14th)
-          const startDay = startDate.getDate();
-          const startMonth = startDate.getMonth();
-          const startYear = startDate.getFullYear();
-
-          const endDay = endDate.getDate();
-          const endMonth = endDate.getMonth();
-          const endYear = endDate.getFullYear();
-
-          // Calculate expected end date: create date in next month with same day, then subtract 1 day
-          let expectedEndDate = new Date(startYear, startMonth + 1, startDay);
-          expectedEndDate.setDate(expectedEndDate.getDate() - 1);
-
-          // Check if end date matches expected (with 1 day tolerance for month variations)
-          const dayDiff = Math.abs(endDate.getTime() - expectedEndDate.getTime()) / (1000 * 60 * 60 * 24);
-
-          if (dayDiff > 1) {
-            const expectedDay = startDay === 1 ? 30 : startDay - 1;
-            newErrors.end_date = `MIDMONTH cycle: Period should be from ${startDay}th to ${expectedDay}th of next month`;
-          }
-        }
+      // Inclusive period: allow same day start/end
+      if (startDate > endDate) {
+        newErrors.end_date = "End date must be on or after start date";
       }
     }
 

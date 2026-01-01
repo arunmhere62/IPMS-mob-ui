@@ -140,6 +140,14 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
     }, [selectedPGLocationId])
   );
 
+  const handleBack = React.useCallback(() => {
+    if (navigation?.canGoBack?.()) {
+      navigation.goBack();
+      return;
+    }
+    navigation.navigate('Payments');
+  }, [navigation]);
+
   const loadAdvancePayments = async (
     page: number,
     reset: boolean = false,
@@ -543,7 +551,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
         showBackButton={true}
-        onBackPress={() => navigation.goBack(-1)}
+        onBackPress={handleBack}
       />
 
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>

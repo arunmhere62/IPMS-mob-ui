@@ -90,6 +90,37 @@ export interface Tenant {
   proof_documents?: any;
   created_at: string;
   updated_at: string;
+  payment_cycle_summaries?: Array<{
+    start_date: string;
+    end_date: string;
+    totalPaid?: number;
+    due?: number;
+    remainingDue?: number;
+    status?: string;
+    expected_from_allocations?: number;
+    due_from_payments?: number;
+  }>;
+  tenant_allocations?: Array<{
+    s_no: number;
+    effective_from: string;
+    effective_to?: string | null;
+    bed_price_snapshot?: number;
+    pg_id: number;
+    room_id: number;
+    bed_id: number;
+    pg_locations?: {
+      s_no: number;
+      location_name: string;
+    };
+    rooms?: {
+      s_no: number;
+      room_no: string;
+    };
+    beds?: {
+      s_no: number;
+      bed_no: string;
+    };
+  }>;
   pg_locations?: {
     s_no: number;
     location_name: string;
@@ -205,6 +236,14 @@ export type CheckoutTenantWithDateRequest = {
   check_out_date: string;
 };
 
+export type TransferTenantRequest = {
+  id: number;
+  to_pg_id: number;
+  to_room_id: number;
+  to_bed_id: number;
+  effective_from: string;
+};
+
 type ApiEnvelope<T> = {
   data?: T;
 };
@@ -300,7 +339,12 @@ export const tenantsApi = baseApi.injectEndpoints({
     createTenant: build.mutation<TenantResponse, CreateTenantDto>({
       query: (body) => ({ url: '/tenants', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<any> | any) => normalizeEntityResponse<Tenant>(response),
-      invalidatesTags: [{ type: 'Tenants', id: 'LIST' }],
+      invalidatesTags: (_res, _err, arg) => [
+        { type: 'Tenants' as const, id: 'LIST' },
+        { type: 'Beds' as const, id: 'LIST' },
+        ...(typeof (arg as any)?.room_id === 'number' ? [{ type: 'Beds' as const, id: (arg as any).room_id }] : []),
+        { type: 'Rooms' as const, id: 'LIST' },
+      ],
     }),
 
     updateTenant: build.mutation<TenantResponse, { id: number; data: Partial<CreateTenantDto> }>({
@@ -359,6 +403,22 @@ export const tenantsApi = baseApi.injectEndpoints({
       ],
     }),
 
+    transferTenant: build.mutation<TenantResponse, TransferTenantRequest>({
+      query: ({ id, ...body }) => ({
+        url: `/tenants/${id}/transfer`,
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: ApiEnvelope<any> | any) => normalizeEntityResponse<Tenant>(response),
+      invalidatesTags: (_res, _err, arg) => [
+        { type: 'Tenants', id: 'LIST' },
+        { type: 'Tenant', id: arg.id },
+        { type: 'Rooms' as const, id: 'LIST' },
+        { type: 'Beds' as const, id: 'LIST' },
+        { type: 'PGLocations' as const, id: 'LIST' },
+      ],
+    }),
+
     createCurrentBill: build.mutation<CurrentBillResponse, CreateCurrentBillDto>({
       query: (body) => ({ url: '/current-bills', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<any> | any) => normalizeEntityResponse<any>(response),
@@ -379,4 +439,5 @@ export const {
   useCheckoutTenantMutation,
   useCheckoutTenantWithDateMutation,
   useUpdateTenantCheckoutDateMutation,
+  useTransferTenantMutation,
 } = tenantsApi;

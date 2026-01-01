@@ -14,7 +14,11 @@ import { CONTENT_COLOR } from '@/constant';
 import { useGetCountriesQuery } from '../../services/api/locationApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { useSendSignupOtpMutation, useSignupMutation, useVerifySignupOtpMutation } from '../../services/api/authApi';
-import { type RequiredLegalDocument, useLazyGetRequiredLegalDocumentsStatusQuery } from '../../services/api/legalDocumentsApi';
+import {
+  type RequiredLegalDocument,
+  useAcceptLegalDocumentMutation,
+  useLazyGetRequiredLegalDocumentsStatusQuery,
+} from '../../services/api/legalDocumentsApi';
 
 interface FormData {
   organizationName: string;
@@ -68,6 +72,7 @@ export const SignupScreenNew: React.FC = () => {
   const [verifySignupOtp] = useVerifySignupOtpMutation();
   const [signup] = useSignupMutation();
   const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
+  const [acceptLegalDocument] = useAcceptLegalDocumentMutation();
 
   useEffect(() => {
     if (countriesResponse?.success) {
@@ -223,17 +228,25 @@ export const SignupScreenNew: React.FC = () => {
       console.log('📤 Sending signup data:', signupData);
 
       const status = await getRequiredLegalStatus({ context: 'SIGNUP' }).unwrap();
-      if (status?.pending?.length) {
-        (navigation as any).navigate('LegalDocuments', {
-          context: 'SIGNUP',
-          pending: status.pending,
-          signupData,
-        });
-        return;
+      const docsToAccept = ((status as any)?.required ?? (status?.pending ?? [])) as RequiredLegalDocument[];
+
+      const signupResult: any = await signup(signupData).unwrap();
+      const rawUserId = signupResult?.userId ?? signupResult?.user_id ?? signupResult?.s_no;
+      const userId = Number(rawUserId);
+
+      if (docsToAccept?.length) {
+        if (!Number.isFinite(userId) || userId <= 0) {
+          throw new Error('Signup succeeded but user id was not returned');
+        }
+
+        for (const doc of docsToAccept) {
+          const s_no = Number((doc as any).s_no);
+          if (!Number.isFinite(s_no) || s_no <= 0) continue;
+          await acceptLegalDocument({ s_no, acceptance_context: 'SIGNUP', user_id: userId }).unwrap();
+        }
       }
 
-      const response = await signup(signupData).unwrap();
-      showSuccessAlert(response, {
+      showSuccessAlert(signupResult, {
         onOk: () => {
           (navigation as any).navigate('Login');
         },

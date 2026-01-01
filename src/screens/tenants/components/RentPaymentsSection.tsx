@@ -15,8 +15,6 @@ interface RentPaymentsSectionProps {
   payments: TenantPayment[] | undefined;
   expanded: boolean;
   onToggle: () => void;
-  onEdit: (payment: TenantPayment) => void;
-  onDelete: (payment: TenantPayment) => void;
   onViewReceipt: (payment: TenantPayment) => void;
   onWhatsAppReceipt: (payment: TenantPayment) => void;
   onShareReceipt: (payment: TenantPayment) => void;
@@ -26,8 +24,6 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
   payments,
   expanded,
   onToggle,
-  onEdit,
-  onDelete,
   onViewReceipt,
   onWhatsAppReceipt,
   onShareReceipt,
@@ -85,26 +81,6 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => onEdit(payment)}
-                      style={{
-                        padding: 6,
-                        borderRadius: 6,
-                        backgroundColor: Theme.colors.background.blueLight,
-                      }}
-                    >
-                      <Ionicons name="pencil" size={16} color={Theme.colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => onDelete(payment)}
-                      style={{
-                        padding: 6,
-                        borderRadius: 6,
-                        backgroundColor: '#FEE2E2',
-                      }}
-                    >
-                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                    </TouchableOpacity>
                     {payment.status && (
                       <View style={{
                         paddingHorizontal: 10,

@@ -87,7 +87,7 @@ export const AddRefundPaymentModal: React.FC<AddRefundPaymentModalProps> = ({
   // Fetch bed details to get rent amount
   useEffect(() => {
     const fetchBedDetails = async () => {
-      if (visible && tenant?.bed_id && tenant?.room_id && tenant?.pg_id) {
+      if (visible && tenant?.bed_id && tenant?.room_id) {
         try {
           setFetchingBedPrice(true);
 
@@ -108,7 +108,7 @@ export const AddRefundPaymentModal: React.FC<AddRefundPaymentModalProps> = ({
     };
 
     fetchBedDetails();
-  }, [visible, tenant?.bed_id, tenant?.room_id, tenant?.pg_id]);
+  }, [visible, tenant?.bed_id, tenant?.room_id]);
 
   useEffect(() => {
     // Reset form when modal opens

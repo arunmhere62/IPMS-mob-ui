@@ -76,7 +76,6 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     password: '',
     phone: '',
     role_id: null as number | null,
-    pg_id: null as number | null,
     gender: '' as UserGender | '',
     address: '',
     city_id: null as number | null,
@@ -123,12 +122,6 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     }
   }, [statesResponse]);
 
-  useEffect(() => {
-    if (!isEditMode && selectedPGLocationId) {
-      setFormData(prev => ({ ...prev, pg_id: selectedPGLocationId }));
-    }
-  }, [isEditMode, selectedPGLocationId]);
-
   // Fetch cities when state is selected
   useEffect(() => {
     if (formData.state_id) {
@@ -153,7 +146,6 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
         password: '', // Don't populate password in edit mode
         phone: employee.phone || '',
         role_id: employee.role_id || null,
-        pg_id: employee.pg_id || null,
         gender: employee.gender || '',
         address: employee.address || '',
         city_id: employee.city_id || null,
@@ -253,18 +245,21 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
       }
     }
 
-    if (formData.phone && !/^\d{10}$/.test(formData.phone.trim())) {
-      newErrors.phone = 'Phone number must be 10 digits';
+    const localPhoneDigits = formData.phone.trim().replace(/[^\d]/g, '');
+    const expectedPhoneLength = selectedCountry?.phoneLength ?? 10;
+
+    if (localPhoneDigits && localPhoneDigits.length !== expectedPhoneLength) {
+      newErrors.phone = `Phone number must be ${expectedPhoneLength} digits`;
     }
 
     if (!formData.role_id) {
       newErrors.role_id = 'Role is required';
     }
 
-    if (!formData.phone.trim()) {
+    if (!localPhoneDigits) {
       newErrors.phone = 'Phone number is required';
-    } else if (!/^\d{10}$/.test(formData.phone.trim())) {
-      newErrors.phone = 'Phone number must be 10 digits';
+    } else if (localPhoneDigits.length !== expectedPhoneLength) {
+      newErrors.phone = `Phone number must be ${expectedPhoneLength} digits`;
     }
 
     if (!formData.gender) {
@@ -284,32 +279,32 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     try {
       setLoading(true);
 
-      const employeeData: any = {
+      const localPhoneDigits = formData.phone.trim().replace(/[^\d]/g, '');
+
+      const payload = {
         name: formData.name.trim(),
-        phone: formData.phone.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        phone: `${selectedCountry?.phoneCode ?? '+91'}${localPhoneDigits}`,
         role_id: formData.role_id!,
-        pg_id: (selectedPGLocationId || formData.pg_id) || undefined,
         gender: formData.gender as UserGender,
         address: formData.address.trim() || undefined,
         city_id: formData.city_id || undefined,
         state_id: formData.state_id || undefined,
         pincode: formData.pincode.trim() || undefined,
-        country: formData.country.trim() || undefined,
-        profile_images: profileImages, // Always send array, even if empty, so backend can clear removed images
-        proof_documents: proofDocuments, // Always send array, even if empty, so backend can clear removed documents
+        country: formData.country || undefined,
+        proof_documents: proofDocuments,
+        profile_images: profileImages,
       };
 
       if (isEditMode) {
         // Update existing employee
-        await updateEmployee({ id: employeeId, data: employeeData }).unwrap();
+        await updateEmployee({ id: employeeId, data: payload }).unwrap();
         showSuccessAlert('Employee updated successfully');
         navigation.goBack();
       } else {
         // Create new employee
-        employeeData.email = formData.email.trim();
-        employeeData.password = formData.password.trim();
-        
-        await createEmployee(employeeData).unwrap();
+        await createEmployee(payload).unwrap();
         showSuccessAlert('Employee created successfully');
         navigation.goBack();
       }

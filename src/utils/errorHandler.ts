@@ -84,14 +84,7 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
   
   try {
     if (typeof error === 'string') {
-      const shown = showToast({
-        title,
-        message: error,
-        variant: 'error',
-      });
-      if (!shown) {
-        Alert.alert(title, error);
-      }
+      Alert.alert(title, error);
       return;
     }
 
@@ -144,14 +137,7 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
       }
     }
     
-    const shown = showToast({
-      title,
-      message: errorMessage,
-      variant: 'error',
-    });
-    if (!shown) {
-      Alert.alert(title, errorMessage);
-    }
+    Alert.alert(title, errorMessage);
   } catch (e) {
     console.error('Error in showErrorAlert:', e);
     Alert.alert(title, 'An error occurred. Please try again.');

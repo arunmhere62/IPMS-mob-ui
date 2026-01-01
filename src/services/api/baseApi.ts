@@ -163,15 +163,6 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
     return path === '/auth/refresh' || path.endsWith('/auth/refresh');
   };
 
-  const maskAuthHeader = (headers: Record<string, any>) => {
-    const h = { ...headers };
-    const key = Object.keys(h).find((k) => k.toLowerCase() === 'authorization');
-    if (key && typeof h[key] === 'string') {
-      h[key] = 'Bearer ***';
-    }
-    return h;
-  };
-
   const buildUrlWithParams = (baseUrl: string, path: string, params?: Record<string, any>) => {
     if (!params) return `${baseUrl}${path}`;
     const sp = new URLSearchParams();
@@ -203,7 +194,7 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
   // Compute *final* outgoing headers (same logic as fetchBaseQuery.prepareHeaders)
   const outgoingHeaders = new Headers((req.headers as any) || undefined);
   applyAuthAndContextHeaders(outgoingHeaders, state);
-  const headersObj = maskAuthHeader(toPlainHeaders(outgoingHeaders));
+  const headersObj = toPlainHeaders(outgoingHeaders);
 
   networkLogger.addLog({
     id: logId,
@@ -246,7 +237,7 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
       status: (result.error as any).status as any,
       headers: {
         request: headersObj,
-        response: maskAuthHeader(toPlainHeaders((result as any).meta?.response?.headers)),
+        response: toPlainHeaders((result as any).meta?.response?.headers),
       },
       responseData: (result.error as any).data,
       error: 'RTK_QUERY_ERROR',
@@ -257,7 +248,7 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
       status: 200,
       headers: {
         request: headersObj,
-        response: maskAuthHeader(toPlainHeaders((result as any).meta?.response?.headers)),
+        response: toPlainHeaders((result as any).meta?.response?.headers),
       },
       responseData: (result as any).data,
       duration,
@@ -291,8 +282,6 @@ export const baseApi = createApi({
     'PGLocations',
     'PGLocation',
     'PGLocationDetails',
-    'PGLocationSummary',
-    'PGLocationFinancialAnalytics',
     'TenantPayments',
     'TenantPayment',
     'TenantPaymentGaps',

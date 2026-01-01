@@ -137,6 +137,14 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
     }, [selectedPGLocationId])
   );
 
+  const handleBack = React.useCallback(() => {
+    if (navigation?.canGoBack?.()) {
+      navigation.goBack();
+      return;
+    }
+    navigation.navigate('Payments');
+  }, [navigation]);
+
   const loadRefundPayments = async (
     page: number,
     reset: boolean = false,
@@ -470,9 +478,8 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
         title="Refund Payments"
         subtitle={`${pagination?.total || 0} refunds`}
         backgroundColor={Theme.colors.background.blue}
-        syncMobileHeaderBg={true}
          showBackButton={true}
-        onBackPress={() => navigation.goBack(-1)}
+        onBackPress={handleBack}
       />
 
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>

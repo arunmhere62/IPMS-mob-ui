@@ -50,6 +50,9 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
   const tenantId = route.params?.tenantId || 0;
   const tenantPhone = route.params?.tenantPhone || '';
   const pgName = route.params?.pgName || 'PG';
+  const roomNumber = route.params?.roomNumber || '';
+  const bedNumber = route.params?.bedNumber || '';
+  const accommodationLabel = `${pgName}${roomNumber ? ` | Room ${roomNumber}` : ''}${bedNumber ? ` | Bed ${bedNumber}` : ''}`;
 
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
@@ -223,6 +226,9 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
           <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 4 }}>
             {payments.length} payment(s)
           </Text>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 4 }}>
+            {accommodationLabel}
+          </Text>
         </View>
 
         {loading && (
@@ -235,6 +241,17 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
             {payments.map((payment) => {
               const statusColor = getStatusColor(payment.status);
+
+              const paymentPg = (payment as any)?.pg_id ?? '';
+              const paymentRoom = (payment as any)?.room_id ?? '';
+              const paymentBed = (payment as any)?.bed_id ?? '';
+              const paymentPgName = (payment as any)?.pg_locations?.location_name;
+              const paymentRoomNo = (payment as any)?.rooms?.room_no;
+              const paymentBedNo = (payment as any)?.beds?.bed_no;
+              const paymentAccommodationLabel =
+                paymentPgName || paymentRoomNo || paymentBedNo || paymentPg || paymentRoom || paymentBed
+                  ? `${paymentPgName || (paymentPg ? `PG ${paymentPg}` : pgName)}${(paymentRoomNo || paymentRoom) ? ` | Room ${paymentRoomNo || paymentRoom}` : ''}${(paymentBedNo || paymentBed) ? ` | Bed ${paymentBedNo || paymentBed}` : ''}`
+                  : accommodationLabel;
 
               return (
                 <AnimatedPressableCard
@@ -257,6 +274,9 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                             month: 'short',
                             year: 'numeric',
                           })}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 4 }}>
+                          {paymentAccommodationLabel}
                         </Text>
                         <Text style={{ fontSize: 13, fontWeight: '600', color: '#D97706' }}>
                           ₹{payment.amount_paid}

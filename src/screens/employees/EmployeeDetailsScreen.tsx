@@ -82,7 +82,6 @@ interface Employee {
   phone: string;
   status: string;
   role_id: number | null;
-  pg_id: number | null;
   organization_id: number;
   gender: string;
   address: string | null;
@@ -441,7 +440,6 @@ const EmployeeDetailsScreen: React.FC = () => {
                 Additional Information
               </Text>
               <DetailRow label="Employee ID" value={employee.s_no} />
-              <DetailRow label="PG ID" value={employee.pg_id} />
               <DetailRow label="Proof Documents" value={employee.proof_documents ? 'Available' : 'Not uploaded'} />
               <DetailRow 
                 label="Created At" 

@@ -178,7 +178,18 @@ export const authApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      transformResponse: (response: CentralEnvelope<SignupResponse> | any) => unwrapCentralData<any>(response),
+      transformResponse: (response: CentralEnvelope<SignupResponse> | any) => {
+        const data = unwrapCentralData<any>(response);
+        if (response && typeof response === 'object') {
+          return {
+            ...data,
+            message: (response as any).message,
+            success: (response as any).success,
+            statusCode: (response as any).statusCode,
+          };
+        }
+        return data;
+      },
     }),
   }),
   overrideExisting: false,

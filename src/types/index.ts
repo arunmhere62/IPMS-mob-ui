@@ -8,7 +8,6 @@ export interface User {
   organization_id: number;
   organization_name?: string;
   organization_description?: string;
-  pg_id?: number;
   status?: 'ACTIVE' | 'INACTIVE';
   address?: string;
   city_id?: number;
@@ -21,19 +20,19 @@ export interface User {
   country?: string;
   created_at?: string;
   updated_at?: string;
-  pg_location?: {
+  pg_locations?: Array<{
     s_no: number;
     location_name: string;
     address?: string;
     pincode?: string;
-    status: 'ACTIVE' | 'INACTIVE';
-    pg_type: 'MENS' | 'WOMENS' | 'CO_ED';
-    rent_cycle_type: 'CALENDAR' | 'MONTHLY' | 'CUSTOM';
-    rent_cycle_start: number;
-    rent_cycle_end: number;
-    city_id: number;
-    state_id: number;
-  };
+    status?: 'ACTIVE' | 'INACTIVE';
+    pg_type?: string;
+    rent_cycle_type?: string;
+    rent_cycle_start?: number | null;
+    rent_cycle_end?: number | null;
+    city_id?: number | null;
+    state_id?: number | null;
+  }>;
 }
 
 export interface AuthState {
@@ -214,4 +213,9 @@ export interface Visitor {
   visited_bed_id?: number;
   address?: string;
   convertedTo_tenant: boolean;
+  pg_locations?: {
+    s_no: number;
+    location_name: string;
+    address?: string;
+  };
 }

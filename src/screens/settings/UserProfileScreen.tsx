@@ -60,7 +60,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
           role_name: data.role_name,
           organization_id: data.organization_id,
           organization_name: data.organization_name,
-          pg_id: data.pg_id,
+          pg_locations: data.pg_locations,
           status: data.status,
           address: data.address,
           city_id: data.city_id,
@@ -399,75 +399,126 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
               </View>
             )}
 
-            {/* PG Location */}
-            {profileData?.pg_location && (
+            {/* PG Locations */}
+            {Array.isArray(profileData?.pg_locations) && profileData.pg_locations.length > 0 && (
               <View
                 style={{
                   width: '100%',
-                  backgroundColor: Theme.colors.background.secondary,
-                  borderRadius: 8,
-                  padding: 12,
+                  padding: 16,
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: Theme.colors.border,
                   marginBottom: 16,
                 }}
               >
-                <Text style={{
-                  fontSize: 11,
-                  color: Theme.colors.text.tertiary,
-                  marginBottom: 4,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                }}>
-                  PG Location
-                </Text>
-                <Text style={{
-                  fontSize: 14,
-                  fontWeight: '600',
-                  color: Theme.colors.text.primary,
-                  marginBottom: 2,
-                }}>
-                  {profileData.pg_location.location_name}
-                </Text>
-                {profileData.pg_location.address && (
-                  <Text style={{
-                    fontSize: 12,
-                    color: Theme.colors.text.secondary,
-                    marginBottom: 4,
-                  }}>
-                    {profileData.pg_location.address}
-                  </Text>
-                )}
-                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <View style={{
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                    backgroundColor: '#EFF6FF',
-                    borderRadius: 4,
-                    marginRight: 6,
-                    marginBottom: 4,
-                  }}>
-                    <Text style={{
-                      fontSize: 10,
-                      color: '#3B82F6',
-                      fontWeight: '500',
-                    }}>
-                      {profileData.pg_location.pg_type}
-                    </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: '#DBEAFE',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 12,
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>🏠</Text>
                   </View>
-                  <View style={{
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                    backgroundColor: '#F0FDF4',
-                    borderRadius: 4,
-                    marginRight: 6,
-                    marginBottom: 4,
-                  }}>
-                    <Text style={{
-                      fontSize: 10,
-                      color: '#16A34A',
-                      fontWeight: '500',
-                    }}>
-                      {profileData.pg_location.rent_cycle_type}
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: '600',
+                        color: Theme.colors.text.primary,
+                        marginBottom: 2,
+                      }}
+                    >
+                      {profileData.pg_locations[0]?.location_name}
                     </Text>
+                    {profileData.pg_locations[0]?.address ? (
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: Theme.colors.text.secondary,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {profileData.pg_locations[0].address}
+                      </Text>
+                    ) : null}
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                      {profileData.pg_locations[0]?.pg_type ? (
+                        <View
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 8,
+                            backgroundColor: '#EFF6FF',
+                            marginRight: 6,
+                            marginBottom: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              color: '#3B82F6',
+                              fontWeight: '500',
+                            }}
+                          >
+                            {profileData.pg_locations[0].pg_type}
+                          </Text>
+                        </View>
+                      ) : null}
+
+                      {profileData.pg_locations[0]?.rent_cycle_type ? (
+                        <View
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 8,
+                            backgroundColor: '#DCFCE7',
+                            marginRight: 6,
+                            marginBottom: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              color: '#16A34A',
+                              fontWeight: '500',
+                            }}
+                          >
+                            {profileData.pg_locations[0].rent_cycle_type}
+                          </Text>
+                        </View>
+                      ) : null}
+
+                      {profileData.pg_locations.length > 1 ? (
+                        <View
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 8,
+                            backgroundColor: '#F3F4F6',
+                            marginRight: 6,
+                            marginBottom: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              color: Theme.colors.text.secondary,
+                              fontWeight: '500',
+                            }}
+                          >
+                            +{profileData.pg_locations.length - 1} more
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
                   </View>
                 </View>
               </View>
@@ -510,7 +561,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   color: Theme.colors.primary,
                   marginBottom: 2
                 }}>
-                  {userData?.pg_id || '--'}
+                  {Array.isArray((userData as any)?.pg_locations) ? (userData as any).pg_locations.length : 0}
                 </Text>
                 <Text style={{
                   fontSize: 10,
@@ -518,7 +569,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
                 }}>
-                  PG ID
+                  PGs
                 </Text>
               </View>
 

@@ -45,7 +45,6 @@ export interface CreateEmployeeDto {
   password: string;
   phone?: string;
   role_id: number;
-  pg_id?: number;
   gender?: UserGender;
   address?: string;
   city_id?: number;
@@ -60,7 +59,6 @@ export interface UpdateEmployeeDto {
   name?: string;
   phone?: string;
   role_id?: number;
-  pg_id?: number;
   gender?: UserGender;
   address?: string;
   city_id?: number;
@@ -78,7 +76,6 @@ export interface Employee {
   phone?: string;
   status: UserStatus;
   role_id: number;
-  pg_id?: number;
   organization_id?: number;
   gender?: UserGender;
   address?: string;

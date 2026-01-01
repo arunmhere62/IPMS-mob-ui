@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
-import { EmployeeSalary, PaymentMethod, useCreateEmployeeSalaryMutation, useUpdateEmployeeSalaryMutation } from '../../services/api/employeeSalaryApi';
+import { PaymentMethod, useCreateEmployeeSalaryMutation } from '../../services/api/employeeSalaryApi';
 import { useLazyGetEmployeesQuery } from '../../services/api/employeesApi';
 import { DatePicker } from '../../components/DatePicker';
 import { SearchableDropdown } from '../../components/SearchableDropdown';
@@ -21,7 +21,6 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface AddEditEmployeeSalaryModalProps {
   visible: boolean;
-  salary: EmployeeSalary | null;
   onClose: () => void;
   onSave: () => void;
 }
@@ -35,12 +34,10 @@ const PAYMENT_METHODS = [
 
 export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProps> = ({
   visible,
-  salary,
   onClose,
   onSave,
 }) => {
   const [createSalary] = useCreateEmployeeSalaryMutation();
-  const [updateSalary] = useUpdateEmployeeSalaryMutation();
   const [fetchEmployeesTrigger] = useLazyGetEmployeesQuery();
 
   const [employees, setEmployees] = useState<any[]>([]);
@@ -58,23 +55,13 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
   useEffect(() => {
     if (visible) {
       fetchEmployees();
-      
-      if (salary) {
-        // Edit mode
-        setSelectedEmployeeId(salary.user_id);
-        setSalaryAmount(salary.salary_amount.toString());
-        setMonth(salary.month.split('T')[0]);
-        setPaidDate(salary.paid_date ? salary.paid_date.split('T')[0] : '');
-        setPaymentMethod(salary.payment_method || null);
-        setRemarks(salary.remarks || '');
-      } else {
-        // Add mode - set default month to current month
-        const today = new Date();
-        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        setMonth(firstDayOfMonth.toISOString().split('T')[0]);
-      }
+
+      // Add mode - set default month to current month
+      const today = new Date();
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      setMonth(firstDayOfMonth.toISOString().split('T')[0]);
     }
-  }, [visible, salary]);
+  }, [visible]);
 
   const fetchEmployees = async () => {
     try {
@@ -126,18 +113,13 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
         remarks: remarks.trim() || undefined,
       };
 
-      if (salary) {
-        await updateSalary({ id: salary.s_no, data }).unwrap();
-        showSuccessAlert('Salary record updated successfully');
-      } else {
-        const createData = {
-          user_id: selectedEmployeeId!,
-          month: month,
-          ...data,
-        };
-        await createSalary(createData).unwrap();
-        showSuccessAlert('Salary record added successfully');
-      }
+      const createData = {
+        user_id: selectedEmployeeId!,
+        month: month,
+        ...data,
+      };
+      await createSalary(createData).unwrap();
+      showSuccessAlert('Salary record added successfully');
 
       handleClose();
       onSave();
@@ -195,10 +177,10 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
             >
               <View>
                 <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  {salary ? 'Edit Salary' : 'Add Salary'}
+                  Add Salary
                 </Text>
                 <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginTop: 4 }}>
-                  {salary ? 'Update salary details' : 'Record a new salary payment'}
+                  Record a new salary payment
                 </Text>
               </View>
               <TouchableOpacity onPress={handleClose} disabled={loading}>
@@ -215,54 +197,22 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
               bounces={true}
             >
               {/* Employee Selection */}
-              {salary ? (
-                <View style={{ marginBottom: 24 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: '600',
-                      color: Theme.colors.text.primary,
-                      marginBottom: 8,
-                    }}
-                  >
-                    Employee <Text style={{ color: Theme.colors.danger }}>*</Text>
-                  </Text>
-                  <View
-                    style={{
-                      paddingVertical: 12,
-                      paddingHorizontal: 16,
-                      backgroundColor: Theme.colors.input.background,
-                      borderWidth: 1,
-                      borderColor: Theme.colors.input.border,
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text style={{ fontSize: 16, color: Theme.colors.text.primary }}>
-                      {salary.users?.name || 'Unknown Employee'}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginTop: 2 }}>
-                      Cannot change employee in edit mode
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                <View style={{ marginBottom: 24 }}>
-                  <SearchableDropdown
-                    label="Employee"
-                    placeholder="Select an employee"
-                    items={employees.map(emp => ({
-                      id: emp.s_no,
-                      label: emp.name,
-                      value: emp.s_no,
-                    }))}
-                    selectedValue={selectedEmployeeId}
-                    onSelect={(item) => setSelectedEmployeeId(item.id)}
-                    loading={loadingEmployees}
-                    error={errors.employee}
-                    required
-                  />
-                </View>
-              )}
+              <View style={{ marginBottom: 24 }}>
+                <SearchableDropdown
+                  label="Employee"
+                  placeholder="Select an employee"
+                  items={employees.map(emp => ({
+                    id: emp.s_no,
+                    label: emp.name,
+                    value: emp.s_no,
+                  }))}
+                  selectedValue={selectedEmployeeId}
+                  onSelect={(item) => setSelectedEmployeeId(item.id)}
+                  loading={loadingEmployees}
+                  error={errors.employee}
+                  required
+                />
+              </View>
 
               {/* Salary Amount */}
               <View style={{ marginBottom: 24 }}>
@@ -319,13 +269,8 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
                   error={errors.month}
                   required
                   maximumDate={new Date()}
-                  disabled={!!salary}
+                  disabled={loading}
                 />
-                {salary && (
-                  <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginTop: 4, marginBottom: 0 }}>
-                    Cannot change month in edit mode
-                  </Text>
-                )}
               </View>
 
               {/* Paid Date */}
@@ -439,7 +384,7 @@ export const AddEditEmployeeSalaryModal: React.FC<AddEditEmployeeSalaryModalProp
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={{ fontSize: 16, fontWeight: '600', color: '#fff' }}>
-                    {salary ? 'Update' : 'Add'} Salary
+                    Add Salary
                   </Text>
                 )}
               </TouchableOpacity>

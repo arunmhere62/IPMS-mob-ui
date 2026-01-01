@@ -238,6 +238,9 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const onRefresh = async () => {
     setCurrentPage(1);
     setHasMore(true);
+    // Ensure we show skeleton instead of pull-to-refresh spinner
+    setTenants([]);
+    setPagination(null);
     await loadTenants(1, true);
   };
 
@@ -1214,7 +1217,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
               refreshControl={
                 <RefreshControl
-                  refreshing={tenantsQuery.isFetching && tenants.length > 0 && currentPage === 1}
+                  refreshing={false}
                   onRefresh={onRefresh}
                   colors={[Theme.colors.primary]}
                 />

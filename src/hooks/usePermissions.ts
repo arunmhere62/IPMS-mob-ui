@@ -16,6 +16,7 @@ import { getBackendPermissionKeyCandidates } from '../config/rbac-backend-map';
 export const usePermissions = () => {
   const user = useSelector((state: RootState) => state.auth.user);
   const userRole = user?.role_name || '';
+  const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole.toLowerCase() === 'super_admin';
   const permissionsMap = useSelector((state: RootState) => (state as any).rbac?.permissionsMap || {});
   const loadedAt = useSelector((state: RootState) => (state as any).rbac?.loadedAt || null);
   const isReady = Boolean(loadedAt);
@@ -28,6 +29,7 @@ export const usePermissions = () => {
      * @returns boolean
      */
     can: (permission: Permission): boolean => {
+      if (isSuperAdmin) return true;
       const keys = getBackendPermissionKeyCandidates(permission);
       return keys.some((k) => Boolean((permissionsMap as any)[k]));
     },
@@ -38,6 +40,7 @@ export const usePermissions = () => {
      * @returns boolean
      */
     canAny: (permissions: Permission[]): boolean => {
+      if (isSuperAdmin) return true;
       return permissions.some((p) => {
         const keys = getBackendPermissionKeyCandidates(p);
         return keys.some((k) => Boolean((permissionsMap as any)[k]));
@@ -50,6 +53,7 @@ export const usePermissions = () => {
      * @returns boolean
      */
     canAll: (permissions: Permission[]): boolean => {
+      if (isSuperAdmin) return true;
       return permissions.every((p) => {
         const keys = getBackendPermissionKeyCandidates(p);
         return keys.some((k) => Boolean((permissionsMap as any)[k]));
@@ -81,7 +85,7 @@ export const usePermissions = () => {
      * Check if user is SuperAdmin
      * @returns boolean
      */
-    isSuperAdmin: userRole === 'SUPER_ADMIN' || userRole.toLowerCase() === 'super_admin',
+    isSuperAdmin,
 
     /**
      * Check if user is Admin

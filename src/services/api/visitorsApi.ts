@@ -38,6 +38,11 @@ export interface Visitor {
   beds?: VisitorBed | null;
   city?: VisitorLocation | null;
   state?: VisitorLocation | null;
+  pg_locations?: {
+    s_no: number;
+    location_name?: string | null;
+    address?: string | null;
+  } | null;
 }
 
 export interface CreateVisitorDto {

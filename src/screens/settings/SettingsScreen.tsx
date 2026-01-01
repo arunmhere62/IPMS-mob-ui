@@ -19,6 +19,7 @@ import { CONTENT_COLOR } from '@/constant';
 import notificationService from '../../services/notifications/notificationService';
 import { useGetSubscriptionStatusQuery } from '../../services/api/subscriptionApi';
 import { API_BASE_URL } from '../../config';
+import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../services/api/legalDocumentsApi';
 
 interface SettingsScreenProps {
   navigation: any;
@@ -27,6 +28,7 @@ interface SettingsScreenProps {
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
 
   const [serverLogout] = useLogoutMutation();
   const [testingNotification, setTestingNotification] = useState(false);
@@ -59,6 +61,31 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const handleRefreshSubscription = async () => {
     console.log('🔄 Manual refresh triggered');
     await refetchSubscriptionStatus();
+  };
+
+  const addEmbedParam = (rawUrl: string) => {
+    try {
+      const u = new URL(rawUrl);
+      u.searchParams.set('embed', '1');
+      return u.toString();
+    } catch {
+      return rawUrl;
+    }
+  };
+
+  const openPrivacyPolicy = async () => {
+    try {
+      const status = await getRequiredLegalStatus({ context: 'SIGNUP', type: 'PRIVACY_POLICY' }).unwrap();
+      const doc = ((status as any)?.required || (status?.pending || []))?.[0] as any;
+      const url = doc?.url || doc?.content_url;
+      if (!url) {
+        Alert.alert('Info', 'Privacy Policy link is not available right now.');
+        return;
+      }
+      navigation.navigate('LegalWebView', { title: 'Privacy Policy', url: addEmbedParam(String(url)) });
+    } catch {
+      Alert.alert('Info', 'Privacy Policy link is not available right now.');
+    }
   };
 
   // Removed test notification function - now handled only in LoginScreen
@@ -120,8 +147,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const settingsOptions = [
     { title: 'Profile', icon: '👤', onPress: () => navigation.navigate('UserProfile') },
     { title: 'Report Issue', icon: '🐛', onPress: () => navigation.navigate('Tickets'), },
-    { title: 'Notifications', icon: '🔔', onPress: () => { } },
-    { title: 'Privacy', icon: '🔒', onPress: () => { } },
+    { title: 'Privacy Policy', icon: '🔒', onPress: openPrivacyPolicy },
     { title: 'Help & Support', icon: '❓', onPress: () => navigation.navigate('FaqWebView') },
     { title: 'About', icon: 'ℹ️', onPress: () => { } },
   ];

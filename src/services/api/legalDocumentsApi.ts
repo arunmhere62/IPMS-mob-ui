@@ -42,11 +42,13 @@ export type RequiredLegalDocument = {
 };
 
 export type RequiredLegalDocumentsStatusResponse = {
+  required?: RequiredLegalDocument[];
   pending: RequiredLegalDocument[];
 };
 
 export type GetRequiredLegalDocumentsStatusRequest = {
   context: LegalAcceptanceContext;
+  type?: string;
 };
 
 export type AcceptLegalDocumentRequest = {
@@ -60,10 +62,10 @@ export type AcceptLegalDocumentResponse = unknown;
 export const legalDocumentsApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getRequiredLegalDocumentsStatus: build.query<RequiredLegalDocumentsStatusResponse, GetRequiredLegalDocumentsStatusRequest>({
-      query: ({ context }) => ({
+      query: ({ context, type }) => ({
         url: '/legal-documents/required/status',
         method: 'GET',
-        params: { context },
+        params: { context, type },
       }),
       transformResponse: (
         response:
@@ -73,7 +75,19 @@ export const legalDocumentsApi = baseApi.injectEndpoints({
           | any
       ) => {
         const r = unwrapApiOrCentralData<any>(response);
+        const rawRequired = (r?.required ?? r?.data?.required ?? []) as any[];
         const rawPending = (r?.pending ?? r?.data?.pending ?? []) as any[];
+
+        const required = rawRequired
+          .map((d) => {
+            const rawSno = d?.s_no ?? d?.legal_document_id;
+            const s_no = Number(rawSno);
+            return {
+              ...d,
+              s_no,
+            } as RequiredLegalDocument;
+          })
+          .filter((d) => Number.isFinite(d.s_no) && d.s_no > 0);
 
         const pending = rawPending
           .map((d) => {
@@ -86,7 +100,7 @@ export const legalDocumentsApi = baseApi.injectEndpoints({
           })
           .filter((d) => Number.isFinite(d.s_no) && d.s_no > 0);
 
-        return { pending };
+        return { required, pending };
       },
       providesTags: (_result, _error, arg) => [{ type: 'LegalRequiredStatus', id: arg.context }],
     }),

@@ -139,6 +139,14 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     }, [selectedPGLocationId])
   );
 
+  const handleBack = React.useCallback(() => {
+    if (navigation?.canGoBack?.()) {
+      navigation.goBack();
+      return;
+    }
+    navigation.navigate('Payments');
+  }, [navigation]);
+
   const loadPayments = async (
     page: number,
     reset: boolean = false,
@@ -560,7 +568,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
         subtitle={`${pagination?.total || 0} payments`}
         syncMobileHeaderBg={true}
         showBackButton={true}
-        onBackPress={() => navigation.goBack(-1)}
+        onBackPress={handleBack}
       />
 
       <View style={{ flex: 1 }}>
