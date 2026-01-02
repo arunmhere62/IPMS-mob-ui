@@ -53,6 +53,9 @@ export const RoomModal: React.FC<RoomModalProps> = ({
   const [originalImages, setOriginalImages] = useState<string[]>([]); // Track original images for cleanup
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const roomData = (roomResponse as any)?.data;
+  const isRoomNoLocked = !!roomId && Array.isArray(roomData?.beds) && roomData.beds.length > 0;
+
   useEffect(() => {
     if (!visible) return;
     if (!roomId) {
@@ -64,7 +67,6 @@ export const RoomModal: React.FC<RoomModalProps> = ({
 
     setLoadingData(isRoomFetching);
 
-    const roomData = (roomResponse as any)?.data;
     if (roomData) {
       const roomImages = roomData.images || [];
       setFormData({
@@ -123,11 +125,14 @@ export const RoomModal: React.FC<RoomModalProps> = ({
       throw new Error('Room ID or PG Location ID not available');
     }
 
-    const roomData = {
+    const roomData: any = {
       pg_id: selectedPGLocationId,
-      room_no: formData.room_no.trim(),
       images: images, // Always send the images array, even if empty
     };
+
+    if (!isRoomNoLocked) {
+      roomData.room_no = formData.room_no.trim();
+    }
 
     await updateRoomMutation({ id: roomId, data: roomData as Partial<CreateRoomDto> }).unwrap();
   };
@@ -157,15 +162,19 @@ export const RoomModal: React.FC<RoomModalProps> = ({
 
       const roomData = {
         pg_id: selectedPGLocationId,
-        room_no: formData.room_no.trim(),
         images: formData.images, // Always send the images array, even if empty
       };
 
+      const updateData: any = { ...roomData };
+      if (!roomId || !isRoomNoLocked) {
+        updateData.room_no = formData.room_no.trim();
+      }
+
       if (roomId) {
-        const res = await updateRoomMutation({ id: roomId, data: roomData as Partial<CreateRoomDto> }).unwrap();
+        const res = await updateRoomMutation({ id: roomId, data: updateData as Partial<CreateRoomDto> }).unwrap();
         showSuccessAlert(res);
       } else {
-        const res = await createRoomMutation(roomData as unknown as CreateRoomDto).unwrap();
+        const res = await createRoomMutation(updateData as unknown as CreateRoomDto).unwrap();
         showSuccessAlert(res);
       }
 
@@ -242,6 +251,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
                       value={formData.room_no.substring(2)}
                       onChangeText={(value) => updateField('room_no', 'RM' + value)}
                       placeholder="101, A1, Ground-1"
+                      editable={!isRoomNoLocked}
                       style={{
                         flex: 1,
                         borderWidth: 1,
@@ -251,13 +261,18 @@ export const RoomModal: React.FC<RoomModalProps> = ({
                         borderLeftWidth: 0,
                         padding: 12,
                         fontSize: 14,
-                        backgroundColor: '#fff',
+                        backgroundColor: isRoomNoLocked ? Theme.colors.border + '30' : '#fff',
                       }}
                     />
                   </View>
                   {errors.room_no && (
                     <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>
                       {errors.room_no}
+                    </Text>
+                  )}
+                  {isRoomNoLocked && (
+                    <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, marginTop: 4 }}>
+                      Room number can’t be edited after beds are created for this room.
                     </Text>
                   )}
                   <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, marginTop: 4 }}>

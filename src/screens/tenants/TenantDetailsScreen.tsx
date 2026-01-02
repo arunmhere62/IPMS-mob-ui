@@ -733,7 +733,17 @@ const TenantDetailsContent: React.FC<{
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: any) {
-      showErrorAlert(error, 'Checkout Error');
+      const msg =
+        (error as any)?.data?.message ||
+        (error as any)?.error?.data?.message ||
+        (error as any)?.message ||
+        '';
+
+      if (typeof msg === 'string' && msg.toLowerCase().includes('pending dues')) {
+        Alert.alert('Cannot Checkout', msg);
+      } else {
+        showErrorAlert(error, 'Checkout Error');
+      }
     } finally {
       setCheckoutLoading(false);
     }
@@ -985,6 +995,44 @@ const TenantDetailsContent: React.FC<{
     return checkoutDate.getTime() < Date.now();
   })();
 
+  const derivedRentStatus = (() => {
+    const rentDue = Number((tenant as any)?.rent_due_amount ?? 0);
+    const pendingDue = Number((tenant as any)?.pending_due_amount ?? 0);
+    const partialDue = Number((tenant as any)?.partial_due_amount ?? 0);
+    const pendingMonths = Number((tenant as any)?.pending_months ?? 0);
+    const unpaidMonthsCount = Array.isArray((tenant as any)?.unpaid_months) ? (tenant as any).unpaid_months.length : 0;
+    const paymentStatus = String((tenant as any)?.payment_status ?? '');
+
+    let label = 'RENT STATUS';
+    let color = '#6B7280';
+    let bg = '#9CA3AF20';
+
+    if (rentDue <= 0) {
+      label = 'RENT PAID';
+      color = '#10B981';
+      bg = '#10B98120';
+    } else if (partialDue > 0) {
+      label = pendingDue > 0 ? 'RENT PARTIAL + PENDING' : 'RENT PARTIAL';
+      color = '#F97316';
+      bg = '#F9731620';
+    } else {
+      label = paymentStatus === 'NO_PAYMENT' ? 'RENT NOT PAID' : 'RENT PENDING';
+      color = '#EF4444';
+      bg = '#EF444420';
+    }
+
+    return {
+      label,
+      color,
+      bg,
+      rentDue,
+      pendingDue,
+      partialDue,
+      pendingMonths,
+      unpaidMonthsCount,
+    };
+  })();
+
   return (
     <ScreenLayout  backgroundColor={Theme.colors.background.blue} >
       <ScreenHeader 
@@ -1030,6 +1078,57 @@ const TenantDetailsContent: React.FC<{
         {/* Pending Payment Alert */}
         {tenant.pending_payment && (
           <PendingPaymentAlert pendingPayment={tenant.pending_payment} />
+        )}
+
+        {!tenant.pending_payment && (derivedRentStatus.rentDue > 0 || derivedRentStatus.partialDue > 0 || derivedRentStatus.pendingDue > 0) && (
+          <Card
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 12,
+              padding: 14,
+              backgroundColor: derivedRentStatus.bg,
+              borderLeftWidth: 6,
+              borderLeftColor: derivedRentStatus.color,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: derivedRentStatus.color, flex: 1 }}>
+                {derivedRentStatus.label}
+              </Text>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: derivedRentStatus.color }}>
+                ₹{derivedRentStatus.rentDue.toLocaleString('en-IN')}
+              </Text>
+            </View>
+
+            <View style={{ marginTop: 10 }}>
+              {derivedRentStatus.pendingDue > 0 && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>Pending</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.primary }}>
+                    ₹{derivedRentStatus.pendingDue.toLocaleString('en-IN')}
+                  </Text>
+                </View>
+              )}
+
+              {derivedRentStatus.partialDue > 0 && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>Partial balance</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.primary }}>
+                    ₹{derivedRentStatus.partialDue.toLocaleString('en-IN')}
+                  </Text>
+                </View>
+              )}
+
+              {(derivedRentStatus.pendingMonths > 0 || derivedRentStatus.unpaidMonthsCount > 0) && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>Months</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.primary }}>
+                    {derivedRentStatus.unpaidMonthsCount || derivedRentStatus.pendingMonths}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Card>
         )}
 
         {activeTransferDiffCycle && (

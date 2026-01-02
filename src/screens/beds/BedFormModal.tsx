@@ -48,6 +48,7 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isEditMode = !!bed;
+  const isBedNoLocked = isEditMode && (!!(bed as any)?.is_occupied || (((bed as any)?.tenants || []) as any[]).length > 0);
 
   useEffect(() => {
     if (visible) {
@@ -128,13 +129,16 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
       // Note: S3 deletion is handled by the backend
       // Frontend just sends the updated images list, backend removes deleted images
 
-      const bedData = {
+      const bedData: any = {
         room_id: roomId,
-        bed_no: formData.bed_no.trim(),
         pg_id: pgId,
         bed_price: parseFloat(formData.bed_price),
         images: formData.images, // Always send images array, even if empty, so backend can clear removed images
       };
+
+      if (!isEditMode || !isBedNoLocked) {
+        bedData.bed_no = formData.bed_no.trim();
+      }
 
       if (isEditMode && bed) {
         await updateBedMutation({ id: bed.s_no, data: bedData }).unwrap();
@@ -214,6 +218,7 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
             onChangeText={(value) => updateField('bed_no', value)}
             placeholder="1, 2, 101"
             keyboardType="numeric"
+            editable={!isBedNoLocked}
             style={{
               flex: 1,
               borderWidth: 1,
@@ -223,13 +228,18 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
               borderLeftWidth: 0,
               padding: 12,
               fontSize: 14,
-              backgroundColor: '#fff',
+              backgroundColor: isBedNoLocked ? Theme.colors.border + '30' : '#fff',
             }}
           />
         </View>
         {errors.bed_no && (
           <Text style={{ fontSize: 11, color: Theme.colors.danger, marginTop: 4 }}>
             {errors.bed_no}
+          </Text>
+        )}
+        {isBedNoLocked && (
+          <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 4 }}>
+            Bed number can’t be edited after it’s assigned to a tenant.
           </Text>
         )}
         <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 4 }}>
