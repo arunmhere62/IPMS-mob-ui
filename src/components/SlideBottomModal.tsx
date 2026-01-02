@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   PanResponder,
   Animated,
+  Dimensions,
 } from 'react-native';
 import { Theme } from '../theme';
 
@@ -24,6 +25,10 @@ export interface SlideBottomModalProps {
   submitLabel?: string;
   cancelLabel?: string;
   isLoading?: boolean;
+  enableFullHeightDrag?: boolean;
+  enableFlexibleHeightDrag?: boolean;
+  minHeightPercent?: number;
+  maxHeightPercent?: number;
 }
 
 export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
@@ -37,11 +42,23 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
   submitLabel = 'Submit',
   cancelLabel = 'Cancel',
   isLoading = false,
+  enableFullHeightDrag = false,
+  enableFlexibleHeightDrag = false,
+  minHeightPercent = 0.85,
+  maxHeightPercent = 1,
 }) => {
   const [panY] = useState(new Animated.Value(0));
   const [backdropOpacity] = useState(new Animated.Value(0));
   const [slideY] = useState(new Animated.Value(500));
   const [isDraggingHeader, setIsDraggingHeader] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const screenH = Dimensions.get('window').height;
+  const clampedMinPercent = Math.min(1, Math.max(0.2, minHeightPercent));
+  const clampedMaxPercent = Math.min(1, Math.max(clampedMinPercent, maxHeightPercent));
+  const minH = Math.max(200, Math.round(screenH * clampedMinPercent));
+  const maxH = Math.max(minH, Math.round(screenH * clampedMaxPercent));
+  const [sheetHeight] = useState(new Animated.Value(minH));
+  const [startHeight, setStartHeight] = useState(minH);
 
   React.useEffect(() => {
     if (visible) {
@@ -52,6 +69,8 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
       panY.setValue(0);
       slideY.setValue(500);
       backdropOpacity.setValue(0);
+      sheetHeight.setValue(minH);
+      setStartHeight(minH);
       
       Animated.parallel([
         Animated.timing(backdropOpacity, {
@@ -62,10 +81,11 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
         Animated.timing(slideY, {
           toValue: 0,
           duration: 400,
-          useNativeDriver: true,
+          useNativeDriver: !enableFlexibleHeightDrag,
         }),
       ]).start();
     } else {
+      if (isExpanded) setIsExpanded(false);
       Animated.parallel([
         Animated.timing(backdropOpacity, {
           toValue: 0,
@@ -75,39 +95,99 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
         Animated.timing(slideY, {
           toValue: 500,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: !enableFlexibleHeightDrag,
         }),
       ]).start();
     }
-  }, [visible, backdropOpacity, slideY, panY]);
+  }, [visible, backdropOpacity, slideY, panY, isExpanded, sheetHeight, minH, enableFlexibleHeightDrag]);
 
   const headerPanResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Only respond to downward swipes (dy > 5 to avoid accidental triggers)
-        return Math.abs(gestureState.dy) > 5 && gestureState.dy > 0;
+        // Respond to vertical swipes on header (avoid accidental small movements)
+        return Math.abs(gestureState.dy) > 5;
       },
       onPanResponderGrant: () => {
         setIsDraggingHeader(true);
+        if (enableFlexibleHeightDrag) {
+          setStartHeight((sheetHeight as any).__getValue?.() ?? minH);
+        }
       },
       onPanResponderMove: (evt, gestureState) => {
+        if (enableFlexibleHeightDrag) {
+          // dy < 0 => drag up => increase height
+          // dy > 0 => drag down => decrease height
+          const next = Math.max(minH, Math.min(maxH, startHeight - gestureState.dy));
+          sheetHeight.setValue(next);
+          return;
+        }
+
         if (gestureState.dy > 0) {
+          // dragging down
           panY.setValue(gestureState.dy);
+          return;
+        }
+
+        // dragging up (expand)
+        if (enableFullHeightDrag && !isExpanded && gestureState.dy < 0) {
+          // allow a small negative pull to indicate expansion
+          const clamped = Math.max(gestureState.dy, -80);
+          panY.setValue(clamped);
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
         setIsDraggingHeader(false);
-        // Close if swiped down more than 100 pixels
-        if (gestureState.dy > 100) {
-          onClose();
-        } else {
-          // Snap back to original position
+
+        if (enableFlexibleHeightDrag) {
+          const currentH = (sheetHeight as any).__getValue?.() ?? minH;
+
+          // Close if user is near collapsed and flicks down
+          if (currentH <= minH + 10 && gestureState.vy > 1.2) {
+            onClose();
+            return;
+          }
+
+          // Let user stop anywhere (clamped)
+          const clamped = Math.max(minH, Math.min(maxH, currentH));
+          Animated.spring(sheetHeight, {
+            toValue: clamped,
+            useNativeDriver: false,
+          }).start();
+          return;
+        }
+
+        // Expand to full height if swiped up enough
+        if (enableFullHeightDrag && !isExpanded && gestureState.dy < -60) {
+          setIsExpanded(true);
           Animated.spring(panY, {
             toValue: 0,
             useNativeDriver: true,
           }).start();
+          return;
         }
+
+        // Collapse back to normal height if expanded and swiped down a bit
+        if (enableFullHeightDrag && isExpanded && gestureState.dy > 60) {
+          setIsExpanded(false);
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+          return;
+        }
+
+        // Close if swiped down more than 100 pixels (only when not expanded)
+        if (!isExpanded && gestureState.dy > 100) {
+          onClose();
+          return;
+        }
+
+        // Snap back to original position
+        Animated.spring(panY, {
+          toValue: 0,
+          useNativeDriver: !enableFlexibleHeightDrag,
+        }).start();
       },
     })
   ).current;
@@ -145,9 +225,11 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
               backgroundColor: Theme.colors.canvas,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
-              maxHeight: '85%',
-              flex: 1,
+              maxHeight: enableFlexibleHeightDrag ? undefined : isExpanded ? '100%' : '85%',
+              height: enableFlexibleHeightDrag ? sheetHeight : undefined,
+              flex: enableFlexibleHeightDrag ? 0 : 1,
               flexDirection: 'column',
+              overflow: 'hidden',
               transform: [
                 { translateY: slideY },
                 { translateY: panY },
@@ -216,7 +298,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
             {/* Form */}
             <ScrollView
               style={{ flex: 1 }}
-              contentContainerStyle={{ padding: 20, paddingBottom: 20 }}
+              contentContainerStyle={{ padding: 20, paddingBottom: 20, flexGrow: 1 }}
               showsVerticalScrollIndicator={true}
               keyboardShouldPersistTaps="handled"
               bounces={true}

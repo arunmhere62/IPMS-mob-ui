@@ -11,6 +11,9 @@ interface TenantHeaderProps {
   tenant: Tenant;
   onEdit: () => void;
   showEdit?: boolean;
+  onDelete?: () => void;
+  showDelete?: boolean;
+  disableDelete?: boolean;
   onCall: (phone: string) => void;
   onWhatsApp: (phone: string) => void;
   onEmail: (email: string) => void;
@@ -27,6 +30,9 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
   tenant,
   onEdit,
   showEdit = true,
+  onDelete,
+  showDelete = false,
+  disableDelete = false,
   onCall,
   onWhatsApp,
   onEmail,
@@ -49,9 +55,11 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
           onEdit={onEdit}
           showEdit={true}
           disableEdit={!showEdit}
+          onDelete={onDelete}
+          showDelete={showDelete}
+          disableDelete={disableDelete}
           blockPressWhenDisabled={true}
           showView={false}
-          showDelete={false}
           containerStyle={{ backgroundColor: "transparent", padding: 0 }}
         />
       </View>

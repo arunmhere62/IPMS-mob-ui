@@ -214,7 +214,7 @@ export const paymentsApi = baseApi.injectEndpoints({
     // Tenant Payments (Rent)
     getTenantPayments: build.query<TenantPaymentsListResponse, TenantPaymentsListParams | void>({
       query: (params) => ({
-        url: '/tenant-payments',
+        url: '/rent-payments',
         method: 'GET',
         params: params || undefined,
       }),
@@ -238,19 +238,19 @@ export const paymentsApi = baseApi.injectEndpoints({
     }),
 
     getTenantPaymentById: build.query<TenantPaymentResponse, number>({
-      query: (id) => ({ url: `/tenant-payments/${id}`, method: 'GET' }),
+      query: (id) => ({ url: `/rent-payments/${id}`, method: 'GET' }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
       providesTags: (_res, _err, id) => [{ type: 'TenantPayment' as const, id }],
     }),
 
     getPaymentsByTenant: build.query<TenantPaymentResponse, number>({
-      query: (tenant_id) => ({ url: `/tenant-payments/tenant/${tenant_id}`, method: 'GET' }),
+      query: (tenant_id) => ({ url: `/rent-payments/tenant/${tenant_id}`, method: 'GET' }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
       providesTags: (_res, _err, tenant_id) => [{ type: 'TenantPayments' as const, id: tenant_id }],
     }),
 
     createTenantPayment: build.mutation<TenantPaymentResponse, Partial<Payment>>({
-      query: (body) => ({ url: '/tenant-payments', method: 'POST', body }),
+      query: (body) => ({ url: '/rent-payments', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
       invalidatesTags: [
         { type: 'TenantPayments', id: 'LIST' },
@@ -258,19 +258,9 @@ export const paymentsApi = baseApi.injectEndpoints({
       ],
     }),
 
-    updateTenantPayment: build.mutation<TenantPaymentResponse, { id: number; data: Partial<Payment> }>({
-      query: ({ id, data }) => ({ url: `/tenant-payments/${id}`, method: 'PATCH', body: data }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
-      invalidatesTags: (_res, _err, arg) => [
-        { type: 'TenantPayments', id: 'LIST' },
-        { type: 'TenantPayment', id: arg.id },
-        { type: 'Tenants', id: 'LIST' },
-      ],
-    }),
-
     updatePaymentStatus: build.mutation<TenantPaymentResponse, UpdatePaymentStatusRequest>({
       query: ({ id, status, payment_date }) => ({
-        url: `/tenant-payments/${id}/status`,
+        url: `/rent-payments/${id}/status`,
         method: 'PATCH',
         body: { status, payment_date },
       }),
@@ -283,7 +273,7 @@ export const paymentsApi = baseApi.injectEndpoints({
     }),
 
     deleteTenantPayment: build.mutation<{ success: boolean; message?: string }, number>({
-      query: (id) => ({ url: `/tenant-payments/${id}`, method: 'DELETE' }),
+      query: (id) => ({ url: `/rent-payments/${id}`, method: 'DELETE' }),
       invalidatesTags: (_res, _err, id) => [
         { type: 'TenantPayments', id: 'LIST' },
         { type: 'TenantPayment', id },
@@ -292,14 +282,14 @@ export const paymentsApi = baseApi.injectEndpoints({
     }),
 
     detectPaymentGaps: build.query<any, number>({
-      query: (tenant_id) => ({ url: `/tenant-payments/gaps/${tenant_id}`, method: 'GET' }),
+      query: (tenant_id) => ({ url: `/rent-payments/gaps/${tenant_id}`, method: 'GET' }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
       providesTags: (_res, _err, tenant_id) => [{ type: 'TenantPaymentGaps' as const, id: tenant_id }],
     }),
 
     getNextPaymentDates: build.query<any, NextPaymentDatesParams>({
       query: ({ tenant_id, rentCycleType = 'CALENDAR', skipGaps = false }) => ({
-        url: `/tenant-payments/next-dates/${tenant_id}`,
+        url: `/rent-payments/next-dates/${tenant_id}`,
         method: 'GET',
         params: { rentCycleType, skipGaps },
       }),
@@ -473,7 +463,6 @@ export const {
   useGetPaymentsByTenantQuery,
   useLazyGetPaymentsByTenantQuery,
   useCreateTenantPaymentMutation,
-  useUpdateTenantPaymentMutation,
   useUpdatePaymentStatusMutation,
   useDeleteTenantPaymentMutation,
   useDetectPaymentGapsQuery,

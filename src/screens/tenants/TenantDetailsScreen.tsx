@@ -157,11 +157,7 @@ const TenantDetailsContent: React.FC<{
   // Clone tenant data to avoid frozen state issues
   const currentTenant = tenantResponse?.data ? JSON.parse(JSON.stringify(tenantResponse.data)) : null;
 
-  const transferDiffCycles = (currentTenant?.payment_cycle_summaries || [])
-    .filter((c: any) => Number(c?.remainingDue || 0) > 0)
-    .sort((a: any, b: any) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime());
-
-  const activeTransferDiffCycle = transferDiffCycles.length > 0 ? transferDiffCycles[0] : null;
+  const activeTransferDiffCycle = (currentTenant as any)?.transfer_difference_due_cycle || null;
 
   const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, { skip: false });
 
@@ -302,8 +298,7 @@ const TenantDetailsContent: React.FC<{
         payment_date: collectTransferDiffPaymentDate,
         payment_method: collectTransferDiffPaymentMethod as any,
         status,
-        start_date: String(activeTransferDiffCycle.start_date),
-        end_date: String(activeTransferDiffCycle.end_date),
+        cycle_id: Number((activeTransferDiffCycle as any).cycle_id),
         remarks: collectTransferDiffRemarks || undefined,
       } as any).unwrap();
 
@@ -357,9 +352,8 @@ const TenantDetailsContent: React.FC<{
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
-  // Rent payment form state (unified for add and edit)
+  // Rent payment form state
   const [rentPaymentFormVisible, setRentPaymentFormVisible] = useState(false);
-  const [rentPaymentFormMode, setRentPaymentFormMode] = useState<"add">('add');
   
   // Advance payment modal state
   const [advancePaymentModalVisible, setAdvancePaymentModalVisible] = useState(false);
@@ -490,23 +484,24 @@ const TenantDetailsContent: React.FC<{
 
   const handleAddRentPayment = () => {
     if (!canCreateRent) return;
-    setRentPaymentFormMode('add');
     setRentPaymentFormVisible(true);
   };
 
   // Receipt handlers
   const prepareReceiptData = (payment: any) => {
+    const periodStart = payment?.tenant_rent_cycles?.cycle_start || payment?.start_date;
+    const periodEnd = payment?.tenant_rent_cycles?.cycle_end || payment?.end_date;
     return {
       receiptNumber: `RCP-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
       paymentDate: payment.payment_date,
       tenantName: currentTenant?.name || '',
       tenantPhone: currentTenant?.phone_no || '',
-      pgName: currentTenant?.pg_locations?.location_name || 'PG',
+      pgName: payment.pg_locations?.location_name || currentTenant?.pg_locations?.location_name || '',
       roomNumber: payment.rooms?.room_no || currentTenant?.rooms?.room_no || '',
       bedNumber: payment.beds?.bed_no || currentTenant?.beds?.bed_no || '',
       rentPeriod: {
-        startDate: payment.start_date,
-        endDate: payment.end_date,
+        startDate: periodStart,
+        endDate: periodEnd,
       },
       actualRent: Number(payment.actual_rent_amount || 0),
       amountPaid: Number(payment.amount_paid || 0),
@@ -973,6 +968,23 @@ const TenantDetailsContent: React.FC<{
     }
   };
 
+  const toLocalDateOnly = (dateLike: any): Date | undefined => {
+    if (!dateLike) return undefined;
+    const dateStr = String(dateLike).includes('T') ? String(dateLike).split('T')[0] : String(dateLike);
+    const match = /^\d{4}-\d{2}-\d{2}$/.exec(dateStr);
+    if (!match) return undefined;
+    const [y, m, d] = dateStr.split('-').map((n) => Number(n));
+    return new Date(y, m - 1, d);
+  };
+
+  const isCheckoutDayFinished = (() => {
+    if (!tenant?.check_out_date) return false;
+    const checkoutDate = new Date(tenant.check_out_date);
+    if (Number.isNaN(checkoutDate.getTime())) return false;
+    checkoutDate.setHours(23, 59, 59, 999);
+    return checkoutDate.getTime() < Date.now();
+  })();
+
   return (
     <ScreenLayout  backgroundColor={Theme.colors.background.blue} >
       <ScreenHeader 
@@ -995,6 +1007,9 @@ const TenantDetailsContent: React.FC<{
             if (!canEditTenant) return;
             navigation.navigate('AddTenant', { tenantId: currentTenant.s_no });
           }}
+          onDelete={handleDeleteTenant}
+          showDelete={canDeleteTenant && !!tenant?.check_out_date}
+          disableDelete={!isCheckoutDayFinished}
           onCall={handleCall}
           onWhatsApp={handleWhatsApp}
           onEmail={handleEmail}
@@ -1065,7 +1080,7 @@ const TenantDetailsContent: React.FC<{
         {/* Rent Payments Button - Always Show */}
         <TouchableOpacity
           onPress={() => navigation.navigate('TenantRentPaymentsScreen', {
-            payments: tenant?.tenant_payments || [],
+            payments: tenant?.rent_payments || [],
             tenantName: tenant.name,
             tenantId: tenant.s_no,
             tenantPhone: tenant.phone_no,
@@ -1086,7 +1101,7 @@ const TenantDetailsContent: React.FC<{
             borderRadius: 12,
             borderWidth: 1,
             borderColor: Theme.colors.border,
-            opacity: tenant?.tenant_payments?.length > 0 ? 1 : 0.7,
+            opacity: tenant?.rent_payments?.length > 0 ? 1 : 0.7,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1109,7 +1124,7 @@ const TenantDetailsContent: React.FC<{
                   Rent Payments
                 </Text>
                 <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.tertiary }}>
-                  {tenant?.tenant_payments?.length || 0} records
+                  {tenant?.rent_payments?.length || 0} records
                 </Text>
               </View>
             </View>
@@ -1548,7 +1563,7 @@ const TenantDetailsContent: React.FC<{
             value={transferEffectiveFrom}
             onChange={setTransferEffectiveFrom}
             required={true}
-            minimumDate={tenant?.check_in_date ? new Date(String(tenant.check_in_date).split('T')[0]) : undefined}
+            minimumDate={toLocalDateOnly(tenant?.check_in_date)}
           />
         </SlideBottomModal>
       )}
@@ -1557,7 +1572,6 @@ const TenantDetailsContent: React.FC<{
       {tenant && (
         <RentPaymentForm
           visible={rentPaymentFormVisible}
-          mode={rentPaymentFormMode}
           tenantId={tenant.s_no}
           tenantName={tenant.name}
           roomId={tenant.room_id || 0}
@@ -1566,19 +1580,21 @@ const TenantDetailsContent: React.FC<{
           rentAmount={tenant.rooms?.rent_price || 0}
           joiningDate={tenant.check_in_date}
           lastPaymentStartDate={
-            tenant.tenant_payments && tenant.tenant_payments.length > 0
-              ? tenant.tenant_payments[0].start_date
+            tenant.rent_payments && tenant.rent_payments.length > 0
+              ? ((tenant.rent_payments[0] as any).tenant_rent_cycles?.cycle_start || (tenant.rent_payments[0] as any).start_date)
               : undefined
           }
           lastPaymentEndDate={
-            tenant.tenant_payments && tenant.tenant_payments.length > 0
-              ? tenant.tenant_payments[0].end_date
+            tenant.rent_payments && tenant.rent_payments.length > 0
+              ? ((tenant.rent_payments[0] as any).tenant_rent_cycles?.cycle_end || (tenant.rent_payments[0] as any).end_date)
               : undefined
           }
           previousPayments={
-            (tenant.tenant_payments
+            (tenant.rent_payments
               ?.sort((a: TenantPayment, b: TenantPayment) => {
-                return new Date(b.payment_date || b.end_date || '').getTime() - new Date(a.payment_date || a.end_date || '').getTime();
+                const bEnd = (b as any)?.tenant_rent_cycles?.cycle_end || (b as any)?.end_date || (b as any)?.payment_date || '';
+                const aEnd = (a as any)?.tenant_rent_cycles?.cycle_end || (a as any)?.end_date || (a as any)?.payment_date || '';
+                return new Date(bEnd).getTime() - new Date(aEnd).getTime();
               }) as any[]) || []
           }
           onClose={() => {

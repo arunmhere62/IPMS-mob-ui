@@ -28,6 +28,12 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
   onWhatsAppReceipt,
   onShareReceipt,
 }) => {
+  const getPeriod = (payment: any): { start?: string; end?: string } => {
+    const start = payment?.tenant_rent_cycles?.cycle_start || payment?.start_date;
+    const end = payment?.tenant_rent_cycles?.cycle_end || payment?.end_date;
+    return { start, end };
+  };
+
   return (
     <CollapsibleSection
       title="Rent Payments"
@@ -51,7 +57,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                   backgroundColor: 'white',
                   borderRadius: 8,
                   borderLeftWidth: 3,
-                  borderLeftColor: payment.status === 'PAID' ? '#10B981' : payment.status === 'PENDING' ? '#F59E0B' : payment.status === 'OVERDUE' ? '#EF4444' : '#9CA3AF',
+                  borderLeftColor: payment.status === 'PAID' ? '#10B981' : payment.status === 'PENDING' ? '#F59E0B' : payment.status === 'PARTIAL' ? '#3B82F6' : '#9CA3AF',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
                   shadowOpacity: 0.06,
@@ -89,7 +95,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                         backgroundColor: 
                           payment.status === 'PAID' ? '#10B98120' :
                           payment.status === 'PENDING' ? '#F59E0B20' :
-                          payment.status === 'OVERDUE' ? '#EF444420' : '#9CA3AF20',
+                          payment.status === 'PARTIAL' ? '#3B82F620' : '#9CA3AF20',
                       }}>
                         <Text style={{
                           fontSize: 11,
@@ -97,7 +103,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                           color: 
                             payment.status === 'PAID' ? '#10B981' :
                             payment.status === 'PENDING' ? '#F59E0B' :
-                            payment.status === 'OVERDUE' ? '#EF4444' : '#6B7280',
+                            payment.status === 'PARTIAL' ? '#3B82F6' : '#6B7280',
                         }}>
                           {payment.status}
                         </Text>
@@ -138,16 +144,20 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                 {/* Details Grid */}
                 <View style={{ gap: 4 }}>
                   {/* Payment Period */}
-                  {payment.start_date && payment.end_date && (
+                  {(() => {
+                    const period = getPeriod(payment as any);
+                    if (!period.start || !period.end) return null;
+                    return (
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, width: 70 }}>
                         Period:
                       </Text>
                       <Text style={{ fontSize: 11, fontWeight: '600', color: Theme.colors.text.primary, flex: 1 }}>
-                        {new Date(payment.start_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(payment.end_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {new Date(period.start).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(period.end).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </Text>
                     </View>
-                  )}
+                    );
+                  })()}
 
                   {/* Payment Method */}
                   {payment.payment_method && (

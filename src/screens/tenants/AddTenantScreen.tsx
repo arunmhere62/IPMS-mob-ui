@@ -73,7 +73,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
     isEditMode &&
     !!tenantInEdit &&
     (
-      (Array.isArray(tenantInEdit?.tenant_payments) && tenantInEdit.tenant_payments.length > 0)
+      (Array.isArray(tenantInEdit?.rent_payments) && tenantInEdit.rent_payments.length > 0)
       || (Array.isArray(tenantInEdit?.advance_payments) && tenantInEdit.advance_payments.length > 0)
       || (Array.isArray(tenantInEdit?.refund_payments) && tenantInEdit.refund_payments.length > 0)
       || (Array.isArray(tenantInEdit?.current_bills) && tenantInEdit.current_bills.length > 0)

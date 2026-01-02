@@ -12,6 +12,12 @@ export interface TenantPayment {
   actual_rent_amount?: number;
   start_date?: string;
   end_date?: string;
+  tenant_rent_cycles?: {
+    s_no?: number;
+    cycle_type?: string;
+    cycle_start?: string;
+    cycle_end?: string;
+  };
   payment_method?: string;
   status?: string;
   remarks?: string;
@@ -143,7 +149,7 @@ export interface Tenant {
     s_no: number;
     name: string;
   };
-  tenant_payments?: TenantPayment[];
+  rent_payments?: TenantPayment[];
   advance_payments?: AdvancePayment[];
   refund_payments?: RefundPayment[];
   current_bills?: CurrentBill[];

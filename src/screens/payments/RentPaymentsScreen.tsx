@@ -340,6 +340,12 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     });
   };
 
+  const getPaymentPeriod = (item: any): { start?: string; end?: string } => {
+    const start = item?.tenant_rent_cycles?.cycle_start || item?.start_date;
+    const end = item?.tenant_rent_cycles?.cycle_end || item?.end_date;
+    return { start, end };
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PAID':
@@ -470,14 +476,18 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
             )}
           </View>
 
-          {item.start_date && item.end_date && (
+          {(() => {
+            const period = getPaymentPeriod(item as any);
+            if (!period.start || !period.end) return null;
+            return (
             <View>
               <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Payment Period</Text>
               <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
-                {formatDate(item.start_date)} - {formatDate(item.end_date)}
+                {formatDate(period.start)} - {formatDate(period.end)}
               </Text>
             </View>
-          )}
+            );
+          })()}
 
           {item.remarks && (
             <View style={{ marginTop: 6, padding: 8, backgroundColor: Theme.colors.background.secondary, borderRadius: 6 }}>

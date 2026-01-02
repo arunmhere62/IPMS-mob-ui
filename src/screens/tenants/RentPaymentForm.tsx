@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -24,11 +24,9 @@ import {
   useLazyGetNextPaymentDatesQuery,
 } from "@/services/api/paymentsApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
-import { calculateNextRentCycleDates } from "@/utils/rentCycleCalculator";
 
 interface RentPaymentFormProps {
   visible: boolean;
-  mode: "add" | "edit"; // add or edit mode
   tenantId: number;
   tenantName: string;
   roomId: number;
@@ -39,12 +37,8 @@ interface RentPaymentFormProps {
   lastPaymentStartDate?: string;
   lastPaymentEndDate?: string;
   previousPayments?: any[];
-  // For edit mode
-  paymentId?: number;
-  existingPayment?: any;
   onClose: () => void;
   onSuccess: () => void;
-  onSave?: (id: number, data: any) => Promise<void>; // For edit mode
 }
 
 const PAYMENT_METHODS: Option[] = [
@@ -117,109 +111,8 @@ const formatDate = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-// Helper function to get calendar month dates (1st to last day)
-const getCalendarMonthDates = (dateString: string): { start: string; end: string } => {
-  try {
-    const date = parseDate(dateString);
-    if (isNaN(date.getTime())) {
-      console.warn("Invalid date parsed:", dateString);
-      return { start: "", end: "" };
-    }
-
-    const year = date.getFullYear();
-    const month = date.getMonth();
-
-    const startDate = new Date(year, month, 1);
-    const endDate = new Date(year, month + 1, 0);
-
-    const result = {
-      start: formatDate(startDate),
-      end: formatDate(endDate),
-    };
-
-    console.log("Calendar dates calculated:", { input: dateString, ...result });
-    return result;
-  } catch (error) {
-    console.error("Error calculating calendar dates:", error);
-    return { start: "", end: "" };
-  }
-};
-
-// Helper function to get midmonth dates (same day to same day next month - 1)
-const getMidmonthDates = (dateString: string): { start: string; end: string } => {
-  try {
-    // Parse the input date string to extract year, month, day
-    let year: number, month: number, day: number;
-    
-    if (dateString.includes('T')) {
-      // ISO format: "2025-12-11T00:00:00.000Z"
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        console.warn("Invalid ISO date parsed:", dateString);
-        return { start: "", end: "" };
-      }
-      year = date.getFullYear();
-      month = date.getMonth() + 1;
-      day = date.getDate();
-    } else if (dateString.includes('-')) {
-      // YYYY-MM-DD format
-      const [y, m, d] = dateString.split('-').map(Number);
-      year = y;
-      month = m;
-      day = d;
-    } else {
-      // Fallback to Date parsing
-      const date = parseDate(dateString);
-      if (isNaN(date.getTime())) {
-        console.warn("Invalid date parsed:", dateString);
-        return { start: "", end: "" };
-      }
-      year = date.getFullYear();
-      month = date.getMonth() + 1;
-      day = date.getDate();
-    }
-
-    // Validate parsed values
-    if (isNaN(year) || isNaN(month) || isNaN(day)) {
-      console.warn("Invalid date components:", { year, month, day, input: dateString });
-      return { start: "", end: "" };
-    }
-
-    // Start date is the input date
-    const startMonth = String(month).padStart(2, '0');
-    const startDay = String(day).padStart(2, '0');
-    const startDateStr = `${year}-${startMonth}-${startDay}`;
-
-    // Calculate end date: same day next month - 1
-    let endMonth = month + 1;
-    let endYear = year;
-    if (endMonth > 12) {
-      endMonth = 1;
-      endYear = year + 1;
-    }
-    
-    // Create a temporary date to handle day overflow
-    const tempDate = new Date(endYear, endMonth - 1, day);
-    tempDate.setDate(tempDate.getDate() - 1);
-    
-    const endDateStr = formatDate(tempDate);
-
-    const result = {
-      start: startDateStr,
-      end: endDateStr,
-    };
-
-    console.log("Midmonth dates calculated:", { input: dateString, ...result });
-    return result;
-  } catch (error) {
-    console.error("Error calculating midmonth dates:", error);
-    return { start: "", end: "" };
-  }
-};
-
 const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   visible,
-  mode,
   tenantId,
   tenantName,
   roomId,
@@ -230,13 +123,11 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   lastPaymentStartDate,
   lastPaymentEndDate,
   previousPayments = [],
-  paymentId,
-  existingPayment,
   onClose,
   onSuccess,
-  onSave,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const wasVisibleRef = useRef(false);
   const [triggerDetectPaymentGaps] = useLazyDetectPaymentGapsQuery();
   const [triggerGetNextPaymentDates] = useLazyGetNextPaymentDatesQuery();
   const [createTenantPayment] = useCreateTenantPaymentMutation();
@@ -254,6 +145,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     payment_date: "",
     payment_method: null as string | null,
     status: "",
+    cycle_id: null as number | null,
     start_date: "",
     end_date: "",
     remarks: "",
@@ -272,6 +164,19 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     skipGaps: false,
   });
   const [checkingGaps, setCheckingGaps] = useState(false);
+
+  const getPaymentPeriod = (p: any): { start?: string; end?: string } => {
+    const start = p?.tenant_rent_cycles?.cycle_start || p?.start_date;
+    const end = p?.tenant_rent_cycles?.cycle_end || p?.end_date;
+    return { start, end };
+  };
+
+  const getPaymentPeriodEndTime = (p: any): number => {
+    const period = getPaymentPeriod(p);
+    const v = period.end || p?.payment_date;
+    const t = v ? new Date(v).getTime() : 0;
+    return Number.isFinite(t) ? t : 0;
+  };
 
   // Function to detect payment gaps
   const detectPaymentGaps = async () => {
@@ -303,6 +208,30 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
             earliestGap: null,
             skipGaps: false,
           });
+
+          // No gaps: ask backend for the next suggested cycle window and cycle_id.
+          try {
+            const cycleType = rentCycleData?.type || 'CALENDAR';
+            const nextDatesResponse = await triggerGetNextPaymentDates({
+              tenant_id: tenantId,
+              rentCycleType: cycleType,
+              skipGaps: true,
+            }).unwrap();
+
+            const nextDatesSuccess = Boolean((nextDatesResponse as any)?.success ?? true);
+            const nextDatesData = ((nextDatesResponse as any)?.data ?? nextDatesResponse) as any;
+
+            if (nextDatesSuccess && nextDatesData) {
+              setFormData((prev) => ({
+                ...prev,
+                cycle_id: nextDatesData.suggestedCycleId ?? null,
+                start_date: nextDatesData.suggestedStartDate || "",
+                end_date: nextDatesData.suggestedEndDate || "",
+              }));
+            }
+          } catch (nextDatesError) {
+            console.error('Error getting next payment dates (auto):', nextDatesError);
+          }
         }
       }
     } catch (error) {
@@ -316,6 +245,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   const handleGapButtonClick = (gap: any) => {
     setFormData((prev) => ({
       ...prev,
+      cycle_id: gap.cycle_id ?? null,
       start_date: gap.gapStart,
       end_date: gap.gapEnd,
       status: "PENDING",
@@ -344,6 +274,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
         // Auto-fill form with next payment dates
         setFormData((prev) => ({
           ...prev,
+          cycle_id: nextDates.suggestedCycleId ?? null,
           start_date: nextDates.suggestedStartDate,
           end_date: nextDates.suggestedEndDate || nextDates.suggestedStartDate,
           status: "PENDING",
@@ -377,6 +308,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
         // Auto-fill form with next payment dates
         setFormData((prev) => ({
           ...prev,
+          cycle_id: nextDates.suggestedCycleId ?? null,
           start_date: nextDates.suggestedStartDate,
           end_date: nextDates.suggestedEndDate || nextDates.suggestedStartDate,
           status: "PENDING",
@@ -617,113 +549,38 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     fetchDetails();
   }, [visible, bedId, pgId, rentAmount]);
 
-  // Detect payment gaps when form opens in add mode
+  // Detect payment gaps when form opens
   useEffect(() => {
-    if (visible && mode === "add" && tenantId > 0) {
+    if (visible && tenantId > 0) {
       detectPaymentGaps();
     }
-  }, [visible, mode, tenantId]);
+  }, [visible, tenantId]);
 
-  // Load existing payment data for edit mode and check for previous payments
+  // Reset form values when opening
   useEffect(() => {
-    if (mode === "edit" && existingPayment) {
-      setFormData({
-        amount_paid: existingPayment.amount_paid?.toString() || "",
-        actual_rent_amount: existingPayment.actual_rent_amount?.toString() || "",
-        payment_date: existingPayment.payment_date
-          ? new Date(existingPayment.payment_date).toISOString().split("T")[0]
-          : "",
-        payment_method: existingPayment.payment_method || null,
-        status: existingPayment.status || "",
-        start_date: existingPayment.start_date
-          ? new Date(existingPayment.start_date).toISOString().split("T")[0]
-          : "",
-        end_date: existingPayment.end_date
-          ? new Date(existingPayment.end_date).toISOString().split("T")[0]
-          : "",
-        remarks: existingPayment.remarks || "",
-      });
-    } else if (mode === "add") {
-      // Check if tenant has previous payments
-      const hasPreviousPayments = previousPayments && previousPayments.length > 0;
-      setHasExistingPayments(hasPreviousPayments);
+    const wasVisible = wasVisibleRef.current;
+    wasVisibleRef.current = visible;
+    if (!visible || wasVisible) return;
 
-      if (hasPreviousPayments && rentCycleData) {
-        // Get the payment with the latest end_date (most recent rent period)
-        const lastPayment = previousPayments.reduce((latest, current) => {
-          const latestEndDate = new Date(latest.end_date || 0).getTime();
-          const currentEndDate = new Date(current.end_date || 0).getTime();
-          return currentEndDate > latestEndDate ? current : latest;
-        });
-        const lastEndDate = lastPayment.end_date
-          ? new Date(lastPayment.end_date).toISOString().split("T")[0]
-          : null;
+    // Check if tenant has previous payments
+    const hasPreviousPayments = previousPayments && previousPayments.length > 0;
+    setHasExistingPayments(hasPreviousPayments);
 
-        if (lastEndDate) {
-          // Calculate next cycle dates using utility function
-          const { startDate, endDate } = calculateNextRentCycleDates(
-            lastEndDate,
-            rentCycleData.type,
-            1,
-            30
-          );
-
-          // Auto-fill dates from previous payment
-          setFormData({
-            amount_paid: "",
-            actual_rent_amount: bedRentAmount.toString(),
-            payment_date: "",
-            payment_method: null,
-            status: "",
-            start_date: startDate,
-            end_date: endDate,
-            remarks: "",
-          });
-        } else {
-          // No previous end date, reset form
-          setFormData({
-            amount_paid: "",
-            actual_rent_amount: bedRentAmount.toString(),
-            payment_date: "",
-            payment_method: null,
-            status: "",
-            start_date: "",
-            end_date: "",
-            remarks: "",
-          });
-        }
-      } else {
-        // No previous payments - calculate initial rent cycle dates
-        let startDate = "";
-        let endDate = "";
-
-        if (rentCycleData && joiningDate) {
-          if (rentCycleData.type === 'CALENDAR') {
-            // For CALENDAR: First payment is from 1st to last day of joining month
-            const dates = getCalendarMonthDates(joiningDate);
-            startDate = dates.start;
-            endDate = dates.end;
-          } else {
-            // For MIDMONTH: Use joining date as start, then same day next month - 1
-            const dates = getMidmonthDates(joiningDate);
-            startDate = dates.start;
-            endDate = dates.end;
-          }
-        }
-
-        setFormData({
-          amount_paid: "",
-          actual_rent_amount: bedRentAmount.toString(),
-          payment_date: "",
-          payment_method: null,
-          status: "",
-          start_date: startDate,
-          end_date: endDate,
-          remarks: "",
-        });
-      }
-    }
-  }, [mode, existingPayment, visible, previousPayments, rentCycleData, bedRentAmount, joiningDate, lastPaymentEndDate]);
+    // Rent period selection is backend-driven via /gaps or /next-dates.
+    // Keep money fields reset and let detectPaymentGaps() fill cycle/dates.
+    setFormData((prev) => ({
+      ...prev,
+      amount_paid: "",
+      actual_rent_amount: bedRentAmount.toString(),
+      payment_date: "",
+      payment_method: null,
+      status: "",
+      cycle_id: prev.cycle_id ?? null,
+      start_date: prev.start_date ?? "",
+      end_date: prev.end_date ?? "",
+      remarks: "",
+    }));
+  }, [visible, previousPayments, bedRentAmount]);
 
 
   const handleAutoFillDates = () => {
@@ -735,49 +592,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       return;
     }
 
-    let startDate = "";
-    let endDate = "";
-
-    // Check if there are previous payments
-    const hasPreviousPayments = previousPayments && previousPayments.length > 0;
-
-    if (hasPreviousPayments && lastPaymentEndDate) {
-      // Calculate next cycle dates from last payment's end date
-      const { startDate: nextStart, endDate: nextEnd } = calculateNextRentCycleDates(
-        lastPaymentEndDate,
-        rentCycleData.type,
-        1,
-        30
-      );
-      startDate = nextStart;
-      endDate = nextEnd;
-    } else {
-      // No previous payments - use joining date logic
-      if (joiningDate) {
-        if (rentCycleData.type === 'CALENDAR') {
-          // For CALENDAR: First payment is from 1st to last day of joining month
-          const dates = getCalendarMonthDates(joiningDate);
-          startDate = dates.start;
-          endDate = dates.end;
-        } else {
-          // For MIDMONTH: Use joining date as start, then same day next month - 1
-          const dates = getMidmonthDates(joiningDate);
-          startDate = dates.start;
-          endDate = dates.end;
-        }
-      }
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      start_date: startDate,
-      end_date: endDate,
-    }));
-
-    Alert.alert(
-      "Dates Auto-filled",
-      `Start: ${new Date(startDate).toLocaleDateString("en-IN")}\nEnd: ${new Date(endDate).toLocaleDateString("en-IN")}`
-    );
+    handleContinueToNextPayment();
   };
 
   const validateForm = () => {
@@ -801,12 +616,8 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       newErrors.payment_date = "Payment date is required";
     }
 
-    if (!formData.start_date) {
-      newErrors.start_date = "Start date is required";
-    }
-
-    if (!formData.end_date) {
-      newErrors.end_date = "End date is required";
+    if (!formData.cycle_id) {
+      newErrors.cycle_id = 'Please select a rent period (gap) or tap Skip All Gaps to get the next suggested period.';
     }
 
     // Validate start and end dates
@@ -889,43 +700,26 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     try {
       setLoading(true);
 
-      if (mode === "add") {
-        const paymentData = {
-          tenant_id: tenantId,
-          pg_id: pgId,
-          room_id: roomId,
-          bed_id: bedId,
-          amount_paid: parseFloat(formData.amount_paid),
-          actual_rent_amount: parseFloat(formData.actual_rent_amount),
-          payment_date: formData.payment_date,
-          payment_method: formData.payment_method as
-            | "GPAY"
-            | "PHONEPE"
-            | "CASH"
-            | "BANK_TRANSFER",
-          status: status as "PAID" | "PARTIAL" | "PENDING" | "FAILED",
-          start_date: formData.start_date,
-          end_date: formData.end_date,
-          remarks: formData.remarks || undefined,
-        };
+      const paymentData = {
+        tenant_id: tenantId,
+        pg_id: pgId,
+        room_id: roomId,
+        bed_id: bedId,
+        amount_paid: parseFloat(formData.amount_paid),
+        actual_rent_amount: parseFloat(formData.actual_rent_amount),
+        payment_date: formData.payment_date,
+        payment_method: formData.payment_method as
+          | "GPAY"
+          | "PHONEPE"
+          | "CASH"
+          | "BANK_TRANSFER",
+        status: status as "PAID" | "PARTIAL" | "PENDING" | "FAILED",
+        cycle_id: formData.cycle_id as number,
+        remarks: formData.remarks || undefined,
+      };
 
-        const res = await createTenantPayment(paymentData as any).unwrap();
-        showSuccessAlert(res);
-      } else if (mode === "edit" && paymentId && onSave) {
-        const updateData = {
-          amount_paid: parseFloat(formData.amount_paid),
-          actual_rent_amount: parseFloat(formData.actual_rent_amount),
-          payment_date: formData.payment_date,
-          payment_method: formData.payment_method,
-          status: status,
-          start_date: formData.start_date,
-          end_date: formData.end_date,
-          remarks: formData.remarks || undefined,
-        };
-
-        const res = await onSave(paymentId, updateData);
-        showSuccessAlert(res);
-      }
+      const res = await createTenantPayment(paymentData as any).unwrap();
+      showSuccessAlert(res);
 
       onSuccess();
       handleClose();
@@ -941,8 +735,9 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       amount_paid: "",
       actual_rent_amount: "",
       payment_date: "",
-      payment_method: "",
+      payment_method: null,
       status: "",
+      cycle_id: null,
       start_date: "",
       end_date: "",
       remarks: "",
@@ -955,12 +750,14 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     <SlideBottomModal
       visible={visible}
       onClose={handleClose}
-      title={mode === "add" ? "Add Payment" : "Edit Payment"}
+      title="Add Payment"
       subtitle={tenantName}
       onSubmit={handleSubmit}
-      submitLabel={mode === "add" ? "Add Payment" : "Update Payment"}
+      submitLabel="Add Payment"
       cancelLabel="Cancel"
       isLoading={loading}
+      enableFullHeightDrag={false}
+      enableFlexibleHeightDrag={true}
     >
       {/* Gap Warning Alert - Modern Clean UI */}
       {gapWarning.gaps && gapWarning.gaps.length > 0 && (
@@ -1185,6 +982,18 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
         </View>
       )}
 
+      {errors.general ? (
+        <View style={{ marginBottom: 12 }}>
+          <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600' }}>{errors.general}</Text>
+        </View>
+      ) : null}
+
+      {errors.cycle_id ? (
+        <View style={{ marginBottom: 12 }}>
+          <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600' }}>{errors.cycle_id}</Text>
+        </View>
+      ) : null}
+
       {/* Payment Info Card */}
       {(joiningDate || lastPaymentStartDate || lastPaymentEndDate || bedRentAmount > 0) && (
         <View
@@ -1238,10 +1047,12 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
             // Show most recent payment from previousPayments array
             (() => {
               const mostRecentPayment = previousPayments.reduce((latest, current) => {
-                const latestEndDate = new Date(latest.end_date || 0).getTime();
-                const currentEndDate = new Date(current.end_date || 0).getTime();
+                const latestEndDate = getPaymentPeriodEndTime(latest);
+                const currentEndDate = getPaymentPeriodEndTime(current);
                 return currentEndDate > latestEndDate ? current : latest;
               });
+
+              const period = getPaymentPeriod(mostRecentPayment);
               return (
                 <View style={{ flexDirection: "row", marginBottom: 4 }}>
                   <Text
@@ -1260,14 +1071,14 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                       color: Theme.colors.text.primary,
                     }}
                   >
-                    {mostRecentPayment.start_date && mostRecentPayment.end_date ? (
+                    {period.start && period.end ? (
                       <>
-                        {new Date(mostRecentPayment.start_date).toLocaleDateString("en-IN", {
+                        {new Date(period.start).toLocaleDateString("en-IN", {
                           day: "2-digit",
                           month: "short",
                         })}
                         {" - "}
-                        {new Date(mostRecentPayment.end_date).toLocaleDateString("en-IN", {
+                        {new Date(period.end).toLocaleDateString("en-IN", {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",
@@ -1364,9 +1175,9 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
               </Text>
               {previousPayments
                 .sort((a, b) => {
-                  const aEndDate = new Date(a.end_date || 0).getTime();
-                  const bEndDate = new Date(b.end_date || 0).getTime();
-                  return bEndDate - aEndDate; // Sort by end_date descending (most recent first)
+                  const aEndDate = getPaymentPeriodEndTime(a);
+                  const bEndDate = getPaymentPeriodEndTime(b);
+                  return bEndDate - aEndDate; // Sort by period end descending (most recent first)
                 })
                 .slice(0, 3)
                 .map((prevPayment, index) => (
@@ -1391,20 +1202,18 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                           color: Theme.colors.text.primary,
                         }}
                       >
-                        {prevPayment.start_date && prevPayment.end_date
-                          ? `${new Date(
-                            prevPayment.start_date
-                          ).toLocaleDateString("en-IN", {
+                        {(() => {
+                          const p = getPaymentPeriod(prevPayment);
+                          if (!p.start || !p.end) return 'N/A';
+                          return `${new Date(p.start).toLocaleDateString("en-IN", {
                             day: "2-digit",
                             month: "short",
-                          })} - ${new Date(
-                            prevPayment.end_date
-                          ).toLocaleDateString("en-IN", {
+                          })} - ${new Date(p.end).toLocaleDateString("en-IN", {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
-                          })}`
-                          : "N/A"}
+                          })}`;
+                        })()}
                       </Text>
                       <Text
                         style={{
@@ -1421,104 +1230,64 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
             </View>
           )}
         </View>
+
       )}
 
       {/* Form */}
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        {/* Amount Paid */}
+
+        <View style={{ gap: 12, paddingBottom: 16 }}>
+        
         <AmountInput
           label="Amount Paid"
           value={formData.amount_paid}
-          onChangeText={(text) =>
-            setFormData({ ...formData, amount_paid: text })
-          }
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, amount_paid: text }))}
           error={errors.amount_paid}
           required
-          containerStyle={{ marginBottom: 16 }}
         />
 
-        {/* Payment Date */}
-        <View style={{ marginBottom: 16 }}>
-          <DatePicker
-            label="Payment Date"
-            value={formData.payment_date}
-            onChange={(date: string) =>
-              setFormData({ ...formData, payment_date: date })
-            }
-            required
-            error={errors.payment_date}
-          />
-        </View>
+        <DatePicker
+          label="Payment Date"
+          value={formData.payment_date}
+          onChange={(date: string) => setFormData((prev) => ({ ...prev, payment_date: date }))}
+          required={true}
+          error={errors.payment_date}
+        />
 
-        {/* Payment Period - Start and End Date */}
-        <View style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: "600",
-                color: Theme.colors.text.primary,
-              }}
-            >
-              Payment Period <Text style={{ color: "#EF4444" }}>*</Text>
-            </Text>
-          </View>
-          {hasExistingPayments && (
-            <View style={{ marginBottom: 12, paddingHorizontal: 8 }}>
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: Theme.colors.primary,
-                  fontWeight: "600",
-                }}
-              >
-                ✓ Auto-filled from last payment
-              </Text>
-            </View>
-          )}
-          <View style={{ flex: 1, marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
             <DatePicker
               label="Start Date"
               value={formData.start_date}
-              onChange={(date: string) => {
-                setFormData({ ...formData, start_date: date });
-              }}
-              required
+              onChange={(date: string) => setFormData((prev) => ({ ...prev, start_date: date }))}
+              disabled
+              required={true}
               error={errors.start_date}
-              disabled={true}
             />
           </View>
-          <View style={{ flex: 1, marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
             <DatePicker
               label="End Date"
               value={formData.end_date}
-              onChange={(date: string) => {
-                setFormData({ ...formData, end_date: date });
-              }}
-              required
+              onChange={(date: string) => setFormData((prev) => ({ ...prev, end_date: date }))}
+              disabled
+              required={true}
               error={errors.end_date}
-              disabled={true}
             />
           </View>
         </View>
 
-        {/* Payment Method */}
         <OptionSelector
           label="Payment Method"
           options={PAYMENT_METHODS}
           selectedValue={formData.payment_method}
-          onSelect={(value) =>
-            setFormData({ ...formData, payment_method: value })
-          }
+          onSelect={(value) => setFormData((prev) => ({ ...prev, payment_method: value }))}
           required
           error={errors.payment_method}
-          containerStyle={{ marginBottom: 16 }}
         />
 
-        {/* Payment Status Note */}
         <View
           style={{
-            marginBottom: 16,
             padding: 12,
             backgroundColor: Theme.colors.background.blueLight,
             borderRadius: 8,
@@ -1576,8 +1345,10 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
             multiline
             numberOfLines={3}
             value={formData.remarks}
-            onChangeText={(text) => setFormData({ ...formData, remarks: text })}
+            onChangeText={(text) => setFormData((prev) => ({ ...prev, remarks: text }))}
           />
+        </View>
+
         </View>
       </ScrollView>
     </SlideBottomModal>

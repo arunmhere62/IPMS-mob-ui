@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -27,11 +27,22 @@ interface RentPayment {
   payment_date: string;
   amount_paid: number;
   actual_rent_amount: number;
-  start_date: string;
-  end_date: string;
+  cycle_id?: number;
+  start_date?: string;
+  end_date?: string;
+  tenant_rent_cycles?: {
+    cycle_start?: string;
+    cycle_end?: string;
+  };
   payment_method: string;
   status: string;
   remarks?: string;
+
+  cycle_status?: string | null;
+  cycle_due?: number | null;
+  cycle_total_paid?: number | null;
+  cycle_remaining_due?: number | null;
+  is_cycle_settled?: boolean | null;
 }
 
 export const TenantRentPaymentsScreen: React.FC = () => {
@@ -98,6 +109,9 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   };
 
   const prepareReceiptData = (payment: RentPayment) => {
+    const periodStart = (payment as any)?.tenant_rent_cycles?.cycle_start || (payment as any)?.start_date;
+    const periodEnd = (payment as any)?.tenant_rent_cycles?.cycle_end || (payment as any)?.end_date;
+
     return {
       receiptNumber: `RCP-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
       paymentDate: new Date(payment.payment_date),
@@ -107,8 +121,8 @@ export const TenantRentPaymentsScreen: React.FC = () => {
       roomNumber: route.params?.roomNumber || '',
       bedNumber: route.params?.bedNumber || '',
       rentPeriod: {
-        startDate: new Date(payment.start_date),
-        endDate: new Date(payment.end_date),
+        startDate: periodStart ? new Date(periodStart) : new Date(payment.payment_date),
+        endDate: periodEnd ? new Date(periodEnd) : new Date(payment.payment_date),
       },
       actualRent: Number(payment.actual_rent_amount || 0),
       amountPaid: Number(payment.amount_paid || 0),
@@ -162,7 +176,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
       case 'PAID':
         return { bg: '#10B98120', text: '#10B981', icon: '✅' };
       case 'PARTIAL':
-        return { bg: '#DC262620', text: '#DC2626', icon: '⏳' };
+        return { bg: '#F9731620', text: '#F97316', icon: '⏳' };
       case 'PENDING':
         return { bg: '#F59E0B20', text: '#F59E0B', icon: '📅' };
       case 'FAILED':
@@ -171,6 +185,85 @@ export const TenantRentPaymentsScreen: React.FC = () => {
         return { bg: '#9CA3AF20', text: '#6B7280', icon: '📋' };
     }
   };
+
+  const groupedPayments = useMemo(() => {
+    const dateRangeKey = (start?: string, end?: string) => {
+      const s = start ? String(start).slice(0, 10) : '';
+      const e = end ? String(end).slice(0, 10) : '';
+      return `${s}|${e}`;
+    };
+
+    const getPeriod = (p: RentPayment) => {
+      const periodStart = (p as any)?.tenant_rent_cycles?.cycle_start || (p as any)?.start_date;
+      const periodEnd = (p as any)?.tenant_rent_cycles?.cycle_end || (p as any)?.end_date;
+      return { periodStart, periodEnd };
+    };
+
+    const groups = new Map<string, {
+      key: string;
+      cycleId?: number;
+      periodStart?: string;
+      periodEnd?: string;
+      payments: RentPayment[];
+    }>();
+
+    (payments || []).forEach((p) => {
+      const { periodStart, periodEnd } = getPeriod(p);
+      const cycleId = (p as any)?.cycle_id;
+      const key = cycleId ? `cycle:${cycleId}` : `range:${dateRangeKey(periodStart, periodEnd)}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, { key, cycleId: cycleId ? Number(cycleId) : undefined, periodStart, periodEnd, payments: [] });
+      }
+      groups.get(key)!.payments.push(p);
+    });
+
+    const toDate = (d?: string) => (d ? new Date(String(d)) : null);
+
+    return Array.from(groups.values())
+      .map((g) => {
+        const totalPaid = g.payments.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0);
+
+        // Prefer cycle-level due if API provides it
+        const cycleDueFromApi = g.payments.find((p) => p.cycle_due !== undefined && p.cycle_due !== null)?.cycle_due;
+        const expectedFromPayments = g.payments.reduce((max, p) => Math.max(max, Number(p.actual_rent_amount || 0)), 0);
+        const due = Number(cycleDueFromApi ?? expectedFromPayments ?? 0);
+
+        const remainingFromApi = g.payments.find((p) => p.cycle_remaining_due !== undefined && p.cycle_remaining_due !== null)?.cycle_remaining_due;
+        const remainingDue = remainingFromApi !== undefined && remainingFromApi !== null
+          ? Number(remainingFromApi)
+          : Math.max(0, due - totalPaid);
+
+        const cycleStatusFromApi = g.payments.find((p) => p.cycle_status)?.cycle_status;
+        const status = cycleStatusFromApi
+          ? String(cycleStatusFromApi)
+          : (due > 0 ? (remainingDue <= 0 ? 'PAID' : totalPaid > 0 ? 'PARTIAL' : 'NO_PAYMENT') : (totalPaid > 0 ? 'PARTIAL' : 'NO_PAYMENT'));
+
+        const start = toDate(g.periodStart);
+        const title = start
+          ? start.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+          : 'Rent Cycle';
+
+        const paymentsSorted = [...g.payments].sort(
+          (a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime(),
+        );
+
+        return {
+          ...g,
+          title,
+          totalPaid,
+          due,
+          remainingDue,
+          status,
+          payments: paymentsSorted,
+        };
+      })
+      .sort((a, b) => {
+        const aT = a.periodStart ? new Date(a.periodStart).getTime() : 0;
+        const bT = b.periodStart ? new Date(b.periodStart).getTime() : 0;
+        return bT - aT;
+      });
+  }, [payments]);
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
@@ -210,176 +303,167 @@ export const TenantRentPaymentsScreen: React.FC = () => {
 
         {!loading && payments && payments.length > 0 ? (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
-            {payments.map((payment, index) => {
-              const statusColor = getStatusColor(payment.status);
-              const dueAmount = payment.actual_rent_amount - payment.amount_paid;
+            {groupedPayments.map((group) => {
+              const statusColor = getStatusColor(group.status);
 
-              const paymentPg = (payment as any)?.pg_id ?? '';
-              const paymentRoom = (payment as any)?.room_id ?? '';
-              const paymentBed = (payment as any)?.bed_id ?? '';
-              const paymentPgName = (payment as any)?.pg_locations?.location_name;
-              const paymentRoomNo = (payment as any)?.rooms?.room_no;
-              const paymentBedNo = (payment as any)?.beds?.bed_no;
-              const paymentAccommodationLabel =
-                paymentPgName || paymentRoomNo || paymentBedNo || paymentPg || paymentRoom || paymentBed
-                  ? `${paymentPgName || (paymentPg ? `PG ${paymentPg}` : pgName)}${(paymentRoomNo || paymentRoom) ? ` | Room ${paymentRoomNo || paymentRoom}` : ''}${(paymentBedNo || paymentBed) ? ` | Bed ${paymentBedNo || paymentBed}` : ''}`
-                  : accommodationLabel;
+              const startLabel = group.periodStart
+                ? new Date(group.periodStart).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                : '';
+              const endLabel = group.periodEnd
+                ? new Date(group.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                : '';
+
+              const isSettled = group.remainingDue <= 0 && group.due > 0;
 
               return (
                 <AnimatedPressableCard
-                  key={payment.s_no}
+                  key={group.key}
                   scaleValue={0.97}
                   duration={120}
                   style={{ marginBottom: 12 }}
                 >
-                  <Card style={{
-                    padding: 12,
-                    borderLeftWidth: dueAmount > 0 ? 3 : 0,
-                    borderLeftColor: dueAmount > 0 ? '#F97316' : 'transparent',
-                  }}>
-                    {/* Header Row */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginBottom: 4 }}>
-                          {new Date(payment.payment_date).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
+                  <Card style={{ padding: 12 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <View style={{ flex: 1, paddingRight: 10 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
+                          {group.title}
                         </Text>
-                        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 4 }}>
-                          {paymentAccommodationLabel}
+                        {!!startLabel && !!endLabel && (
+                          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 4 }}>
+                            {startLabel} - {endLabel}
+                          </Text>
+                        )}
+                        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 4 }}>
+                          {group.payments.length} payment(s)
+                          {'  '}|{'  '}Total ₹{Math.round(group.totalPaid)}
                         </Text>
-                        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
-                          ₹{payment.amount_paid}
-                        </Text>
+                        {group.due > 0 && (
+                          <Text style={{ fontSize: 11, color: isSettled ? '#10B981' : '#F97316', marginTop: 4, fontWeight: '700' }}>
+                            {isSettled ? 'No pending for this month' : `Pending ₹${Math.round(group.remainingDue)}`}
+                          </Text>
+                        )}
                       </View>
+
                       <View style={{
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        borderRadius: 6,
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 10,
                         backgroundColor: statusColor.bg,
+                        alignSelf: 'flex-start',
                       }}>
-                        <Text style={{ fontSize: 10, fontWeight: '700', color: statusColor.text }}>
-                          {statusColor.icon} {payment.status}
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: statusColor.text }}>
+                          {statusColor.icon} {group.status}
                         </Text>
                       </View>
                     </View>
 
-                    {/* Rent Period */}
-                    <View style={{
-                      backgroundColor: '#F9FAFB',
-                      padding: 8,
-                      borderRadius: 6,
-                      marginBottom: 10,
-                    }}>
-                      <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, marginBottom: 4 }}>
-                        Rent Period
-                      </Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 11, fontWeight: '600', color: Theme.colors.text.primary }}>
-                          {new Date(payment.start_date).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                          })} - {new Date(payment.end_date).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                          })}
-                        </Text>
-                      </View>
-                    </View>
+                    <View style={{ height: 10 }} />
 
-                    {/* Amount Details */}
-                    <View style={{ marginBottom: 10 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
-                          Rent Amount
-                        </Text>
-                        <Text style={{ fontSize: 11, fontWeight: '600', color: Theme.colors.text.primary }}>
-                          ₹{payment.actual_rent_amount}
-                        </Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
-                          Amount Paid
-                        </Text>
-                        <Text style={{ fontSize: 11, fontWeight: '600', color: '#10B981' }}>
-                          ₹{payment.amount_paid}
-                        </Text>
-                      </View>
-                      {dueAmount > 0 && (
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
-                            Due Amount
-                          </Text>
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#F97316' }}>
-                            ₹{dueAmount}
-                          </Text>
+                    {group.payments.map((payment) => {
+                      const paymentPg = (payment as any)?.pg_id ?? '';
+                      const paymentRoom = (payment as any)?.room_id ?? '';
+                      const paymentBed = (payment as any)?.bed_id ?? '';
+                      const paymentPgName = (payment as any)?.pg_locations?.location_name;
+                      const paymentRoomNo = (payment as any)?.rooms?.room_no;
+                      const paymentBedNo = (payment as any)?.beds?.bed_no;
+                      const paymentAccommodationLabel =
+                        paymentPgName || paymentRoomNo || paymentBedNo || paymentPg || paymentRoom || paymentBed
+                          ? `${paymentPgName || (paymentPg ? `PG ${paymentPg}` : pgName)}${(paymentRoomNo || paymentRoom) ? ` | Room ${paymentRoomNo || paymentRoom}` : ''}${(paymentBedNo || paymentBed) ? ` | Bed ${paymentBedNo || paymentBed}` : ''}`
+                          : accommodationLabel;
+
+                      const installmentSettled = payment.is_cycle_settled;
+
+                      return (
+                        <View
+                          key={payment.s_no}
+                          style={{
+                            backgroundColor: '#F9FAFB',
+                            padding: 10,
+                            borderRadius: 10,
+                            marginBottom: 10,
+                            borderWidth: 1,
+                            borderColor: '#E5E7EB',
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <View style={{ flex: 1, paddingRight: 10 }}>
+                              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                                {new Date(payment.payment_date).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </Text>
+                              <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 4 }}>
+                                {paymentAccommodationLabel}
+                              </Text>
+                            </View>
+                            <View style={{ alignItems: 'flex-end' }}>
+                              <Text style={{ fontSize: 13, fontWeight: '800', color: Theme.colors.text.primary }}>
+                                ₹{payment.amount_paid}
+                              </Text>
+                              {payment.status === 'PARTIAL' && installmentSettled !== undefined && installmentSettled !== null && (
+                                <Text style={{ fontSize: 10, fontWeight: '800', color: installmentSettled ? '#10B981' : '#F97316', marginTop: 2 }}>
+                                  {installmentSettled ? 'Cleared' : 'Not cleared'}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+                              {payment.payment_method || 'N/A'}
+                            </Text>
+                            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                              <ActionButtons
+                                onDelete={() => handleDeletePayment(payment)}
+                                showView={false}
+                                showEdit={false}
+                                showDelete={canDeleteRent}
+                                disableDelete={!canDeleteRent}
+                                blockPressWhenDisabled={true}
+                              />
+                              <TouchableOpacity
+                                onPress={() => handleViewReceipt(payment)}
+                                style={{
+                                  paddingVertical: 8,
+                                  paddingHorizontal: 12,
+                                  backgroundColor: '#DBEAFE',
+                                  borderRadius: 8,
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#1D4ED8' }}>
+                                  View Invoice
+                                </Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => handleShareReceipt(payment)}
+                                style={{
+                                  paddingVertical: 8,
+                                  paddingHorizontal: 12,
+                                  backgroundColor: '#FEF3C7',
+                                  borderRadius: 8,
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>
+                                  Share Invoice
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+
+                          {!!payment.remarks && (
+                            <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, fontStyle: 'italic', marginTop: 6 }}>
+                              {payment.remarks}
+                            </Text>
+                          )}
                         </View>
-                      )}
-                    </View>
-
-                    {/* Payment Method */}
-                    <View style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingTop: 10,
-                      borderTopWidth: 1,
-                      borderTopColor: '#E5E7EB',
-                      marginBottom: 10,
-                    }}>
-                      <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
-                        {payment.payment_method || 'N/A'}
-                      </Text>
-                      {payment.remarks && (
-                        <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, fontStyle: 'italic' }}>
-                          {payment.remarks}
-                        </Text>
-                      )}
-                    </View>
-
-                    {/* Action Buttons */}
-                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                      <ActionButtons
-                        onDelete={() => handleDeletePayment(payment)}
-                        showView={false}
-                        showEdit={false}
-                        showDelete={canDeleteRent}
-                        disableDelete={!canDeleteRent}
-                        blockPressWhenDisabled={true}
-                      />
-                      <TouchableOpacity
-                        onPress={() => handleViewReceipt(payment)}
-                        style={{
-                          paddingVertical: 8,
-                          paddingHorizontal: 12,
-                          backgroundColor: '#DBEAFE',
-                          borderRadius: 8,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#1D4ED8' }}>
-                          View Invoice
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleShareReceipt(payment)}
-                        style={{
-                          paddingVertical: 8,
-                          paddingHorizontal: 12,
-                          backgroundColor: '#FEF3C7',
-                          borderRadius: 8,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>
-                          Share Invoice
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                      );
+                    })}
                   </Card>
                 </AnimatedPressableCard>
               );

@@ -98,7 +98,7 @@ export interface Tenant {
     s_no: number;
     name: string;
   };
-  tenant_payments?: Array<{
+  rent_payments?: Array<{
     s_no: number;
     amount_paid: number;
     payment_date: string;

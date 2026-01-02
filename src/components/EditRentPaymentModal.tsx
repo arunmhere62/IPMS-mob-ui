@@ -106,87 +106,14 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
   const handleSave = async () => {
     if (!validate() || !payment) return;
 
-    // Auto-calculate status based on amounts
-    const paidAmount = parseFloat(amountPaid);
-    const rentAmount = parseFloat(actualRentAmount);
-    
-    let autoStatus: string;
-    let autoStatusLabel: string;
-    
-    if (paidAmount >= rentAmount) {
-      autoStatus = 'PAID';
-      autoStatusLabel = '✅ Paid';
-    } else if (paidAmount > 0) {
-      autoStatus = 'PARTIAL';
-      autoStatusLabel = '🔵 Partial';
-    } else {
-      autoStatus = 'PENDING';
-      autoStatusLabel = '⏳ Pending';
-    }
-
-    // Show confirmation with auto-calculated status
-    Alert.alert(
-      'Confirm Payment Status',
-      `Based on the amounts:\n\nAmount Paid: ₹${paidAmount}\nRent Amount: ₹${rentAmount}\n\nSuggested Status: ${autoStatusLabel}\n\nIs this correct?`,
-      [
-        {
-          text: 'Change Status',
-          onPress: () => {
-            // Show manual selection dialog
-            Alert.alert(
-              'Select Payment Status',
-              'Please select the payment status:',
-              [
-                ...PAYMENT_STATUS.map((statusOption) => ({
-                  text: statusOption.label,
-                  onPress: () => saveWithStatus(statusOption.value),
-                })),
-                {
-                  text: 'Cancel',
-                  style: 'cancel',
-                },
-              ]
-            );
-          },
-        },
-        {
-          text: 'Confirm',
-          onPress: () => saveWithStatus(autoStatus),
-        },
-      ]
-    );
+    Alert.alert('Not Allowed', 'Rent payments are immutable. Please create a new payment entry instead of editing.');
+    onClose();
   };
 
   const saveWithStatus = async (selectedStatus: string) => {
-    if (!payment) return;
-    
-    setLoading(true);
-    try {
-      await onSave(payment.s_no, {
-        amount_paid: parseFloat(amountPaid),
-        actual_rent_amount: parseFloat(actualRentAmount),
-        payment_date: paymentDate,
-        start_date: startDate,
-        end_date: endDate,
-        payment_method: paymentMethod as any,
-        status: selectedStatus as any,
-        remarks: remarks.trim() || undefined,
-      });
-      
-      // Call onSuccess callback if provided
-      if (onSuccess) {
-        onSuccess();
-      }
-      
-      // Close modal after successful save
-      showSuccessAlert('Payment updated successfully');
-      onClose();
-    } catch (error) {
-      console.error('Error updating rent payment:', error);
-      showErrorAlert(error, 'Payment Error');
-    } finally {
-      setLoading(false);
-    }
+    void selectedStatus;
+    Alert.alert('Not Allowed', 'Rent payments are immutable. Please create a new payment entry instead of editing.');
+    onClose();
   };
 
   const handleClose = () => {

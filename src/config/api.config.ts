@@ -43,7 +43,7 @@ export const API_ENDPOINTS = {
     DELETE: (id: number) => `/beds/${id}`,
   },
   PAYMENTS: {
-    TENANT_PAYMENTS: '/tenant-payments',
+    rent_payments: '/rent-payments',
     ADVANCE_PAYMENTS: '/advance-payments',
     REFUND_PAYMENTS: '/refund-payments',
   },

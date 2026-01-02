@@ -19,6 +19,12 @@ export const CheckoutTenantForm: React.FC<CheckoutTenantFormProps> = ({
   checkoutDate,
   onDateChange,
 }) => {
+  const getPeriod = (payment: any): { start?: string; end?: string } => {
+    const start = payment?.tenant_rent_cycles?.cycle_start || payment?.start_date;
+    const end = payment?.tenant_rent_cycles?.cycle_end || payment?.end_date;
+    return { start, end };
+  };
+
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
       {/* Tenant Information */}
@@ -86,7 +92,7 @@ export const CheckoutTenantForm: React.FC<CheckoutTenantFormProps> = ({
       )}
 
       {/* Rent Periods */}
-      {tenant?.tenant_payments && tenant.tenant_payments.length > 0 && (
+      {tenant?.rent_payments && tenant.rent_payments.length > 0 && (
         <View style={{
           marginHorizontal: 0,
           marginBottom: 16,
@@ -104,13 +110,13 @@ export const CheckoutTenantForm: React.FC<CheckoutTenantFormProps> = ({
           }}>
             📋 Rent Periods
           </Text>
-          {tenant.tenant_payments.length > 2 ? (
+          {tenant.rent_payments.length > 2 ? (
             <ScrollView 
               showsVerticalScrollIndicator={true}
               style={{ maxHeight: 120, }}
               contentContainerStyle={{ paddingBottom: 8 }}
             >
-              {tenant.tenant_payments.slice().reverse().map((payment: any) => (
+              {tenant.rent_payments.slice().reverse().map((payment: any) => (
                 <View key={payment.s_no} style={{ marginBottom: 8 }}>
                   <View style={{ flexDirection: 'row', marginBottom: 4 }}>
                     <Text style={{
@@ -126,15 +132,19 @@ export const CheckoutTenantForm: React.FC<CheckoutTenantFormProps> = ({
                       color: Theme.colors.text.primary,
                       flex: 1,
                     }}>
-                      {payment.start_date ? new Date(payment.start_date).toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      }) : 'N/A'} - {payment.end_date ? new Date(payment.end_date).toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      }) : 'N/A'}
+                      {(() => {
+                        const period = getPeriod(payment);
+                        if (!period.start || !period.end) return 'N/A';
+                        return `${new Date(period.start).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })} - ${new Date(period.end).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}`;
+                      })()}
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row' }}>
@@ -158,7 +168,7 @@ export const CheckoutTenantForm: React.FC<CheckoutTenantFormProps> = ({
             </ScrollView>
           ) : (
             <>
-              {tenant.tenant_payments.slice().reverse().map((payment: any) => (
+              {tenant.rent_payments.slice().reverse().map((payment: any) => (
               <View key={payment.s_no} style={{ marginBottom: 8 }}>
                 <View style={{ flexDirection: 'row', marginBottom: 4 }}>
                   <Text style={{
@@ -174,15 +184,19 @@ export const CheckoutTenantForm: React.FC<CheckoutTenantFormProps> = ({
                     color: Theme.colors.text.primary,
                     flex: 1,
                   }}>
-                    {payment.start_date ? new Date(payment.start_date).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    }) : 'N/A'} - {payment.end_date ? new Date(payment.end_date).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    }) : 'N/A'}
+                    {(() => {
+                      const period = getPeriod(payment);
+                      if (!period.start || !period.end) return 'N/A';
+                      return `${new Date(period.start).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })} - ${new Date(period.end).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}`;
+                    })()}
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row' }}>

@@ -223,7 +223,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
           rent_due_amount: t.rent_due_amount,
           partial_due_amount: t.partial_due_amount,
           pending_due_amount: t.pending_due_amount,
-          tenant_payments: t.tenant_payments?.map(p => ({ status: p.status, amount: p.amount_paid }))
+          rent_payments: t.rent_payments?.map(p => ({ status: p.status, amount: p.amount_paid }))
         })));
       }
 
@@ -513,7 +513,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                     fontWeight: '700',
                     color: '#fff',
                   }}>
-                    ✅ PAID
+                    ✅ Rent PAID
                   </Text>
                 </View>
               )}
@@ -564,7 +564,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                     fontWeight: '700',
                     color: '#fff',
                   }}>
-                    📅 PENDING
+                    📅 PENDING RENT
                   </Text>
                 </View>
               )}
