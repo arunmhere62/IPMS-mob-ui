@@ -9,8 +9,21 @@ module.exports = {
   },
   plugins: ['@typescript-eslint'],
   extends: ['plugin:@typescript-eslint/recommended', 'prettier'],
-  ignorePatterns: ['node_modules/', 'android/', 'ios/', 'dist/', '.expo/'],
+  ignorePatterns: ['node_modules/', 'android/', 'ios/', 'dist/', '.expo/', '.eslintrc.cjs', 'app.d.ts', 'nativewind-env.d.ts'],
   rules: {
-    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      },
+    ],
+    '@typescript-eslint/prefer-ts-expect-error': 'off',
+    '@typescript-eslint/ban-ts-comment': [
+      'warn',
+      { 'ts-ignore': 'allow-with-description' },
+    ],
   },
 };

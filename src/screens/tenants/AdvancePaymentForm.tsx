@@ -113,9 +113,11 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
             typeof bedResponse === 'object' && bedResponse && 'data' in (bedResponse as object)
               ? (bedResponse as { data?: { bed_price?: unknown } }).data?.bed_price
               : undefined;
-          if (priceValue) {
-            const bedPrice = typeof priceValue === 'string' ? parseFloat(priceValue) : priceValue;
-            setBedRentAmount(bedPrice);
+          if (priceValue !== undefined && priceValue !== null) {
+            const bedPriceNum = typeof priceValue === 'number' ? priceValue : Number(priceValue);
+            if (Number.isFinite(bedPriceNum)) {
+              setBedRentAmount(bedPriceNum);
+            }
           }
         } catch (error) {
           console.error("Error fetching bed details:", error);

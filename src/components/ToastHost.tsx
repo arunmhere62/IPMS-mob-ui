@@ -104,7 +104,6 @@ export const ToastHost: React.FC = () => {
         hideTimer.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!toast || !style) return null;

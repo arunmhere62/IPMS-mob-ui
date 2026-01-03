@@ -16,7 +16,7 @@ export const IS_PREPROD_ENV = ENV.APP_ENV === 'preprod';
 // Check if running in Expo Go (for development)
 // Expo Go doesn't support native modules like Firebase
 export const IS_EXPO_GO = !!(
-  // @ts-ignore
+  // @ts-ignore -- expo is a runtime global injected by Expo in some environments
   typeof expo !== 'undefined' && expo?.modules?.ExpoGo
 );
 

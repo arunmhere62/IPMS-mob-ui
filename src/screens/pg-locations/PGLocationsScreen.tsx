@@ -144,7 +144,6 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
     if (!target) return;
     openEditModal(target);
     navigation.setParams({ editPgId: undefined });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route?.params?.editPgId, pgLocations]);
 
   useEffect(() => {

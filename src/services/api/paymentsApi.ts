@@ -1,5 +1,6 @@
 import { baseApi } from './baseApi';
 import type { Payment } from '../../types';
+import { extractPaginatedData, extractResponseData, isApiResponseSuccess } from '../../utils/apiResponseHandler';
 
 
 export interface AdvancePayment {
@@ -77,8 +78,26 @@ export interface AdvancePaymentsResponse {
   };
 }
 
-type ApiEnvelope<T> = {
-  data?: T;
+type WithMessage = { message?: unknown };
+
+const normalizeEntity = <T>(response: unknown): { success: boolean; data: T; message?: string } => {
+  const msg = (response as WithMessage | null | undefined)?.message;
+  return {
+    success: isApiResponseSuccess(response as unknown),
+    data: extractResponseData<T>(response as unknown),
+    message: typeof msg === 'string' ? msg : undefined,
+  };
+};
+
+const normalizePaginatedList = <T>(response: unknown): { success: boolean; data: T[]; pagination?: unknown; message?: string } => {
+  const msg = (response as WithMessage | null | undefined)?.message;
+  const paged = extractPaginatedData<T>(response as unknown);
+  return {
+    success: isApiResponseSuccess(response as unknown),
+    data: paged.data,
+    pagination: paged.pagination,
+    message: typeof msg === 'string' ? msg : undefined,
+  };
 };
 
 export type TenantPaymentsListParams = {
@@ -92,24 +111,26 @@ export type TenantPaymentsListParams = {
 export type TenantPaymentsListResponse = {
   success: boolean;
   data: Payment[];
-  pagination?: any;
+  pagination?: unknown;
 };
 
 export type TenantPaymentResponse = {
   success: boolean;
-  data: any;
+  data: unknown;
   message?: string;
 };
+
+export type VoidWithReasonArg = { id: number; voided_reason?: string };
 
 export type AdvancePaymentsListResponse = {
   success: boolean;
   data: AdvancePayment[];
-  pagination?: any;
+  pagination?: unknown;
 };
 
 export type AdvancePaymentResponse = {
   success: boolean;
-  data: any;
+  data: unknown;
   message?: string;
 };
 
@@ -195,19 +216,8 @@ export interface RefundPaymentsResponse {
 export type RefundPaymentsListResponse = {
   success: boolean;
   data: RefundPayment[];
-  pagination?: any;
-};
-
-export type UpdatePaymentStatusRequest = {
-  id: number;
-  status: string;
-  payment_date?: string;
-};
-
-export type NextPaymentDatesParams = {
-  tenant_id: number;
-  rentCycleType?: string;
-  skipGaps?: boolean;
+  pagination?: unknown;
+  message?: string;
 };
 
 export const paymentsApi = baseApi.injectEndpoints({
@@ -219,260 +229,223 @@ export const paymentsApi = baseApi.injectEndpoints({
         method: 'GET',
         params: params || undefined,
       }),
-      transformResponse: (response: ApiEnvelope<any> | any): TenantPaymentsListResponse => {
-        const payload = (response as any)?.data ?? response;
-        const extracted = payload?.data ?? payload;
-        const items = Array.isArray(extracted) ? extracted : extracted?.data;
+      transformResponse: (response: unknown): TenantPaymentsListResponse => {
+        const normalized = normalizePaginatedList<Payment>(response);
         return {
-          success: Boolean((response as any)?.success ?? true),
-          data: Array.isArray(items) ? items : [],
-          pagination: extracted?.pagination ?? payload?.pagination,
+          success: normalized.success,
+          data: normalized.data,
+          pagination: normalized.pagination,
         };
       },
       providesTags: (result) => {
         const items = result?.data || [];
         return [
           { type: 'TenantPayments' as const, id: 'LIST' },
-          ...items.map((p: any) => ({ type: 'TenantPayment' as const, id: p.s_no })),
+          ...items.map((p) => ({ type: 'TenantPayment' as const, id: (p as unknown as { s_no: number }).s_no })),
         ];
       },
     }),
 
     getTenantPaymentById: build.query<TenantPaymentResponse, number>({
       query: (id) => ({ url: `/rent-payments/${id}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       providesTags: (_res, _err, id) => [{ type: 'TenantPayment' as const, id }],
     }),
 
     getPaymentsByTenant: build.query<TenantPaymentResponse, number>({
       query: (tenant_id) => ({ url: `/rent-payments/tenant/${tenant_id}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       providesTags: (_res, _err, tenant_id) => [{ type: 'TenantPayments' as const, id: tenant_id }],
     }),
 
-    createTenantPayment: build.mutation<TenantPaymentResponse, Partial<Payment>>({
+    createTenantPayment: build.mutation<unknown, Partial<Payment>>({
       query: (body) => ({ url: '/rent-payments', method: 'POST', body }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       invalidatesTags: [
-        { type: 'TenantPayments', id: 'LIST' },
+        { type: 'TenantPayments' as const, id: 'LIST' },
         { type: 'Tenants', id: 'LIST' },
       ],
     }),
 
-    updatePaymentStatus: build.mutation<TenantPaymentResponse, UpdatePaymentStatusRequest>({
+    updatePaymentStatus: build.mutation<unknown, { id: number; status: string; payment_date?: string }>({
       query: ({ id, status, payment_date }) => ({
         url: `/rent-payments/${id}/status`,
         method: 'PATCH',
         body: { status, payment_date },
       }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       invalidatesTags: (_res, _err, arg) => [
         { type: 'TenantPayments', id: 'LIST' },
         { type: 'TenantPayment', id: arg.id },
-        { type: 'Tenants', id: 'LIST' },
       ],
     }),
 
-    voidTenantPayment: build.mutation<
-      { success: boolean; message?: string },
-      { id: number; voided_reason: string }
-    >({
-      query: ({ id, voided_reason }) => ({
-        url: `/rent-payments/${id}/void`,
-        method: 'PATCH',
-        body: { voided_reason },
-      }),
-      invalidatesTags: (_res, _err, arg) => [
+    voidTenantPayment: build.mutation<TenantPaymentResponse, number | VoidWithReasonArg>({
+      query: (arg) => {
+        const id = typeof arg === 'number' ? arg : arg.id;
+        const voided_reason = typeof arg === 'number' ? undefined : arg.voided_reason;
+        return {
+          url: `/rent-payments/${id}`,
+          method: 'DELETE',
+          body: voided_reason ? { voided_reason } : undefined,
+        };
+      },
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
+      invalidatesTags: (_res, _err, arg) => {
+        const id = typeof arg === 'number' ? arg : arg.id;
+        return [
         { type: 'TenantPayments', id: 'LIST' },
-        { type: 'TenantPayment', id: arg.id },
+        { type: 'TenantPayment', id },
         { type: 'Tenants', id: 'LIST' },
-      ],
+        ];
+      },
     }),
 
-    detectPaymentGaps: build.query<any, number>({
+    detectPaymentGaps: build.query<unknown, number>({
       query: (tenant_id) => ({ url: `/rent-payments/gaps/${tenant_id}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => extractResponseData<unknown>(response),
       providesTags: (_res, _err, tenant_id) => [{ type: 'TenantPaymentGaps' as const, id: tenant_id }],
     }),
 
-    getNextPaymentDates: build.query<any, NextPaymentDatesParams>({
-      query: ({ tenant_id, rentCycleType = 'CALENDAR', skipGaps = false }) => ({
+    getNextPaymentDates: build.query<unknown, { tenant_id: number; rentCycleType?: string; skipGaps?: boolean }>({
+      query: ({ tenant_id, rentCycleType, skipGaps }) => ({
         url: `/rent-payments/next-dates/${tenant_id}`,
         method: 'GET',
         params: { rentCycleType, skipGaps },
       }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => extractResponseData<unknown>(response),
       providesTags: (_res, _err, arg) => [{ type: 'TenantPaymentNextDates' as const, id: arg.tenant_id }],
     }),
 
     // Advance Payments
     getAdvancePayments: build.query<AdvancePaymentsListResponse, GetAdvancePaymentsParams | void>({
       query: (params) => ({ url: '/advance-payments', method: 'GET', params: params || undefined }),
-      transformResponse: (response: ApiEnvelope<any> | any): AdvancePaymentsListResponse => {
-        const payload = (response as any)?.data ?? response;
-        const extracted = payload?.data ?? payload;
-        const items = Array.isArray(extracted) ? extracted : extracted?.data;
-        return {
-          success: Boolean((response as any)?.success ?? true),
-          data: Array.isArray(items) ? items : [],
-          pagination: extracted?.pagination ?? payload?.pagination,
-        };
-      },
+      transformResponse: (response: unknown): AdvancePaymentsListResponse => normalizePaginatedList<AdvancePayment>(response),
       providesTags: (result) => {
         const items = result?.data || [];
         return [
           { type: 'AdvancePayments' as const, id: 'LIST' },
-          ...(Array.isArray(items) ? items : []).map((p: AdvancePayment) => ({
-            type: 'AdvancePayment' as const,
-            id: p.s_no,
-          })),
+          ...items.map((p) => ({ type: 'AdvancePayment' as const, id: p.s_no })),
         ];
       },
     }),
 
     getAdvancePaymentsByTenant: build.query<AdvancePaymentsListResponse, number>({
       query: (tenant_id) => ({ url: `/advance-payments/tenant/${tenant_id}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<any> | any): AdvancePaymentsListResponse => {
-        const payload = (response as any)?.data ?? response;
-        const extracted = payload?.data ?? payload;
-        const items = Array.isArray(extracted) ? extracted : extracted?.data;
-        return {
-          success: Boolean((response as any)?.success ?? true),
-          data: Array.isArray(items) ? items : [],
-          pagination: extracted?.pagination ?? payload?.pagination,
-        };
-      },
+      transformResponse: (response: unknown): AdvancePaymentsListResponse => normalizePaginatedList<AdvancePayment>(response),
       providesTags: (_res, _err, tenant_id) => [{ type: 'AdvancePayments' as const, id: tenant_id }],
     }),
 
     createAdvancePayment: build.mutation<AdvancePaymentResponse, CreateAdvancePaymentDto>({
       query: (body) => ({ url: '/advance-payments', method: 'POST', body }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       invalidatesTags: (_res, _err, arg) => [
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'Tenants' as const, id: 'LIST' },
-        ...(typeof (arg as any)?.tenant_id === 'number' ? [{ type: 'Tenant' as const, id: (arg as any).tenant_id }] : []),
+        { type: 'Tenant' as const, id: (arg as unknown as { tenant_id?: number }).tenant_id as number },
       ],
     }),
 
     updateAdvancePayment: build.mutation<AdvancePaymentResponse, { id: number; data: Partial<CreateAdvancePaymentDto> }>({
       query: ({ id, data }) => ({ url: `/advance-payments/${id}`, method: 'PATCH', body: data }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       invalidatesTags: (_res, _err, arg) => [
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id: arg.id },
-        { type: 'Tenants' as const, id: 'LIST' },
-        ...(typeof (arg as any)?.data?.tenant_id === 'number'
-          ? [{ type: 'Tenant' as const, id: (arg as any).data.tenant_id }]
-          : []),
       ],
     }),
 
-    updateAdvancePaymentStatus: build.mutation<AdvancePaymentResponse, UpdatePaymentStatusRequest>({
+    updateAdvancePaymentStatus: build.mutation<unknown, { id: number; status: string; payment_date?: string }>({
       query: ({ id, status, payment_date }) => ({
         url: `/advance-payments/${id}/status`,
         method: 'PATCH',
         body: { status, payment_date },
       }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       invalidatesTags: (_res, _err, arg) => [
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id: arg.id },
-        { type: 'Tenants' as const, id: 'LIST' },
       ],
     }),
 
-    deleteAdvancePayment: build.mutation<any, number>({
+    deleteAdvancePayment: build.mutation<unknown, number>({
       query: (id) => ({ url: `/advance-payments/${id}`, method: 'DELETE' }),
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       invalidatesTags: (_res, _err, id) => [
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id },
-        { type: 'Tenants' as const, id: 'LIST' },
       ],
     }),
 
-    voidAdvancePayment: build.mutation<
-      { success: boolean; message?: string },
-      { id: number; voided_reason: string }
-    >({
-      query: ({ id, voided_reason }) => ({
-        url: `/advance-payments/${id}/void`,
-        method: 'PATCH',
-        body: { voided_reason },
-      }),
-      invalidatesTags: (_res, _err, arg) => [
+    voidAdvancePayment: build.mutation<unknown, number | VoidWithReasonArg>({
+      query: (arg) => {
+        const id = typeof arg === 'number' ? arg : arg.id;
+        const voided_reason = typeof arg === 'number' ? undefined : arg.voided_reason;
+        return {
+          url: `/advance-payments/${id}/void`,
+          method: 'PATCH',
+          body: voided_reason ? { voided_reason } : undefined,
+        };
+      },
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
+      invalidatesTags: (_res, _err, arg) => {
+        const id = typeof arg === 'number' ? arg : arg.id;
+        return [
         { type: 'AdvancePayments' as const, id: 'LIST' },
-        { type: 'AdvancePayment' as const, id: arg.id },
-        { type: 'Tenants' as const, id: 'LIST' },
-      ],
+        { type: 'AdvancePayment' as const, id },
+        ];
+      },
     }),
 
     // Refund Payments
     getRefundPayments: build.query<RefundPaymentsListResponse, GetRefundPaymentsParams | void>({
       query: (params) => ({ url: '/refund-payments', method: 'GET', params: params || undefined }),
-      transformResponse: (response: ApiEnvelope<any> | any): RefundPaymentsListResponse => {
-        const payload = (response as any)?.data ?? response;
-        const extracted = payload?.data ?? payload;
-        const items = Array.isArray(extracted) ? extracted : extracted?.data;
-        return {
-          success: Boolean((response as any)?.success ?? true),
-          data: Array.isArray(items) ? items : [],
-          pagination: extracted?.pagination ?? payload?.pagination,
-        };
-      },
+      transformResponse: (response: unknown): RefundPaymentsListResponse => normalizePaginatedList<RefundPayment>(response),
       providesTags: (result) => {
         const items = result?.data || [];
         return [
           { type: 'RefundPayments' as const, id: 'LIST' },
-          ...(Array.isArray(items) ? items : []).map((p: RefundPayment) => ({
-            type: 'RefundPayment' as const,
-            id: p.s_no,
-          })),
+          ...items.map((p) => ({ type: 'RefundPayment' as const, id: p.s_no })),
         ];
       },
     }),
 
-    getRefundPaymentById: build.query<any, number>({
+    getRefundPaymentById: build.query<unknown, number>({
       query: (id) => ({ url: `/refund-payments/${id}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       providesTags: (_res, _err, id) => [{ type: 'RefundPayment' as const, id }],
     }),
 
-    createRefundPayment: build.mutation<any, CreateRefundPaymentDto>({
+    createRefundPayment: build.mutation<unknown, unknown>({
       query: (body) => ({
         url: '/refund-payments',
         method: 'POST',
         body,
         headers: { 'X-Skip-Global-Error': 'true' },
       }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       invalidatesTags: (_res, _err, arg) => [
         { type: 'RefundPayments' as const, id: 'LIST' },
         { type: 'Tenants' as const, id: 'LIST' },
-        ...(typeof (arg as any)?.tenant_id === 'number' ? [{ type: 'Tenant' as const, id: (arg as any).tenant_id }] : []),
+        { type: 'Tenant' as const, id: (arg as unknown as { tenant_id?: number }).tenant_id as number },
       ],
     }),
 
-    updateRefundPayment: build.mutation<any, { id: number; data: Partial<CreateRefundPaymentDto> }>({
+    updateRefundPayment: build.mutation<unknown, { id: number; data: Partial<CreateRefundPaymentDto> }>({
       query: ({ id, data }) => ({ url: `/refund-payments/${id}`, method: 'PATCH', body: data }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       invalidatesTags: (_res, _err, arg) => [
         { type: 'RefundPayments' as const, id: 'LIST' },
         { type: 'RefundPayment' as const, id: arg.id },
-        { type: 'Tenants' as const, id: 'LIST' },
-        ...(typeof (arg as any)?.data?.tenant_id === 'number'
-          ? [{ type: 'Tenant' as const, id: (arg as any).data.tenant_id }]
-          : []),
       ],
     }),
 
-    deleteRefundPayment: build.mutation<any, number>({
+    deleteRefundPayment: build.mutation<unknown, number>({
       query: (id) => ({ url: `/refund-payments/${id}`, method: 'DELETE' }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
       invalidatesTags: (_res, _err, id) => [
         { type: 'RefundPayments' as const, id: 'LIST' },
         { type: 'RefundPayment' as const, id },
-        { type: 'Tenants' as const, id: 'LIST' },
       ],
     }),
   }),

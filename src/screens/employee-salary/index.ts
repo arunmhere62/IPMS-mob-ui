@@ -1,1 +1,1 @@
-export * from './EmployeeSalaryScreen';
+export {};

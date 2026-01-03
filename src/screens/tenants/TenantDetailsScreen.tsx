@@ -1896,9 +1896,9 @@ function TenantDetailsScreenWrapper() {
   const canEditTenant = can(Permission.EDIT_TENANT);
   const canDeleteTenant = can(Permission.DELETE_TENANT);
 
-  const canCreateRent = can(Permission.CREATE_RENT);
-  const canEditRent = can(Permission.EDIT_RENT);
-  const canDeleteRent = can(Permission.DELETE_RENT);
+  const canCreateRent = can(Permission.CREATE_PAYMENT);
+  const canEditRent = can(Permission.EDIT_PAYMENT);
+  const canDeleteRent = can(Permission.DELETE_PAYMENT);
 
   const canCreateAdvance = can(Permission.CREATE_ADVANCE);
   const canEditAdvance = can(Permission.EDIT_ADVANCE);

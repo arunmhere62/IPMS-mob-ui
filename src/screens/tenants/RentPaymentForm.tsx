@@ -8,7 +8,6 @@ import {
   Alert,
   TouchableOpacity,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "../../theme";
 import { DatePicker } from "../../components/DatePicker";
 import { SlideBottomModal } from "../../components/SlideBottomModal";
@@ -47,28 +46,6 @@ const PAYMENT_METHODS: Option[] = [
   { label: "PhonePe", value: "PHONEPE", icon: "📱" },
   { label: "Cash", value: "CASH", icon: "💵" },
   { label: "Bank Transfer", value: "BANK_TRANSFER", icon: "🏦" },
-];
-
-const PAYMENT_STATUS = [
-  {
-    label: "✅ Paid",
-    value: "PAID",
-    color: "#10B981",
-    icon: "checkmark-circle",
-  },
-  {
-    label: "🔵 Partial",
-    value: "PARTIAL",
-    color: "#3B82F6",
-    icon: "pie-chart",
-  },
-  { label: "⏳ Pending", value: "PENDING", color: "#F59E0B", icon: "time" },
-  {
-    label: "❌ Failed",
-    value: "FAILED",
-    color: "#EF4444",
-    icon: "close-circle",
-  },
 ];
 
 // Helper function to parse date string safely (handles multiple formats)
@@ -275,25 +252,31 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   const handleContinueToNextPaymentCalendar = async () => {
     try {
       const response = await triggerGetNextPaymentDates({ tenant_id: tenantId, rentCycleType: 'CALENDAR', skipGaps: true }).unwrap();
-      
-      if (response.success && response.data) {
-        const nextDates = response.data as any;
-        
-        // Auto-fill form with next payment dates
-        setFormData((prev) => ({
-          ...prev,
-          cycle_id: nextDates.suggestedCycleId ?? null,
-          start_date: nextDates.suggestedStartDate,
-          end_date: nextDates.suggestedEndDate || nextDates.suggestedStartDate,
-          status: "PENDING",
-        }));
-        
-        // Hide gap warning and mark as skipped
-        setGapWarning((prev) => ({
-          ...prev,
-          skipGaps: true,
-          visible: false,
-        }));
+
+      if (response && typeof response === 'object') {
+        const nextDates = response as Record<string, unknown>;
+        const suggestedCycleId = (nextDates.suggestedCycleId as number | null | undefined) ?? null;
+        const suggestedStartDate = String(nextDates.suggestedStartDate ?? '');
+        const suggestedEndDateRaw = nextDates.suggestedEndDate;
+        const suggestedEndDate = suggestedEndDateRaw ? String(suggestedEndDateRaw) : '';
+
+        if (suggestedStartDate) {
+          // Auto-fill form with next payment dates
+          setFormData((prev) => ({
+            ...prev,
+            cycle_id: suggestedCycleId,
+            start_date: suggestedStartDate,
+            end_date: suggestedEndDate || suggestedStartDate,
+            status: "PENDING",
+          }));
+
+          // Hide gap warning and mark as skipped
+          setGapWarning((prev) => ({
+            ...prev,
+            skipGaps: true,
+            visible: false,
+          }));
+        }
       }
     } catch (error) {
       console.error("Error getting next payment dates (CALENDAR):", error);
@@ -309,25 +292,31 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   const handleContinueToNextPaymentMidmonth = async () => {
     try {
       const response = await triggerGetNextPaymentDates({ tenant_id: tenantId, rentCycleType: 'MIDMONTH', skipGaps: true }).unwrap();
-      
-      if (response.success && response.data) {
-        const nextDates = response.data as any;
-        
-        // Auto-fill form with next payment dates
-        setFormData((prev) => ({
-          ...prev,
-          cycle_id: nextDates.suggestedCycleId ?? null,
-          start_date: nextDates.suggestedStartDate,
-          end_date: nextDates.suggestedEndDate || nextDates.suggestedStartDate,
-          status: "PENDING",
-        }));
-        
-        // Hide gap warning and mark as skipped
-        setGapWarning((prev) => ({
-          ...prev,
-          skipGaps: true,
-          visible: false,
-        }));
+
+      if (response && typeof response === 'object') {
+        const nextDates = response as Record<string, unknown>;
+        const suggestedCycleId = (nextDates.suggestedCycleId as number | null | undefined) ?? null;
+        const suggestedStartDate = String(nextDates.suggestedStartDate ?? '');
+        const suggestedEndDateRaw = nextDates.suggestedEndDate;
+        const suggestedEndDate = suggestedEndDateRaw ? String(suggestedEndDateRaw) : '';
+
+        if (suggestedStartDate) {
+          // Auto-fill form with next payment dates
+          setFormData((prev) => ({
+            ...prev,
+            cycle_id: suggestedCycleId,
+            start_date: suggestedStartDate,
+            end_date: suggestedEndDate || suggestedStartDate,
+            status: "PENDING",
+          }));
+
+          // Hide gap warning and mark as skipped
+          setGapWarning((prev) => ({
+            ...prev,
+            skipGaps: true,
+            visible: false,
+          }));
+        }
       }
     } catch (error) {
       console.error("Error getting next payment dates (MIDMONTH):", error);

@@ -52,8 +52,8 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const route = useRoute<any>();
   const { can } = usePermissions();
 
-  can(Permission.EDIT_RENT);
-  const canDeleteRent = can(Permission.DELETE_RENT);
+  can(Permission.EDIT_PAYMENT);
+  const canDeleteRent = can(Permission.DELETE_PAYMENT);
   const [voidTenantPayment] = useVoidTenantPaymentMutation();
 
   const payments: RentPayment[] = route.params?.payments || [];

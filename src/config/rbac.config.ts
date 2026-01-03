@@ -59,13 +59,6 @@ export enum Permission {
   EDIT_EMPLOYEE = 'employee_edit',
   DELETE_EMPLOYEE = 'employee_delete',
 
-
-  // Rent
-  VIEW_RENT = 'rent_view',
-  CREATE_RENT = 'rent_create',
-  EDIT_RENT = 'rent_edit',
-  DELETE_RENT = 'rent_delete',
-
   // Advance
   VIEW_ADVANCE = 'advance_view',
   CREATE_ADVANCE = 'advance_create',

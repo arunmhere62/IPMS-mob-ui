@@ -308,8 +308,6 @@ export const baseApi = createApi({
     'S3Objects',
     'S3Object',
     'LegalRequiredStatus',
-    'PayrollRuns',
-    'PayrollRun',
   ],
   endpoints: () => ({}),
 });

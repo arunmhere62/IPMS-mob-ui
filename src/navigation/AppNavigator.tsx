@@ -47,7 +47,6 @@ import { PGDetailsScreen } from '../screens/pg-locations/PGDetailsScreen';
 import { OrganizationsScreen } from '../screens/organizations/OrganizationsScreen';
 import { BottomNav } from '../components/BottomNav';
 import { ExpenseScreen } from '@/screens/expense/ExpenseScreen';
-import { EmployeeSalaryScreen } from '@/screens/employee-salary/EmployeeSalaryScreen';
 import { EmployeesScreen } from '@/screens/employees/EmployeesScreen';
 import { AddEmployeeScreen } from '@/screens/employees/AddEmployeeScreen';
 import EmployeeDetailsScreen from '@/screens/employees/EmployeeDetailsScreen';
@@ -68,8 +67,6 @@ import { TenantRefundPaymentsScreen } from '@/screens/tenants/TenantRefundPaymen
 import { TenantAdvancePaymentsScreen } from '@/screens/tenants/TenantAdvancePaymentsScreen';
 import { NetworkLoggerScreen } from '@/screens/network/NetworkLoggerScreen';
 import { FaqWebViewScreen } from '@/screens/settings/FaqWebViewScreen';
-import { PayrollRunsScreen } from '@/screens/payroll/PayrollRunsScreen';
-import { PayrollRunDetailsScreen } from '@/screens/payroll/PayrollRunDetailsScreen';
 
 const Stack = createNativeStackNavigator<ParamListBase>();
 const Tab = createBottomTabNavigator<ParamListBase>();
@@ -220,7 +217,6 @@ export const AppNavigator = () => {
             <Stack.Screen name="AddTenant" component={AddTenantScreen} />
             <Stack.Screen name="UserProfile" component={UserProfileScreen} />
             <Stack.Screen name="Expenses" component={ExpenseScreen} />
-            <Stack.Screen name="EmployeeSalary" component={EmployeeSalaryScreen} />
             <Stack.Screen name="Employees" component={EmployeesScreen} />
             <Stack.Screen name="AddEmployee" component={AddEmployeeScreen} />
             <Stack.Screen name="EmployeeDetails" component={EmployeeDetailsScreen} />
@@ -238,8 +234,6 @@ export const AppNavigator = () => {
             <Stack.Screen name="TenantRentPaymentsScreen" component={TenantRentPaymentsScreen} />
             <Stack.Screen name="TenantAdvancePaymentsScreen" component={TenantAdvancePaymentsScreen} />
             <Stack.Screen name="TenantRefundPaymentsScreen" component={TenantRefundPaymentsScreen} />
-            <Stack.Screen name="PayrollRuns" component={PayrollRunsScreen} />
-            <Stack.Screen name="PayrollRunDetails" component={PayrollRunDetailsScreen} />
             <Stack.Screen name="NetworkLogger" component={NetworkLoggerScreen} />
             <Stack.Screen name="FaqWebView" component={FaqWebViewScreen} />
           </>

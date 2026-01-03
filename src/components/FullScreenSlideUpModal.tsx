@@ -46,7 +46,6 @@ export const FullScreenSlideUpModal: React.FC<FullScreenSlideUpModalProps> = ({ 
     } else if (mounted) {
       animateOut(() => setMounted(false));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const modalVisible = useMemo(() => visible || mounted, [visible, mounted]);
