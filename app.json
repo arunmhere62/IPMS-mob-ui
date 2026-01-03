@@ -14,6 +14,7 @@
     "assetBundlePatterns": [
       "assets/fonts/**",
       "assets/app-icon.png",
+      "assets/adaptive-logo.png",
       "assets/splash-logo.png",
       "assets/splash-lottie.json",
       "assets/ball-jump.json"
@@ -37,8 +38,8 @@
     "android": {
       "package": "com.pgmanagement.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/app-icon.png",
-        "backgroundColor": "#3B82F6"
+        "foregroundImage": "./assets/adaptive-logo.png",
+        "backgroundColor": "#0F172A"
       },
       "permissions": [
         "NOTIFICATIONS",
