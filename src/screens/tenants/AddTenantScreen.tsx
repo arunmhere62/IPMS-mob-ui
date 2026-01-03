@@ -83,6 +83,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
   // Check if we're coming from bed screen with pre-selected bed and room
   const preSelectedBedId = route?.params?.bed_id;
   const preSelectedRoomId = route?.params?.room_id;
+  const isFromBedFlow = !isEditMode && !!preSelectedBedId && !!preSelectedRoomId;
 
   // Dropdown data
   const [roomList, setRoomList] = useState<OptionType[]>([]);
@@ -453,7 +454,11 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
         const res = await createTenantMutation(tenantData as any).unwrap();
 
         showSuccessAlert(res);
-        navigation.navigate('Tenants', { refresh: true });
+        if (isFromBedFlow) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('Tenants', { refresh: true });
+        }
       }
     } catch (error: any) {
       showErrorAlert(error, 'Error');
@@ -805,7 +810,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
             <ImageUploadS3
               images={tenantImages}
               onImagesChange={setTenantImages}
-              maxImages={5}
+              maxImages={1}
               label="Tenant Photos"
               folder={getFolderConfig().tenants.images}
               useS3={true}
@@ -829,7 +834,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({ navigation, ro
             <ImageUploadS3
               images={proofDocuments}
               onImagesChange={setProofDocuments}
-              maxImages={5}
+              maxImages={3}
               label="ID Proof / Documents"
               folder={getFolderConfig().tenants.documents}
               useS3={true}

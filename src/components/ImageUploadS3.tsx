@@ -10,6 +10,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Theme } from '../theme';
 import { useUploadToS3Mutation } from '../services/api/storageApi';
 
@@ -42,6 +43,14 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
   const [uploadToS3Mutation] = useUploadToS3Mutation();
 
+  const getErrorMessage = (error: any) => {
+    const msg =
+      (error && typeof error === 'object' && 'message' in error && (error as any).message)
+        ? (error as any).message
+        : error;
+    return typeof msg === 'string' && msg.trim() ? msg : 'Something went wrong. Please try again.';
+  };
+
   const generateUniqueFileName = (baseName: string, prefix: string) => {
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 10);
@@ -60,6 +69,68 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
     } catch {
       return false;
     }
+  };
+
+  const base64SizeBytes = (dataUriOrBase64: string) => {
+    const base64 = dataUriOrBase64.includes('base64,') ? dataUriOrBase64.split('base64,')[1] : dataUriOrBase64;
+    const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+    return Math.floor((base64.length * 3) / 4) - padding;
+  };
+
+  const compressImageToTarget = async (uri: string, targetBytes: number) => {
+    // Strategy:
+    // 1) Resize down to a reasonable width
+    // 2) Iteratively lower JPEG quality until under targetBytes (or reach min quality)
+    // Note: expo-image-manipulator returns base64 when requested.
+
+    let width = 1280;
+    let quality = 0.8;
+    const minQuality = 0.2;
+
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const manipulated = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width } }],
+        {
+          compress: quality,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
+        }
+      );
+
+      if (!manipulated.base64) {
+        throw new Error('Failed to process image. Please try another image.');
+      }
+
+      const dataUri = `data:image/jpeg;base64,${manipulated.base64}`;
+      const bytes = base64SizeBytes(dataUri);
+      if (bytes <= targetBytes) {
+        return dataUri;
+      }
+
+      // Try lowering quality first, then reduce width.
+      if (quality > minQuality) {
+        quality = Math.max(minQuality, quality - 0.15);
+      } else {
+        width = Math.max(640, Math.round(width * 0.85));
+      }
+    }
+
+    // Return a best-effort compressed image (last attempt at low quality/width)
+    const manipulated = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 640 } }],
+      {
+        compress: 0.2,
+        format: ImageManipulator.SaveFormat.JPEG,
+        base64: true,
+      }
+    );
+
+    if (!manipulated.base64) {
+      throw new Error('Failed to process image. Please try another image.');
+    }
+    return `data:image/jpeg;base64,${manipulated.base64}`;
   };
 
   // Helper function to clean up images array
@@ -141,29 +212,31 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
 
     try {
       setUploading(true);
+      const remainingSlots = maxImages - images.length;
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        quality: 0.5,
-        base64: true,
+        allowsMultipleSelection: remainingSlots > 1,
+        quality: 1,
+        base64: false,
       });
 
       if (!result.canceled && result.assets) {
-        const remainingSlots = maxImages - images.length;
         const assetsToProcess = result.assets.slice(0, remainingSlots);
         
         if (useS3) {
           // Upload to S3 only - no base64 fallback for new uploads
           try {
             const uploadPromises = assetsToProcess.map(async (asset, index) => {
-              if (!asset.base64) {
-                throw new Error('Base64 data not available');
+              if (!asset?.uri) {
+                throw new Error('Selected image could not be read. Please try another image.');
               }
 
-              // Validate file size (max 10MB for images)
-              const base64Image = `data:image/jpeg;base64,${asset.base64}`;
-              if (!validateBase64FileSize(base64Image, 10)) {
-                throw new Error('Image size exceeds 10MB limit');
+              // Compress to ~100KB (base64 overhead included).
+              const base64Image = await compressImageToTarget(asset.uri, 110 * 1024);
+
+              // Safety cap
+              if (!validateBase64FileSize(base64Image, 0.25)) {
+                throw new Error('Image is too large even after compression. Please choose a smaller image.');
               }
 
               // Upload to S3 - no fallback
@@ -177,7 +250,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
             onImagesChange(newImages);
           } catch (error: any) {
             console.error('S3 upload failed:', error);
-            Alert.alert('Upload Failed', error.message || 'Failed to upload images to cloud storage. Please try again.');
+            Alert.alert('Upload Failed', getErrorMessage(error));
             return;
           }
         } else {
@@ -195,7 +268,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
       }
     } catch (error: any) {
       console.error('Error picking images:', error);
-      Alert.alert('Upload Error', error.message || 'Failed to upload images. Please try again.');
+      Alert.alert('Upload Error', getErrorMessage(error));
     } finally {
       setUploading(false);
     }
@@ -215,20 +288,20 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
     try {
       setUploading(true);
       const result = await ImagePicker.launchCameraAsync({
-        quality: 0.5,
-        base64: true,
+        quality: 1,
+        base64: false,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
         
-        if (useS3 && asset.base64) {
+        if (useS3 && asset.uri) {
           // Upload to S3 only - no base64 fallback
-          const base64Image = `data:image/jpeg;base64,${asset.base64}`;
+          const base64Image = await compressImageToTarget(asset.uri, 110 * 1024);
           
           // Validate file size
-          if (!validateBase64FileSize(base64Image, 10)) {
-            Alert.alert('Error', 'Image size exceeds 10MB limit');
+          if (!validateBase64FileSize(base64Image, 0.25)) {
+            Alert.alert('Error', 'Image is too large even after compression. Please try again.');
             return;
           }
 
@@ -238,7 +311,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
             onImagesChange(newImages);
           } catch (s3Error: any) {
             console.error('S3 upload failed:', s3Error);
-            Alert.alert('Upload Failed', s3Error.message || 'Failed to upload image to cloud storage. Please try again.');
+            Alert.alert('Upload Failed', getErrorMessage(s3Error));
             return;
           }
         } else {
@@ -249,7 +322,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
       }
     } catch (error: any) {
       console.error('Error taking photo:', error);
-      Alert.alert('Upload Error', error.message || 'Failed to upload photo. Please try again.');
+      Alert.alert('Upload Error', getErrorMessage(error));
     } finally {
       setUploading(false);
     }

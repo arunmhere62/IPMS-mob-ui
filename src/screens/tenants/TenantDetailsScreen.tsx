@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -51,6 +51,7 @@ import {
   useUpdateAdvancePaymentMutation,
   useUpdateRefundPaymentMutation,
   useCreateTenantPaymentMutation,
+  useLazyDetectPaymentGapsQuery,
 } from '@/services/api/paymentsApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import AdvancePaymentForm from './AdvancePaymentForm';
@@ -153,6 +154,8 @@ const TenantDetailsContent: React.FC<{
   const [deleteRefundPayment] = useDeleteRefundPaymentMutation();
 
   const [createTenantPayment] = useCreateTenantPaymentMutation();
+  const [triggerDetectPaymentGaps] = useLazyDetectPaymentGapsQuery();
+  const rentStatusHydratedRef = useRef<number | null>(null);
   
   // Clone tenant data to avoid frozen state issues
   const currentTenant = tenantResponse?.data ? JSON.parse(JSON.stringify(tenantResponse.data)) : null;
@@ -379,6 +382,32 @@ const TenantDetailsContent: React.FC<{
     if (!tenantId) return;
     refetchTenant();
   }, [tenantId, refetchTenant]);
+
+  // Hydrate tenant rent status fields (rent_due_amount / payment_status etc.)
+  // Some of these values get populated after gap detection logic runs on the API.
+  useEffect(() => {
+    if (!tenantId) return;
+    if (rentStatusHydratedRef.current === tenantId) return;
+
+    const hydrate = async () => {
+      try {
+        await triggerDetectPaymentGaps(tenantId).unwrap();
+      } catch {
+        // ignore - this is just for hydration
+      } finally {
+        rentStatusHydratedRef.current = tenantId;
+        refetchTenant();
+
+        // The API may compute & persist tenant rent status fields asynchronously.
+        // Do a short delayed re-fetch to avoid UI showing 0 due until the modal is opened.
+        setTimeout(() => {
+          refetchTenant();
+        }, 600);
+      }
+    };
+
+    hydrate();
+  }, [tenantId, triggerDetectPaymentGaps, refetchTenant]);
 
   // Handle refresh parameter when screen comes into focus
   useFocusEffect(

@@ -40,6 +40,9 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const [pagination, setPagination] = useState<any>(null);
   const [roomOptions, setRoomOptions] = useState<any[]>([]);
 
+  const [refreshing, setRefreshing] = useState(false);
+  const isBackgroundRefreshing = tenants.length > 0 && !refreshing && tenantsQuery.isFetching;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -125,7 +128,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
         console.log('Refresh parameter detected, refreshing tenant list');
         setCurrentPage(1);
         setHasMore(true);
-        loadTenants(1, true);
+        // Soft refresh: keep current list visible while we fetch fresh data
+        loadTenants(1, true, undefined, tenants.length > 0);
         // Clear the refresh parameter
         navigation.setParams({ refresh: undefined });
       } else if (shouldReloadOnFocus || !hasLoadedOnceRef.current) {
@@ -144,7 +148,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
           }
         }, 100); // Small delay to ensure list is rendered
       }
-    }, [shouldReloadOnFocus, navigation])
+    }, [shouldReloadOnFocus, navigation, tenants.length])
   );
 
   const loadTenants = async (
@@ -157,13 +161,14 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
       pendingRentFilter: boolean;
       pendingAdvanceFilter: boolean;
       partialRentFilter: boolean;
-    }>
+    }>,
+    softReset: boolean = false
   ) => {
     try {
       if (tenantsQuery.isFetching) return;
       if (!hasMore && !reset) return;
 
-      if (reset) {
+      if (reset && !softReset) {
         setTenants([]);
         setPagination(null);
       }
@@ -241,12 +246,15 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   };
 
   const onRefresh = async () => {
-    setCurrentPage(1);
-    setHasMore(true);
-    // Ensure we show skeleton instead of pull-to-refresh spinner
-    setTenants([]);
-    setPagination(null);
-    await loadTenants(1, true);
+    setRefreshing(true);
+    try {
+      setCurrentPage(1);
+      setHasMore(true);
+      // Soft refresh: keep list visible and show spinner
+      await loadTenants(1, true, undefined, tenants.length > 0);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const applyFilters = () => {
@@ -1275,7 +1283,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
               refreshControl={
                 <RefreshControl
-                  refreshing={false}
+                  refreshing={refreshing || isBackgroundRefreshing}
                   onRefresh={onRefresh}
                   colors={[Theme.colors.primary]}
                 />

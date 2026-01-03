@@ -175,9 +175,16 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   }, [showFilters, selectedRoomId, occupancyFilter]);
 
   useEffect(() => {
-    const nextLoading = !!selectedPGLocationId && (isRoomsFetching || isBedsAllFetching || isBedsByRoomFetching);
-    setLoading(nextLoading);
+    const isFetchingAny = !!selectedPGLocationId && (isRoomsFetching || isBedsAllFetching || isBedsByRoomFetching);
+    // Only show full-screen loading skeleton during initial load when list is empty.
+    setLoading(isFetchingAny && beds.length === 0);
   }, [isRoomsFetching, isBedsAllFetching, isBedsByRoomFetching, selectedPGLocationId]);
+
+  const isBackgroundRefreshing =
+    !!selectedPGLocationId &&
+    beds.length > 0 &&
+    !refreshing &&
+    (isBedsAllFetching || isBedsByRoomFetching);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -773,7 +780,12 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
             data={beds}
             renderItem={renderBedCard}
             keyExtractor={(item) => item.s_no.toString()}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing || isBackgroundRefreshing}
+                onRefresh={handleRefresh}
+              />
+            }
             contentContainerStyle={{ paddingBottom: 80 }}
           />
         )}

@@ -50,6 +50,16 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
   const isEditMode = !!bed;
   const isBedNoLocked = isEditMode && (!!(bed as any)?.is_occupied || (((bed as any)?.tenants || []) as any[]).length > 0);
 
+  const resetCreateForm = () => {
+    setFormData({
+      bed_no: 'BED',
+      bed_price: '',
+      images: [],
+    });
+    setOriginalImages([]);
+    setErrors({});
+  };
+
   useEffect(() => {
     if (visible) {
       if (bed) {
@@ -149,7 +159,12 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
       }
 
       onSuccess();
-      onClose();
+
+      if (isEditMode) {
+        onClose();
+      } else {
+        resetCreateForm();
+      }
     } catch (error: any) {
       const errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} bed`;
       if (__DEV__) {

@@ -23,6 +23,12 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
       ? 'N/A'
       : `₹${rentPrice}/month`;
 
+  const bedPrice = (tenant as any)?.beds?.bed_price;
+  const bedPriceText =
+    bedPrice === null || bedPrice === undefined || String(bedPrice).trim() === ''
+      ? 'N/A'
+      : `₹${bedPrice}/month`;
+
   const formatDate = (value?: string | null) => {
     if (!value) return 'N/A';
     try {
@@ -106,6 +112,30 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
             ellipsizeMode="tail"
           >
             {rentText}
+          </Text>
+        </View>
+
+        <View style={{ flexDirection: 'column', alignItems: 'flex-start', marginTop: 4 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              color: Theme.colors.text.tertiary,
+              marginRight: 6,
+            }}
+          >
+            Bed Price:
+          </Text>
+
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: '600',
+              color: Theme.colors.text.primary,
+            }}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {bedPriceText}
           </Text>
         </View>
         <View>

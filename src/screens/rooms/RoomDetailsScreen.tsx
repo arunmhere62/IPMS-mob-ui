@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   RefreshControl,
   Image,
@@ -21,6 +20,7 @@ import {
 } from '../../services/api/roomsApi';
 import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -42,6 +42,8 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   const { roomId } = route.params;
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
+
+  const screenWidth = Dimensions.get('window').width;
 
   const canEditRoom = can(Permission.EDIT_ROOM);
   const canDeleteRoom = can(Permission.DELETE_ROOM);
@@ -160,7 +162,9 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
     });
   };
 
-  if (loading) {
+  const isBackgroundRefreshing = !refreshing && !!room && (isRoomFetching || isBedsFetching);
+
+  if (loading && !room) {
     return (
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
         <ScreenHeader
@@ -171,12 +175,115 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
           syncMobileHeaderBg={true}
         />
         <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator size="large" color={Theme.colors.primary} />
-            <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
-              Loading room details...
-            </Text>
-          </View>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
+            <Card
+              style={{
+                marginHorizontal: 12,
+                marginTop: 16,
+                padding: 14,
+                borderRadius: 16,
+                backgroundColor: '#fff',
+                shadowColor: '#00000015',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 10,
+                elevation: 2,
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                  <SkeletonLoader width={42} height={42} borderRadius={14} />
+                  <View style={{ flex: 1 }}>
+                    <SkeletonLoader width={140} height={18} borderRadius={6} style={{ marginBottom: 8 }} />
+                    <SkeletonLoader width={90} height={10} borderRadius={6} />
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <SkeletonLoader width={28} height={28} borderRadius={8} />
+                  <SkeletonLoader width={28} height={28} borderRadius={8} />
+                </View>
+              </View>
+            </Card>
+
+            <Card style={{ margin: 16, padding: 16 }}>
+              <SkeletonLoader width={160} height={16} borderRadius={6} style={{ marginBottom: 12 }} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
+                {Array.from({ length: 3 }).map((_, idx) => (
+                  <SkeletonLoader
+                    key={idx}
+                    width={200}
+                    height={150}
+                    borderRadius={12}
+                    style={{ marginRight: 12 }}
+                  />
+                ))}
+              </ScrollView>
+            </Card>
+
+            <Card style={{ marginHorizontal: 16, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <SkeletonLoader width={54} height={10} borderRadius={6} style={{ marginBottom: 8 }} />
+                  <SkeletonLoader width={34} height={16} borderRadius={6} />
+                </View>
+
+                <View style={{ width: 1, height: 26, backgroundColor: Theme.colors.border }} />
+
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <SkeletonLoader width={74} height={10} borderRadius={6} style={{ marginBottom: 8 }} />
+                  <SkeletonLoader width={34} height={16} borderRadius={6} />
+                </View>
+
+                <View style={{ width: 1, height: 26, backgroundColor: Theme.colors.border }} />
+
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <SkeletonLoader width={64} height={10} borderRadius={6} style={{ marginBottom: 8 }} />
+                  <SkeletonLoader width={34} height={16} borderRadius={6} />
+                </View>
+              </View>
+            </Card>
+
+            <Card style={{ margin: 16, marginTop: 0, padding: 16 }}>
+              <SkeletonLoader width={120} height={14} borderRadius={6} style={{ marginBottom: 12 }} />
+              <SkeletonLoader width={Math.min(screenWidth - 64, 240)} height={16} borderRadius={6} style={{ marginBottom: 8 }} />
+              <SkeletonLoader width={130} height={10} borderRadius={6} />
+            </Card>
+
+            <Card style={{ margin: 16, marginTop: 0, padding: 16 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <SkeletonLoader width={140} height={16} borderRadius={6} />
+                <SkeletonLoader width={90} height={32} borderRadius={8} />
+              </View>
+
+              <View style={{ gap: 8 }}>
+                {Array.from({ length: 5 }).map((_, idx) => (
+                  <View
+                    key={idx}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: 12,
+                      backgroundColor: '#F9FAFB',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.border,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                      <SkeletonLoader width={36} height={36} borderRadius={18} />
+                      <View style={{ flex: 1 }}>
+                        <SkeletonLoader width={120} height={14} borderRadius={6} style={{ marginBottom: 6 }} />
+                        <SkeletonLoader width={70} height={10} borderRadius={6} style={{ marginBottom: 6 }} />
+                        <SkeletonLoader width={90} height={10} borderRadius={6} />
+                      </View>
+                    </View>
+                    <SkeletonLoader width={28} height={28} borderRadius={8} />
+                  </View>
+                ))}
+              </View>
+            </Card>
+          </ScrollView>
         </View>
       </ScreenLayout>
     );
@@ -217,7 +324,12 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
      <View style ={{flex : 1, backgroundColor : CONTENT_COLOR}} >
        <ScrollView
         style={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing || isBackgroundRefreshing}
+            onRefresh={handleRefresh}
+          />
+        }
       >
         {/* Header Card */}
         <Card

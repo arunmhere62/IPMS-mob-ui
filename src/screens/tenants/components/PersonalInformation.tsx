@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../../components/Card';
 import { Theme } from '../../../theme';
@@ -15,6 +15,9 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
     const v = typeof value === 'string' ? value.trim() : value;
     return v ? String(v) : 'N/A';
   };
+
+  const tenantImage = tenant.images && Array.isArray(tenant.images) && tenant.images.length > 0 ? tenant.images[0] : null;
+  const proofDocs = tenant.proof_documents && Array.isArray(tenant.proof_documents) ? tenant.proof_documents : [];
 
   return (
     <Card style={{ marginHorizontal: 16, marginBottom: 16, padding: 16 }}>
@@ -92,89 +95,60 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="document-text-outline" size={16} color={Theme.colors.text.secondary} />
+                <Ionicons name="images-outline" size={16} color={Theme.colors.text.secondary} />
                 <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Proof Documents
+                  Tenant Image & Proof Documents
                 </Text>
               </View>
               <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
-                {tenant.proof_documents && Array.isArray(tenant.proof_documents) ? tenant.proof_documents.length : 0}
+                {(tenantImage ? 1 : 0) + (proofDocs?.length || 0)}
               </Text>
             </View>
 
-            {tenant.proof_documents && Array.isArray(tenant.proof_documents) && tenant.proof_documents.length > 0 ? (
-              <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                {tenant.proof_documents.slice(0, 4).map((doc: string, index: number) => (
+            {tenantImage || (proofDocs && proofDocs.length > 0) ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 10, paddingTop: 10 }}
+              >
+                {tenantImage ? (
                   <TouchableOpacity
-                    key={index}
-                    onPress={() => onOpenMedia(doc)}
+                    onPress={() => onOpenMedia(tenantImage)}
                     style={{
-                      width: '48%',
-                      aspectRatio: 1,
+                      width: 92,
+                      height: 92,
                       backgroundColor: '#F9FAFB',
                       borderRadius: 10,
                       borderWidth: 1,
                       borderColor: Theme.colors.border,
                       overflow: 'hidden',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                    }}
+                  >
+                    <Image source={{ uri: tenantImage }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  </TouchableOpacity>
+                ) : null}
+
+                {proofDocs.map((doc: string, index: number) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => onOpenMedia(doc)}
+                    style={{
+                      width: 92,
+                      height: 92,
+                      backgroundColor: '#F9FAFB',
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.border,
+                      overflow: 'hidden',
                     }}
                   >
                     <Image source={{ uri: doc }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
             ) : (
               <View style={{ marginTop: 10, paddingVertical: 10 }}>
                 <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>No documents uploaded</Text>
-              </View>
-            )}
-          </View>
-
-          <View
-            style={{
-              padding: 12,
-              borderRadius: 12,
-              backgroundColor: Theme.colors.background.secondary,
-              borderWidth: 1,
-              borderColor: Theme.colors.border,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="image-outline" size={16} color={Theme.colors.text.secondary} />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Tenant Images
-                </Text>
-              </View>
-              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
-                {tenant.images && Array.isArray(tenant.images) ? tenant.images.length : 0}
-              </Text>
-            </View>
-
-            {tenant.images && Array.isArray(tenant.images) && tenant.images.length > 0 ? (
-              <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                {tenant.images.slice(0, 4).map((image: string, index: number) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => onOpenMedia(image)}
-                    style={{
-                      width: '48%',
-                      aspectRatio: 1,
-                      backgroundColor: '#F9FAFB',
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: Theme.colors.border,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : (
-              <View style={{ marginTop: 10, paddingVertical: 10 }}>
-                <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>No images uploaded</Text>
               </View>
             )}
           </View>

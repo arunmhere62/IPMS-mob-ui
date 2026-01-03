@@ -56,6 +56,12 @@ export const RoomModal: React.FC<RoomModalProps> = ({
   const roomData = (roomResponse as any)?.data;
   const isRoomNoLocked = !!roomId && Array.isArray(roomData?.beds) && roomData.beds.length > 0;
 
+  const resetCreateForm = () => {
+    setFormData({ room_no: 'RM', images: [] });
+    setOriginalImages([]);
+    setErrors({});
+  };
+
   useEffect(() => {
     if (!visible) return;
     if (!roomId) {
@@ -179,7 +185,12 @@ export const RoomModal: React.FC<RoomModalProps> = ({
       }
 
       onSuccess();
-      onClose();
+
+      if (roomId) {
+        onClose();
+      } else {
+        resetCreateForm();
+      }
     } catch (error: any) {
       showErrorAlert(error, 'Room Error');
     } finally {

@@ -14,6 +14,7 @@ import { DatePicker } from "../../components/DatePicker";
 import { SlideBottomModal } from "../../components/SlideBottomModal";
 import { OptionSelector, Option } from "../../components/OptionSelector";
 import { AmountInput } from "../../components/AmountInput";
+import { SkeletonLoader } from "../../components/SkeletonLoader";
 import { useLazyGetBedByIdQuery } from "@/services/api/roomsApi";
 import { pgLocationsApi } from "../../services/api/pgLocationsApi";
 import { useDispatch } from "react-redux";
@@ -413,33 +414,31 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     <View
       style={{
         flexDirection: "row",
-        marginBottom: 4,
-        alignItems: "flex-start",
-        flexWrap: "wrap",
+        marginBottom: 6,
+        alignItems: "center",
       }}
     >
       <Text
         style={{
           fontSize: 12,
           color: Theme.colors.text.tertiary,
-          marginRight: 6,
+          width: 100,
         }}
       >
         Rent Cycle:
       </Text>
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "600",
-            color: Theme.colors.text.primary,
-            flexShrink: 1,
-            flexWrap: "wrap",
-          }}
-        >
-          📅 Calendar (1st - Last day)
-        </Text>
-      </View>
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: "700",
+          color: Theme.colors.text.primary,
+          flex: 1,
+        }}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
+        📅 Calendar (1st - Last day)
+      </Text>
     </View>
   );
 
@@ -452,33 +451,31 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     <View
       style={{
         flexDirection: "row",
-        marginBottom: 4,
-        alignItems: "flex-start",
-        flexWrap: "wrap",
+        marginBottom: 6,
+        alignItems: "center",
       }}
     >
       <Text
         style={{
           fontSize: 12,
           color: Theme.colors.text.tertiary,
-          marginRight: 6,
+          width: 100,
         }}
       >
         Rent Cycle:
       </Text>
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "600",
-            color: Theme.colors.text.primary,
-            flexShrink: 1,
-            flexWrap: "wrap",
-          }}
-        >
-          🔄 Mid-Month (Any day - Same day next month - 1)
-        </Text>
-      </View>
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: "700",
+          color: Theme.colors.text.primary,
+          flex: 1,
+        }}
+        numberOfLines={2}
+        ellipsizeMode="tail"
+      >
+        🔄 Mid-Month (Any day - Same day next month - 1)
+      </Text>
     </View>
   );
 
@@ -548,6 +545,43 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
 
     fetchDetails();
   }, [visible, bedId, pgId, rentAmount]);
+
+  // Keep expected rent amount consistent with backend rule for CALENDAR join-month proration.
+  useEffect(() => {
+    if (!visible) return;
+    if (!rentCycleData || rentCycleData.type !== 'CALENDAR') return;
+    if (!joiningDate) return;
+    if (!formData.start_date || !formData.end_date) return;
+    if (!(bedRentAmount > 0)) return;
+
+    const start = parseDate(formData.start_date);
+    const end = parseDate(formData.end_date);
+    const join = parseDate(joiningDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || isNaN(join.getTime())) return;
+
+    const isJoinMonth =
+      start.getFullYear() === join.getFullYear() && start.getMonth() === join.getMonth();
+    const isProratedJoinMonth = isJoinMonth && join.getDate() > 1;
+
+    let expected = bedRentAmount;
+    if (isProratedJoinMonth) {
+      const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+      const startUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+      const endUtc = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+      const daysStayed = Math.floor((endUtc - startUtc) / (1000 * 60 * 60 * 24)) + 1;
+      expected = (bedRentAmount / daysInMonth) * Math.max(0, daysStayed);
+    }
+
+    const expectedRounded = Math.round((expected + Number.EPSILON) * 100) / 100;
+    const current = parseFloat(formData.actual_rent_amount || '0');
+    if (Math.abs(current - expectedRounded) > 0.009) {
+      setFormData((prev) => ({
+        ...prev,
+        actual_rent_amount: expectedRounded.toString(),
+      }));
+    }
+  }, [visible, rentCycleData, joiningDate, formData.start_date, formData.end_date, bedRentAmount]);
 
   // Detect payment gaps when form opens
   useEffect(() => {
@@ -666,25 +700,6 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       `Based on the amounts:\n\nAmount Paid: ₹${amountPaid.toLocaleString("en-IN")}\nRent Amount: ₹${actualAmount.toLocaleString("en-IN")}\n\nSuggested Status: ${autoStatusLabel}\n\nIs this correct?`,
       [
         {
-          text: "Change Status",
-          onPress: () => {
-            Alert.alert(
-              "Select Payment Status",
-              "Please select the payment status:",
-              [
-                ...PAYMENT_STATUS.map((statusOption) => ({
-                  text: statusOption.label,
-                  onPress: () => savePayment(statusOption.value),
-                })),
-                {
-                  text: "Cancel",
-                  style: "cancel",
-                },
-              ]
-            );
-          },
-        },
-        {
           text: "Confirm",
           onPress: () => savePayment(autoStatus),
         },
@@ -700,6 +715,12 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     try {
       setLoading(true);
 
+      const amountPaid = parseFloat(formData.amount_paid);
+      const actualAmount = parseFloat(formData.actual_rent_amount);
+
+      const derivedStatus: "PAID" | "PARTIAL" | "PENDING" | "FAILED" =
+        amountPaid >= actualAmount ? "PAID" : amountPaid > 0 ? "PARTIAL" : "PENDING";
+
       const paymentData = {
         tenant_id: tenantId,
         pg_id: pgId,
@@ -713,7 +734,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
           | "PHONEPE"
           | "CASH"
           | "BANK_TRANSFER",
-        status: status as "PAID" | "PARTIAL" | "PENDING" | "FAILED",
+        status: derivedStatus,
         cycle_id: formData.cycle_id as number,
         remarks: formData.remarks || undefined,
       };
@@ -760,16 +781,65 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       enableFlexibleHeightDrag={true}
     >
       {/* Gap Warning Alert - Modern Clean UI */}
-      {gapWarning.gaps && gapWarning.gaps.length > 0 && (
+      {checkingGaps ? (
         <View
           style={{
             marginHorizontal: 0,
             marginBottom: 16,
             padding: 14,
-            backgroundColor: '#F8FAFC',
-            borderRadius: 10,
-            borderLeftWidth: 5,
-            borderLeftColor: '#F59E0B',
+            backgroundColor: '#FFFBEB',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#FCD34D',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 4,
+            elevation: 3,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 }}>
+            <View
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                backgroundColor: '#FEF3C7',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 10,
+                borderWidth: 1,
+                borderColor: '#FCD34D',
+              }}
+            >
+              <Text style={{ fontSize: 18 }}>📅</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <SkeletonLoader width="55%" height={14} borderRadius={6} style={{ marginBottom: 8 }} />
+              <SkeletonLoader width="90%" height={12} borderRadius={6} />
+            </View>
+          </View>
+
+          <View style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <SkeletonLoader width={96} height={44} borderRadius={8} />
+              <SkeletonLoader width={96} height={44} borderRadius={8} />
+              <SkeletonLoader width={96} height={44} borderRadius={8} />
+            </View>
+          </View>
+
+          <SkeletonLoader width="100%" height={42} borderRadius={10} />
+        </View>
+      ) : gapWarning.gaps && gapWarning.gaps.length > 0 ? (
+        <View
+          style={{
+            marginHorizontal: 0,
+            marginBottom: 16,
+            padding: 14,
+            backgroundColor: '#FFFBEB',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#FCD34D',
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.08,
@@ -779,7 +849,21 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
         >
           {/* Header - Compact */}
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 }}>
-            <Text style={{ fontSize: 24, marginRight: 10 }}>📅</Text>
+            <View
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                backgroundColor: '#FEF3C7',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 10,
+                borderWidth: 1,
+                borderColor: '#FCD34D',
+              }}
+            >
+              <Text style={{ fontSize: 18 }}>📅</Text>
+            </View>
             <View style={{ flex: 1 }}>
               <Text
                 style={{
@@ -798,7 +882,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                   lineHeight: 16,
                 }}
               >
-                {gapWarning.gaps.length} gap{gapWarning.gaps.length > 1 ? 's' : ''} detected. Choose to fill or skip.
+                {gapWarning.gaps.length} gap{gapWarning.gaps.length > 1 ? 's' : ''} detected. Tap a period to collect rent.
               </Text>
             </View>
           </View>
@@ -817,10 +901,10 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                     style={{
                       paddingVertical: 8,
                       paddingHorizontal: 12,
-                      backgroundColor: isSelected ? '#F59E0B' : '#FFFFFF',
+                      backgroundColor: isSelected ? '#FBBF24' : '#FFFBEB',
                       borderRadius: 6,
-                      borderWidth: 1.5,
-                      borderColor: isSelected ? '#D97706' : '#E5E7EB',
+                      borderWidth: 1,
+                      borderColor: isSelected ? '#F59E0B' : '#FCD34D',
                       alignItems: 'center',
                       justifyContent: 'center',
                       shadowColor: isSelected ? '#F59E0B' : 'transparent',
@@ -834,7 +918,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                       style={{
                         fontSize: 11,
                         fontWeight: isSelected ? '700' : '600',
-                        color: isSelected ? '#FFFFFF' : '#374151',
+                        color: isSelected ? '#78350F' : '#92400E',
                       }}
                     >
                       {monthDisplay}
@@ -843,7 +927,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                       style={{
                         fontSize: 9,
                         fontWeight: '500',
-                        color: isSelected ? '#FEF3C7' : '#9CA3AF',
+                        color: isSelected ? '#92400E' : '#B45309',
                         marginTop: 2,
                       }}
                     >
@@ -862,17 +946,17 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                 marginBottom: 12,
                 paddingHorizontal: 10,
                 paddingVertical: 8,
-                backgroundColor: '#FFFBEB',
-                borderRadius: 6,
-                borderLeftWidth: 3,
-                borderLeftColor: '#F59E0B',
+                backgroundColor: '#FEF3C7',
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: '#FCD34D',
               }}
             >
               <Text
                 style={{
                   fontSize: 10,
                   fontWeight: '600',
-                  color: '#92400E',
+                  color: '#6B7280',
                   marginBottom: 4,
                   textTransform: 'uppercase',
                   letterSpacing: 0.3,
@@ -924,46 +1008,14 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
           {/* Action Buttons - Full Width Stack */}
           <View style={{ gap: 8 }}>
             <TouchableOpacity
-              onPress={() => {
-                // Keep warning visible after selection
-                // Form is already filled with selected gap dates
-                // Just show feedback that selection is confirmed
-              }}
-              style={{
-                paddingVertical: 11,
-                paddingHorizontal: 12,
-                backgroundColor: '#F59E0B',
-                borderRadius: 8,
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#F59E0B',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 3,
-                elevation: 2,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '700',
-                  color: '#FFFFFF',
-                }}
-              >
-                ✓ Fill Selected Gap
-              </Text>
-             
-            </TouchableOpacity>
-
-            <TouchableOpacity
               onPress={handleContinueToNextPayment}
               style={{
                 paddingVertical: 11,
                 paddingHorizontal: 12,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: '#FFFBEB',
                 borderRadius: 8,
-                borderWidth: 1.5,
-                borderColor: '#E5E7EB',
+                borderWidth: 1,
+                borderColor: '#FCD34D',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -972,7 +1024,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                 style={{
                   fontSize: 13,
                   fontWeight: '700',
-                  color: '#374151',
+                  color: '#92400E',
                 }}
               >
                 Skip All Gaps
@@ -980,7 +1032,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      ) : null}
 
       {errors.general ? (
         <View style={{ marginBottom: 12 }}>
@@ -1002,47 +1054,72 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
             marginBottom: 16,
             padding: 12,
             backgroundColor: Theme.colors.background.blueLight,
-            borderRadius: 8,
-            borderLeftWidth: 3,
-            borderLeftColor: Theme.colors.primary,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#BFDBFE',
           }}
         >
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: "600",
-              color: Theme.colors.primary,
-              marginBottom: 8,
-            }}
-          >
-            📋 Payment Reference
-          </Text>
-          {joiningDate && (
-            <View style={{ flexDirection: "row", marginBottom: 4 }}>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: Theme.colors.text.tertiary,
-                  width: 100,
-                }}
-              >
-                Joining Date:
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+            <View
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 12,
+                backgroundColor: '#DBEAFE',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 10,
+                borderWidth: 1,
+                borderColor: '#BFDBFE',
+              }}
+            >
+              <Text style={{ fontSize: 16 }}>📋</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: Theme.colors.text.primary }}>
+                Payment Reference
               </Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: Theme.colors.text.primary,
-                }}
-              >
-                {new Date(joiningDate).toLocaleDateString("en-IN", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
+              <Text style={{ marginTop: 2, fontSize: 11, color: Theme.colors.text.tertiary }}>
+                Use this info to verify period and rent.
               </Text>
             </View>
-          )}
+          </View>
+
+          {checkingGaps ? (
+            <View style={{ gap: 8 }}>
+              <SkeletonLoader width="55%" height={12} borderRadius={6} />
+              <SkeletonLoader width="90%" height={12} borderRadius={6} />
+              <SkeletonLoader width="70%" height={12} borderRadius={6} />
+              <SkeletonLoader width="85%" height={12} borderRadius={6} />
+            </View>
+          ) : (
+            <>
+              {typeof joiningDate === 'string' && joiningDate ? (
+                <View style={{ flexDirection: "row", marginBottom: 4 }}>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: Theme.colors.text.tertiary,
+                      width: 100,
+                    }}
+                  >
+                    Joining Date:
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                    }}
+                  >
+                    {new Date(joiningDate).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </Text>
+                </View>
+              ) : null}
           {previousPayments && previousPayments.length > 0 ? (
             // Show most recent payment from previousPayments array
             (() => {
@@ -1229,6 +1306,9 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                 ))}
             </View>
           )}
+
+            </>
+          )}
         </View>
 
       )}
@@ -1237,6 +1317,45 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
 
         <View style={{ gap: 12, paddingBottom: 16 }}>
+
+        {Boolean(formData.cycle_id && formData.start_date && formData.end_date) && (
+          <View
+            style={{
+              padding: 12,
+              backgroundColor: Theme.colors.background.blueLight,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: Theme.colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: "700", color: Theme.colors.text.secondary, marginBottom: 6 }}>
+              Amount to Pay
+            </Text>
+            <Text style={{ fontSize: 20, fontWeight: "900", color: Theme.colors.primary }}>
+              ₹{Number(formData.actual_rent_amount || 0).toLocaleString("en-IN")}
+            </Text>
+            <Text style={{ marginTop: 4, fontSize: 11, color: Theme.colors.text.tertiary }}>
+              This is the expected rent for the selected period.
+            </Text>
+
+            {(() => {
+              const expected = Number(formData.actual_rent_amount || 0);
+              const paid = Number(formData.amount_paid || 0);
+              if (!Number.isFinite(expected) || expected <= 0) return null;
+              if (!Number.isFinite(paid)) return null;
+              if (Math.abs(paid - expected) < 0.01) return null;
+
+              const remaining = Math.max(0, expected - paid);
+              const label = paid > 0 ? `Remaining: ₹${remaining.toLocaleString("en-IN")}` : `Due: ₹${expected.toLocaleString("en-IN")}`;
+
+              return (
+                <Text style={{ marginTop: 6, fontSize: 11, fontWeight: "700", color: '#B45309' }}>
+                  Note: {label}
+                </Text>
+              );
+            })()}
+          </View>
+        )}
         
         <AmountInput
           label="Amount Paid"

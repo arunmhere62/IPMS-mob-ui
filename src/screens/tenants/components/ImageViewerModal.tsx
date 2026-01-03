@@ -41,12 +41,19 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
             top: 40,
             right: 20,
             zIndex: 10,
-            backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: 20,
-            width: 40,
-            height: 40,
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            borderRadius: 22,
+            width: 44,
+            height: 44,
+            borderWidth: 1,
+            borderColor: 'rgba(255, 255, 255, 0.45)',
             justifyContent: 'center',
             alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.35,
+            shadowRadius: 4,
+            elevation: 6,
           }}
         >
           <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>×</Text>

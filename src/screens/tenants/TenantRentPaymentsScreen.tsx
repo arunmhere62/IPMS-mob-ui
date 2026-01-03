@@ -339,7 +339,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                         </Text>
                         {group.due > 0 && (
                           <Text style={{ fontSize: 11, color: isSettled ? '#10B981' : '#F97316', marginTop: 4, fontWeight: '700' }}>
-                            {isSettled ? 'No pending for this month' : `Pending ₹${Math.round(group.remainingDue)}`}
+                            {isSettled ? 'No pending for this month' : `Pending ₹${group.remainingDue.toFixed(2)}`}
                           </Text>
                         )}
                       </View>
@@ -398,12 +398,23 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                                 {paymentAccommodationLabel}
                               </Text>
                             </View>
+
                             <View style={{ alignItems: 'flex-end' }}>
                               <Text style={{ fontSize: 13, fontWeight: '800', color: Theme.colors.text.primary }}>
-                                ₹{payment.amount_paid}
+                                ₹{Number(payment.amount_paid || 0).toLocaleString('en-IN')}
+                              </Text>
+                              <Text style={{ fontSize: 10, fontWeight: '700', color: Theme.colors.text.secondary, marginTop: 2 }}>
+                                Bed Rent ₹{Number((payment as any)?.bed_rent_amount_snapshot ?? (payment as any)?.beds?.bed_price ?? 0).toLocaleString('en-IN')}
                               </Text>
                               {payment.status === 'PARTIAL' && installmentSettled !== undefined && installmentSettled !== null && (
-                                <Text style={{ fontSize: 10, fontWeight: '800', color: installmentSettled ? '#10B981' : '#F97316', marginTop: 2 }}>
+                                <Text
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: '800',
+                                    color: installmentSettled ? '#10B981' : '#F97316',
+                                    marginTop: 2,
+                                  }}
+                                >
                                   {installmentSettled ? 'Cleared' : 'Not cleared'}
                                 </Text>
                               )}
@@ -421,7 +432,6 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                                 showEdit={false}
                                 showDelete={canDeleteRent}
                                 disableDelete={!canDeleteRent}
-                                blockPressWhenDisabled={true}
                               />
                               <TouchableOpacity
                                 onPress={() => handleViewReceipt(payment)}
