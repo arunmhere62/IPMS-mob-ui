@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Theme } from '../../theme';
@@ -15,12 +16,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../components/Card';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../components/ActionButtons';
+import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { CONTENT_COLOR } from '@/constant';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
-import { useDeleteTenantPaymentMutation } from '@/services/api/paymentsApi';
+import { useVoidTenantPaymentMutation } from '@/services/api/paymentsApi';
 
 interface RentPayment {
   s_no: number;
@@ -52,18 +54,29 @@ export const TenantRentPaymentsScreen: React.FC = () => {
 
   can(Permission.EDIT_RENT);
   const canDeleteRent = can(Permission.DELETE_RENT);
-  const [deleteTenantPayment] = useDeleteTenantPaymentMutation();
+  const [voidTenantPayment] = useVoidTenantPaymentMutation();
 
   const payments: RentPayment[] = route.params?.payments || [];
+  const visiblePayments = useMemo(
+    () => (Array.isArray(payments) ? payments : []).filter((p) => String(p?.status || '').toUpperCase() !== 'VOIDED'),
+    [payments],
+  );
   const tenantName = route.params?.tenantName || 'Tenant';
   const tenantId = route.params?.tenantId || 0;
   const tenantPhone = route.params?.tenantPhone || '';
+  const tenantStatus = String(route.params?.tenantStatus || '').toUpperCase();
+  const isCheckedOutTenant = tenantStatus === 'CHECKED_OUT';
   const pgName = route.params?.pgName || 'PG';
   const roomNumber = route.params?.roomNumber || '';
   const bedNumber = route.params?.bedNumber || '';
   const accommodationLabel = `${pgName}${roomNumber ? ` | Room ${roomNumber}` : ''}${bedNumber ? ` | Bed ${bedNumber}` : ''}`;
 
+  const canVoidRentPayment = canDeleteRent && !isCheckedOutTenant;
+
   const [loading, setLoading] = useState(false);
+  const [voidModalVisible, setVoidModalVisible] = useState(false);
+  const [voidReason, setVoidReason] = useState('');
+  const [voidTargetPayment, setVoidTargetPayment] = useState<RentPayment | null>(null);
 
   // Function to refresh tenant details (navigate back to tenant details)
   const refreshTenantDetails = () => {
@@ -74,34 +87,29 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const [receiptData, setReceiptData] = useState<any>(null);
   const receiptRef = useRef<any>(null);
 
-  const handleDeletePayment = (payment: RentPayment) => {
+  const handleVoidPayment = (payment: RentPayment) => {
     if (!canDeleteRent) {
-      Alert.alert('Access Denied', "You don't have permission to delete rent payments");
+      Alert.alert('Access Denied', "You don't have permission to void rent payments");
+      return;
+    }
+
+    if (isCheckedOutTenant) {
+      Alert.alert('Not Allowed', 'Cannot void rent payments for a checked-out tenant');
       return;
     }
 
     Alert.alert(
-      'Delete Payment',
-      `Are you sure you want to delete this payment?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
+      'Void Payment',
+      `Voiding this payment will reopen dues for its cycle. This affects reports and balances.\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}\n\nContinue?`,
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
+          text: 'Continue',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await deleteTenantPayment(payment.s_no).unwrap();
-              Alert.alert('Success', 'Payment deleted successfully');
-              refreshTenantDetails();
-            } catch (error: any) {
-              Alert.alert('Delete Error', error?.data?.message || error?.message || 'Failed to delete payment');
-            } finally {
-              setLoading(false);
-            }
+          onPress: () => {
+            setVoidTargetPayment(payment);
+            setVoidReason('');
+            setVoidModalVisible(true);
           },
         },
       ],
@@ -171,6 +179,29 @@ export const TenantRentPaymentsScreen: React.FC = () => {
     }
   };
 
+  const submitVoidPayment = async () => {
+    if (!voidTargetPayment) return;
+    const reason = String(voidReason || '').trim();
+    if (!reason) {
+      Alert.alert('Reason Required', 'Please enter a reason for voiding this payment.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await voidTenantPayment({ id: voidTargetPayment.s_no, voided_reason: reason }).unwrap();
+      Alert.alert('Success', 'Payment voided successfully');
+      setVoidModalVisible(false);
+      setVoidTargetPayment(null);
+      setVoidReason('');
+      refreshTenantDetails();
+    } catch (error: any) {
+      Alert.alert('Void Error', error?.data?.message || error?.message || 'Failed to void payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PAID':
@@ -207,7 +238,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
       payments: RentPayment[];
     }>();
 
-    (payments || []).forEach((p) => {
+    (visiblePayments || []).forEach((p) => {
       const { periodStart, periodEnd } = getPeriod(p);
       const cycleId = (p as any)?.cycle_id;
       const key = cycleId ? `cycle:${cycleId}` : `range:${dateRangeKey(periodStart, periodEnd)}`;
@@ -263,7 +294,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
         const bT = b.periodStart ? new Date(b.periodStart).getTime() : 0;
         return bT - aT;
       });
-  }, [payments]);
+  }, [visiblePayments]);
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
@@ -427,11 +458,11 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                             </Text>
                             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                               <ActionButtons
-                                onDelete={() => handleDeletePayment(payment)}
+                                onDelete={() => handleVoidPayment(payment)}
                                 showView={false}
                                 showEdit={false}
-                                showDelete={canDeleteRent}
-                                disableDelete={!canDeleteRent}
+                                showDelete={canVoidRentPayment}
+                                disableDelete={!canVoidRentPayment}
                               />
                               <TouchableOpacity
                                 onPress={() => handleViewReceipt(payment)}
@@ -521,6 +552,46 @@ export const TenantRentPaymentsScreen: React.FC = () => {
           </View>
         </View>
       )}
+
+      <SlideBottomModal
+        visible={voidModalVisible}
+        onClose={() => {
+          if (loading) return;
+          setVoidModalVisible(false);
+          setVoidTargetPayment(null);
+          setVoidReason('');
+        }}
+        title="Void Payment"
+        subtitle={voidTargetPayment ? `Payment #${voidTargetPayment.s_no}` : ''}
+        onSubmit={submitVoidPayment}
+        submitLabel={loading ? 'Voiding...' : 'Void Payment'}
+        cancelLabel="Cancel"
+        isLoading={loading}
+        enableFullHeightDrag={false}
+        enableFlexibleHeightDrag={true}
+      >
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+            Provide a reason. Voiding reopens dues for that cycle and affects reports.
+          </Text>
+          <TextInput
+            value={voidReason}
+            onChangeText={setVoidReason}
+            placeholder="Reason for voiding"
+            multiline
+            style={{
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
+              borderRadius: 10,
+              padding: 12,
+              minHeight: 90,
+              textAlignVertical: 'top',
+              backgroundColor: '#FFFFFF',
+              color: Theme.colors.text.primary,
+            }}
+          />
+        </View>
+      </SlideBottomModal>
 
       {/* Payments are immutable: editing is disabled */}
     </ScreenLayout>

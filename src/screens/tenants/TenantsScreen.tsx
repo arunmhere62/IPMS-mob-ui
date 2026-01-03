@@ -24,6 +24,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { Tenant, useLazyGetTenantsQuery } from '../../services/api/tenantsApi';
+import { useGetAllRoomsQuery } from '../../services/api/roomsApi';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -36,19 +37,24 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
   const [triggerTenants, tenantsQuery] = useLazyGetTenantsQuery();
 
+  const roomsQuery = useGetAllRoomsQuery(
+    selectedPGLocationId
+      ? { pg_id: selectedPGLocationId, page: 1, limit: 1000 }
+      : (undefined as any),
+    { skip: !selectedPGLocationId },
+  );
+
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [pagination, setPagination] = useState<any>(null);
-  const [roomOptions, setRoomOptions] = useState<any[]>([]);
 
   const [refreshing, setRefreshing] = useState(false);
-  const isBackgroundRefreshing = tenants.length > 0 && !refreshing && tenantsQuery.isFetching;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [visibleItemsCount, setVisibleItemsCount] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE' | 'CHECKED_OUT'>('ALL');
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [pendingRentFilter, setPendingRentFilter] = useState(false);
@@ -75,15 +81,11 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     });
   };
 
-  // Get unique rooms from tenants
+  // Rooms list for filter (independent of tenant list filters)
   const rooms = React.useMemo(() => {
-    const uniqueRooms = roomOptions
-      .filter(Boolean)
-      .filter((room, index, self) =>
-        room && self.findIndex(r => r?.s_no === room.s_no) === index
-      );
-    return uniqueRooms;
-  }, [roomOptions]);
+    const apiRooms = (roomsQuery.data as any)?.data;
+    return Array.isArray(apiRooms) ? apiRooms : [];
+  }, [roomsQuery.data]);
 
   useEffect(() => {
     // PG changed: reset filters/search to avoid carrying previous PG's filter state
@@ -100,7 +102,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     scrollPositionRef.current = 0;
     setCurrentPage(1);
     setHasMore(true);
-    setRoomOptions([]);
     hasLoadedOnceRef.current = false;
     loadTenants(1, true, {
       searchQuery: '',
@@ -156,7 +157,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     reset: boolean = false,
     overrides?: Partial<{
       searchQuery: string;
-      statusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE';
+      statusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' | 'CHECKED_OUT';
       selectedRoomId: number | null;
       pendingRentFilter: boolean;
       pendingAdvanceFilter: boolean;
@@ -165,7 +166,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     softReset: boolean = false
   ) => {
     try {
-      if (tenantsQuery.isFetching) return;
+      if (tenantsQuery.isFetching && !reset) return;
       if (!hasMore && !reset) return;
 
       if (reset && !softReset) {
@@ -201,18 +202,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
       hasLoadedOnceRef.current = true;
       setTenants((prev) => {
         const nextTenants = (reset || page <= 1 || isRoomFiltered) ? nextData : [...prev, ...nextData];
-
-        // Keep room filter options stable: only update room options when we are NOT filtering by a room.
-        // This prevents the room chips list from shrinking to only the selected room.
-        if (effectiveSelectedRoomId === null) {
-          const nextRooms = nextTenants
-            .filter(t => (t as any)?.rooms)
-            .map(t => (t as any).rooms)
-            .filter((room: any, index: number, self: any[]) =>
-              room && self.findIndex(r => r?.s_no === room.s_no) === index
-            );
-          setRoomOptions(nextRooms);
-        }
 
         return nextTenants;
       });
@@ -475,18 +464,28 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               </View>
             </View>
 
-            {/* Tenant Status Badge (ACTIVE/INACTIVE) */}
+            {/* Tenant Status Badge */}
             <View style={{
               paddingHorizontal: 8,
               paddingVertical: 3,
               borderRadius: 10,
-              backgroundColor: item.status === 'ACTIVE' ? '#10B98120' : '#EF444420',
+              backgroundColor:
+                item.status === 'ACTIVE'
+                  ? '#10B98120'
+                  : item.status === 'CHECKED_OUT'
+                    ? '#F59E0B20'
+                    : '#EF444420',
               alignSelf: 'flex-start',
             }}>
               <Text style={{
                 fontSize: 10,
                 fontWeight: '600',
-                color: item.status === 'ACTIVE' ? '#10B981' : '#EF4444',
+                color:
+                  item.status === 'ACTIVE'
+                    ? '#10B981'
+                    : item.status === 'CHECKED_OUT'
+                      ? '#F59E0B'
+                      : '#EF4444',
               }}>
                 {item.status}
               </Text>
@@ -913,13 +912,13 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                     <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
                       Filter by Status
                     </Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      {['ALL', 'ACTIVE', 'INACTIVE'].map((status) => (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {['ALL', 'ACTIVE', 'INACTIVE', 'CHECKED_OUT'].map((status) => (
                         <TouchableOpacity
                           key={status}
                           onPress={() => setStatusFilter(status as any)}
                           style={{
-                            flex: 1,
+                            width: '48%',
                             paddingVertical: 12,
                             borderRadius: 8,
                             backgroundColor: statusFilter === status ? Theme.colors.primary : '#fff',
@@ -1283,7 +1282,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
               refreshControl={
                 <RefreshControl
-                  refreshing={refreshing || isBackgroundRefreshing}
+                  refreshing={refreshing}
                   onRefresh={onRefresh}
                   colors={[Theme.colors.primary]}
                 />

@@ -9,12 +9,14 @@
     "splash": {
       "image": "./assets/splash-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#3B82F6"
+      "backgroundColor": "#0F172A"
     },
     "assetBundlePatterns": [
       "assets/fonts/**",
       "assets/app-icon.png",
-      "assets/splash-logo.png"
+      "assets/splash-logo.png",
+      "assets/splash-lottie.json",
+      "assets/ball-jump.json"
     ],
     "ios": {
       "supportsTablet": true,

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressableCard } from "../../../components/AnimatedPressableCard";
 import { ActionButtons } from "../../../components/ActionButtons";
@@ -88,7 +88,9 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
           styles.statusBadge,
           tenant.status === "ACTIVE"
             ? styles.statusActive
-            : styles.statusInactive,
+            : tenant.status === "CHECKED_OUT"
+              ? styles.statusCheckedOut
+              : styles.statusInactive,
         ]}
       >
         <Text
@@ -96,7 +98,9 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
             styles.statusText,
             tenant.status === "ACTIVE"
               ? { color: "#16A34A" }
-              : { color: "#DC2626" },
+              : tenant.status === "CHECKED_OUT"
+                ? { color: "#D97706" }
+                : { color: "#DC2626" },
           ]}
         >
           {tenant.status}
@@ -231,8 +235,13 @@ const styles = StyleSheet.create({
   },
 
   statusInactive: {
-    backgroundColor: Theme.withOpacity(Theme.colors.danger, 0.12),
-    borderColor: Theme.withOpacity(Theme.colors.danger, 0.35),
+    backgroundColor: "#FEE2E2",
+    borderColor: "#DC2626",
+  },
+
+  statusCheckedOut: {
+    backgroundColor: "#FEF3C7",
+    borderColor: "#D97706",
   },
 
   statusText: {

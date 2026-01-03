@@ -3,6 +3,7 @@ import { baseApi } from './baseApi';
 export interface TenantStatus {
   ACTIVE: 'ACTIVE';
   INACTIVE: 'INACTIVE';
+  CHECKED_OUT: 'CHECKED_OUT';
 }
 
 export interface TenantPayment {
@@ -87,7 +88,7 @@ export interface Tenant {
   bed_id?: number;
   check_in_date: string;
   check_out_date?: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: 'ACTIVE' | 'INACTIVE' | 'CHECKED_OUT';
   occupation?: string;
   tenant_address?: string;
   city_id?: number;
@@ -174,7 +175,7 @@ export interface CreateTenantDto {
   bed_id?: number;
   check_in_date: string;
   check_out_date?: string;
-  status?: 'ACTIVE' | 'INACTIVE';
+  status?: 'ACTIVE' | 'INACTIVE' | 'CHECKED_OUT';
   occupation?: string;
   tenant_address?: string;
   city_id?: number;

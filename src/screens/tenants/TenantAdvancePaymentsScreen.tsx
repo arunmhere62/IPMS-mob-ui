@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -15,9 +16,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../components/Card';
 import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../components/ActionButtons';
+import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { CONTENT_COLOR } from '@/constant';
-import { useDeleteAdvancePaymentMutation, useUpdateAdvancePaymentMutation } from '@/services/api/paymentsApi';
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import {
+  useUpdateAdvancePaymentMutation,
+  useVoidAdvancePaymentMutation,
+  type CreateAdvancePaymentDto,
+} from '@/services/api/paymentsApi';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import AdvancePaymentForm from '@/screens/tenants/AdvancePaymentForm';
@@ -32,20 +37,70 @@ interface AdvancePayment {
   payment_method: string;
   status: string;
   remarks?: string;
+
+  pg_id?: number;
+  room_id?: number;
+  bed_id?: number;
+  pg_locations?: { location_name?: string };
+  rooms?: { room_no?: string };
+  beds?: { bed_no?: string };
 }
 
+type ReceiptData = {
+  receiptNumber: string;
+  paymentDate: Date;
+  tenantName: string;
+  tenantPhone: string;
+  pgName: string;
+  roomNumber: string;
+  bedNumber: string;
+  rentPeriod: {
+    startDate: Date;
+    endDate: Date;
+  };
+  actualRent: number;
+  amountPaid: number;
+  paymentMethod: string;
+  remarks?: string;
+  receiptType?: 'RENT' | 'ADVANCE' | 'REFUND';
+};
+
+type TenantAdvancePaymentsParams = {
+  payments?: AdvancePayment[];
+  tenantName?: string;
+  tenantId?: number;
+  pgId?: number;
+  tenantJoinedDate?: string;
+  tenantPhone?: string;
+  pgName?: string;
+  roomNumber?: string;
+  bedNumber?: string;
+  roomId?: number;
+  bedId?: number;
+};
+
+type TenantAdvancePaymentsRouteProp = RouteProp<Record<string, TenantAdvancePaymentsParams>, string>;
+
+type BasicNavigation = {
+  goBack: () => void;
+  navigate: (screen: string, params?: unknown) => void;
+};
+
 export const TenantAdvancePaymentsScreen: React.FC = () => {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation<BasicNavigation>();
+  const route = useRoute<TenantAdvancePaymentsRouteProp>();
   const { can } = usePermissions();
 
   const canEditAdvance = can(Permission.EDIT_ADVANCE);
   const canDeleteAdvance = can(Permission.DELETE_ADVANCE);
 
-  const [deleteAdvancePayment] = useDeleteAdvancePaymentMutation();
   const [updateAdvancePayment] = useUpdateAdvancePaymentMutation();
+  const [voidAdvancePayment] = useVoidAdvancePaymentMutation();
 
   const payments: AdvancePayment[] = route.params?.payments || [];
+  const visiblePayments = (Array.isArray(payments) ? payments : []).filter(
+    (p) => String(p?.status || '').toUpperCase() !== 'VOIDED'
+  );
   const tenantName = route.params?.tenantName || 'Tenant';
   const tenantId = route.params?.tenantId || 0;
   const pgId = route.params?.pgId || 0;
@@ -59,10 +114,13 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [advancePaymentFormVisible, setAdvancePaymentFormVisible] = useState(false);
   const [advancePaymentFormMode, setAdvancePaymentFormMode] = useState<"add" | "edit">("add");
-  const [editingAdvancePayment, setEditingAdvancePayment] = useState<any>(null);
+  const [editingAdvancePayment, setEditingAdvancePayment] = useState<AdvancePayment | null>(null);
+  const [voidModalVisible, setVoidModalVisible] = useState(false);
+  const [voidReason, setVoidReason] = useState('');
+  const [voidTargetPayment, setVoidTargetPayment] = useState<AdvancePayment | null>(null);
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
-  const [receiptData, setReceiptData] = useState<any>(null);
-  const receiptRef = useRef<any>(null);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const receiptRef = useRef<View | null>(null);
 
   // Function to refresh tenant details (navigate back to tenant details)
   const refreshTenantDetails = () => {
@@ -70,35 +128,48 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
     navigation.navigate('TenantDetails', { tenantId, refresh: true });
   };
 
-  const handleDeletePayment = (payment: AdvancePayment) => {
-    if (!canDeleteAdvance) {
-      Alert.alert('Access Denied', "You don't have permission to delete advance payments");
+  const submitVoidPayment = async () => {
+    if (!voidTargetPayment) return;
+    const reason = String(voidReason || '').trim();
+    if (!reason) {
+      Alert.alert('Reason Required', 'Please enter a reason for voiding this payment.');
       return;
     }
+
+    try {
+      setLoading(true);
+      await voidAdvancePayment({ id: voidTargetPayment.s_no, voided_reason: reason }).unwrap();
+      Alert.alert('Success', 'Advance payment voided successfully');
+      setVoidModalVisible(false);
+      setVoidTargetPayment(null);
+      setVoidReason('');
+      refreshTenantDetails();
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string }; message?: string };
+      Alert.alert('Void Error', err?.data?.message || err?.message || 'Failed to void payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePayment = (payment: AdvancePayment) => {
+    if (!canDeleteAdvance) {
+      Alert.alert('Access Denied', "You don't have permission to void advance payments");
+      return;
+    }
+
     Alert.alert(
-      'Delete Advance Payment',
-      `Are you sure you want to delete this advance payment?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
+      'Void Advance Payment',
+      `Voiding this payment will reopen advance due (audit trail kept).\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}\n\nContinue?`,
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
+          text: 'Continue',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await deleteAdvancePayment(payment.s_no).unwrap();
-              showSuccessAlert('Advance payment deleted successfully');
-              
-              // Navigate back to tenant details screen with refresh
-              refreshTenantDetails();
-            } catch (error: any) {
-              showErrorAlert(error, 'Delete Error');
-            } finally {
-              setLoading(false);
-            }
+          onPress: () => {
+            setVoidTargetPayment(payment);
+            setVoidReason('');
+            setVoidModalVisible(true);
           },
         },
       ]
@@ -115,14 +186,14 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
     setAdvancePaymentFormVisible(true);
   };
 
-  const handleUpdateAdvancePayment = async (id: number, data: any) => {
+  const handleUpdateAdvancePayment = async (id: number, data: Partial<CreateAdvancePaymentDto>) => {
     if (!canEditAdvance) {
       Alert.alert('Access Denied', "You don't have permission to edit advance payments");
       throw new Error('ACCESS_DENIED');
     }
     try {
       await updateAdvancePayment({ id, data }).unwrap();
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   };
@@ -133,7 +204,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   };
 
   const prepareReceiptData = (payment: AdvancePayment) => {
-    return {
+    const data: ReceiptData = {
       receiptNumber: `ADV-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
       paymentDate: new Date(payment.payment_date),
       tenantName: tenantName,
@@ -151,31 +222,14 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
       remarks: payment.remarks,
       receiptType: 'ADVANCE' as const,
     };
+
+    return data;
   };
 
   const handleViewReceipt = (payment: AdvancePayment) => {
     const data = prepareReceiptData(payment);
     setReceiptData(data);
     setReceiptModalVisible(true);
-  };
-
-  const handleWhatsAppReceipt = async (payment: AdvancePayment) => {
-    try {
-      const data = prepareReceiptData(payment);
-      setReceiptData(data);
-      
-      setTimeout(async () => {
-        await CompactReceiptGenerator.shareViaWhatsApp(
-          receiptRef,
-          data,
-          tenantPhone || ''
-        );
-        setReceiptData(null);
-      }, 100);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send via WhatsApp');
-      setReceiptData(null);
-    }
   };
 
   const handleShareReceipt = async (payment: AdvancePayment) => {
@@ -187,7 +241,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
         await CompactReceiptGenerator.shareImage(receiptRef);
         setReceiptData(null);
       }, 100);
-    } catch (error) {
+    } catch (_error) {
       Alert.alert('Error', 'Failed to share receipt');
       setReceiptData(null);
     }
@@ -245,17 +299,17 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
           </View>
         )}
 
-        {!loading && payments && payments.length > 0 ? (
+        {!loading && visiblePayments && visiblePayments.length > 0 ? (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
-            {payments.map((payment) => {
+            {visiblePayments.map((payment) => {
               const statusColor = getStatusColor(payment.status);
 
-              const paymentPg = (payment as any)?.pg_id ?? '';
-              const paymentRoom = (payment as any)?.room_id ?? '';
-              const paymentBed = (payment as any)?.bed_id ?? '';
-              const paymentPgName = (payment as any)?.pg_locations?.location_name;
-              const paymentRoomNo = (payment as any)?.rooms?.room_no;
-              const paymentBedNo = (payment as any)?.beds?.bed_no;
+              const paymentPg = payment?.pg_id ?? '';
+              const paymentRoom = payment?.room_id ?? '';
+              const paymentBed = payment?.bed_id ?? '';
+              const paymentPgName = payment?.pg_locations?.location_name;
+              const paymentRoomNo = payment?.rooms?.room_no;
+              const paymentBedNo = payment?.beds?.bed_no;
               const paymentAccommodationLabel =
                 paymentPgName || paymentRoomNo || paymentBedNo || paymentPg || paymentRoom || paymentBed
                   ? `${paymentPgName || (paymentPg ? `PG ${paymentPg}` : pgName)}${(paymentRoomNo || paymentRoom) ? ` | Room ${paymentRoomNo || paymentRoom}` : ''}${(paymentBedNo || paymentBed) ? ` | Bed ${paymentBedNo || paymentBed}` : ''}`
@@ -466,6 +520,46 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
         onSuccess={handleAdvancePaymentSuccess}
         onSave={handleUpdateAdvancePayment}
       />
+
+      <SlideBottomModal
+        visible={voidModalVisible}
+        onClose={() => {
+          if (loading) return;
+          setVoidModalVisible(false);
+          setVoidTargetPayment(null);
+          setVoidReason('');
+        }}
+        title="Void Advance Payment"
+        subtitle={voidTargetPayment ? `Payment #${voidTargetPayment.s_no}` : ''}
+        onSubmit={submitVoidPayment}
+        submitLabel={loading ? 'Voiding...' : 'Void Payment'}
+        cancelLabel="Cancel"
+        isLoading={loading}
+        enableFullHeightDrag={false}
+        enableFlexibleHeightDrag={true}
+      >
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+            Provide a reason. Voiding reopens advance due and affects reports.
+          </Text>
+          <TextInput
+            value={voidReason}
+            onChangeText={setVoidReason}
+            placeholder="Reason for voiding"
+            multiline
+            style={{
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
+              borderRadius: 10,
+              padding: 12,
+              minHeight: 90,
+              textAlignVertical: 'top',
+              backgroundColor: '#FFFFFF',
+              color: Theme.colors.text.primary,
+            }}
+          />
+        </View>
+      </SlideBottomModal>
 
     </ScreenLayout>
   );

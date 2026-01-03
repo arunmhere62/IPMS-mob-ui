@@ -244,11 +244,18 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
 
   // Function to handle gap button click
   const handleGapButtonClick = (gap: any) => {
+    const remaining = Number(
+      (gap?.remainingDue ?? (gap?.rentDue != null && gap?.totalPaid != null ? Number(gap.rentDue) - Number(gap.totalPaid) : undefined)) ??
+        gap?.rentDue ??
+        0
+    );
+
     setFormData((prev) => ({
       ...prev,
       cycle_id: gap.cycle_id ?? null,
       start_date: gap.gapStart,
       end_date: gap.gapEnd,
+      actual_rent_amount: (Number.isFinite(remaining) ? Math.max(0, remaining) : 0).toString(),
       status: "PENDING",
     }));
     
@@ -549,6 +556,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   // Keep expected rent amount consistent with backend rule for CALENDAR join-month proration.
   useEffect(() => {
     if (!visible) return;
+    if (gapWarning.earliestGap && !gapWarning.skipGaps) return;
     if (!rentCycleData || rentCycleData.type !== 'CALENDAR') return;
     if (!joiningDate) return;
     if (!formData.start_date || !formData.end_date) return;
@@ -581,7 +589,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
         actual_rent_amount: expectedRounded.toString(),
       }));
     }
-  }, [visible, rentCycleData, joiningDate, formData.start_date, formData.end_date, bedRentAmount]);
+  }, [visible, rentCycleData, joiningDate, formData.start_date, formData.end_date, bedRentAmount, gapWarning.earliestGap, gapWarning.skipGaps]);
 
   // Detect payment gaps when form opens
   useEffect(() => {

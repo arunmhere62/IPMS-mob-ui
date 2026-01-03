@@ -13,6 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Theme } from '../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface SlideBottomModalProps {
   visible: boolean;
@@ -47,16 +48,19 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
   minHeightPercent = 0.85,
   maxHeightPercent = 1,
 }) => {
+  const insets = useSafeAreaInsets();
   const [panY] = useState(new Animated.Value(0));
   const [backdropOpacity] = useState(new Animated.Value(0));
   const [slideY] = useState(new Animated.Value(500));
   const [isDraggingHeader, setIsDraggingHeader] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const screenH = Dimensions.get('window').height;
+  const topSpacing = (insets?.top ?? 0) + 12;
+  const maxSheetH = Math.max(200, screenH - topSpacing);
   const clampedMinPercent = Math.min(1, Math.max(0.2, minHeightPercent));
   const clampedMaxPercent = Math.min(1, Math.max(clampedMinPercent, maxHeightPercent));
-  const minH = Math.max(200, Math.round(screenH * clampedMinPercent));
-  const maxH = Math.max(minH, Math.round(screenH * clampedMaxPercent));
+  const minH = Math.min(maxSheetH, Math.max(200, Math.round(screenH * clampedMinPercent)));
+  const maxH = Math.min(maxSheetH, Math.max(minH, Math.round(screenH * clampedMaxPercent)));
   const [sheetHeight] = useState(new Animated.Value(minH));
   const [startHeight, setStartHeight] = useState(minH);
 
@@ -208,10 +212,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="none" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
+      <View style={{ flex: 1 }}>
         <Animated.View
           style={{
             flex: 1,
@@ -225,7 +226,8 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
               backgroundColor: Theme.colors.canvas,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
-              maxHeight: enableFlexibleHeightDrag ? undefined : isExpanded ? '100%' : '85%',
+              marginTop: topSpacing,
+              maxHeight: enableFlexibleHeightDrag ? maxSheetH : isExpanded ? maxSheetH : Math.min(maxSheetH, Math.round(screenH * 0.85)),
               height: enableFlexibleHeightDrag ? sheetHeight : undefined,
               flex: enableFlexibleHeightDrag ? 0 : 1,
               flexDirection: 'column',
@@ -296,15 +298,20 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
             </View>
 
             {/* Form */}
-            <ScrollView
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={{ flex: 1 }}
-              contentContainerStyle={{ padding: 20, paddingBottom: 20, flexGrow: 1 }}
-              showsVerticalScrollIndicator={true}
-              keyboardShouldPersistTaps="handled"
-              bounces={true}
             >
-              {children}
-            </ScrollView>
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ padding: 20, paddingBottom: 20, flexGrow: 1 }}
+                showsVerticalScrollIndicator={true}
+                keyboardShouldPersistTaps="handled"
+                bounces={true}
+              >
+                {children}
+              </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* Footer */}
             <View
@@ -360,7 +367,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
             </View>
           </Animated.View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };

@@ -5,14 +5,13 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { Theme } from "../../theme";
 import { DatePicker } from "../../components/DatePicker";
 import { SlideBottomModal } from "../../components/SlideBottomModal";
 import { OptionSelector, Option } from "../../components/OptionSelector";
 import { AmountInput } from "../../components/AmountInput";
-import { useCreateAdvancePaymentMutation } from "@/services/api/paymentsApi";
+import { useCreateAdvancePaymentMutation, type CreateAdvancePaymentDto } from "@/services/api/paymentsApi";
 import { useLazyGetBedByIdQuery } from "@/services/api/roomsApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 
@@ -26,10 +25,10 @@ interface AdvancePaymentFormProps {
   roomId: number;
   bedId: number;
   paymentId?: number;
-  existingPayment?: any;
+  existingPayment?: unknown;
   onClose: () => void;
   onSuccess: () => void;
-  onSave?: (id: number, data: any) => Promise<void>;
+  onSave?: (id: number, data: Partial<CreateAdvancePaymentDto>) => Promise<void>;
 }
 
 const PAYMENT_METHODS: Option[] = [
@@ -37,12 +36,6 @@ const PAYMENT_METHODS: Option[] = [
   { label: "PhonePe", value: "PHONEPE", icon: "📱" },
   { label: "Cash", value: "CASH", icon: "💵" },
   { label: "Bank Transfer", value: "BANK_TRANSFER", icon: "🏦" },
-];
-
-const PAYMENT_STATUS: Option[] = [
-  { label: "✅ Paid", value: "PAID", icon: "" },
-  { label: "⏳ Pending", value: "PENDING", icon: "" },
-  { label: "❌ Failed", value: "FAILED", icon: "" },
 ];
 
 const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
@@ -69,7 +62,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
     amount_paid: "",
     payment_date: "",
     payment_method: "" as string,
-    status: "",
+    status: "PAID",
     remarks: "",
   });
 
@@ -78,14 +71,20 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
   // Load existing payment data for edit mode
   useEffect(() => {
     if (mode === "edit" && existingPayment) {
+      const payment = existingPayment as {
+        amount_paid?: unknown;
+        payment_date?: unknown;
+        payment_method?: unknown;
+        remarks?: unknown;
+      };
       setFormData({
-        amount_paid: existingPayment.amount_paid?.toString() || "",
-        payment_date: existingPayment.payment_date
-          ? new Date(existingPayment.payment_date).toISOString().split("T")[0]
+        amount_paid: payment.amount_paid?.toString() || "",
+        payment_date: payment.payment_date
+          ? new Date(String(payment.payment_date)).toISOString().split("T")[0]
           : "",
-        payment_method: existingPayment.payment_method || "",
-        status: existingPayment.status || "",
-        remarks: existingPayment.remarks || "",
+        payment_method: String(payment.payment_method || ""),
+        status: "PAID",
+        remarks: String(payment.remarks || ""),
       });
     } else if (mode === "add") {
       // Reset form for add mode
@@ -93,7 +92,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
         amount_paid: "",
         payment_date: "",
         payment_method: "",
-        status: "",
+        status: "PAID",
         remarks: "",
       });
     }
@@ -110,7 +109,10 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
           // Fetch bed price
           const bedResponse = await triggerGetBedById(bedId).unwrap();
 
-          const priceValue = (bedResponse as any)?.data?.bed_price;
+          const priceValue =
+            typeof bedResponse === 'object' && bedResponse && 'data' in (bedResponse as object)
+              ? (bedResponse as { data?: { bed_price?: unknown } }).data?.bed_price
+              : undefined;
           if (priceValue) {
             const bedPrice = typeof priceValue === 'string' ? parseFloat(priceValue) : priceValue;
             setBedRentAmount(bedPrice);
@@ -141,10 +143,6 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
       newErrors.payment_method = "Payment method is required";
     }
 
-    if (!formData.status) {
-      newErrors.status = "Payment status is required";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -158,7 +156,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
       setLoading(true);
 
       if (mode === "add") {
-        const paymentData = {
+        const paymentData: CreateAdvancePaymentDto = {
           tenant_id: tenantId,
           pg_id: pgId,
           room_id: roomId,
@@ -170,18 +168,18 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
             | "PHONEPE"
             | "CASH"
             | "BANK_TRANSFER",
-          status: formData.status as "PAID" | "PENDING" | "FAILED",
+          status: "PAID" as const,
           remarks: formData.remarks || undefined,
         };
 
-        const res = await createAdvancePayment(paymentData as any).unwrap();
+        const res = await createAdvancePayment(paymentData).unwrap();
         showSuccessAlert(res);
       } else if (mode === "edit" && paymentId && onSave) {
         const updateData = {
           amount_paid: parseFloat(formData.amount_paid),
           payment_date: formData.payment_date,
           payment_method: formData.payment_method,
-          status: formData.status,
+          status: "PAID" as const,
           remarks: formData.remarks || undefined,
         };
 
@@ -191,7 +189,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
 
       onSuccess();
       handleClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       showErrorAlert(error, "Error saving advance payment");
     } finally {
       setLoading(false);
@@ -203,7 +201,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
       amount_paid: "",
       payment_date: "",
       payment_method: "",
-      status: "",
+      status: "PAID",
       remarks: "",
     });
     setErrors({});
@@ -335,17 +333,6 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
           }
           required
           error={errors.payment_method}
-          containerStyle={{ marginBottom: 16 }}
-        />
-
-        {/* Payment Status */}
-        <OptionSelector
-          label="Payment Status"
-          options={PAYMENT_STATUS}
-          selectedValue={formData.status}
-          onSelect={(value) => setFormData({ ...formData, status: value as string })}
-          required
-          error={errors.status}
           containerStyle={{ marginBottom: 16 }}
         />
 

@@ -819,61 +819,50 @@ const TenantDetailsContent: React.FC<{
       Alert.alert('Access Denied', "You don't have permission to delete tenants");
       return;
     }
-    const hasRefundPaid = currentTenant?.is_refund_paid;
-    
-    if (!hasRefundPaid) {
-      // Show warning about unpaid refund
+
+    const eligibleForDelete = (() => {
+      if (!currentTenant) return false;
+      if (currentTenant.status !== 'ACTIVE') return false;
+      if (currentTenant.check_out_date) return false;
+      if ((currentTenant.rent_payments || []).length > 0) return false;
+      if ((currentTenant.advance_payments || []).length > 0) return false;
+      if ((currentTenant.refund_payments || []).length > 0) return false;
+      if ((currentTenant.current_bills || []).length > 0) return false;
+      return true;
+    })();
+
+    if (!eligibleForDelete) {
       Alert.alert(
-        'Unpaid Refund Warning',
-        'This tenant does not have refund paid. Are you sure you still want to delete this tenant?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Delete Anyway',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
-                showSuccessAlert('Tenant deleted successfully');
-                refreshTenantList(); // Refresh tenant list
-                navigation.goBack();
-              } catch (error: any) {
-                showErrorAlert(error, 'Delete Error');
-              }
-            },
-          },
-        ]
+        'Cannot Delete Tenant',
+        'Tenant can be deleted only if they were added by mistake and have no history.\n\nDelete is allowed only when:\n- Status is ACTIVE\n- No checkout date\n- No rent/advance/refund payments\n- No bills\n\nIf tenant stayed or has any history, please use Checkout instead.',
       );
-    } else {
-      // Standard deletion confirmation for tenants with paid refund
-      Alert.alert(
-        'Delete Tenant',
-        `Are you sure you want to delete ${currentTenant?.name || 'this tenant'}? This action cannot be undone.`,
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
-                showSuccessAlert('Tenant deleted successfully');
-                refreshTenantList(); // Refresh tenant list
-                navigation.goBack();
-              } catch (error: any) {
-                showErrorAlert(error, 'Delete Error');
-              }
-            },
-          },
-        ]
-      );
+      return;
     }
+
+    Alert.alert(
+      'Delete Tenant',
+      `Are you sure you want to delete ${currentTenant?.name || 'this tenant'}? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
+              showSuccessAlert('Tenant deleted successfully');
+              refreshTenantList();
+              navigation.goBack();
+            } catch (error: any) {
+              showErrorAlert(error, 'Delete Error');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleCall = (phoneNumber: string) => {
@@ -993,6 +982,7 @@ const TenantDetailsContent: React.FC<{
   }
 
   const tenant = currentTenant;
+  const isTenantActive = tenant?.status === 'ACTIVE';
 
   const transferHistory = (tenant?.tenant_allocations || [])
     .slice()
@@ -1015,14 +1005,6 @@ const TenantDetailsContent: React.FC<{
     const [y, m, d] = dateStr.split('-').map((n) => Number(n));
     return new Date(y, m - 1, d);
   };
-
-  const isCheckoutDayFinished = (() => {
-    if (!tenant?.check_out_date) return false;
-    const checkoutDate = new Date(tenant.check_out_date);
-    if (Number.isNaN(checkoutDate.getTime())) return false;
-    checkoutDate.setHours(23, 59, 59, 999);
-    return checkoutDate.getTime() < Date.now();
-  })();
 
   const derivedRentStatus = (() => {
     const rentDue = Number((tenant as any)?.rent_due_amount ?? 0);
@@ -1085,8 +1067,16 @@ const TenantDetailsContent: React.FC<{
             navigation.navigate('AddTenant', { tenantId: currentTenant.s_no });
           }}
           onDelete={handleDeleteTenant}
-          showDelete={canDeleteTenant && !!tenant?.check_out_date}
-          disableDelete={!isCheckoutDayFinished}
+          showDelete={
+            !!canDeleteTenant &&
+            tenant?.status === 'ACTIVE' &&
+            !tenant?.check_out_date &&
+            (tenant?.rent_payments?.length || 0) === 0 &&
+            (tenant?.advance_payments?.length || 0) === 0 &&
+            (tenant?.refund_payments?.length || 0) === 0 &&
+            (tenant?.current_bills?.length || 0) === 0
+          }
+          disableDelete={false}
           onCall={handleCall}
           onWhatsApp={handleWhatsApp}
           onEmail={handleEmail}
@@ -1099,14 +1089,39 @@ const TenantDetailsContent: React.FC<{
             if (!canCreateRefund) return;
             setRefundPaymentModalVisible(true);
           }}
-          canAddPayment={canCreateRent}
-          canAddAdvance={canCreateAdvance}
-          canAddRefund={canCreateRefund}
+          canAddPayment={canCreateRent && isTenantActive}
+          canAddAdvance={canCreateAdvance && isTenantActive}
+          canAddRefund={canCreateRefund && isTenantActive}
         />
 
         {/* Pending Payment Alert */}
         {tenant.pending_payment && (
           <PendingPaymentAlert pendingPayment={tenant.pending_payment} />
+        )}
+
+        {!tenant.pending_payment && derivedRentStatus.rentDue <= 0 && derivedRentStatus.partialDue <= 0 && derivedRentStatus.pendingDue <= 0 && (
+          <Card
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 12,
+              padding: 14,
+              backgroundColor: '#10B98120',
+              borderWidth: 0.5,
+              borderColor: '#10B981',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 }}>
+                <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#10B981', marginLeft: 8 }}>
+                  No pending payments
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.secondary }}>
+                All clear
+              </Text>
+            </View>
+          </Card>
         )}
 
         {!tenant.pending_payment && (derivedRentStatus.rentDue > 0 || derivedRentStatus.partialDue > 0 || derivedRentStatus.pendingDue > 0) && (
@@ -1116,8 +1131,8 @@ const TenantDetailsContent: React.FC<{
               marginBottom: 12,
               padding: 14,
               backgroundColor: derivedRentStatus.bg,
-              borderLeftWidth: 6,
-              borderLeftColor: derivedRentStatus.color,
+              borderWidth: 1,
+              borderColor: derivedRentStatus.color,
             }}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1212,11 +1227,12 @@ const TenantDetailsContent: React.FC<{
             tenantName: tenant.name,
             tenantId: tenant.s_no,
             tenantPhone: tenant.phone_no,
+            tenantStatus: tenant.status,
             pgName: tenant.pg_locations?.location_name || 'PG',
             roomNumber: tenant.rooms?.room_no || '',
             bedNumber: tenant.beds?.bed_no || '',
-            roomId: tenant.room_id || 0,
-            bedId: tenant.bed_id || 0,
+            roomId: tenant.room_id,
+            bedId: tenant.bed_id,
             pgId: tenant.pg_id || selectedPGLocationId || 0,
             joiningDate: tenant.check_in_date,
           })}
@@ -1323,8 +1339,8 @@ const TenantDetailsContent: React.FC<{
             pgName: tenant.pg_locations?.location_name || 'PG',
             roomNumber: tenant.rooms?.room_no || '',
             bedNumber: tenant.beds?.bed_no || '',
-            roomId: tenant.room_id || 0,
-            bedId: tenant.bed_id || 0,
+            roomId: tenant.room_id,
+            bedId: tenant.bed_id,
             pgId: tenant.pg_id || selectedPGLocationId || 0,
           })}
           style={{
@@ -1551,12 +1567,12 @@ const TenantDetailsContent: React.FC<{
                   disabledReason={checkoutReason}
                   loading={checkoutLoading}
                 />
-                <ActionTile
+                {/* <ActionTile
                   title="Transfer"
                   icon="swap-horizontal-outline"
                   onPress={handleOpenTransfer}
                   disabledReason={transferReason}
-                />
+                /> */}
               </View>
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <ActionTile

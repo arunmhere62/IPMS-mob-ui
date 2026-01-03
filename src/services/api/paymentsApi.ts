@@ -42,6 +42,7 @@ export interface AdvancePayment {
 
 export interface CreateAdvancePaymentDto {
   tenant_id: number;
+  pg_id: number;
   room_id: number;
   bed_id: number;
   amount_paid: number;
@@ -272,11 +273,18 @@ export const paymentsApi = baseApi.injectEndpoints({
       ],
     }),
 
-    deleteTenantPayment: build.mutation<{ success: boolean; message?: string }, number>({
-      query: (id) => ({ url: `/rent-payments/${id}`, method: 'DELETE' }),
-      invalidatesTags: (_res, _err, id) => [
+    voidTenantPayment: build.mutation<
+      { success: boolean; message?: string },
+      { id: number; voided_reason: string }
+    >({
+      query: ({ id, voided_reason }) => ({
+        url: `/rent-payments/${id}/void`,
+        method: 'PATCH',
+        body: { voided_reason },
+      }),
+      invalidatesTags: (_res, _err, arg) => [
         { type: 'TenantPayments', id: 'LIST' },
-        { type: 'TenantPayment', id },
+        { type: 'TenantPayment', id: arg.id },
         { type: 'Tenants', id: 'LIST' },
       ],
     }),
@@ -383,6 +391,22 @@ export const paymentsApi = baseApi.injectEndpoints({
       ],
     }),
 
+    voidAdvancePayment: build.mutation<
+      { success: boolean; message?: string },
+      { id: number; voided_reason: string }
+    >({
+      query: ({ id, voided_reason }) => ({
+        url: `/advance-payments/${id}/void`,
+        method: 'PATCH',
+        body: { voided_reason },
+      }),
+      invalidatesTags: (_res, _err, arg) => [
+        { type: 'AdvancePayments' as const, id: 'LIST' },
+        { type: 'AdvancePayment' as const, id: arg.id },
+        { type: 'Tenants' as const, id: 'LIST' },
+      ],
+    }),
+
     // Refund Payments
     getRefundPayments: build.query<RefundPaymentsListResponse, GetRefundPaymentsParams | void>({
       query: (params) => ({ url: '/refund-payments', method: 'GET', params: params || undefined }),
@@ -464,7 +488,7 @@ export const {
   useLazyGetPaymentsByTenantQuery,
   useCreateTenantPaymentMutation,
   useUpdatePaymentStatusMutation,
-  useDeleteTenantPaymentMutation,
+  useVoidTenantPaymentMutation,
   useDetectPaymentGapsQuery,
   useLazyDetectPaymentGapsQuery,
   useGetNextPaymentDatesQuery,
@@ -477,6 +501,7 @@ export const {
   useUpdateAdvancePaymentMutation,
   useUpdateAdvancePaymentStatusMutation,
   useDeleteAdvancePaymentMutation,
+  useVoidAdvancePaymentMutation,
   useGetRefundPaymentsQuery,
   useLazyGetRefundPaymentsQuery,
   useGetRefundPaymentByIdQuery,

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { View, ScrollView, RefreshControl } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
 import { Theme } from '../../theme';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
@@ -12,15 +13,48 @@ import {
   useGetPGLocationsQuery,
 } from '../../services/api/pgLocationsApi';
 
+type DashboardRouteName =
+  | 'PGLocations'
+  | 'Rooms'
+  | 'Beds'
+  | 'Tenants'
+  | 'RentPayments'
+  | 'AdvancePayments'
+  | 'RefundPayments'
+  | 'Visitors'
+  | 'Employees'
+  | 'Expenses'
+  | 'EmployeeSalary'
+  | 'Settings';
+
+type DashboardMenuItem = {
+  title: string;
+  icon: string;
+  screen: DashboardRouteName;
+  color: string;
+};
+
+const DASHBOARD_ROUTES: Record<DashboardRouteName, true> = {
+  PGLocations: true,
+  Rooms: true,
+  Beds: true,
+  Tenants: true,
+  RentPayments: true,
+  AdvancePayments: true,
+  RefundPayments: true,
+  Visitors: true,
+  Employees: true,
+  Expenses: true,
+  EmployeeSalary: true,
+  Settings: true,
+};
+
 export const DashboardScreen: React.FC = () => {
   // All hooks must be called at the top level
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp<Record<DashboardRouteName, undefined>>>();
   const dispatch = useDispatch<AppDispatch>();
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const [refreshing, setRefreshing] = useState(false);
-  const [summary, setSummary] = useState<any>(null);
-  const [loadingSummary, setLoadingSummary] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
 
   const {
     data: pgLocationsResponse,
@@ -29,14 +63,12 @@ export const DashboardScreen: React.FC = () => {
     skip: false,
   });
 
-  const locations = Array.isArray((pgLocationsResponse as any)?.data) ? (pgLocationsResponse as any).data : [];
+  const responseData =
+    typeof pgLocationsResponse === 'object' && pgLocationsResponse && 'data' in (pgLocationsResponse as object)
+      ? (pgLocationsResponse as { data?: unknown }).data
+      : undefined;
 
-  // Initialize dashboard only when screen comes into focus (lazy loading)
-  useFocusEffect(
-    useCallback(() => {
-      setIsMounted(true);
-    }, [])
-  );
+  const locations = Array.isArray(responseData) ? responseData : [];
 
   // Step 2: Auto-select first PG location when locations are loaded
   useEffect(() => {
@@ -70,8 +102,9 @@ export const DashboardScreen: React.FC = () => {
   };
 
   const handleNavigate = useCallback((screen: string) => {
-    // With any type, we can directly navigate
-    navigation.navigate(screen);
+    if (screen in DASHBOARD_ROUTES) {
+      navigation.navigate(screen as DashboardRouteName);
+    }
   }, [navigation]);
 
   const onRefresh = async () => {
@@ -89,7 +122,7 @@ export const DashboardScreen: React.FC = () => {
   };
 
 
-  const menuItems = [
+  const menuItems: DashboardMenuItem[] = [
     { title: 'PG Locations', icon: 'business', screen: 'PGLocations', color: '#A855F7' },
     { title: 'Rooms', icon: 'home', screen: 'Rooms', color: '#22C55E' },
     { title: 'Beds', icon: 'bed', screen: 'Beds', color: '#3B82F6' },
@@ -105,18 +138,6 @@ export const DashboardScreen: React.FC = () => {
   ];
 
   
-
-  // Show loading state while component is mounting
-  if (!isMounted) {
-    return (
-      <ScreenLayout backgroundColor={Theme.colors.background.blue}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={{ marginTop: 10, color: Theme.colors.text.secondary }}>Loading Dashboard...</Text>
-        </View>
-      </ScreenLayout>
-    );
-  }
 
   return (
     <ScreenLayout

@@ -2,8 +2,6 @@ import React from 'react';
 import { View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { usePermissions } from '../hooks/usePermissions';
-import { ProtectedRoute } from '../components/ProtectedRoute';
 import { Permission } from '../config/rbac.config';
 import { navigationRef } from './navigationRef';
 import { useEffect } from 'react';
@@ -11,10 +9,18 @@ import { useDispatch } from 'react-redux';
 import { clearPermissions } from '../store/slices/rbacSlice';
 import { usePermissionsPolling } from '../hooks/usePermissionsPolling';
 
-// Use require to avoid TypeScript errors
-const { NavigationContainer, useNavigation, useNavigationState } = require('@react-navigation/native');
-const { createNativeStackNavigator } = require('@react-navigation/native-stack');
-const { createBottomTabNavigator } = require('@react-navigation/bottom-tabs');
+import { Theme } from '../theme';
+
+import {
+  NavigationContainer,
+  type NavigationState,
+  type ParamListBase,
+  useNavigation,
+  type NavigationProp,
+  useNavigationState,
+} from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // Auth Screens
 import { LoginScreen } from '../screens/auth/LoginScreen';
@@ -65,19 +71,26 @@ import { FaqWebViewScreen } from '@/screens/settings/FaqWebViewScreen';
 import { PayrollRunsScreen } from '@/screens/payroll/PayrollRunsScreen';
 import { PayrollRunDetailsScreen } from '@/screens/payroll/PayrollRunDetailsScreen';
 
-const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator<ParamListBase>();
+const Tab = createBottomTabNavigator<ParamListBase>();
 
 // Main tabs component that keeps screens mounted
 const MainTabs = () => {
-  const navigation = useNavigation();
-  const currentRoute = useNavigationState((state: any) => {
-    if (!state || !state.routes || state.index === undefined) {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const currentRoute = useNavigationState((state) => {
+    const s = state as unknown as NavigationState;
+    if (!s || !s.routes || s.index === undefined) {
       console.log('BottomNav currentRoute = Dashboard (fallback)');
       return 'Dashboard';
     }
     
-    const route = state.routes[state.index];
+    const route = s.routes[s.index] as unknown as {
+      name?: string;
+      state?: {
+        index: number;
+        routes: Array<{ name: string }>;
+      };
+    };
     
     if (route?.state?.routes?.[route.state.index]) {
       const tabRoute = route.state.routes[route.state.index].name;
@@ -128,9 +141,8 @@ const MainTabs = () => {
             headerShown: false,
             tabBarStyle: { display: 'none' },
             lazy: true,
-            animationEnabled: false,
           }}
-          sceneContainerStyle={{ backgroundColor: 'transparent' }}
+          sceneContainerStyle={{ backgroundColor: Theme.colors.background.primary }}
           initialRouteName="Dashboard"
         >
           {screens.map((screen) => (
@@ -138,7 +150,6 @@ const MainTabs = () => {
               key={screen.name}
               name={screen.name}
               component={screen.component}
-              options={{ animationEnabled: false }}
             />
           ))}
         </Tab.Navigator>
@@ -160,11 +171,27 @@ export const AppNavigator = () => {
     }
   }, [isAuthenticated, dispatch]);
 
+  const navigationTheme = {
+    dark: false,
+    colors: {
+      primary: Theme.colors.primary,
+      background: Theme.colors.background.primary,
+      card: Theme.colors.background.primary,
+      text: Theme.colors.text.primary,
+      border: Theme.colors.border,
+      notification: Theme.colors.primary,
+    },
+  };
+
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navigationTheme}
+    >
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
+          contentStyle: { backgroundColor: Theme.colors.background.primary },
         }}
       >
         {!isAuthenticated ? (
@@ -172,7 +199,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreenNew} />
             <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
-            <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen} />
+            <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen as unknown as React.ComponentType<unknown>} />
             <Stack.Screen name="LegalWebView" component={LegalWebViewScreen} />
           </>
         ) : (
@@ -181,7 +208,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="RentPayments" component={RentPaymentsScreen} />
             <Stack.Screen name="AdvancePayments" component={AdvancePaymentsScreen} />
             <Stack.Screen name="RefundPayments" component={RefundPaymentsScreen} />
-            <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen} />
+            <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen as unknown as React.ComponentType<unknown>} />
             <Stack.Screen name="LegalWebView" component={LegalWebViewScreen} />
             <Stack.Screen name="PGLocations" component={PGLocationsScreen} />
             <Stack.Screen name="PGDetails" component={PGDetailsScreen} />
@@ -200,7 +227,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="EmployeePermissionOverrides" component={EmployeePermissionOverridesScreen} />
             <Stack.Screen name="Visitors" component={VisitorsScreen} />
             <Stack.Screen name="AddVisitor" component={AddVisitorScreen} />
-            <Stack.Screen name="VisitorDetails" component={VisitorDetailsScreen} />
+            <Stack.Screen name="VisitorDetails" component={VisitorDetailsScreen as unknown as React.ComponentType<unknown>} />
             <Stack.Screen name="Tickets" component={TicketsScreen} />
             <Stack.Screen name="CreateTicket" component={CreateTicketScreen} />
             <Stack.Screen name="TicketDetails" component={TicketDetailsScreen} />
