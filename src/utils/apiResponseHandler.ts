@@ -13,14 +13,14 @@
  * }
  */
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   statusCode: number;
   message: string;
   data?: T;
   error?: {
     code: string;
-    details?: any;
+    details?: unknown;
   };
   timestamp: string;
   path?: string;
@@ -30,36 +30,42 @@ export interface ApiResponse<T = any> {
  * Extract data from API response
  * Handles both old and new response formats
  */
-export const extractResponseData = <T>(response: any): T => {
-  // If response has the new structure with success, statusCode, etc.
-  if (response && typeof response === 'object' && 'success' in response && 'statusCode' in response) {
-    return response.data as T;
+export const extractResponseData = <T>(response: unknown): T => {
+  if (response && typeof response === 'object') {
+    const obj = response as Record<string, unknown>;
+    if ('success' in obj && 'statusCode' in obj) {
+      return obj.data as T;
+    }
   }
-  
-  // Fallback for old structure
   return response as T;
 };
 
 /**
  * Check if API response is successful
  */
-export const isApiResponseSuccess = (response: any): boolean => {
-  if (response && typeof response === 'object' && 'success' in response) {
-    return response.success === true;
+export const isApiResponseSuccess = (response: unknown): boolean => {
+  if (response && typeof response === 'object') {
+    const obj = response as Record<string, unknown>;
+    if ('success' in obj) {
+      return obj.success === true;
+    }
   }
-  return true; // Assume success for old format
+  return true;
 };
 
 /**
  * Get error message from API response
  */
-export const getApiErrorMessage = (response: any): string => {
+export const getApiErrorMessage = (response: unknown): string => {
   if (response && typeof response === 'object') {
-    if ('message' in response) {
-      return response.message;
+    const obj = response as Record<string, unknown>;
+    if (typeof obj.message === 'string') {
+      return obj.message;
     }
-    if ('error' in response && response.error?.message) {
-      return response.error.message;
+    const err = obj.error;
+    if (err && typeof err === 'object') {
+      const errObj = err as Record<string, unknown>;
+      if (typeof errObj.message === 'string') return errObj.message;
     }
   }
   return 'An error occurred';
@@ -68,27 +74,21 @@ export const getApiErrorMessage = (response: any): string => {
 /**
  * Handle paginated response
  */
-export const extractPaginatedData = <T>(response: any): { data: T[]; pagination?: any } => {
-  const data = extractResponseData(response);
-  
+export const extractPaginatedData = <T>(response: unknown): { data: T[]; pagination?: unknown } => {
+  const data = extractResponseData<unknown>(response);
+
   if (data && typeof data === 'object') {
-    if ('data' in data && 'pagination' in data) {
-      // New paginated format
+    const obj = data as Record<string, unknown>;
+    if ('data' in obj && 'pagination' in obj) {
       return {
-        data: data.data as T[],
-        pagination: data.pagination,
-      };
-    }
-    if (Array.isArray(data)) {
-      // Old array format
-      return {
-        data: data as T[],
+        data: Array.isArray(obj.data) ? (obj.data as T[]) : [],
+        pagination: obj.pagination,
       };
     }
   }
-  
+
   return {
-    data: Array.isArray(data) ? data : [],
+    data: Array.isArray(data) ? (data as T[]) : [],
   };
 };
 

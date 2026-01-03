@@ -35,25 +35,36 @@ const ERROR_MESSAGES: Record<string, string> = {
 /**
  * Get user-friendly error message
  */
-export const getErrorMessage = (error: ApiError | any): string => {
+export const getErrorMessage = (error: ApiError | unknown): string => {
+  const err = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
   // If it's already an ApiError with a message
-  if (error?.message) {
-    return error.message;
+  if (typeof err?.message === 'string') {
+    return err.message;
   }
 
   // Try to get from error code
-  if (error?.error?.code) {
-    return ERROR_MESSAGES[error.error.code] || error.error.code;
+  const innerError = err?.error;
+  if (innerError && typeof innerError === 'object') {
+    const innerObj = innerError as Record<string, unknown>;
+    if (typeof innerObj.code === 'string') {
+      return ERROR_MESSAGES[innerObj.code] || innerObj.code;
+    }
   }
 
   // Default message based on status code
-  const statusCode = error?.statusCode || error?.response?.status;
-  if (statusCode === 401) return 'Please log in to continue.';
-  if (statusCode === 403) return 'You do not have permission.';
-  if (statusCode === 404) return 'The requested resource was not found.';
-  if (statusCode === 409) return 'There is a conflict with the current state.';
-  if (statusCode >= 500) return 'Server error. Please try again later.';
-  if (statusCode >= 400) return 'Invalid request. Please try again.';
+  const response = err?.response;
+  const responseStatus =
+    response && typeof response === 'object' ? (response as Record<string, unknown>).status : undefined;
+  const statusCodeRaw = err?.statusCode ?? responseStatus;
+  const statusCode = typeof statusCodeRaw === 'number' ? statusCodeRaw : undefined;
+  if (typeof statusCode === 'number') {
+    if (statusCode === 401) return 'Please log in to continue.';
+    if (statusCode === 403) return 'You do not have permission.';
+    if (statusCode === 404) return 'The requested resource was not found.';
+    if (statusCode === 409) return 'There is a conflict with the current state.';
+    if (statusCode >= 500) return 'Server error. Please try again later.';
+    if (statusCode >= 400) return 'Invalid request. Please try again.';
+  }
 
   return 'An unexpected error occurred.';
 };
@@ -76,30 +87,43 @@ export const getErrorTitle = (statusCode: number): string => {
 /**
  * Check if error is retryable
  */
-export const isRetryableError = (error: ApiError | any): boolean => {
-  const statusCode = error?.statusCode || error?.response?.status;
+export const isRetryableError = (error: ApiError | unknown): boolean => {
+  const err = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
+  const response = err?.response;
+  const responseStatus =
+    response && typeof response === 'object' ? (response as Record<string, unknown>).status : undefined;
+  const statusCodeRaw = err?.statusCode ?? responseStatus;
+  const statusCode = typeof statusCodeRaw === 'number' ? statusCodeRaw : undefined;
   
   // Retryable status codes
   const retryableStatuses = [408, 429, 500, 502, 503, 504];
   
   // Network errors are retryable
-  if (error?.code === 'ECONNABORTED' || error?.message === 'Network Error') {
+  if (err?.code === 'ECONNABORTED' || err?.message === 'Network Error') {
     return true;
   }
 
-  return retryableStatuses.includes(statusCode);
+  return typeof statusCode === 'number' ? retryableStatuses.includes(statusCode) : false;
 };
 
 /**
  * Format error details for logging
  */
-export const formatErrorForLogging = (error: ApiError | any): string => {
+export const formatErrorForLogging = (error: ApiError | unknown): string => {
+  const err = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
+  const response = err?.response;
+  const responseStatus =
+    response && typeof response === 'object' ? (response as Record<string, unknown>).status : undefined;
+  const innerError = err?.error;
+  const innerCode =
+    innerError && typeof innerError === 'object' ? (innerError as Record<string, unknown>).code : undefined;
+
   const details = {
-    message: error?.message,
-    statusCode: error?.statusCode || error?.response?.status,
-    errorCode: error?.error?.code,
-    path: error?.path,
-    timestamp: error?.timestamp,
+    message: err?.message,
+    statusCode: err?.statusCode ?? responseStatus,
+    errorCode: innerCode,
+    path: err?.path,
+    timestamp: err?.timestamp,
   };
 
   return JSON.stringify(details, null, 2);
@@ -108,19 +132,25 @@ export const formatErrorForLogging = (error: ApiError | any): string => {
 /**
  * Extract field-specific validation errors
  */
-export const getValidationErrors = (error: ApiError | any): Record<string, string> => {
-  if (!error?.error?.details) {
+export const getValidationErrors = (error: ApiError | unknown): Record<string, string> => {
+  const err = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
+  const innerError = err?.error;
+  const details =
+    innerError && typeof innerError === 'object' ? (innerError as Record<string, unknown>).details : undefined;
+  if (!details) {
     return {};
   }
-
-  const details = error.error.details;
   
   // If details is an array (common for validation errors)
   if (Array.isArray(details)) {
     const fieldErrors: Record<string, string> = {};
-    details.forEach((err: any) => {
-      if (err.field) {
-        fieldErrors[err.field] = err.message;
+    details.forEach((err: unknown) => {
+      if (!err || typeof err !== 'object') return;
+      const obj = err as Record<string, unknown>;
+      const field = obj.field;
+      const message = obj.message;
+      if (typeof field === 'string' && typeof message === 'string') {
+        fieldErrors[field] = message;
       }
     });
     return fieldErrors;
@@ -128,7 +158,7 @@ export const getValidationErrors = (error: ApiError | any): Record<string, strin
 
   // If details is an object
   if (typeof details === 'object') {
-    return details;
+    return details as Record<string, string>;
   }
 
   return {};

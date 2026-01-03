@@ -3,6 +3,46 @@ import type { Payment } from '../../types';
 import { extractPaginatedData, extractResponseData, isApiResponseSuccess } from '../../utils/apiResponseHandler';
 
 
+export type RentCycleType = 'CALENDAR' | 'MIDMONTH';
+
+export type RentPaymentGap = {
+  gapId?: string | number;
+  gapStart: string;
+  gapEnd: string;
+  daysMissing: number;
+  cycle_id?: number;
+  remainingDue?: number;
+  rentDue?: number;
+  totalPaid?: number;
+  due?: number;
+  expected_from_allocations?: number;
+};
+
+export type DetectPaymentGapsResponse = {
+  hasGaps: boolean;
+  gaps: RentPaymentGap[];
+};
+
+export type NextPaymentDatesResponse = {
+  suggestedCycleId?: number | null;
+  suggestedStartDate?: string;
+  suggestedEndDate?: string;
+};
+
+export type CreateTenantPaymentDto = {
+  tenant_id: number;
+  pg_id: number;
+  room_id: number;
+  bed_id: number;
+  amount_paid: number;
+  actual_rent_amount: number;
+  payment_date?: string;
+  payment_method: Payment['payment_method'];
+  status: Payment['status'];
+  cycle_id: number;
+  remarks?: string;
+};
+
 export interface AdvancePayment {
   s_no: number;
   tenant_id: number;
@@ -114,9 +154,9 @@ export type TenantPaymentsListResponse = {
   pagination?: unknown;
 };
 
-export type TenantPaymentResponse = {
+export type TenantPaymentResponse<T = unknown> = {
   success: boolean;
-  data: unknown;
+  data: T;
   message?: string;
 };
 
@@ -258,9 +298,9 @@ export const paymentsApi = baseApi.injectEndpoints({
       providesTags: (_res, _err, tenant_id) => [{ type: 'TenantPayments' as const, id: tenant_id }],
     }),
 
-    createTenantPayment: build.mutation<unknown, Partial<Payment>>({
+    createTenantPayment: build.mutation<TenantPaymentResponse<Payment>, CreateTenantPaymentDto>({
       query: (body) => ({ url: '/rent-payments', method: 'POST', body }),
-      transformResponse: (response: unknown) => normalizeEntity<unknown>(response),
+      transformResponse: (response: unknown) => normalizeEntity<Payment>(response),
       invalidatesTags: [
         { type: 'TenantPayments' as const, id: 'LIST' },
         { type: 'Tenants', id: 'LIST' },
@@ -301,19 +341,19 @@ export const paymentsApi = baseApi.injectEndpoints({
       },
     }),
 
-    detectPaymentGaps: build.query<unknown, number>({
+    detectPaymentGaps: build.query<DetectPaymentGapsResponse, number>({
       query: (tenant_id) => ({ url: `/rent-payments/gaps/${tenant_id}`, method: 'GET' }),
-      transformResponse: (response: unknown) => extractResponseData<unknown>(response),
+      transformResponse: (response: unknown) => extractResponseData<DetectPaymentGapsResponse>(response),
       providesTags: (_res, _err, tenant_id) => [{ type: 'TenantPaymentGaps' as const, id: tenant_id }],
     }),
 
-    getNextPaymentDates: build.query<unknown, { tenant_id: number; rentCycleType?: string; skipGaps?: boolean }>({
+    getNextPaymentDates: build.query<NextPaymentDatesResponse, { tenant_id: number; rentCycleType?: RentCycleType; skipGaps?: boolean }>({
       query: ({ tenant_id, rentCycleType, skipGaps }) => ({
         url: `/rent-payments/next-dates/${tenant_id}`,
         method: 'GET',
         params: { rentCycleType, skipGaps },
       }),
-      transformResponse: (response: unknown) => extractResponseData<unknown>(response),
+      transformResponse: (response: unknown) => extractResponseData<NextPaymentDatesResponse>(response),
       providesTags: (_res, _err, arg) => [{ type: 'TenantPaymentNextDates' as const, id: arg.tenant_id }],
     }),
 

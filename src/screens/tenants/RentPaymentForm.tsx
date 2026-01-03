@@ -23,7 +23,10 @@ import {
   useLazyDetectPaymentGapsQuery,
   useLazyGetNextPaymentDatesQuery,
 } from "@/services/api/paymentsApi";
+import type { CreateTenantPaymentDto, DetectPaymentGapsResponse, NextPaymentDatesResponse, RentPaymentGap } from "@/services/api/paymentsApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
+import type { Payment } from "@/types";
+import type { BedResponse } from "@/services/api/roomsApi";
 
 interface RentPaymentFormProps {
   visible: boolean;
@@ -36,10 +39,17 @@ interface RentPaymentFormProps {
   joiningDate?: string;
   lastPaymentStartDate?: string;
   lastPaymentEndDate?: string;
-  previousPayments?: any[];
+  previousPayments?: PaymentWithCycle[];
   onClose: () => void;
   onSuccess: () => void;
 }
+
+type PaymentWithCycle = Payment & {
+  tenant_rent_cycles?: {
+    cycle_start?: string;
+    cycle_end?: string;
+  };
+};
 
 const PAYMENT_METHODS: Option[] = [
   { label: "GPay", value: "GPAY", icon: "📱" },
@@ -81,14 +91,6 @@ const parseDate = (dateString: string): Date => {
   return isNaN(date.getTime()) ? new Date() : date;
 };
 
-// Helper function to format date to YYYY-MM-DD
-const formatDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   visible,
   tenantId,
@@ -116,7 +118,6 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   const [rentCycleData, setRentCycleData] = useState<{
     type: 'CALENDAR' | 'MIDMONTH';
   } | null>(null);
-  const [hasExistingPayments, setHasExistingPayments] = useState(false);
   const [formData, setFormData] = useState({
     amount_paid: "",
     actual_rent_amount: "",
@@ -132,8 +133,8 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [gapWarning, setGapWarning] = useState<{
     visible: boolean;
-    gaps: any[];
-    earliestGap: any | null;
+    gaps: RentPaymentGap[];
+    earliestGap: RentPaymentGap | null;
     skipGaps: boolean;
   }>({
     visible: false,
@@ -143,15 +144,15 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   });
   const [checkingGaps, setCheckingGaps] = useState(false);
 
-  const getPaymentPeriod = (p: any): { start?: string; end?: string } => {
-    const start = p?.tenant_rent_cycles?.cycle_start || p?.start_date;
-    const end = p?.tenant_rent_cycles?.cycle_end || p?.end_date;
+  const getPaymentPeriod = (p: PaymentWithCycle): { start?: string; end?: string } => {
+    const start = p.tenant_rent_cycles?.cycle_start || p.start_date;
+    const end = p.tenant_rent_cycles?.cycle_end || p.end_date;
     return { start, end };
   };
 
-  const getPaymentPeriodEndTime = (p: any): number => {
+  const getPaymentPeriodEndTime = (p: PaymentWithCycle): number => {
     const period = getPaymentPeriod(p);
-    const v = period.end || p?.payment_date;
+    const v = period.end || p.payment_date;
     const t = v ? new Date(v).getTime() : 0;
     return Number.isFinite(t) ? t : 0;
   };
@@ -162,54 +163,42 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     
     try {
       setCheckingGaps(true);
-      const response = await triggerDetectPaymentGaps(tenantId).unwrap();
+      const gapData: DetectPaymentGapsResponse = await triggerDetectPaymentGaps(tenantId).unwrap();
 
-      const success = Boolean((response as any)?.success ?? true);
-      const gapData = ((response as any)?.data ?? response) as any;
-      
-      if (success && gapData) {
-        const { hasGaps, gaps } = gapData;
-        
-        if (hasGaps && gaps && gaps.length > 0) {
+      if (gapData.hasGaps && gapData.gaps.length > 0) {
           setGapWarning({
             visible: true,
-            gaps: gaps,
+            gaps: gapData.gaps,
             earliestGap: null, // Don't auto-select
             skipGaps: false,
           });
           
           // Don't auto-fill form - let user select first
-        } else {
-          setGapWarning({
-            visible: false,
-            gaps: [],
-            earliestGap: null,
-            skipGaps: false,
-          });
+      } else {
+        setGapWarning({
+          visible: false,
+          gaps: [],
+          earliestGap: null,
+          skipGaps: false,
+        });
 
-          // No gaps: ask backend for the next suggested cycle window and cycle_id.
-          try {
-            const cycleType = rentCycleData?.type || 'CALENDAR';
-            const nextDatesResponse = await triggerGetNextPaymentDates({
-              tenant_id: tenantId,
-              rentCycleType: cycleType,
-              skipGaps: true,
-            }).unwrap();
+        // No gaps: ask backend for the next suggested cycle window and cycle_id.
+        try {
+          const cycleType = rentCycleData?.type || 'CALENDAR';
+          const nextDatesData: NextPaymentDatesResponse = await triggerGetNextPaymentDates({
+            tenant_id: tenantId,
+            rentCycleType: cycleType,
+            skipGaps: true,
+          }).unwrap();
 
-            const nextDatesSuccess = Boolean((nextDatesResponse as any)?.success ?? true);
-            const nextDatesData = ((nextDatesResponse as any)?.data ?? nextDatesResponse) as any;
-
-            if (nextDatesSuccess && nextDatesData) {
-              setFormData((prev) => ({
-                ...prev,
-                cycle_id: nextDatesData.suggestedCycleId ?? null,
-                start_date: nextDatesData.suggestedStartDate || "",
-                end_date: nextDatesData.suggestedEndDate || "",
-              }));
-            }
-          } catch (nextDatesError) {
-            console.error('Error getting next payment dates (auto):', nextDatesError);
-          }
+          setFormData((prev) => ({
+            ...prev,
+            cycle_id: nextDatesData.suggestedCycleId ?? null,
+            start_date: nextDatesData.suggestedStartDate || "",
+            end_date: nextDatesData.suggestedEndDate || "",
+          }));
+        } catch (nextDatesError) {
+          console.error('Error getting next payment dates (auto):', nextDatesError);
         }
       }
     } catch (error) {
@@ -220,7 +209,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   };
 
   // Function to handle gap button click
-  const handleGapButtonClick = (gap: any) => {
+  const handleGapButtonClick = (gap: RentPaymentGap) => {
     const remaining = Number(
       (gap?.remainingDue ?? (gap?.rentDue != null && gap?.totalPaid != null ? Number(gap.rentDue) - Number(gap.totalPaid) : undefined)) ??
         gap?.rentDue ??
@@ -251,32 +240,27 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   // Handle "Continue to Next Payment" for CALENDAR cycle
   const handleContinueToNextPaymentCalendar = async () => {
     try {
-      const response = await triggerGetNextPaymentDates({ tenant_id: tenantId, rentCycleType: 'CALENDAR', skipGaps: true }).unwrap();
+      const nextDates: NextPaymentDatesResponse = await triggerGetNextPaymentDates({ tenant_id: tenantId, rentCycleType: 'CALENDAR', skipGaps: true }).unwrap();
+      const suggestedCycleId = nextDates.suggestedCycleId ?? null;
+      const suggestedStartDate = nextDates.suggestedStartDate || '';
+      const suggestedEndDate = nextDates.suggestedEndDate || '';
 
-      if (response && typeof response === 'object') {
-        const nextDates = response as Record<string, unknown>;
-        const suggestedCycleId = (nextDates.suggestedCycleId as number | null | undefined) ?? null;
-        const suggestedStartDate = String(nextDates.suggestedStartDate ?? '');
-        const suggestedEndDateRaw = nextDates.suggestedEndDate;
-        const suggestedEndDate = suggestedEndDateRaw ? String(suggestedEndDateRaw) : '';
+      if (suggestedStartDate) {
+        // Auto-fill form with next payment dates
+        setFormData((prev) => ({
+          ...prev,
+          cycle_id: suggestedCycleId,
+          start_date: suggestedStartDate,
+          end_date: suggestedEndDate || suggestedStartDate,
+          status: "PENDING",
+        }));
 
-        if (suggestedStartDate) {
-          // Auto-fill form with next payment dates
-          setFormData((prev) => ({
-            ...prev,
-            cycle_id: suggestedCycleId,
-            start_date: suggestedStartDate,
-            end_date: suggestedEndDate || suggestedStartDate,
-            status: "PENDING",
-          }));
-
-          // Hide gap warning and mark as skipped
-          setGapWarning((prev) => ({
-            ...prev,
-            skipGaps: true,
-            visible: false,
-          }));
-        }
+        // Hide gap warning and mark as skipped
+        setGapWarning((prev) => ({
+          ...prev,
+          skipGaps: true,
+          visible: false,
+        }));
       }
     } catch (error) {
       console.error("Error getting next payment dates (CALENDAR):", error);
@@ -291,32 +275,27 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   // Handle "Continue to Next Payment" for MIDMONTH cycle
   const handleContinueToNextPaymentMidmonth = async () => {
     try {
-      const response = await triggerGetNextPaymentDates({ tenant_id: tenantId, rentCycleType: 'MIDMONTH', skipGaps: true }).unwrap();
+      const nextDates: NextPaymentDatesResponse = await triggerGetNextPaymentDates({ tenant_id: tenantId, rentCycleType: 'MIDMONTH', skipGaps: true }).unwrap();
+      const suggestedCycleId = nextDates.suggestedCycleId ?? null;
+      const suggestedStartDate = nextDates.suggestedStartDate || '';
+      const suggestedEndDate = nextDates.suggestedEndDate || '';
 
-      if (response && typeof response === 'object') {
-        const nextDates = response as Record<string, unknown>;
-        const suggestedCycleId = (nextDates.suggestedCycleId as number | null | undefined) ?? null;
-        const suggestedStartDate = String(nextDates.suggestedStartDate ?? '');
-        const suggestedEndDateRaw = nextDates.suggestedEndDate;
-        const suggestedEndDate = suggestedEndDateRaw ? String(suggestedEndDateRaw) : '';
+      if (suggestedStartDate) {
+        // Auto-fill form with next payment dates
+        setFormData((prev) => ({
+          ...prev,
+          cycle_id: suggestedCycleId,
+          start_date: suggestedStartDate,
+          end_date: suggestedEndDate || suggestedStartDate,
+          status: "PENDING",
+        }));
 
-        if (suggestedStartDate) {
-          // Auto-fill form with next payment dates
-          setFormData((prev) => ({
-            ...prev,
-            cycle_id: suggestedCycleId,
-            start_date: suggestedStartDate,
-            end_date: suggestedEndDate || suggestedStartDate,
-            status: "PENDING",
-          }));
-
-          // Hide gap warning and mark as skipped
-          setGapWarning((prev) => ({
-            ...prev,
-            skipGaps: true,
-            visible: false,
-          }));
-        }
+        // Hide gap warning and mark as skipped
+        setGapWarning((prev) => ({
+          ...prev,
+          skipGaps: true,
+          visible: false,
+        }));
       }
     } catch (error) {
       console.error("Error getting next payment dates (MIDMONTH):", error);
@@ -494,9 +473,9 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
           setFetchingBedPrice(true);
 
           // Fetch bed price
-          const bedResponse = await triggerGetBedById(bedId).unwrap();
+          const bedResponse: BedResponse = await triggerGetBedById(bedId).unwrap();
 
-          const priceValue = (bedResponse as any)?.data?.bed_price;
+          const priceValue = bedResponse.data?.bed_price;
           if (priceValue) {
             const bedPrice = typeof priceValue === 'string' ? parseFloat(priceValue) : priceValue;
             setBedRentAmount(bedPrice);
@@ -593,10 +572,6 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     wasVisibleRef.current = visible;
     if (!visible || wasVisible) return;
 
-    // Check if tenant has previous payments
-    const hasPreviousPayments = previousPayments && previousPayments.length > 0;
-    setHasExistingPayments(hasPreviousPayments);
-
     // Rent period selection is backend-driven via /gaps or /next-dates.
     // Keep money fields reset and let detectPaymentGaps() fill cycle/dates.
     setFormData((prev) => ({
@@ -612,19 +587,6 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       remarks: "",
     }));
   }, [visible, previousPayments, bedRentAmount]);
-
-
-  const handleAutoFillDates = () => {
-    if (!rentCycleData) {
-      Alert.alert(
-        "No Rent Cycle Data",
-        "PG location rent cycle data not available. Please try again."
-      );
-      return;
-    }
-
-    handleContinueToNextPayment();
-  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -698,7 +660,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       [
         {
           text: "Confirm",
-          onPress: () => savePayment(autoStatus),
+          onPress: () => savePayment(autoStatus as Payment['status']),
         },
         {
           text: "Cancel",
@@ -708,40 +670,36 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
     );
   };
 
-  const savePayment = async (status: string) => {
+  const savePayment = async (status: Payment['status']) => {
     try {
       setLoading(true);
 
       const amountPaid = parseFloat(formData.amount_paid);
       const actualAmount = parseFloat(formData.actual_rent_amount);
 
-      const derivedStatus: "PAID" | "PARTIAL" | "PENDING" | "FAILED" =
+      const derivedStatus: Payment['status'] =
         amountPaid >= actualAmount ? "PAID" : amountPaid > 0 ? "PARTIAL" : "PENDING";
 
-      const paymentData = {
+      const paymentData: CreateTenantPaymentDto = {
         tenant_id: tenantId,
         pg_id: pgId,
         room_id: roomId,
         bed_id: bedId,
-        amount_paid: parseFloat(formData.amount_paid),
-        actual_rent_amount: parseFloat(formData.actual_rent_amount),
+        amount_paid: amountPaid,
+        actual_rent_amount: actualAmount,
         payment_date: formData.payment_date,
-        payment_method: formData.payment_method as
-          | "GPAY"
-          | "PHONEPE"
-          | "CASH"
-          | "BANK_TRANSFER",
-        status: derivedStatus,
+        payment_method: formData.payment_method as Payment['payment_method'],
+        status: status || derivedStatus,
         cycle_id: formData.cycle_id as number,
         remarks: formData.remarks || undefined,
       };
 
-      const res = await createTenantPayment(paymentData as any).unwrap();
+      const res = await createTenantPayment(paymentData).unwrap();
       showSuccessAlert(res);
 
       onSuccess();
       handleClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       showErrorAlert(error, 'Error saving payment');
     } finally {
       setLoading(false);

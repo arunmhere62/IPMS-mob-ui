@@ -9,7 +9,6 @@ import {
   Alert,
   Linking,
 } from 'react-native';
-import { CollapsibleSection } from '../../components/CollapsibleSection';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { DatePicker } from '../../components/DatePicker';
 import { AmountInput } from '../../components/AmountInput';
@@ -18,7 +17,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
-import { AnimatedPressableCard } from '../../components/AnimatedPressableCard';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -39,9 +37,6 @@ import {
   PersonalInformation,
   ImageViewerModal,
   ReceiptViewModal,
-  RentPaymentsSection,
-  AdvancePaymentsSection,
-  RefundPaymentsSection,
 } from './components';
 import {
   useCreateAdvancePaymentMutation,
@@ -53,14 +48,19 @@ import {
   useCreateTenantPaymentMutation,
   useLazyDetectPaymentGapsQuery,
 } from '@/services/api/paymentsApi';
+import type {
+  AdvancePayment as PaymentsAdvancePayment,
+  CreateTenantPaymentDto,
+  CreateAdvancePaymentDto,
+  CreateRefundPaymentDto,
+  RefundPayment as PaymentsRefundPayment,
+} from '@/services/api/paymentsApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import AdvancePaymentForm from './AdvancePaymentForm';
 import { useGetAllBedsQuery, useGetAllRoomsQuery } from '@/services/api/roomsApi';
+import type { Bed, GetBedsParams, GetRoomsParams, Room } from '@/services/api/roomsApi';
 import { useGetPGLocationsQuery } from '@/services/api/pgLocationsApi';
 import {
-  AdvancePayment,
-  PendingPaymentMonth,
-  RefundPayment,
   TenantPayment,
   useCheckoutTenantWithDateMutation,
   useDeleteTenantMutation,
@@ -71,11 +71,77 @@ import {
 } from '@/services/api/tenantsApi';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
+import type { Payment, PGLocation } from '@/types';
+
+type NavigationLike = {
+  navigate: (name: string, params?: unknown) => void;
+  goBack: () => void;
+  addListener: (event: string, callback: (e: unknown) => void) => () => void;
+  setParams: (params: Record<string, unknown>) => void;
+  getState: () => { routes: Array<{ params?: Record<string, unknown> }>; index: number };
+};
+
+type CompactReceiptData = Parameters<typeof CompactReceiptGenerator.ReceiptComponent>[0]['data'];
+
+type TransferDifferenceCycle = {
+  remainingDue?: number;
+  due?: number;
+  expected_from_allocations?: number;
+  start_date?: string;
+  end_date?: string;
+  cycle_id?: number;
+};
+
+type TenantAllocation = {
+  s_no?: number;
+  effective_from: string;
+  effective_to?: string | null;
+  pg_id?: number;
+  room_id?: number;
+  bed_id?: number;
+  bed_price_snapshot?: number;
+  pg_locations?: { location_name?: string };
+  rooms?: { room_no?: string };
+  beds?: { bed_no?: string };
+};
+
+type TenantPaymentWithCycle = TenantPayment & {
+  tenant_rent_cycles?: {
+    cycle_start?: string;
+    cycle_end?: string;
+  };
+};
+
+type TenantPaymentWithRelations = TenantPaymentWithCycle & {
+  pg_locations?: { location_name?: string };
+  rooms?: { room_no?: string };
+  beds?: { bed_no?: string };
+};
+
+type PaymentWithCycle = Payment & {
+  tenant_rent_cycles?: {
+    cycle_start?: string;
+    cycle_end?: string;
+  };
+};
+
+type TenantRentStatusFields = {
+  rent_due_amount?: number;
+  pending_due_amount?: number;
+  partial_due_amount?: number;
+  pending_months?: number;
+  unpaid_months?: unknown[];
+  payment_status?: string;
+};
+
+type TenantViewModel = TenantRentStatusFields & {
+  tenant_allocations?: TenantAllocation[];
+};
 
 // Inner component that doesn't directly interact with frozen navigation context
 const TenantDetailsContent: React.FC<{
   tenantId: number;
-  navigation: any;
+  navigation: NavigationLike;
   canEditTenant: boolean;
   canDeleteTenant: boolean;
   canCreateRent: boolean;
@@ -93,8 +159,8 @@ const TenantDetailsContent: React.FC<{
   canEditTenant,
   canDeleteTenant,
   canCreateRent,
-  canEditRent,
-  canDeleteRent,
+  canEditRent: _canEditRent,
+  canDeleteRent: _canDeleteRent,
   canCreateAdvance,
   canEditAdvance,
   canDeleteAdvance,
@@ -110,7 +176,7 @@ const TenantDetailsContent: React.FC<{
   ];
 
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user: _user } = useSelector((state: RootState) => state.auth);
 
   const [shouldRefreshTenantsOnBack, setShouldRefreshTenantsOnBack] = useState(false);
 
@@ -160,7 +226,9 @@ const TenantDetailsContent: React.FC<{
   // Clone tenant data to avoid frozen state issues
   const currentTenant = tenantResponse?.data ? JSON.parse(JSON.stringify(tenantResponse.data)) : null;
 
-  const activeTransferDiffCycle = (currentTenant as any)?.transfer_difference_due_cycle || null;
+  const activeTransferDiffCycle =
+    (currentTenant as { transfer_difference_due_cycle?: TransferDifferenceCycle } | null | undefined)
+      ?.transfer_difference_due_cycle ?? null;
 
   const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, { skip: false });
 
@@ -169,7 +237,9 @@ const TenantDetailsContent: React.FC<{
     isFetching: transferRoomsLoading,
     error: transferRoomsError,
   } = useGetAllRoomsQuery(
-    transferPgId ? ({ pg_id: transferPgId, page: 1, limit: 200 } as any) : (undefined as any),
+    (transferPgId ? ({ pg_id: transferPgId, page: 1, limit: 200 } satisfies GetRoomsParams) : undefined) as
+      | GetRoomsParams
+      | void,
     { skip: !transferPgId }
   );
 
@@ -184,8 +254,8 @@ const TenantDetailsContent: React.FC<{
           only_unoccupied: true,
           page: 1,
           limit: 500,
-        } as any))
-      : (undefined as any),
+        } satisfies GetBedsParams) as GetBedsParams)
+      : undefined,
     { skip: !transferRoomId }
   );
 
@@ -202,36 +272,36 @@ const TenantDetailsContent: React.FC<{
   useEffect(() => {
     if (!transferModalVisible) return;
     if (transferRoomsError) {
-      showErrorAlert(transferRoomsError as any, 'Failed to load rooms');
+      showErrorAlert(transferRoomsError, 'Failed to load rooms');
     }
   }, [transferRoomsError, transferModalVisible]);
 
   useEffect(() => {
     if (!transferModalVisible) return;
     if (transferBedsError) {
-      showErrorAlert(transferBedsError as any, 'Failed to load beds');
+      showErrorAlert(transferBedsError, 'Failed to load beds');
     }
   }, [transferBedsError, transferModalVisible]);
 
-  const pgItems = ((pgLocationsResponse as any)?.data || (pgLocationsResponse as any) || []).map((pg: any) => ({
+  const pgItems = ((pgLocationsResponse?.data ?? []) as PGLocation[]).map((pg: PGLocation) => ({
     id: Number(pg.s_no),
     label: String(pg.location_name ?? `PG ${pg.s_no}`),
     value: pg.s_no,
   }));
 
-  const roomItems = ((transferRoomsResponse as any)?.data || (transferRoomsResponse as any) || []).map((r: any) => ({
+  const roomItems = ((transferRoomsResponse?.data ?? []) as Room[]).map((r: Room) => ({
     id: Number(r.s_no),
     label: `Room ${r.room_no}`,
     value: r.s_no,
   }));
 
-  const bedItems = ((transferBedsResponse as any)?.data || (transferBedsResponse as any) || []).map((b: any) => ({
+  const bedItems = ((transferBedsResponse?.data ?? []) as Bed[]).map((b: Bed) => ({
     id: Number(b.s_no),
     label: `Bed ${b.bed_no}`,
     value: b.s_no,
   }));
 
-  const handleOpenTransfer = () => {
+  const _handleOpenTransfer = () => {
     if (!currentTenant) return;
     setTransferModalVisible(true);
   };
@@ -299,18 +369,18 @@ const TenantDetailsContent: React.FC<{
         amount_paid: amount,
         actual_rent_amount: expected,
         payment_date: collectTransferDiffPaymentDate,
-        payment_method: collectTransferDiffPaymentMethod as any,
-        status,
-        cycle_id: Number((activeTransferDiffCycle as any).cycle_id),
+        payment_method: collectTransferDiffPaymentMethod as Payment['payment_method'],
+        status: status as Payment['status'],
+        cycle_id: Number(activeTransferDiffCycle.cycle_id),
         remarks: collectTransferDiffRemarks || undefined,
-      } as any).unwrap();
+      } satisfies CreateTenantPaymentDto).unwrap();
 
       showSuccessAlert('Transfer difference collected');
       setCollectTransferDiffVisible(false);
       setShouldRefreshTenantsOnBack(true);
       refetchTenant();
       refreshTenantList();
-    } catch (error: any) {
+    } catch (error: unknown) {
       showErrorAlert(error, 'Failed to collect transfer difference');
     } finally {
       setCollectTransferDiffLoading(false);
@@ -338,7 +408,7 @@ const TenantDetailsContent: React.FC<{
       setShouldRefreshTenantsOnBack(true);
       refetchTenant();
       refreshTenantList();
-    } catch (error: any) {
+    } catch (error: unknown) {
       showErrorAlert(error, 'Transfer failed');
     } finally {
       setTransferLoading(false);
@@ -366,16 +436,16 @@ const TenantDetailsContent: React.FC<{
   
   // Edit advance payment modal state
   const [editAdvancePaymentModalVisible, setEditAdvancePaymentModalVisible] = useState(false);
-  const [editingAdvancePayment, setEditingAdvancePayment] = useState<any>(null);
+  const [editingAdvancePayment, setEditingAdvancePayment] = useState<PaymentsAdvancePayment | null>(null);
 
   // Edit refund payment modal state
   const [editRefundPaymentModalVisible, setEditRefundPaymentModalVisible] = useState(false);
-  const [editingRefundPayment, setEditingRefundPayment] = useState<any>(null);
+  const [editingRefundPayment, setEditingRefundPayment] = useState<PaymentsRefundPayment | null>(null);
 
 
   // Receipt modal state
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
-  const [receiptData, setReceiptData] = useState<any>(null);
+  const [receiptData, setReceiptData] = useState<CompactReceiptData | null>(null);
   const receiptRef = React.useRef<View>(null);
 
   useEffect(() => {
@@ -437,11 +507,13 @@ const TenantDetailsContent: React.FC<{
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e: unknown) => {
       if (!shouldRefreshTenantsOnBack) return;
 
+      const evt = e as { preventDefault?: () => void };
+
       // Prevent default behavior of leaving the screen
-      e.preventDefault();
+      evt.preventDefault?.();
 
       // Ensure Tenants list refreshes after operations (rent/advance/refund/etc)
       navigation.navigate('Tenants', { refresh: true });
@@ -458,14 +530,14 @@ const TenantDetailsContent: React.FC<{
     navigation.goBack();
   };
 
-  const toggleSection = (section: keyof typeof expandedSections) => {
+  const _toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
     }));
   };
 
-  const handleSaveAdvancePayment = async (data: any) => {
+  const _handleSaveAdvancePayment = async (data: Partial<CreateAdvancePaymentDto>) => {
     if (!canCreateAdvance) {
       Alert.alert('Access Denied', "You don't have permission to create advance payments");
       throw new Error('ACCESS_DENIED');
@@ -478,17 +550,27 @@ const TenantDetailsContent: React.FC<{
         throw new Error('PG Location ID is required');
       }
 
-      await createAdvancePayment({ ...data, pg_id: pgId }).unwrap();
+      await createAdvancePayment({ ...(data as CreateAdvancePaymentDto), pg_id: pgId }).unwrap();
 
       showSuccessAlert('Advance payment created successfully');
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error; // Re-throw to let modal handle it
     }
   };
 
-  const handleSaveRefundPayment = async (data: any) => {
+  const handleSaveRefundPayment = async (data: {
+    tenant_id: number;
+    room_id: number;
+    bed_id: number;
+    amount_paid: number;
+    actual_rent_amount?: number;
+    payment_date: string;
+    payment_method: string;
+    status: string;
+    remarks?: string;
+  }) => {
     if (!canCreateRefund) {
       Alert.alert('Access Denied', "You don't have permission to create refund payments");
       throw new Error('ACCESS_DENIED');
@@ -501,12 +583,25 @@ const TenantDetailsContent: React.FC<{
         throw new Error('PG Location ID is required');
       }
 
-      await createRefundPayment({ ...data, pg_id: pgId }).unwrap();
+      const dto: CreateRefundPaymentDto = {
+        tenant_id: data.tenant_id,
+        pg_id: pgId,
+        room_id: data.room_id,
+        bed_id: data.bed_id,
+        amount_paid: data.amount_paid,
+        actual_rent_amount: data.actual_rent_amount,
+        payment_date: data.payment_date,
+        payment_method: data.payment_method as CreateRefundPaymentDto['payment_method'],
+        status: data.status as CreateRefundPaymentDto['status'],
+        remarks: data.remarks,
+      };
+
+      await createRefundPayment(dto).unwrap();
 
       showSuccessAlert('Refund payment created successfully');
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error; // Re-throw to let modal handle it
     }
   };
@@ -517,12 +612,17 @@ const TenantDetailsContent: React.FC<{
   };
 
   // Receipt handlers
-  const prepareReceiptData = (payment: any) => {
-    const periodStart = payment?.tenant_rent_cycles?.cycle_start || payment?.start_date;
-    const periodEnd = payment?.tenant_rent_cycles?.cycle_end || payment?.end_date;
+  const prepareReceiptData = (payment: TenantPaymentWithRelations): CompactReceiptData => {
+    const periodStartRaw = payment?.tenant_rent_cycles?.cycle_start || payment?.start_date || payment?.payment_date;
+    const periodEndRaw = payment?.tenant_rent_cycles?.cycle_end || payment?.end_date || payment?.payment_date;
+
+    const paymentDate = new Date(payment.payment_date);
+    const periodStart = periodStartRaw ? new Date(periodStartRaw) : paymentDate;
+    const periodEnd = periodEndRaw ? new Date(periodEndRaw) : paymentDate;
+
     return {
       receiptNumber: `RCP-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
-      paymentDate: payment.payment_date,
+      paymentDate,
       tenantName: currentTenant?.name || '',
       tenantPhone: currentTenant?.phone_no || '',
       pgName: payment.pg_locations?.location_name || currentTenant?.pg_locations?.location_name || '',
@@ -536,21 +636,23 @@ const TenantDetailsContent: React.FC<{
       amountPaid: Number(payment.amount_paid || 0),
       paymentMethod: payment.payment_method || 'CASH',
       remarks: payment.remarks,
+      receiptType: 'RENT',
     };
   };
 
-  const prepareAdvanceReceiptData = (payment: any) => {
+  const prepareAdvanceReceiptData = (payment: PaymentsAdvancePayment): CompactReceiptData => {
+    const paymentDate = new Date(payment.payment_date);
     return {
       receiptNumber: `ADV-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
-      paymentDate: payment.payment_date,
+      paymentDate,
       tenantName: currentTenant?.name || '',
       tenantPhone: currentTenant?.phone_no || '',
       pgName: currentTenant?.pg_locations?.location_name || 'PG',
       roomNumber: payment.rooms?.room_no || currentTenant?.rooms?.room_no || '',
       bedNumber: payment.beds?.bed_no || currentTenant?.beds?.bed_no || '',
       rentPeriod: {
-        startDate: payment.payment_date,
-        endDate: payment.payment_date,
+        startDate: paymentDate,
+        endDate: paymentDate,
       },
       actualRent: Number(payment.amount_paid || 0),
       amountPaid: Number(payment.amount_paid || 0),
@@ -560,15 +662,15 @@ const TenantDetailsContent: React.FC<{
     };
   };
 
-  const handleViewReceipt = (payment: any) => {
-    const data = prepareReceiptData(payment);
+  const _handleViewReceipt = (payment: TenantPayment) => {
+    const data = prepareReceiptData(payment as TenantPaymentWithRelations);
     setReceiptData(data);
     setReceiptModalVisible(true);
   };
 
-  const handleWhatsAppReceipt = async (payment: any) => {
+  const _handleWhatsAppReceipt = async (payment: TenantPayment) => {
     try {
-      const data = prepareReceiptData(payment);
+      const data = prepareReceiptData(payment as TenantPaymentWithRelations);
       setReceiptData(data);
       
       // Wait for component to render
@@ -586,9 +688,9 @@ const TenantDetailsContent: React.FC<{
     }
   };
 
-  const handleShareReceipt = async (payment: any) => {
+  const _handleShareReceipt = async (payment: TenantPayment) => {
     try {
-      const data = prepareReceiptData(payment);
+      const data = prepareReceiptData(payment as TenantPaymentWithRelations);
       setReceiptData(data);
       
       // Wait for component to render
@@ -603,13 +705,13 @@ const TenantDetailsContent: React.FC<{
   };
 
   // Advance payment receipt handlers
-  const handleViewAdvanceReceipt = (payment: any) => {
+  const _handleViewAdvanceReceipt = (payment: PaymentsAdvancePayment) => {
     const data = prepareAdvanceReceiptData(payment);
     setReceiptData(data);
     setReceiptModalVisible(true);
   };
 
-  const handleWhatsAppAdvanceReceipt = async (payment: any) => {
+  const _handleWhatsAppAdvanceReceipt = async (payment: PaymentsAdvancePayment) => {
     try {
       const data = prepareAdvanceReceiptData(payment);
       setReceiptData(data);
@@ -629,7 +731,7 @@ const TenantDetailsContent: React.FC<{
     }
   };
 
-  const handleShareAdvanceReceipt = async (payment: any) => {
+  const _handleShareAdvanceReceipt = async (payment: PaymentsAdvancePayment) => {
     try {
       const data = prepareAdvanceReceiptData(payment);
       setReceiptData(data);
@@ -645,23 +747,16 @@ const TenantDetailsContent: React.FC<{
     }
   };
 
-  const handleEditAdvancePayment = (payment: any) => {
+  const _handleEditAdvancePayment = (payment: PaymentsAdvancePayment) => {
     if (!canEditAdvance) {
       Alert.alert('Access Denied', "You don't have permission to edit advance payments");
       return;
     }
-    // Enrich payment with tenant, room, and bed info for display in modal
-    const enrichedPayment = {
-      ...payment,
-      tenants: payment.tenants || { name: currentTenant?.name },
-      rooms: payment.rooms || currentTenant?.rooms,
-      beds: payment.beds || currentTenant?.beds,
-    };
-    setEditingAdvancePayment(enrichedPayment);
+    setEditingAdvancePayment(payment);
     setEditAdvancePaymentModalVisible(true);
   };
 
-  const handleUpdateAdvancePayment = async (id: number, data: any) => {
+  const handleUpdateAdvancePayment = async (id: number, data: Partial<CreateAdvancePaymentDto>) => {
     if (!canEditAdvance) {
       Alert.alert('Access Denied', "You don't have permission to edit advance payments");
       throw new Error('ACCESS_DENIED');
@@ -672,12 +767,12 @@ const TenantDetailsContent: React.FC<{
       setEditingAdvancePayment(null);
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error; // Re-throw to let modal handle it
     }
   };
 
-  const handleDeleteAdvancePayment = (payment: any) => {
+  const _handleDeleteAdvancePayment = (payment: PaymentsAdvancePayment) => {
     if (!canDeleteAdvance) {
       Alert.alert('Access Denied', "You don't have permission to delete advance payments");
       return;
@@ -699,7 +794,7 @@ const TenantDetailsContent: React.FC<{
               showSuccessAlert('Advance payment deleted successfully');
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
-            } catch (error: any) {
+            } catch (error: unknown) {
               showErrorAlert(error, 'Delete Error');
             }
           },
@@ -708,23 +803,16 @@ const TenantDetailsContent: React.FC<{
     );
   };
 
-  const handleEditRefundPayment = (payment: any) => {
+  const _handleEditRefundPayment = (payment: PaymentsRefundPayment) => {
     if (!canEditRefund) {
       Alert.alert('Access Denied', "You don't have permission to edit refund payments");
       return;
     }
-    // Enrich payment with tenant, room, and bed info for display in modal
-    const enrichedPayment = {
-      ...payment,
-      tenants: payment.tenants || { name: currentTenant?.name },
-      rooms: payment.rooms || currentTenant?.rooms,
-      beds: payment.beds || currentTenant?.beds,
-    };
-    setEditingRefundPayment(enrichedPayment);
+    setEditingRefundPayment(payment);
     setEditRefundPaymentModalVisible(true);
   };
 
-  const handleUpdateRefundPayment = async (id: number, data: any) => {
+  const handleUpdateRefundPayment = async (id: number, data: Partial<CreateRefundPaymentDto>) => {
     if (!canEditRefund) {
       Alert.alert('Access Denied', "You don't have permission to edit refund payments");
       throw new Error('ACCESS_DENIED');
@@ -735,7 +823,7 @@ const TenantDetailsContent: React.FC<{
       setEditingRefundPayment(null);
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error; // Re-throw to let modal handle it
     }
   };
@@ -747,7 +835,7 @@ const TenantDetailsContent: React.FC<{
     setNewCheckoutDate('');
   };
 
-  const confirmCheckout = async () => {
+  const _confirmCheckout = async () => {
     if (!newCheckoutDate) {
       Alert.alert('Error', 'Please select a checkout date');
       return;
@@ -761,11 +849,15 @@ const TenantDetailsContent: React.FC<{
       setNewCheckoutDate('');
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errObj = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
+      const errData = errObj?.data && typeof errObj.data === 'object' ? (errObj.data as Record<string, unknown>) : undefined;
+      const nestedError = errObj?.error && typeof errObj.error === 'object' ? (errObj.error as Record<string, unknown>) : undefined;
+      const nestedData = nestedError?.data && typeof nestedError.data === 'object' ? (nestedError.data as Record<string, unknown>) : undefined;
       const msg =
-        (error as any)?.data?.message ||
-        (error as any)?.error?.data?.message ||
-        (error as any)?.message ||
+        (typeof errData?.message === 'string' ? errData.message : undefined) ||
+        (typeof nestedData?.message === 'string' ? nestedData.message : undefined) ||
+        (typeof errObj?.message === 'string' ? errObj.message : undefined) ||
         '';
 
       if (typeof msg === 'string' && msg.toLowerCase().includes('pending dues')) {
@@ -783,7 +875,7 @@ const TenantDetailsContent: React.FC<{
     setNewCheckoutDate('');
   };
 
-  const handleDeleteRefundPayment = (payment: any) => {
+  const _handleDeleteRefundPayment = (payment: PaymentsRefundPayment) => {
     if (!canDeleteRefund) {
       Alert.alert('Access Denied', "You don't have permission to delete refund payments");
       return;
@@ -805,7 +897,7 @@ const TenantDetailsContent: React.FC<{
               showSuccessAlert('Refund payment deleted successfully');
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
-            } catch (error: any) {
+            } catch (error: unknown) {
               showErrorAlert(error, 'Delete Error');
             }
           },
@@ -856,7 +948,7 @@ const TenantDetailsContent: React.FC<{
               showSuccessAlert('Tenant deleted successfully');
               refreshTenantList();
               navigation.goBack();
-            } catch (error: any) {
+            } catch (error: unknown) {
               showErrorAlert(error, 'Delete Error');
             }
           },
@@ -908,7 +1000,7 @@ const TenantDetailsContent: React.FC<{
               showSuccessAlert('Checkout cleared and tenant reactivated successfully');
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
-            } catch (error: any) {
+            } catch (error: unknown) {
               showErrorAlert(error, 'Clear Checkout Error');
             } finally {
               setCheckoutLoading(false);
@@ -927,7 +1019,7 @@ const TenantDetailsContent: React.FC<{
       setCheckoutDateModalVisible(false);
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
-    } catch (error: any) {
+    } catch (error: unknown) {
       showErrorAlert(error, 'Update Checkout Date Error');
     } finally {
       setCheckoutLoading(false);
@@ -984,11 +1076,34 @@ const TenantDetailsContent: React.FC<{
   const tenant = currentTenant;
   const isTenantActive = tenant?.status === 'ACTIVE';
 
-  const transferHistory = (tenant?.tenant_allocations || [])
-    .slice()
-    .sort((a: any, b: any) => new Date(b.effective_from).getTime() - new Date(a.effective_from).getTime());
+  const previousPaymentsForForm: PaymentWithCycle[] = (tenant?.rent_payments || []).map((p: TenantPaymentWithCycle) => {
+    const paymentDate = p.payment_date ?? '';
+    return {
+      ...(p as unknown as Payment),
+      tenant_id: tenant.s_no,
+      pg_id: tenant.pg_id ?? selectedPGLocationId ?? 0,
+      room_id: tenant.room_id ?? 0,
+      bed_id: tenant.bed_id ?? 0,
+      payment_date: paymentDate,
+      payment_method: (p.payment_method ?? 'CASH') as Payment['payment_method'],
+      status: (p.status ?? 'PENDING') as Payment['status'],
+      tenant_rent_cycles: p.tenant_rent_cycles,
+    };
+  });
 
-  const formatDateOnly = (d: any) => {
+  const sortedPreviousPaymentsForForm = previousPaymentsForForm
+    .slice()
+    .sort((a, b) => {
+      const bEnd = b.tenant_rent_cycles?.cycle_end || b.end_date || b.payment_date || '';
+      const aEnd = a.tenant_rent_cycles?.cycle_end || a.end_date || a.payment_date || '';
+      return new Date(bEnd).getTime() - new Date(aEnd).getTime();
+    });
+
+  const transferHistory = ((tenant as TenantViewModel | null | undefined)?.tenant_allocations || [])
+    .slice()
+    .sort((a: TenantAllocation, b: TenantAllocation) => new Date(b.effective_from).getTime() - new Date(a.effective_from).getTime()) as TenantAllocation[];
+
+  const formatDateOnly = (d: string | number | Date | null | undefined): string => {
     if (!d) return '';
     try {
       return String(d).includes('T') ? String(d).split('T')[0] : String(d);
@@ -997,7 +1112,7 @@ const TenantDetailsContent: React.FC<{
     }
   };
 
-  const toLocalDateOnly = (dateLike: any): Date | undefined => {
+  const toLocalDateOnly = (dateLike: string | number | Date | null | undefined): Date | undefined => {
     if (!dateLike) return undefined;
     const dateStr = String(dateLike).includes('T') ? String(dateLike).split('T')[0] : String(dateLike);
     const match = /^\d{4}-\d{2}-\d{2}$/.exec(dateStr);
@@ -1007,12 +1122,13 @@ const TenantDetailsContent: React.FC<{
   };
 
   const derivedRentStatus = (() => {
-    const rentDue = Number((tenant as any)?.rent_due_amount ?? 0);
-    const pendingDue = Number((tenant as any)?.pending_due_amount ?? 0);
-    const partialDue = Number((tenant as any)?.partial_due_amount ?? 0);
-    const pendingMonths = Number((tenant as any)?.pending_months ?? 0);
-    const unpaidMonthsCount = Array.isArray((tenant as any)?.unpaid_months) ? (tenant as any).unpaid_months.length : 0;
-    const paymentStatus = String((tenant as any)?.payment_status ?? '');
+    const t = tenant as unknown as TenantRentStatusFields;
+    const rentDue = Number(t?.rent_due_amount ?? 0);
+    const pendingDue = Number(t?.pending_due_amount ?? 0);
+    const partialDue = Number(t?.partial_due_amount ?? 0);
+    const pendingMonths = Number(t?.pending_months ?? 0);
+    const unpaidMonthsCount = Array.isArray(t?.unpaid_months) ? t.unpaid_months.length : 0;
+    const paymentStatus = String(t?.payment_status ?? '');
 
     let label = 'RENT STATUS';
     let color = '#6B7280';
@@ -1437,7 +1553,7 @@ const TenantDetailsContent: React.FC<{
 
             {expandedSections.transferHistory && (
               <View style={{ marginTop: 10 }}>
-                {transferHistory.map((a: any, idx: number) => {
+                {transferHistory.map((a: TenantAllocation, idx: number) => {
                   const isCurrent = !a.effective_to;
                   const from = formatDateOnly(a.effective_from);
                   const to = a.effective_to ? formatDateOnly(a.effective_to) : 'Present';
@@ -1555,7 +1671,7 @@ const TenantDetailsContent: React.FC<{
           const checkoutReason = resolveDisabledReason('CHECKOUT');
           const changeReason = resolveDisabledReason('CHANGE_CHECKOUT');
           const clearReason = resolveDisabledReason('CLEAR_CHECKOUT');
-          const transferReason = resolveDisabledReason('TRANSFER');
+          const _transferReason = resolveDisabledReason('TRANSFER');
 
           return (
             <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
@@ -1724,23 +1840,16 @@ const TenantDetailsContent: React.FC<{
           rentAmount={tenant.rooms?.rent_price || 0}
           joiningDate={tenant.check_in_date}
           lastPaymentStartDate={
-            tenant.rent_payments && tenant.rent_payments.length > 0
-              ? ((tenant.rent_payments[0] as any).tenant_rent_cycles?.cycle_start || (tenant.rent_payments[0] as any).start_date)
+            sortedPreviousPaymentsForForm.length > 0
+              ? (sortedPreviousPaymentsForForm[0].tenant_rent_cycles?.cycle_start || sortedPreviousPaymentsForForm[0].start_date)
               : undefined
           }
           lastPaymentEndDate={
-            tenant.rent_payments && tenant.rent_payments.length > 0
-              ? ((tenant.rent_payments[0] as any).tenant_rent_cycles?.cycle_end || (tenant.rent_payments[0] as any).end_date)
+            sortedPreviousPaymentsForForm.length > 0
+              ? (sortedPreviousPaymentsForForm[0].tenant_rent_cycles?.cycle_end || sortedPreviousPaymentsForForm[0].end_date)
               : undefined
           }
-          previousPayments={
-            (tenant.rent_payments
-              ?.sort((a: TenantPayment, b: TenantPayment) => {
-                const bEnd = (b as any)?.tenant_rent_cycles?.cycle_end || (b as any)?.end_date || (b as any)?.payment_date || '';
-                const aEnd = (a as any)?.tenant_rent_cycles?.cycle_end || (a as any)?.end_date || (a as any)?.payment_date || '';
-                return new Date(bEnd).getTime() - new Date(aEnd).getTime();
-              }) as any[]) || []
-          }
+          previousPayments={sortedPreviousPaymentsForForm}
           onClose={() => {
             setRentPaymentFormVisible(false);
           }}
@@ -1889,8 +1998,8 @@ const TenantDetailsContent: React.FC<{
 
 // Wrapper component - extract navigation context and pass as props
 function TenantDetailsScreenWrapper() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation() as unknown as NavigationLike;
+  const route = useRoute() as { params: { tenantId: number } };
   const { tenantId } = route.params;
   const { can } = usePermissions();
   const canEditTenant = can(Permission.EDIT_TENANT);

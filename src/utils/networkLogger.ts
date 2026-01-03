@@ -3,9 +3,9 @@ export interface NetworkLog {
   method: string;
   url: string;
   status?: number;
-  headers?: any;
-  requestData?: any;
-  responseData?: any;
+  headers?: unknown;
+  requestData?: unknown;
+  responseData?: unknown;
   error?: string;
   timestamp: Date;
   duration?: number;
@@ -24,11 +24,11 @@ const defaultTruncateOptions: TruncateOptions = {
 };
 
 const truncateValue = (
-  value: any,
+  value: unknown,
   options: TruncateOptions = defaultTruncateOptions,
   depth: number = 0,
   seen: WeakSet<object> = new WeakSet(),
-): any => {
+): unknown => {
   if (value === null || value === undefined) return value;
   if (typeof value === 'number' || typeof value === 'boolean') return value;
   if (typeof value === 'string') {
@@ -50,8 +50,8 @@ const truncateValue = (
     return trimmed;
   }
 
-  const out: Record<string, any> = {};
-  for (const [k, v] of Object.entries(value)) {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
     out[k] = truncateValue(v, options, depth + 1, seen);
   }
   return out;

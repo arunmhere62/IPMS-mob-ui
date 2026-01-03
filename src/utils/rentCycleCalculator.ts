@@ -94,8 +94,8 @@ export const calculateRentCycleDates = (
 export const calculateNextRentCycleDates = (
   lastPaymentEndDate: string,
   cycleType: 'CALENDAR' | 'MIDMONTH',
-  startDay: number,
-  endDay: number
+  _startDay: number,
+  _endDay: number
 ): CalculatedDates => {
   const lastEndDate = new Date(lastPaymentEndDate);
 
@@ -113,9 +113,9 @@ export const calculateNextRentCycleDates = (
   } else {
     // For MIDMONTH: Same day next month - 1
     // Get the day of the start date
-    const startDay = nextStartDate.getDate();
+    const nextStartDay = nextStartDate.getDate();
     // Create date with same day in next month
-    nextEndDate = new Date(nextStartDate.getFullYear(), nextStartDate.getMonth() + 1, startDay);
+    nextEndDate = new Date(nextStartDate.getFullYear(), nextStartDate.getMonth() + 1, nextStartDay);
     // Subtract 1 day to get the end date
     nextEndDate.setDate(nextEndDate.getDate() - 1);
   }

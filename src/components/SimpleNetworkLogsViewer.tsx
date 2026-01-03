@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Modal,
   View,
@@ -8,7 +8,7 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
-import { networkLogger } from '../utils/networkLogger';
+import { networkLogger, type NetworkLog } from '../utils/networkLogger';
 
 interface SimpleNetworkLogsViewerProps {
   visible: boolean;
@@ -19,7 +19,7 @@ export const SimpleNetworkLogsViewer: React.FC<SimpleNetworkLogsViewerProps> = (
   visible,
   onClose,
 }) => {
-  const logs = networkLogger.getLogs();
+  const logs: NetworkLog[] = networkLogger.getLogs();
 
   return (
     <Modal
@@ -47,14 +47,14 @@ export const SimpleNetworkLogsViewer: React.FC<SimpleNetworkLogsViewerProps> = (
                 Total Requests: {logs.length}
               </Text>
               <Text style={styles.statsText}>
-                Success: {logs.filter(l => l.status && l.status >= 200 && l.status < 300).length}
+                Success: {logs.filter((l: NetworkLog) => l.status && l.status >= 200 && l.status < 300).length}
               </Text>
               <Text style={styles.statsText}>
-                Errors: {logs.filter(l => l.status && l.status >= 400).length}
+                Errors: {logs.filter((l: NetworkLog) => l.status && l.status >= 400).length}
               </Text>
             </View>
 
-            {logs.map((log, index) => (
+            {logs.map((log: NetworkLog, index: number) => (
               <View key={`${log.id}-${index}`} style={styles.logItem}>
                 <View style={styles.logHeader}>
                   <Text style={[styles.method, { color: getMethodColor(log.method) }]}>
@@ -85,7 +85,7 @@ export const SimpleNetworkLogsViewer: React.FC<SimpleNetworkLogsViewerProps> = (
                   <Text style={styles.error}>❌ {log.error}</Text>
                 )}
 
-                {log.requestData && (
+                {log.requestData != null && (
                   <View style={styles.dataSection}>
                     <Text style={styles.dataLabel}>Request:</Text>
                     <Text style={styles.dataText}>
@@ -96,7 +96,7 @@ export const SimpleNetworkLogsViewer: React.FC<SimpleNetworkLogsViewerProps> = (
                   </View>
                 )}
 
-                {log.responseData && (
+                {log.responseData != null && (
                   <View style={styles.dataSection}>
                     <Text style={styles.dataLabel}>Response:</Text>
                     <Text style={styles.dataText}>

@@ -9,7 +9,7 @@ export interface ErrorInfo {
   message: string;
   isRetryable: boolean;
   statusCode?: number;
-  originalError: any;
+  originalError: unknown;
 }
 
 /**
@@ -17,7 +17,7 @@ export interface ErrorInfo {
  * Can accept either a message string or an API response object
  */
 export const showSuccessAlert = (
-  messageOrResponse: string | any,
+  messageOrResponse: string | unknown,
   options?: {
     title?: string;
     okText?: string;
@@ -35,16 +35,18 @@ export const showSuccessAlert = (
     } else if (messageOrResponse && typeof messageOrResponse === 'object') {
       // API response object - extract message from response structure
       console.log('showSuccessAlert received object:', messageOrResponse);
+
+      const obj = messageOrResponse as Record<string, unknown>;
       
       // Try to get message from various possible locations
-      if (messageOrResponse.message) {
-        message = messageOrResponse.message;
-      } else if (messageOrResponse.data && messageOrResponse.data.message) {
-        message = messageOrResponse.data.message;
+      if (typeof obj.message === 'string') {
+        message = obj.message;
+      } else if (obj.data && typeof obj.data === 'object' && typeof (obj.data as Record<string, unknown>).message === 'string') {
+        message = String((obj.data as Record<string, unknown>).message);
       } else {
         message = 'Operation completed successfully';
       }
-      alertTitle = options?.title || (messageOrResponse.success ? 'Success' : 'Complete');
+      alertTitle = options?.title || (obj.success === true ? 'Success' : 'Complete');
     } else {
       message = 'Operation completed successfully';
       alertTitle = options?.title || 'Success';
@@ -88,8 +90,10 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
       return;
     }
 
-    const rtkData = (error as any)?.data ?? (error as any)?.error?.data;
-    const httpClientData = (error as any)?.response?.data;
+    const errObj = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
+    const rtkData = errObj?.data ?? (errObj?.error && typeof errObj.error === 'object' ? (errObj.error as Record<string, unknown>).data : undefined);
+    const httpClientData =
+      errObj?.response && typeof errObj.response === 'object' ? (errObj.response as Record<string, unknown>).data : undefined;
     const candidateData = rtkData ?? httpClientData ?? error;
 
     // First try to use API response handler for new structure
@@ -127,8 +131,8 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
         errorMessage = error.message;
       }
 
-      if (!errorMessage && typeof (error as any)?.error === 'string') {
-        errorMessage = (error as any).error;
+      if (!errorMessage && typeof errObj?.error === 'string') {
+        errorMessage = errObj.error;
       }
       
       // Last resort - stringify the error
@@ -148,10 +152,12 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
  * Categorize error type
  */
 export const categorizeError = (error: any): ErrorInfo => {
-  const message = (error as any)?.message;
-  const code = (error as any)?.code;
-  const status = (error as any)?.status ?? (error as any)?.response?.status;
-  const responseData = (error as any)?.data ?? (error as any)?.response?.data;
+  const errObj = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
+  const message = errObj?.message;
+  const code = errObj?.code;
+  const status = errObj?.status ?? (errObj?.response && typeof errObj.response === 'object' ? (errObj.response as Record<string, unknown>).status : undefined);
+  const responseData = errObj?.data ??
+    (errObj?.response && typeof errObj.response === 'object' ? (errObj.response as Record<string, unknown>).data : undefined);
 
   // Network errors (no response from server)
   if (code === 'ERR_NETWORK' || message === 'Network Error') {
@@ -186,9 +192,13 @@ export const categorizeError = (error: any): ErrorInfo => {
   
   // Client errors (4xx)
   if (typeof status === 'number' && status >= 400) {
+    const responseMessage =
+      responseData && typeof responseData === 'object' && typeof (responseData as Record<string, unknown>).message === 'string'
+        ? String((responseData as Record<string, unknown>).message)
+        : undefined;
     return {
       type: 'client',
-      message: (responseData as any)?.message || 'Request failed. Please check your input.',
+      message: responseMessage || 'Request failed. Please check your input.',
       isRetryable: false,
       statusCode: status,
       originalError: error,
@@ -213,7 +223,7 @@ export const retryWithBackoff = async <T>(
     maxRetries?: number;
     initialDelay?: number;
     maxDelay?: number;
-    onRetry?: (attempt: number, error: any) => void;
+    onRetry?: (attempt: number, error: unknown) => void;
   } = {}
 ): Promise<T> => {
   const {
