@@ -122,7 +122,12 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
 
       const toISODate = (date: Date) => date.toISOString().split('T')[0];
 
-      if (effectiveQuickFilter !== 'NONE') {
+      if (effectiveStatusFilter !== 'ALL') params.status = effectiveStatusFilter;
+      
+      if (effectiveSelectedMonth && effectiveSelectedYear) {
+        params.month = effectiveSelectedMonth;
+        params.year = effectiveSelectedYear;
+      } else if (effectiveQuickFilter !== 'NONE') {
         const end = new Date();
         const start = new Date();
         if (effectiveQuickFilter === 'LAST_WEEK') {
@@ -132,13 +137,6 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
         }
         params.start_date = toISODate(start);
         params.end_date = toISODate(end);
-      }
-
-      if (effectiveStatusFilter !== 'ALL') params.status = effectiveStatusFilter;
-      
-      if (effectiveSelectedMonth && effectiveSelectedYear) {
-        params.month = effectiveSelectedMonth;
-        params.year = effectiveSelectedYear;
       }
       
       params.append = !reset && page > 1;
@@ -781,7 +779,10 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
               {MONTHS.map((month) => (
                 <TouchableOpacity
                   key={month}
-                  onPress={() => setSelectedMonth(month)}
+                  onPress={() => {
+                    setQuickFilter('NONE');
+                    setSelectedMonth(month);
+                  }}
                   style={{
                     paddingHorizontal: 12,
                     paddingVertical: 8,
@@ -817,7 +818,10 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
             {years.map((year) => (
               <TouchableOpacity
                 key={year}
-                onPress={() => setSelectedYear(year)}
+                onPress={() => {
+                  setQuickFilter('NONE');
+                  setSelectedYear(year);
+                }}
                 style={{
                   paddingHorizontal: 16,
                   paddingVertical: 10,

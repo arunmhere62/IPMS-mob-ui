@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
 import { Card } from '../../components/Card';
 import type { DashboardMonthlyMetricsResponse } from '../../services/api/dashboardApi';
+import { SlideBottomModal } from '../../components/SlideBottomModal';
 
 interface MonthlyMetricsCardProps {
   monthlyMetrics?: DashboardMonthlyMetricsResponse['data'];
@@ -44,6 +45,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(getLast6Months()[0]);
+  const [showInfo, setShowInfo] = useState(false);
 
   const months = getLast6Months();
 
@@ -112,6 +114,24 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
               </Text>
             </View>
           </View>
+
+          <TouchableOpacity
+            onPress={() => setShowInfo(true)}
+            activeOpacity={0.9}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 17,
+              backgroundColor: Theme.colors.light,
+              borderWidth: 1,
+              borderColor: Theme.colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 10,
+            }}
+          >
+            <Ionicons name="help-circle-outline" size={18} color={Theme.colors.text.secondary} />
+          </TouchableOpacity>
 
           <View style={{ position: 'relative' }}>
             <TouchableOpacity
@@ -224,7 +244,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Cash Received</Text>
+                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Collected</Text>
                   <View
                     style={{
                       width: 26,
@@ -256,7 +276,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Rent Earned</Text>
+                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Rent Due</Text>
                   <View
                     style={{
                       width: 26,
@@ -290,7 +310,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Refunds</Text>
+                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Refunds Paid</Text>
                   <View
                     style={{
                       width: 26,
@@ -322,7 +342,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>MRR</Text>
+                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Monthly Rent Value</Text>
                   <View
                     style={{
                       width: 26,
@@ -373,8 +393,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   <Ionicons name="pie-chart" size={14} color={collectionRateColor} />
                 </View>
                 <View>
-                  <Text style={{ color: Theme.colors.text.primary, fontSize: 12, fontWeight: '900' }}>Collection Rate</Text>
-                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 10, marginTop: 2 }}>Cash ÷ Rent due</Text>
+                  <Text style={{ color: Theme.colors.text.primary, fontSize: 12, fontWeight: '900' }}>Collected %</Text>
+                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 10, marginTop: 2 }}>Collected ÷ Rent due</Text>
                 </View>
               </View>
 
@@ -394,6 +414,52 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
           </View>
         )}
       </Card>
+
+      <SlideBottomModal
+        visible={showInfo}
+        onClose={() => setShowInfo(false)}
+        title="Monthly metrics explained"
+        subtitle={selectedMonth?.label ? `For ${selectedMonth.label}` : undefined}
+        submitLabel="Got it"
+        onSubmit={() => setShowInfo(false)}
+      >
+        <View style={{ gap: 14 }}>
+          <View>
+            <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Collected</Text>
+            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
+              Money you actually received in this month (cash-in). It follows the payment date.
+            </Text>
+          </View>
+
+          <View>
+            <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Rent Due</Text>
+            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
+              Rent that should be earned for the month (based on occupancy / rent cycle). Not based on payment date.
+            </Text>
+          </View>
+
+          <View>
+            <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Refunds Paid</Text>
+            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
+              Money paid back to tenants in this month (cash-out), like deposit refunds.
+            </Text>
+          </View>
+
+          <View>
+            <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Monthly Rent Value</Text>
+            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
+              Expected monthly rent from active occupied beds for this month (a monthly revenue baseline).
+            </Text>
+          </View>
+
+          <View>
+            <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Collected %</Text>
+            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
+              How much of the month’s rent due you collected: Collected ÷ Rent Due.
+            </Text>
+          </View>
+        </View>
+      </SlideBottomModal>
     </View>
   );
 };
