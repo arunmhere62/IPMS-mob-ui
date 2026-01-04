@@ -8,10 +8,8 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  TextInput,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../theme';
 import { ActionButtons } from '../../components/ActionButtons';
 import { Card } from '../../components/Card';
@@ -81,7 +79,7 @@ interface State {
   name: string;
 }
 
-interface Employee {
+interface _Employee {
   s_no: number;
   name: string;
   email: string | null;
@@ -109,7 +107,7 @@ const EmployeeDetailsScreen: React.FC = () => {
   const navigation = useNavigation();
   const { employeeId } = route.params;
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { can, isAdmin, isSuperAdmin } = usePermissions();
+  const { can, isAdmin: _isAdmin, isSuperAdmin } = usePermissions();
   const canEditEmployee = can(Permission.EDIT_EMPLOYEE);
   const canDeleteEmployee = can(Permission.DELETE_EMPLOYEE);
   const {
@@ -117,7 +115,7 @@ const EmployeeDetailsScreen: React.FC = () => {
     isLoading: loading,
     isFetching: refreshing,
     refetch,
-    error,
+    error: _error,
   } = useGetEmployeeByIdQuery(employeeId);
 
   const { data: employeePerms } = useGetUserPermissionsQuery(employeeId);
@@ -369,7 +367,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                 Operations
               </Text>
               <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary }}>
-                Allowed operations for this employee (role + overrides)
+                Employee Permissions
               </Text>
 
               {(employeePerms?.permissions ?? []).length ? (
@@ -385,7 +383,7 @@ const EmployeeDetailsScreen: React.FC = () => {
               )}
             </Card>
 
-            {(canEditEmployee || isAdmin || isSuperAdmin) && (
+            {isSuperAdmin && (
               <Card
                 style={{
                   marginBottom: 12,
@@ -400,13 +398,13 @@ const EmployeeDetailsScreen: React.FC = () => {
                 }}
               >
                 <Text style={{ fontSize: 14, fontWeight: '800', color: Theme.colors.text.primary }}>
-                  Permission Overrides
+                  Access Settings
                 </Text>
                 <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
-                  Manage this employee’s access by setting per-permission overrides. You can choose:
+                  Customize this employee's access for this organization.
                 </Text>
                 <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
-                  ALLOW (force access), DENY (block access), or Clear (use role default).
+                  Use Allow / Deny to override role defaults, or Clear to go back to role-based access.
                 </Text>
 
                 <TouchableOpacity
@@ -421,71 +419,51 @@ const EmployeeDetailsScreen: React.FC = () => {
                   }}
                 >
                   <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
-                    Open Overrides
+                    Manage Access
                   </Text>
                 </TouchableOpacity>
               </Card>
             )}
 
-            <Card
-              style={{
-                marginBottom: 12,
-                padding: 14,
-                borderRadius: 16,
-                backgroundColor: '#fff',
-                shadowColor: '#00000010',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 6,
-                elevation: 1,
-              }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
-                Contact Information
-              </Text>
-              <DetailRow label="Email" value={employee.email} />
-              <DetailRow label="Phone" value={employee.phone} />
-              <DetailRow label="Gender" value={employee.gender} isLast={true} />
-            </Card>
-
-            <Card
-              style={{
-                marginBottom: 12,
-                padding: 14,
-                borderRadius: 16,
-                backgroundColor: '#fff',
-                shadowColor: '#00000010',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 6,
-                elevation: 1,
-              }}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flex: 1, marginRight: 12 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 6 }}>
-                    Salary (this PG)
-                  </Text>
-                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
-                    {assignment?.monthly_salary_amount !== null && assignment?.monthly_salary_amount !== undefined
-                      ? formatAmount(Number(assignment.monthly_salary_amount))
-                      : 'Not set'}
-                  </Text>
+            {isSuperAdmin && (
+              <Card
+                style={{
+                  marginBottom: 12,
+                  padding: 14,
+                  borderRadius: 16,
+                  backgroundColor: '#fff',
+                  shadowColor: '#00000010',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 6,
+                  elevation: 1,
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 6 }}>
+                      Monthly Salary
+                    </Text>
+                    <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+                      {assignment?.monthly_salary_amount !== null && assignment?.monthly_salary_amount !== undefined
+                        ? formatAmount(Number(assignment.monthly_salary_amount))
+                        : 'Not set'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={openSalaryModal}
+                    style={{
+                      paddingVertical: 10,
+                      paddingHorizontal: 12,
+                      borderRadius: 10,
+                      backgroundColor: Theme.colors.primary,
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>Update Salary</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  onPress={openSalaryModal}
-                  style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    borderRadius: 10,
-                    backgroundColor: Theme.colors.primary,
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>Set Salary</Text>
-                </TouchableOpacity>
-              </View>
-            </Card>
-
+              </Card>
+            )}
             <Card
               style={{
                 marginBottom: 12,

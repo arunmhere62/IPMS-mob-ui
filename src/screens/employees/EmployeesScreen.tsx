@@ -33,6 +33,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
   const { can } = usePermissions();
   const canEditEmployee = can(Permission.EDIT_EMPLOYEE);
   const canDeleteEmployee = can(Permission.DELETE_EMPLOYEE);
+  const canViewEmployee = can(Permission.VIEW_EMPLOYEE);
   
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -210,6 +211,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
           showView={true}
           disableEdit={!canEditEmployee}
           disableDelete={!canDeleteEmployee}
+          disableView={!canViewEmployee}
           blockPressWhenDisabled
         />
       </View>

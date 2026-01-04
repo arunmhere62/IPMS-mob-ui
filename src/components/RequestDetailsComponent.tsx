@@ -95,14 +95,14 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
 
     if (outgoingHeaders) {
       Object.entries(outgoingHeaders).forEach(([k, v]) => {
-        curl += ` \\\n +  -H '${k}: ${String(v).replace(/'/g, "'\\''")}'`;
+        curl += ` \\\n+  -H '${k}: ${String(v).replace(/'/g, "'\\''")}'`;
       });
     }
 
     if (requestBody !== undefined && requestBody !== null) {
       const body = safeString(requestBody);
       if (body) {
-        curl += ` \\\n +  -d '${body.replace(/'/g, "'\\''")}'`;
+        curl += ` \\\n+  -d '${body.replace(/'/g, "'\\''")}'`;
       }
     }
 

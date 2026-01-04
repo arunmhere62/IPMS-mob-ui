@@ -23,6 +23,7 @@ import { useGetAllBedsQuery, useGetAllRoomsQuery } from '../../services/api/room
 import { useLazyGetCitiesQuery, useLazyGetStatesQuery } from '../../services/api/locationApi';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface AddVisitorScreenProps {
   navigation: any;
@@ -32,6 +33,19 @@ interface AddVisitorScreenProps {
 export default function AddVisitorScreen({ navigation, route }: AddVisitorScreenProps) {
   const { visitorId } = route?.params || {};
   const isEditMode = Boolean(visitorId);
+
+  const { isAdmin, isSuperAdmin } = usePermissions();
+  const canManageVisitors = isAdmin || isSuperAdmin;
+
+  useEffect(() => {
+    if (canManageVisitors) return;
+    Alert.alert('Access Denied', 'Only Admin/Super Admin can manage Visitors.', [
+      {
+        text: 'OK',
+        onPress: () => navigation.goBack(),
+      },
+    ]);
+  }, [canManageVisitors, navigation]);
 
   const [createVisitor, { isLoading: isCreating }] = useCreateVisitorMutation();
   const [updateVisitor, { isLoading: isUpdating }] = useUpdateVisitorMutation();

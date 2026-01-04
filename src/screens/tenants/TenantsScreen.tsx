@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { RootState } from '../../store';
 import { Card } from '../../components/Card';
 import { AnimatedButton } from '../../components/AnimatedButton';
@@ -33,6 +33,7 @@ interface TenantsScreenProps {
 }
 
 export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
+  const route = useRoute<any>();
   const { selectedPGLocationId } = useSelector((state: RootState) => state?.pgLocations);
 
   const [triggerTenants, tenantsQuery] = useLazyGetTenantsQuery();
@@ -120,10 +121,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   // Reload tenants when screen comes into focus (only if needed)
   useFocusEffect(
     React.useCallback(() => {
-      // Check if refresh parameter was passed
-      const route = navigation.getState();
-      const currentRoute = route.routes[route.index];
-      const shouldRefresh = currentRoute?.params?.refresh;
+      const shouldRefresh = route?.params?.refresh;
 
       if (shouldRefresh) {
         console.log('Refresh parameter detected, refreshing tenant list');
@@ -149,7 +147,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
           }
         }, 100); // Small delay to ensure list is rendered
       }
-    }, [shouldReloadOnFocus, navigation, tenants.length])
+    }, [shouldReloadOnFocus, navigation, route?.params?.refresh, tenants.length])
   );
 
   const loadTenants = async (
@@ -380,6 +378,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     // Determine payment status for display
     const hasOutstandingAmount = rentDueAmount > 0;
     const hasBothPartialAndPending = partialDueAmount > 0 && pendingDueAmount > 0;
+    const hasPendingRent = pendingDueAmount > 0 || (Array.isArray(unpaidMonths) && unpaidMonths.length > 0);
 
     return (
       <AnimatedPressableCard
@@ -559,7 +558,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               )}
 
               {/* Pending Status Badge */}
-              {!isRentPaid && (
+              {hasPendingRent && (
                 <View style={{
                   paddingHorizontal: 12,
                   paddingVertical: 6,

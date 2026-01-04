@@ -18,9 +18,9 @@ type TruncateOptions = {
 };
 
 const defaultTruncateOptions: TruncateOptions = {
-  maxStringLength: 2500,
-  maxArrayLength: 50,
-  maxDepth: 6,
+  maxStringLength: 20000,
+  maxArrayLength: 200,
+  maxDepth: 20,
 };
 
 const truncateValue = (

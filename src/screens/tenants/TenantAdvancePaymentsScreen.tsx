@@ -91,8 +91,8 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   const route = useRoute<TenantAdvancePaymentsRouteProp>();
   const { can } = usePermissions();
 
-  const canEditAdvance = can(Permission.EDIT_ADVANCE);
-  const canDeleteAdvance = can(Permission.DELETE_ADVANCE);
+  const canEditAdvance = can(Permission.EDIT_PAYMENT);
+  const canDeleteAdvance = can(Permission.DELETE_PAYMENT);
 
   const [updateAdvancePayment] = useUpdateAdvancePaymentMutation();
   const [voidAdvancePayment] = useVoidAdvancePaymentMutation();

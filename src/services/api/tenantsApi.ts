@@ -351,6 +351,7 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Beds' as const, id: 'LIST' },
         ...(typeof (arg as any)?.room_id === 'number' ? [{ type: 'Beds' as const, id: (arg as any).room_id }] : []),
         { type: 'Rooms' as const, id: 'LIST' },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -360,6 +361,7 @@ export const tenantsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id: arg.id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -372,6 +374,7 @@ export const tenantsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, id) => [
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -381,6 +384,7 @@ export const tenantsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, id) => [
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -394,6 +398,7 @@ export const tenantsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id: arg.id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -407,6 +412,7 @@ export const tenantsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id: arg.id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -423,13 +429,17 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Rooms' as const, id: 'LIST' },
         { type: 'Beds' as const, id: 'LIST' },
         { type: 'PGLocations' as const, id: 'LIST' },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
     createCurrentBill: build.mutation<CurrentBillResponse, CreateCurrentBillDto>({
       query: (body) => ({ url: '/current-bills', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<any> | any) => normalizeEntityResponse<any>(response),
-      invalidatesTags: [{ type: 'Tenants', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'Tenants', id: 'LIST' },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
+      ],
     }),
   }),
   overrideExisting: false,

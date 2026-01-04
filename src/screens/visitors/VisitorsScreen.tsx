@@ -23,7 +23,6 @@ import { ActionButtons } from '../../components/ActionButtons';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/config/rbac.config';
 import {
   useLazyGetVisitorsQuery,
   useDeleteVisitorMutation,
@@ -35,9 +34,10 @@ interface VisitorsScreenProps {
 
 export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) => {
   const FlatListWithRef = FlatList as unknown as React.ComponentType<any>;
-  const { can } = usePermissions();
-  const canEditVisitor = can(Permission.EDIT_VISITOR);
-  const canDeleteVisitor = can(Permission.DELETE_VISITOR);
+  const { isAdmin, isSuperAdmin } = usePermissions();
+  const canManageVisitors = isAdmin || isSuperAdmin;
+  const canEditVisitor = canManageVisitors;
+  const canDeleteVisitor = canManageVisitors;
   const [triggerGetVisitors, { isFetching: isVisitorsFetching }] = useLazyGetVisitorsQuery();
   const [deleteVisitorMutation, { isLoading: isDeleting }] = useDeleteVisitorMutation();
 
@@ -57,6 +57,16 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   const [selectedVisitorId, setSelectedVisitorId] = useState<number | undefined>();
   
   const flatListRef = React.useRef<React.ElementRef<typeof FlatList> | null>(null);
+
+  useEffect(() => {
+    if (canManageVisitors) return;
+    Alert.alert('Access Denied', 'Only Admin/Super Admin can access Visitors.', [
+      {
+        text: 'OK',
+        onPress: () => navigation.goBack(),
+      },
+    ]);
+  }, [canManageVisitors, navigation]);
 
   useEffect(() => {
     setCurrentPage(1);

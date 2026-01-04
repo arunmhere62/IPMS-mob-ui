@@ -6,6 +6,7 @@ export * from './expensesApi';
 export * from './locationApi';
 export * from './organizationApi';
 export * from './pgLocationsApi';
+export * from './dashboardApi';
 export * from './rolesApi';
 export * from './roomsApi';
 export * from './ticketsApi';

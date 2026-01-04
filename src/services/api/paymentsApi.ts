@@ -304,6 +304,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: [
         { type: 'TenantPayments' as const, id: 'LIST' },
         { type: 'Tenants', id: 'LIST' },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -317,6 +318,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'TenantPayments', id: 'LIST' },
         { type: 'TenantPayment', id: arg.id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -325,8 +327,8 @@ export const paymentsApi = baseApi.injectEndpoints({
         const id = typeof arg === 'number' ? arg : arg.id;
         const voided_reason = typeof arg === 'number' ? undefined : arg.voided_reason;
         return {
-          url: `/rent-payments/${id}`,
-          method: 'DELETE',
+          url: `/rent-payments/${id}/void`,
+          method: 'PATCH',
           body: voided_reason ? { voided_reason } : undefined,
         };
       },
@@ -337,6 +339,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'TenantPayments', id: 'LIST' },
         { type: 'TenantPayment', id },
         { type: 'Tenants', id: 'LIST' },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
         ];
       },
     }),
@@ -383,6 +386,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'Tenants' as const, id: 'LIST' },
         { type: 'Tenant' as const, id: (arg as unknown as { tenant_id?: number }).tenant_id as number },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -392,6 +396,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id: arg.id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -405,6 +410,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id: arg.id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -414,6 +420,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, id) => [
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -433,6 +440,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         return [
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
         ];
       },
     }),
@@ -468,6 +476,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'RefundPayments' as const, id: 'LIST' },
         { type: 'Tenants' as const, id: 'LIST' },
         { type: 'Tenant' as const, id: (arg as unknown as { tenant_id?: number }).tenant_id as number },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -477,6 +486,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'RefundPayments' as const, id: 'LIST' },
         { type: 'RefundPayment' as const, id: arg.id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -486,6 +496,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, id) => [
         { type: 'RefundPayments' as const, id: 'LIST' },
         { type: 'RefundPayment' as const, id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
   }),

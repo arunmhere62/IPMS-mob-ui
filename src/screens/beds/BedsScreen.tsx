@@ -180,12 +180,6 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
     setLoading(isFetchingAny && beds.length === 0);
   }, [isRoomsFetching, isBedsAllFetching, isBedsByRoomFetching, selectedPGLocationId]);
 
-  const isBackgroundRefreshing =
-    !!selectedPGLocationId &&
-    beds.length > 0 &&
-    !refreshing &&
-    (isBedsAllFetching || isBedsByRoomFetching);
-
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -782,7 +776,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
             keyExtractor={(item) => item.s_no.toString()}
             refreshControl={
               <RefreshControl
-                refreshing={refreshing || isBackgroundRefreshing}
+                refreshing={refreshing}
                 onRefresh={handleRefresh}
               />
             }

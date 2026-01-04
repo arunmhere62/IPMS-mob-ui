@@ -80,7 +80,10 @@ export const pgLocationsApi = baseApi.injectEndpoints({
     createPGLocation: build.mutation<PGLocationsMutationResponse, Partial<PGLocation>>({
       query: (body) => ({ url: '/pg-locations', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<PGLocationsMutationResponse> | any) => normalizeEntityResponse<any>(response),
-      invalidatesTags: [{ type: 'PGLocations', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'PGLocations', id: 'LIST' },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
+      ],
     }),
 
     updatePGLocation: build.mutation<PGLocationsMutationResponse, { id: number; data: Partial<PGLocation> }>({
@@ -89,6 +92,7 @@ export const pgLocationsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'PGLocations', id: 'LIST' },
         { type: 'PGLocation', id: arg.id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -98,6 +102,7 @@ export const pgLocationsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, id) => [
         { type: 'PGLocations', id: 'LIST' },
         { type: 'PGLocation', id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 

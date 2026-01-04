@@ -39,8 +39,8 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
   const route = useRoute<any>();
   const { can } = usePermissions();
 
-  const canEditRefund = can(Permission.EDIT_REFUND);
-  const canDeleteRefund = can(Permission.DELETE_REFUND);
+  const canEditRefund = can(Permission.EDIT_PAYMENT);
+  const canDeleteRefund = can(Permission.DELETE_PAYMENT);
 
   const [deleteRefundPayment] = useDeleteRefundPaymentMutation();
   const [updateRefundPayment] = useUpdateRefundPaymentMutation();

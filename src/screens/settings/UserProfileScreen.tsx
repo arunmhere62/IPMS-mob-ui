@@ -820,7 +820,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
             <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -845,7 +845,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
         </Card>
 

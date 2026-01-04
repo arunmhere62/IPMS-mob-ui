@@ -11,7 +11,6 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { RefundPayment, useLazyGetRefundPaymentsQuery } from '../../services/api/paymentsApi';
-import { Bed, Room, useGetAllBedsQuery, useGetAllRoomsQuery } from '../../services/api/roomsApi';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 
 const MONTHS = [
@@ -39,8 +38,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED'>('ALL');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
-  const [selectedBedId, setSelectedBedId] = useState<number | null>(null);
   const [quickFilter, setQuickFilter] = useState<'NONE' | 'LAST_WEEK' | 'LAST_MONTH'>('NONE');
   
   const [visibleItemsCount, setVisibleItemsCount] = useState(0);
@@ -56,42 +53,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
     );
   }, [refundPaymentsQuery.error]);
 
-  const {
-    data: roomsResponse,
-    refetch: refetchRooms,
-  } = useGetAllRoomsQuery(
-    selectedPGLocationId ? { page: 1, limit: 100, pg_id: selectedPGLocationId } : (undefined as any),
-    { skip: !selectedPGLocationId, refetchOnMountOrArgChange: true }
-  );
-
-  const {
-    data: bedsResponse,
-    refetch: refetchBeds,
-  } = useGetAllBedsQuery(
-    selectedRoomId && selectedPGLocationId
-      ? { room_id: selectedRoomId, page: 1, limit: 100, pg_id: selectedPGLocationId }
-      : (undefined as any),
-    { skip: !selectedRoomId || !selectedPGLocationId, refetchOnMountOrArgChange: true }
-  );
-
-  useEffect(() => {
-    if (selectedPGLocationId) {
-      refetchRooms();
-    }
-  }, [selectedPGLocationId, refetchRooms]);
-
-  useEffect(() => {
-    setSelectedBedId(null);
-    if (selectedRoomId) {
-      refetchBeds();
-    }
-  }, [selectedRoomId, refetchBeds]);
-
-  const rooms = React.useMemo(() => (((roomsResponse as any)?.data || []) as Room[]), [roomsResponse]);
-  const beds = React.useMemo(() => {
-    if (!selectedRoomId) return [] as Bed[];
-    return (((bedsResponse as any)?.data || []) as Bed[]);
-  }, [bedsResponse, selectedRoomId]);
 
   const years = React.useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -115,8 +76,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
 
   useEffect(() => {
     setCurrentPage(1);
-    setSelectedRoomId(null);
-    setSelectedBedId(null);
     setRefundPayments([]);
     setPagination(null);
     loadRefundPayments(1, true, {
@@ -124,8 +83,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
       quickFilter: 'NONE',
       selectedMonth: null,
       selectedYear: null,
-      selectedRoomId: null,
-      selectedBedId: null,
     });
   }, [selectedPGLocationId]);
 
@@ -153,8 +110,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
       quickFilter: 'NONE' | 'LAST_WEEK' | 'LAST_MONTH';
       selectedMonth: string | null;
       selectedYear: number | null;
-      selectedRoomId: number | null;
-      selectedBedId: number | null;
     }>
   ) => {
     try {
@@ -179,8 +134,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
       const effectiveQuickFilter = overrides && 'quickFilter' in overrides ? overrides.quickFilter : quickFilter;
       const effectiveSelectedMonth = overrides && 'selectedMonth' in overrides ? overrides.selectedMonth : selectedMonth;
       const effectiveSelectedYear = overrides && 'selectedYear' in overrides ? overrides.selectedYear : selectedYear;
-      const effectiveSelectedRoomId = overrides && 'selectedRoomId' in overrides ? overrides.selectedRoomId : selectedRoomId;
-      const effectiveSelectedBedId = overrides && 'selectedBedId' in overrides ? overrides.selectedBedId : selectedBedId;
 
       if (effectiveQuickFilter !== 'NONE') {
         const toISODate = (date: Date) => date.toISOString().split('T')[0];
@@ -199,9 +152,7 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
       }
       
       if (effectiveStatusFilter !== 'ALL') params.status = effectiveStatusFilter;
-      if (effectiveSelectedRoomId) params.room_id = effectiveSelectedRoomId;
-      if (effectiveSelectedBedId) params.bed_id = effectiveSelectedBedId;
-
+      
       params.append = !reset && page > 1;
 
       const response = await triggerGetRefundPayments(params, false).unwrap();
@@ -257,8 +208,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
     if (statusFilter !== 'ALL') count++;
     if (quickFilter !== 'NONE') count++;
     if (selectedMonth || selectedYear) count++;
-    if (selectedRoomId) count++;
-    if (selectedBedId) count++;
     return count;
   };
 
@@ -267,8 +216,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
     setQuickFilter('NONE');
     setSelectedMonth(null);
     setSelectedYear(null);
-    setSelectedRoomId(null);
-    setSelectedBedId(null);
     setShowFilters(false);
     setCurrentPage(1);
     setRefundPayments([]);
@@ -278,8 +225,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
       quickFilter: 'NONE',
       selectedMonth: null,
       selectedYear: null,
-      selectedRoomId: null,
-      selectedBedId: null,
     });
   };
 
@@ -810,121 +755,6 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
           </View>
         </View>
 
-        {rooms.length > 0 && (
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-              Filter by Room
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <TouchableOpacity
-                onPress={() => {
-                  setSelectedRoomId(null);
-                  setSelectedBedId(null);
-                }}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  backgroundColor: selectedRoomId === null ? Theme.colors.primary : '#fff',
-                  borderWidth: 1,
-                  borderColor: selectedRoomId === null ? Theme.colors.primary : Theme.colors.border,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: '600',
-                    color: selectedRoomId === null ? '#fff' : Theme.colors.text.secondary,
-                  }}
-                >
-                  All Rooms
-                </Text>
-              </TouchableOpacity>
-              {rooms.map((room: any) => (
-                <TouchableOpacity
-                  key={room.s_no}
-                  onPress={() => {
-                    setSelectedRoomId(room.s_no);
-                    setSelectedBedId(null);
-                  }}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    backgroundColor: selectedRoomId === room.s_no ? Theme.colors.primary : '#fff',
-                    borderWidth: 1,
-                    borderColor: selectedRoomId === room.s_no ? Theme.colors.primary : Theme.colors.border,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: selectedRoomId === room.s_no ? '#fff' : Theme.colors.text.secondary,
-                    }}
-                  >
-                    {room.room_no}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {beds.length > 0 && selectedRoomId && (
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 12 }}>
-              Filter by Bed
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <TouchableOpacity
-                onPress={() => setSelectedBedId(null)}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  backgroundColor: selectedBedId === null ? Theme.colors.primary : '#fff',
-                  borderWidth: 1,
-                  borderColor: selectedBedId === null ? Theme.colors.primary : Theme.colors.border,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: '600',
-                    color: selectedBedId === null ? '#fff' : Theme.colors.text.secondary,
-                  }}
-                >
-                  All Beds
-                </Text>
-              </TouchableOpacity>
-              {beds.map((bed: any) => (
-                <TouchableOpacity
-                  key={bed.s_no}
-                  onPress={() => setSelectedBedId(bed.s_no)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    backgroundColor: selectedBedId === bed.s_no ? Theme.colors.primary : '#fff',
-                    borderWidth: 1,
-                    borderColor: selectedBedId === bed.s_no ? Theme.colors.primary : Theme.colors.border,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: selectedBedId === bed.s_no ? '#fff' : Theme.colors.text.secondary,
-                    }}
-                  >
-                    {bed.bed_no}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
       </SlideBottomModal>
 
       </ScreenLayout>

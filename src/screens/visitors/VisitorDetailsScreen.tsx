@@ -16,7 +16,6 @@ import { Card } from '../../components/Card';
 import { ActionButtons } from '../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/config/rbac.config';
 
 interface VisitorDetailsScreenProps {
   route: {
@@ -66,13 +65,24 @@ const DetailRow = ({
 
 export default function VisitorDetailsScreen({ route, navigation }: VisitorDetailsScreenProps) {
   const { visitorId } = route.params;
-  const { can } = usePermissions();
-  const canEditVisitor = can(Permission.EDIT_VISITOR);
-  const canDeleteVisitor = can(Permission.DELETE_VISITOR);
+  const { isAdmin, isSuperAdmin } = usePermissions();
+  const canManageVisitors = isAdmin || isSuperAdmin;
+  const canEditVisitor = canManageVisitors;
+  const canDeleteVisitor = canManageVisitors;
   const { data: visitor, isLoading, error, refetch } = useGetVisitorByIdQuery(visitorId);
   const [deleteVisitorMutation] = useDeleteVisitorMutation();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  React.useEffect(() => {
+    if (canManageVisitors) return;
+    Alert.alert('Access Denied', 'Only Admin/Super Admin can access Visitors.', [
+      {
+        text: 'OK',
+        onPress: () => navigation.goBack(),
+      },
+    ]);
+  }, [canManageVisitors, navigation]);
 
   const handleRefresh = async () => {
     refetch();

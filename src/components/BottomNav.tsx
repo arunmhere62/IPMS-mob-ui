@@ -3,7 +3,6 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../theme';
-import { usePermissions } from '../hooks/usePermissions';
 import { Permission } from '../config/rbac.config';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,15 +15,15 @@ interface TabConfig {
   name: string;
   label: string;
   icon: string;
-  permission: Permission;
+  permission?: Permission;
 }
 
 // User tabs (Admin/Employee) - Super Admin will use separate web app
 const userTabs: TabConfig[] = [
   { name: 'Dashboard', label: 'Home', icon: 'home', permission: Permission.VIEW_DASHBOARD },
   { name: 'Tenants', label: 'Tenants', icon: 'people', permission: Permission.VIEW_TENANTS },
-  { name: 'Payments', label: 'Payments', icon: 'card', permission: Permission.VIEW_PAYMENTS },
-  { name: 'Settings', label: 'Settings', icon: 'settings', permission: Permission.VIEW_SETTINGS },
+  { name: 'Payments', label: 'Payments', icon: 'card', permission: Permission.VIEW_PAYMENT },
+  { name: 'Settings', label: 'Settings', icon: 'settings' },
 ];
 
 export const BottomNav: React.FC<BottomNavProps> = React.memo(({ navigation, currentRoute }) => {

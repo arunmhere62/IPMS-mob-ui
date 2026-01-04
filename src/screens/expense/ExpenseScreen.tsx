@@ -47,9 +47,9 @@ const MONTHS = [
 export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
-  const canCreateExpense = can(Permission.CREATE_EXPENSE);
-  const canEditExpense = can(Permission.EDIT_EXPENSE);
-  const canDeleteExpense = can(Permission.DELETE_EXPENSE);
+  const canCreateExpense = can(Permission.CREATE_PAYMENT);
+  const canEditExpense = can(Permission.EDIT_PAYMENT);
+  const canDeleteExpense = can(Permission.DELETE_PAYMENT);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

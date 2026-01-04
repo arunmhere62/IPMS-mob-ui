@@ -121,12 +121,11 @@ const MainTabs = () => {
     {
       name: 'Payments',
       component: PaymentsScreen,
-      permission: Permission.VIEW_PAYMENTS,
+      permission: Permission.VIEW_PAYMENT,
     },
     {
       name: 'Settings',
       component: SettingsScreen,
-      permission: Permission.VIEW_SETTINGS,
     },
   ];
 

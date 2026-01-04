@@ -149,7 +149,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
     { title: 'Report Issue', icon: '🐛', onPress: () => navigation.navigate('Tickets'), },
     { title: 'Privacy Policy', icon: '🔒', onPress: openPrivacyPolicy },
     { title: 'Help & Support', icon: '❓', onPress: () => navigation.navigate('FaqWebView') },
-    { title: 'About', icon: 'ℹ️', onPress: () => { } },
+    // { title: 'About', icon: 'ℹ️', onPress: () => { } },
   ];
 
   return (

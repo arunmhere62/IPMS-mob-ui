@@ -2009,13 +2009,13 @@ function TenantDetailsScreenWrapper() {
   const canEditRent = can(Permission.EDIT_PAYMENT);
   const canDeleteRent = can(Permission.DELETE_PAYMENT);
 
-  const canCreateAdvance = can(Permission.CREATE_ADVANCE);
-  const canEditAdvance = can(Permission.EDIT_ADVANCE);
-  const canDeleteAdvance = can(Permission.DELETE_ADVANCE);
+  const canCreateAdvance = canCreateRent;
+  const canEditAdvance = canEditRent;
+  const canDeleteAdvance = canDeleteRent;
 
-  const canCreateRefund = can(Permission.CREATE_REFUND);
-  const canEditRefund = can(Permission.EDIT_REFUND);
-  const canDeleteRefund = can(Permission.DELETE_REFUND);
+  const canCreateRefund = canCreateRent;
+  const canEditRefund = canEditRent;
+  const canDeleteRefund = canDeleteRent;
   
   return (
     <TenantDetailsContent 

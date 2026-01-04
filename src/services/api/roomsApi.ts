@@ -207,7 +207,10 @@ export const roomsApi = baseApi.injectEndpoints({
     createRoom: build.mutation<RoomResponse, CreateRoomDto>({
       query: (body) => ({ url: '/rooms', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<RoomResponse> | any) => normalizeEntityResponse<Room>(response),
-      invalidatesTags: [{ type: 'Rooms' as const, id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'Rooms' as const, id: 'LIST' },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
+      ],
     }),
 
     updateRoom: build.mutation<RoomResponse, { id: number; data: Partial<CreateRoomDto> }>({
@@ -216,6 +219,7 @@ export const roomsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'Rooms' as const, id: 'LIST' },
         { type: 'Room' as const, id: arg.id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -227,6 +231,7 @@ export const roomsApi = baseApi.injectEndpoints({
           ? [
               { type: 'Rooms' as const, id: 'LIST' },
               { type: 'Room' as const, id },
+              { type: 'Dashboard' as const, id: 'SUMMARY' },
             ]
           : [],
     }),
@@ -269,6 +274,7 @@ export const roomsApi = baseApi.injectEndpoints({
         { type: 'Beds' as const, id: arg.room_id },
         { type: 'Rooms' as const, id: 'LIST' },
         { type: 'Room' as const, id: arg.room_id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
@@ -281,13 +287,19 @@ export const roomsApi = baseApi.injectEndpoints({
         { type: 'Bed' as const, id: arg.id },
         { type: 'Rooms' as const, id: 'LIST' },
         ...(typeof arg.data.room_id === 'number' ? [{ type: 'Room' as const, id: arg.data.room_id }] : []),
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
       ],
     }),
 
     deleteBed: build.mutation<{ success: boolean; message: string }, number>({
       query: (id) => ({ url: `/beds/${id}`, method: 'DELETE' }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
-      invalidatesTags: [],
+      invalidatesTags: (_res, _err, id) => [
+        { type: 'Beds' as const, id: 'LIST' },
+        { type: 'Bed' as const, id },
+        { type: 'Rooms' as const, id: 'LIST' },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
+      ],
     }),
   }),
   overrideExisting: false,
