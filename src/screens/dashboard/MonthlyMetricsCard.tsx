@@ -24,12 +24,13 @@ const getLast6Months = () => {
     const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     
     const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
-    const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
+    // Important: backend expects an exclusive end date (first day of next month)
+    const nextMonthFirstDay = new Date(year, month + 1, 1).toISOString().split('T')[0];
     
     months.push({
       label: monthName,
       monthStart: firstDay,
-      monthEnd: lastDay,
+      monthEnd: nextMonthFirstDay,
       isCurrentMonth: i === 0,
     });
   }
@@ -69,6 +70,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
   const cashReceived = mm?.cash_received ?? 0;
   const rentEarned = mm?.rent_earned ?? 0;
   const refundsPaid = mm?.refunds_paid ?? 0;
+  const advancePaid = mm?.advance_paid ?? 0;
+  const expensesPaid = mm?.expenses_paid ?? 0;
   const mrrValue = mm?.mrr_value ?? 0;
   const collectionRate = rentEarned > 0 ? cashReceived / rentEarned : 0;
   const collectionRateText = `${(collectionRate * 100).toFixed(1)}%`;
@@ -364,6 +367,72 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
               </View>
             </View>
 
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: tileBg,
+                  borderRadius: tileRadius,
+                  padding: tilePad,
+                  borderWidth: 1,
+                  borderColor: tileBorder,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Advance Paid</Text>
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
+                      backgroundColor: Theme.withOpacity('#8B5CF6', 0.10),
+                      borderWidth: 1,
+                      borderColor: Theme.withOpacity('#8B5CF6', 0.16),
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name="wallet" size={14} color={'#8B5CF6'} />
+                  </View>
+                </View>
+                <Text style={{ color: Theme.colors.text.primary, fontSize: 16, fontWeight: '900', marginTop: 10 }}>
+                  {formatCurrency(advancePaid)}
+                </Text>
+              </View>
+
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: tileBg,
+                  borderRadius: tileRadius,
+                  padding: tilePad,
+                  borderWidth: 1,
+                  borderColor: tileBorder,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Expenses</Text>
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
+                      backgroundColor: Theme.withOpacity('#F97316', 0.10),
+                      borderWidth: 1,
+                      borderColor: Theme.withOpacity('#F97316', 0.16),
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name="card" size={14} color={'#F97316'} />
+                  </View>
+                </View>
+                <Text style={{ color: Theme.colors.text.primary, fontSize: 16, fontWeight: '900', marginTop: 10 }}>
+                  {formatCurrency(expensesPaid)}
+                </Text>
+              </View>
+            </View>
+
             <View
               style={{
                 marginTop: 10,
@@ -427,35 +496,49 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
           <View>
             <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Collected</Text>
             <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
-              Money you actually received in this month (cash-in). It follows the payment date.
+              Money that actually came in during this month.
             </Text>
           </View>
 
           <View>
             <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Rent Due</Text>
             <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
-              Rent that should be earned for the month (based on occupancy / rent cycle). Not based on payment date.
+              Rent that belongs to this month based on the tenant’s stay (even if paid later).
             </Text>
           </View>
 
           <View>
             <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Refunds Paid</Text>
             <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
-              Money paid back to tenants in this month (cash-out), like deposit refunds.
+              Total refunds paid to tenants inside this month (cash-out).
+            </Text>
+          </View>
+
+          <View>
+            <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Advance Paid</Text>
+            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
+              Total advance payments received during this month.
+            </Text>
+          </View>
+
+          <View>
+            <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Expenses</Text>
+            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
+              Total expenses recorded for this month.
             </Text>
           </View>
 
           <View>
             <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Monthly Rent Value</Text>
             <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
-              Expected monthly rent from active occupied beds for this month (a monthly revenue baseline).
+              Your monthly rent value for this month based on currently occupied beds (a monthly baseline).
             </Text>
           </View>
 
           <View>
             <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Collected %</Text>
             <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
-              How much of the month’s rent due you collected: Collected ÷ Rent Due.
+              Shows how much of the month’s rent due was collected.
             </Text>
           </View>
         </View>

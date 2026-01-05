@@ -12,6 +12,7 @@ import { Card } from '../../components/Card';
 import { QuickActions } from '../../components/QuickActions';
 import { MonthlyMetricsCard } from './MonthlyMetricsCard';
 import { Ionicons } from '@expo/vector-icons';
+import { SlideBottomModal } from '../../components/SlideBottomModal';
 import {
   useGetPGLocationsQuery,
 } from '../../services/api/pgLocationsApi';
@@ -41,6 +42,7 @@ export const DashboardScreen: React.FC = () => {
   usePermissions();
   const [refreshing, setRefreshing] = useState(false);
   const [attentionTab, setAttentionTab] = useState<'pending_rent' | 'partial_rent' | 'without_advance'>('pending_rent');
+  const [showOwnerInfo, setShowOwnerInfo] = useState(false);
 
   const {
     data: pgLocationsResponse,
@@ -89,6 +91,7 @@ export const DashboardScreen: React.FC = () => {
 
   const dashboardQuickActions = useMemo(
     () => [
+      { title: 'PG Locations', icon: 'business', screen: 'PGLocations', color: '#06B6D4' },
       { title: 'Tenants', icon: 'people', screen: 'Tenants', color: '#06B6D4' },
       { title: 'Rooms', icon: 'home', screen: 'Rooms', color: '#22C55E' },
       { title: 'Beds', icon: 'bed', screen: 'Beds', color: '#3B82F6' },
@@ -336,6 +339,7 @@ export const DashboardScreen: React.FC = () => {
           title: 'Pending Rent',
           subtitle: 'Collect dues quickly',
           tint: '#EF4444',
+          icon: 'alert-circle' as const,
           count: (() => {
             const list = (tenantStatus?.pending_rent?.tenants ?? []) as Tenant[];
             const fallback = (tenantStatus?.partial_rent?.tenants ?? []) as Tenant[];
@@ -372,6 +376,7 @@ export const DashboardScreen: React.FC = () => {
           title: 'Partial Rent',
           subtitle: 'Follow-up needed',
           tint: '#F59E0B',
+          icon: 'warning' as const,
           count: (() => {
             const list = (tenantStatus?.partial_rent?.tenants ?? []) as Tenant[];
             const uniq = new Set<string>();
@@ -396,6 +401,7 @@ export const DashboardScreen: React.FC = () => {
           title: 'No Advance',
           subtitle: 'Request security deposit',
           tint: '#3B82F6',
+          icon: 'wallet' as const,
           count: tenantStatus?.without_advance?.count ?? 0,
           tenants: tenantStatus?.without_advance?.tenants ?? [],
         },
@@ -489,17 +495,36 @@ export const DashboardScreen: React.FC = () => {
                   </Text>
                 </View>
 
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    backgroundColor: Theme.colors.primary,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Ionicons name="sparkles" size={20} color="#fff" />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => setShowOwnerInfo(true)}
+                    activeOpacity={0.9}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: Theme.colors.light,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.border,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name="help-circle-outline" size={18} color={Theme.colors.text.secondary} />
+                  </TouchableOpacity>
+
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: Theme.colors.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name="sparkles" size={20} color="#fff" />
+                  </View>
                 </View>
               </View>
 
@@ -523,6 +548,32 @@ export const DashboardScreen: React.FC = () => {
               </View>
             </View>
           </View>
+
+          <SlideBottomModal
+            visible={showOwnerInfo}
+            onClose={() => setShowOwnerInfo(false)}
+            title="Dashboard explained"
+            subtitle={selectedLocationName ? `For ${selectedLocationName}` : undefined}
+            submitLabel="Got it"
+            onSubmit={() => setShowOwnerInfo(false)}
+          >
+            <View style={{ gap: 14 }}>
+              <View>
+                <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Occupancy</Text>
+                <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
+                  How many beds are currently occupied out of total beds.
+                </Text>
+              </View>
+
+              <View>
+                <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>PG Value</Text>
+                <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
+                  Total monthly rent value of beds (overall capacity).
+                </Text>
+              </View>
+
+            </View>
+          </SlideBottomModal>
 
           <QuickActions
             menuItems={dashboardQuickActions}
@@ -604,7 +655,7 @@ export const DashboardScreen: React.FC = () => {
               Attention Required
             </Text>
             <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
-              Tap icons to contact tenants directly
+              Quick follow-ups for pending rent and advance
             </Text>
           </View>
 
@@ -629,38 +680,65 @@ export const DashboardScreen: React.FC = () => {
                   borderColor: Theme.colors.border,
                 }}
               >
-                {widgetItems.map((w) => {
-                  const active = w.key === attentionTab;
-                  return (
-                    <TouchableOpacity
-                      key={w.key}
-                      onPress={() => setAttentionTab(w.key)}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        backgroundColor: active ? Theme.colors.primary : 'transparent',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={{
-                        color: active ? '#fff' : Theme.colors.text.primary,
-                        fontSize: 12,
-                        fontWeight: '800',
-                      }}>
-                        {w.title}
-                      </Text>
-                      <Text style={{
-                        color: active ? 'rgba(255,255,255,0.85)' : Theme.colors.text.secondary,
-                        fontSize: 11,
-                        marginTop: 2,
-                      }}>
-                        {w.count}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 6, paddingRight: 6 }}
+                >
+                  {widgetItems.map((w) => {
+                    const active = w.key === attentionTab;
+                    return (
+                      <TouchableOpacity
+                        key={w.key}
+                        onPress={() => setAttentionTab(w.key)}
+                        style={{
+                          minWidth: 120,
+                          paddingVertical: 10,
+                          paddingHorizontal: 10,
+                          borderRadius: 12,
+                          backgroundColor: active ? Theme.withOpacity(w.tint, 0.14) : 'transparent',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderWidth: active ? 1 : 0,
+                          borderColor: active ? Theme.withOpacity(w.tint, 0.22) : 'transparent',
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Ionicons
+                            name={w.icon}
+                            size={14}
+                            color={active ? w.tint : Theme.colors.text.secondary}
+                          />
+                          <Text
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                            style={{
+                              color: Theme.colors.text.primary,
+                              fontSize: 12,
+                              fontWeight: '800',
+                              maxWidth: 90,
+                            }}
+                          >
+                            {w.title}
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            marginTop: 4,
+                            paddingHorizontal: 10,
+                            paddingVertical: 2,
+                            borderRadius: 999,
+                            backgroundColor: Theme.withOpacity(w.tint, active ? 0.18 : 0.10),
+                            borderWidth: 1,
+                            borderColor: Theme.withOpacity(w.tint, active ? 0.22 : 0.16),
+                          }}
+                        >
+                          <Text style={{ color: w.tint, fontSize: 11, fontWeight: '900' }}>{w.count}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </View>
 
               <View style={{ marginTop: 14 }}>
@@ -668,12 +746,22 @@ export const DashboardScreen: React.FC = () => {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <View
                       style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 5,
-                        backgroundColor: selectedAttention?.tint ?? Theme.colors.primary,
+                        width: 34,
+                        height: 34,
+                        borderRadius: 17,
+                        backgroundColor: Theme.withOpacity(selectedAttention?.tint ?? Theme.colors.primary, 0.14),
+                        borderWidth: 1,
+                        borderColor: Theme.withOpacity(selectedAttention?.tint ?? Theme.colors.primary, 0.22),
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
-                    />
+                    >
+                      <Ionicons
+                        name={(selectedAttention?.icon ?? 'alert-circle') as never}
+                        size={16}
+                        color={selectedAttention?.tint ?? Theme.colors.primary}
+                      />
+                    </View>
                     <View>
                       <Text style={{ color: Theme.colors.text.primary, fontSize: 14, fontWeight: '800' }}>
                         {selectedAttention?.title ?? 'Attention'}
@@ -690,22 +778,51 @@ export const DashboardScreen: React.FC = () => {
                 </View>
 
                 <View style={{ marginTop: 12 }}>
-                  {!selectedAttention || selectedAttention.tenants.length === 0 ? (
-                    <Text style={{ color: Theme.colors.text.secondary, fontSize: 12 }}>No tenants found</Text>
-                  ) : (
-                    <ScrollView
-                      nestedScrollEnabled
-                      showsVerticalScrollIndicator={false}
-                      style={{ maxHeight: 320 }}
-                      contentContainerStyle={{ gap: 10, paddingBottom: 2 }}
-                    >
-                      {selectedAttention.tenants.map((t: Tenant) => {
+                  <View
+                    style={{
+                      minHeight: 320,
+                      borderRadius: 14,
+                      backgroundColor: Theme.colors.light,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.border,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}
+                  >
+                    {!selectedAttention || selectedAttention.tenants.length === 0 ? (
+                      <View style={{ flex: 1, minHeight: 320, alignItems: 'center', justifyContent: 'center' }}>
+                        <Ionicons name="checkmark-circle" size={22} color={'#10B981'} />
+                        <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900', marginTop: 10 }}>
+                          All good
+                        </Text>
+                        <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 6, textAlign: 'center' }}>
+                          No tenants need attention in this section right now.
+                        </Text>
+                      </View>
+                    ) : (
+                      <ScrollView
+                        nestedScrollEnabled
+                        showsVerticalScrollIndicator={false}
+                        style={{ maxHeight: 320 }}
+                        contentContainerStyle={{ gap: 10, paddingBottom: 8 }}
+                      >
+                        {selectedAttention.tenants.map((t: Tenant) => {
                         const phone = t.phone_no;
                         const whatsapp = t.whatsapp_number ?? t.phone_no;
                         const roomNo = t.rooms?.room_no;
                         const bedNo = t.beds?.bed_no;
 
-                        const { gapCount, gapDueAmount } = getGapSnapshotForTab(attentionTab, t);
+                        const { gapCount, gapDueAmount, gaps } = getGapSnapshotForTab(attentionTab, t);
+
+                        const duePeriodText = (() => {
+                          if (attentionTab === 'without_advance') return null;
+                          if (!Array.isArray(gaps) || gaps.length === 0) return 'Due period not available';
+                          const first = gaps[0] as { gapStart?: unknown; gapEnd?: unknown };
+                          const s = String(first?.gapStart ?? '').trim();
+                          const e = String(first?.gapEnd ?? '').trim();
+                          if (!s || !e) return 'Due period not available';
+                          return `${s} to ${e}`;
+                        })();
 
                         const openTenantDetails = () => {
                           if (typeof t?.s_no !== 'number') return;
@@ -737,8 +854,8 @@ export const DashboardScreen: React.FC = () => {
                               alignItems: 'center',
                               justifyContent: 'space-between',
                               paddingVertical: 8,
-                              borderTopWidth: 1,
-                              borderTopColor: Theme.colors.border,
+                              borderBottomWidth: 1,
+                              borderBottomColor: Theme.colors.border,
                             }}
                           >
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 12 }}>
@@ -772,6 +889,12 @@ export const DashboardScreen: React.FC = () => {
                                   <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 2 }}>
                                     {typeof gapDueAmount === 'number' ? `Due ${formatCurrency(gapDueAmount)}` : ''}
                                     {gapCount > 0 ? `${typeof gapDueAmount === 'number' ? '  •  ' : ''}Gaps ${gapCount}` : ''}
+                                  </Text>
+                                )}
+
+                                {!!duePeriodText && (
+                                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 2 }}>
+                                    {duePeriodText}
                                   </Text>
                                 )}
                               </View>
@@ -812,9 +935,10 @@ export const DashboardScreen: React.FC = () => {
                             </View>
                           </TouchableOpacity>
                         );
-                      })}
-                    </ScrollView>
-                  )}
+                        })}
+                      </ScrollView>
+                    )}
+                  </View>
                 </View>
               </View>
             </Card>

@@ -30,8 +30,31 @@ export type DashboardMonthlyMetricsData = {
     month_end: string;
     cash_received: number;
     refunds_paid: number;
+    advance_paid: number;
+    expenses_paid: number;
     rent_earned: number;
     mrr_value: number;
+    rent_earned_breakdown: {
+      formula: string;
+      cycles: Array<{
+        tenant_id: number;
+        cycle_start: string;
+        cycle_end: string;
+        overlap_start: string;
+        overlap_end: string;
+        overlap_days: number;
+        total_cycle_days: number;
+        monthly_price: number;
+        segments?: Array<{
+          start: string;
+          end: string;
+          days: number;
+          price: number;
+          earned: number;
+        }>;
+        earned: number;
+      }>;
+    };
   };
 };
 

@@ -352,6 +352,7 @@ export const tenantsApi = baseApi.injectEndpoints({
         ...(typeof (arg as any)?.room_id === 'number' ? [{ type: 'Beds' as const, id: (arg as any).room_id }] : []),
         { type: 'Rooms' as const, id: 'LIST' },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -362,6 +363,7 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id: arg.id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -375,6 +377,7 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -385,6 +388,7 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -399,6 +403,7 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id: arg.id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -413,6 +418,7 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Tenants', id: 'LIST' },
         { type: 'Tenant', id: arg.id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -430,6 +436,7 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Beds' as const, id: 'LIST' },
         { type: 'PGLocations' as const, id: 'LIST' },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -439,6 +446,7 @@ export const tenantsApi = baseApi.injectEndpoints({
       invalidatesTags: [
         { type: 'Tenants', id: 'LIST' },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
   }),

@@ -282,6 +282,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         return [
           { type: 'TenantPayments' as const, id: 'LIST' },
           ...items.map((p) => ({ type: 'TenantPayment' as const, id: (p as unknown as { s_no: number }).s_no })),
+          
         ];
       },
     }),
@@ -305,6 +306,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'TenantPayments' as const, id: 'LIST' },
         { type: 'Tenants', id: 'LIST' },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -319,6 +321,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'TenantPayments', id: 'LIST' },
         { type: 'TenantPayment', id: arg.id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -340,6 +343,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'TenantPayment', id },
         { type: 'Tenants', id: 'LIST' },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
         ];
       },
     }),
@@ -387,6 +391,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'Tenants' as const, id: 'LIST' },
         { type: 'Tenant' as const, id: (arg as unknown as { tenant_id?: number }).tenant_id as number },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -397,6 +402,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id: arg.id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -411,6 +417,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id: arg.id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -421,6 +428,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -441,6 +449,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'AdvancePayments' as const, id: 'LIST' },
         { type: 'AdvancePayment' as const, id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
         ];
       },
     }),
@@ -477,6 +486,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'Tenants' as const, id: 'LIST' },
         { type: 'Tenant' as const, id: (arg as unknown as { tenant_id?: number }).tenant_id as number },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -487,6 +497,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'RefundPayments' as const, id: 'LIST' },
         { type: 'RefundPayment' as const, id: arg.id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
 
@@ -497,6 +508,7 @@ export const paymentsApi = baseApi.injectEndpoints({
         { type: 'RefundPayments' as const, id: 'LIST' },
         { type: 'RefundPayment' as const, id },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
   }),
