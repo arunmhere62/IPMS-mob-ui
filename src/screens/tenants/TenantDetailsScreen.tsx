@@ -59,7 +59,7 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import AdvancePaymentForm from './AdvancePaymentForm';
 import { useGetAllBedsQuery, useGetAllRoomsQuery } from '@/services/api/roomsApi';
 import type { Bed, GetBedsParams, GetRoomsParams, Room } from '@/services/api/roomsApi';
-import { useGetPGLocationsQuery } from '@/services/api/pgLocationsApi';
+import { useGetPGLocationsQuery, useGetPGLocationDetailsQuery } from '@/services/api/pgLocationsApi';
 import {
   TenantPayment,
   useCheckoutTenantWithDateMutation,
@@ -231,6 +231,13 @@ const TenantDetailsContent: React.FC<{
       ?.transfer_difference_due_cycle ?? null;
 
   const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, { skip: false });
+
+  const effectiveReceiptPgId =
+    (currentTenant as { pg_id?: number | null } | null | undefined)?.pg_id ?? selectedPGLocationId ?? null;
+
+  const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(Number(effectiveReceiptPgId), {
+    skip: !effectiveReceiptPgId,
+  });
 
   const {
     data: transferRoomsResponse,
@@ -616,21 +623,29 @@ const TenantDetailsContent: React.FC<{
     const periodStartRaw = payment?.tenant_rent_cycles?.cycle_start || payment?.start_date || payment?.payment_date;
     const periodEndRaw = payment?.tenant_rent_cycles?.cycle_end || payment?.end_date || payment?.payment_date;
 
-    const paymentDate = new Date(payment.payment_date);
-    const periodStart = periodStartRaw ? new Date(periodStartRaw) : paymentDate;
-    const periodEnd = periodEndRaw ? new Date(periodEndRaw) : paymentDate;
+    const pgDetails = pgDetailsResponse?.data;
 
     return {
       receiptNumber: `RCP-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
-      paymentDate,
-      tenantName: currentTenant?.name || '',
-      tenantPhone: currentTenant?.phone_no || '',
-      pgName: payment.pg_locations?.location_name || currentTenant?.pg_locations?.location_name || '',
-      roomNumber: payment.rooms?.room_no || currentTenant?.rooms?.room_no || '',
-      bedNumber: payment.beds?.bed_no || currentTenant?.beds?.bed_no || '',
+      paymentDate: new Date(payment.payment_date),
+      tenantName: (currentTenant as any)?.name || 'Tenant',
+      tenantPhone: (currentTenant as any)?.phone_no || '',
+      pgName: payment?.pg_locations?.location_name || 'PG',
+      pgDetails: pgDetails
+        ? {
+            pgId: effectiveReceiptPgId ? Number(effectiveReceiptPgId) : undefined,
+            pgName: pgDetails.location_name,
+            address: pgDetails.address,
+            pincode: pgDetails.pincode ?? undefined,
+            city: pgDetails.city ?? undefined,
+            state: pgDetails.state ?? undefined,
+          }
+        : undefined,
+      roomNumber: payment?.rooms?.room_no || '',
+      bedNumber: payment?.beds?.bed_no || '',
       rentPeriod: {
-        startDate: periodStart,
-        endDate: periodEnd,
+        startDate: periodStartRaw ? new Date(periodStartRaw) : new Date(payment.payment_date),
+        endDate: periodEndRaw ? new Date(periodEndRaw) : new Date(payment.payment_date),
       },
       actualRent: Number(payment.actual_rent_amount || 0),
       amountPaid: Number(payment.amount_paid || 0),
@@ -642,14 +657,25 @@ const TenantDetailsContent: React.FC<{
 
   const prepareAdvanceReceiptData = (payment: PaymentsAdvancePayment): CompactReceiptData => {
     const paymentDate = new Date(payment.payment_date);
+    const pgDetails = pgDetailsResponse?.data;
     return {
       receiptNumber: `ADV-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
       paymentDate,
-      tenantName: currentTenant?.name || '',
-      tenantPhone: currentTenant?.phone_no || '',
-      pgName: currentTenant?.pg_locations?.location_name || 'PG',
-      roomNumber: payment.rooms?.room_no || currentTenant?.rooms?.room_no || '',
-      bedNumber: payment.beds?.bed_no || currentTenant?.beds?.bed_no || '',
+      tenantName: (currentTenant as any)?.name || 'Tenant',
+      tenantPhone: (currentTenant as any)?.phone_no || '',
+      pgName: (payment as any)?.pg_locations?.location_name || (currentTenant as any)?.pg_locations?.location_name || 'PG',
+      pgDetails: pgDetails
+        ? {
+            pgId: effectiveReceiptPgId ? Number(effectiveReceiptPgId) : undefined,
+            pgName: pgDetails.location_name,
+            address: pgDetails.address,
+            pincode: pgDetails.pincode ?? undefined,
+            city: pgDetails.city ?? undefined,
+            state: pgDetails.state ?? undefined,
+          }
+        : undefined,
+      roomNumber: (payment as any)?.rooms?.room_no || (currentTenant as any)?.rooms?.room_no || '',
+      bedNumber: (payment as any)?.beds?.bed_no || (currentTenant as any)?.beds?.bed_no || '',
       rentPeriod: {
         startDate: paymentDate,
         endDate: paymentDate,

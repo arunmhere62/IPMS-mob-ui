@@ -6,12 +6,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Dimensions,
-  Linking,
 } from 'react-native';
-import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
-import { RootState } from '../../store';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Card } from '../../components/Card';
@@ -24,9 +20,8 @@ import {
   useGetPlansQuery,
   useGetSubscriptionStatusQuery,
   useSubscribeToPlanMutation,
+  useUpgradePlanMutation,
 } from '../../services/api/subscriptionApi';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SubscriptionPlansScreenProps {
   navigation: any;
@@ -51,8 +46,19 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
   } = useGetSubscriptionStatusQuery();
 
   const [subscribeToPlan, { isLoading: subscribing }] = useSubscribeToPlanMutation();
+  const [upgradePlan, { isLoading: upgrading }] = useUpgradePlanMutation();
 
   const plans = plansResponse?.data || [];
+
+  const ss = subscriptionStatus;
+
+  const lastSubscription = ss?.last_subscription;
+  const lastPlan: any = (lastSubscription as any)?.plan ?? (lastSubscription as any)?.subscription_plans;
+  const isFreePlanExpired =
+    Boolean(ss) &&
+    !ss?.has_active_subscription &&
+    Boolean(lastPlan?.is_free) &&
+    (lastSubscription as any)?.status === 'EXPIRED';
 
   useEffect(() => {
     const err: any = plansError || statusError;
@@ -117,6 +123,49 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     }
   };
 
+  const handleUpgrade = async (planId: number) => {
+    try {
+      setSelectedPlan(planId);
+      const result = await upgradePlan({ planId }).unwrap();
+
+      console.log('💳 Upgrade result:', result);
+
+      const payload: any = (result as any)?.data ?? result;
+      const paymentUrl =
+        payload?.payment_url ??
+        payload?.data?.payment_url ??
+        payload?.data?.data?.payment_url;
+      const orderId =
+        payload?.order_id ??
+        payload?.data?.order_id ??
+        payload?.data?.data?.order_id;
+      const subscription =
+        payload?.subscription ??
+        payload?.data?.subscription ??
+        payload?.data?.data?.subscription;
+      const subscriptionId = subscription?.s_no ?? subscription?.id;
+
+      if (paymentUrl) {
+        navigation.navigate('PaymentWebView', {
+          paymentUrl,
+          orderId,
+          subscriptionId,
+          paymentMethod: 'ccavenue',
+        });
+      } else {
+        showSuccessAlert('Upgrade initiated successfully!');
+      }
+    } catch (error: any) {
+      console.error('❌ Upgrade error:', error);
+      const maybeData = (error as any)?.data;
+      const message =
+        (maybeData && (maybeData.message || maybeData.error)) ||
+        (error as any)?.message ||
+        'Failed to upgrade';
+      Alert.alert('Error', message);
+    }
+  };
+
   const formatPrice = (price: string | number, currency?: string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
 
@@ -134,11 +183,26 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
   const getIncludedItems = (plan: SubscriptionPlan): string[] => {
     const included: string[] = Array.isArray(plan.features) ? [...plan.features] : [];
 
-    if (plan.max_pg_locations != null) included.push(`Up to ${plan.max_pg_locations} PG Locations`);
-    if (plan.max_tenants != null) included.push(`Up to ${plan.max_tenants} Tenants`);
-    if (plan.max_beds != null) included.push(`Up to ${plan.max_beds} Beds`);
-    if (plan.max_rooms != null) included.push(`Up to ${plan.max_rooms} Rooms`);
-    if (plan.max_employees != null) included.push(`Up to ${plan.max_employees} Employees`);
+    const limitLine = (label: string, value: number | null | undefined) => {
+      if (value === undefined) return;
+      if (value === null) {
+        included.push(`Unlimited ${label}`);
+        return;
+      }
+      included.push(`Up to ${value} ${label}`);
+    };
+
+    const limits = plan.limits;
+
+    limitLine('PG Locations', limits?.max_pg_locations ?? plan.max_pg_locations);
+    limitLine('Tenants', limits?.max_tenants ?? plan.max_tenants);
+    limitLine('Rooms', limits?.max_rooms ?? plan.max_rooms);
+    limitLine('Beds', limits?.max_beds ?? plan.max_beds);
+    limitLine('Employees', limits?.max_employees ?? plan.max_employees);
+    limitLine('Users', limits?.max_users ?? plan.max_users);
+    limitLine('Invoices / Month', limits?.max_invoices_per_month ?? plan.max_invoices_per_month);
+    limitLine('SMS / Month', limits?.max_sms_per_month ?? plan.max_sms_per_month);
+    limitLine('WhatsApp / Month', limits?.max_whatsapp_per_month ?? plan.max_whatsapp_per_month);
 
     return included;
   };
@@ -151,17 +215,13 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     return `${days} Days`;
   };
 
-  const getPlanColor = (index: number) => {
-    // Use app's blue color scheme
-    return Theme.colors.primary;
-  };
-
-  const renderPlanCard = (plan: SubscriptionPlan, index: number) => {
-    const isCurrentPlan = subscriptionStatus?.subscription?.plan_id === plan.s_no;
+  const renderPlanCard = (plan: SubscriptionPlan, _index: number) => {
+    const isCurrentPlan = ss?.subscription?.plan_id === plan.s_no;
+    const hasActiveSubscription = Boolean(ss?.has_active_subscription);
     const isSelected = selectedPlan === plan.s_no;
     const isPremium = plan.name.toLowerCase().includes('premium');
-    const isStandard = plan.name.toLowerCase().includes('standard');
-    const isBasic = plan.name.toLowerCase().includes('basic');
+    void plan.name.toLowerCase().includes('standard');
+    void plan.name.toLowerCase().includes('basic');
     const isYearly = plan.duration === 365;
     
     // Get tier icon - only Premium gets special treatment
@@ -198,6 +258,9 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     
     const savingsPercentage = calculateSavings();
 
+    const isFreePlan = Boolean(plan.is_free);
+    const isExpiredFreePlanCard = isFreePlan && isFreePlanExpired;
+
     return (
       <TouchableOpacity
         key={plan.s_no}
@@ -225,21 +288,55 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
         }}>
           {/* Badges Row */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            {savingsPercentage && (
-              <View style={{
-                backgroundColor: Theme.colors.secondary,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 12,
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}>
-                <Ionicons name="pricetag" size={12} color="#fff" style={{ marginRight: 4 }} />
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>
-                  SAVE {savingsPercentage}%
-                </Text>
-              </View>
-            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {savingsPercentage && (
+                <View style={{
+                  backgroundColor: Theme.colors.secondary,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginRight: 8,
+                }}>
+                  <Ionicons name="pricetag" size={12} color="#fff" style={{ marginRight: 4 }} />
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>
+                    SAVE {savingsPercentage}%
+                  </Text>
+                </View>
+              )}
+              {plan.is_trial && (
+                <View style={{
+                  backgroundColor: Theme.colors.info,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginRight: 8,
+                }}>
+                  <Ionicons name="flash" size={12} color="#fff" style={{ marginRight: 4 }} />
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>
+                    TRIAL
+                  </Text>
+                </View>
+              )}
+              {plan.is_free && (
+                <View style={{
+                  backgroundColor: Theme.colors.secondary,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}>
+                  <Ionicons name="gift" size={12} color="#fff" style={{ marginRight: 4 }} />
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>
+                    FREE
+                  </Text>
+                </View>
+              )}
+            </View>
             {isCurrentPlan && (
               <View style={{
                 backgroundColor: Theme.colors.secondary,
@@ -274,9 +371,28 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           {/* Price */}
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={{ fontSize: 42, fontWeight: '900', color: '#fff' }}>
-                {formatPrice(plan.price, plan.currency)}
-              </Text>
+              {isFreePlan ? (
+                <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                  <Text
+                    style={{
+                      fontSize: 22,
+                      fontWeight: '800',
+                      color: 'rgba(255,255,255,0.75)',
+                      textDecorationLine: 'line-through',
+                      marginRight: 10,
+                    }}
+                  >
+                    {formatPrice(plan.price, plan.currency)}
+                  </Text>
+                  <Text style={{ fontSize: 42, fontWeight: '900', color: '#fff' }}>
+                    Free
+                  </Text>
+                </View>
+              ) : (
+                <Text style={{ fontSize: 42, fontWeight: '900', color: '#fff' }}>
+                  {formatPrice(plan.price, plan.currency)}
+                </Text>
+              )}
               <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginLeft: 8 }}>
                 /{formatDuration(plan.duration)}
               </Text>
@@ -337,7 +453,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           </Text>
           
           <View style={{ marginBottom: 20 }}>
-            {getIncludedItems(plan).slice(0, 5).map((feature: string, idx: number) => (
+            {getIncludedItems(plan).map((feature: string, idx: number) => (
               <View key={`${plan.s_no}-${idx}`} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
                 <Ionicons 
                   name="checkmark-circle" 
@@ -355,10 +471,21 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           {/* Subscribe Button */}
           {!isCurrentPlan && (
             <TouchableOpacity
-              onPress={() => handleSubscribe(plan.s_no)}
-              disabled={subscribing}
+              onPress={() => {
+                if (isExpiredFreePlanCard) {
+                  return;
+                }
+                if (hasActiveSubscription) {
+                  handleUpgrade(plan.s_no);
+                  return;
+                }
+                handleSubscribe(plan.s_no);
+              }}
+              disabled={subscribing || upgrading || isExpiredFreePlanCard}
               style={{
-                backgroundColor: isPremium ? '#000000' : '#1F2937',
+                backgroundColor: isExpiredFreePlanCard
+                  ? Theme.colors.border
+                  : (isPremium ? '#000000' : '#1F2937'),
                 paddingVertical: 16,
                 borderRadius: 12,
                 alignItems: 'center',
@@ -366,12 +493,14 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                 justifyContent: 'center',
               }}
             >
-              {subscribing && selectedPlan === plan.s_no ? (
+              {(subscribing || upgrading) && selectedPlan === plan.s_no ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff', marginRight: 8 }}>
-                    Subscribe Now
+                    {isExpiredFreePlanCard
+                      ? 'Free Plan Ended'
+                      : (hasActiveSubscription ? 'Upgrade Now' : 'Subscribe Now')}
                   </Text>
                   <Ionicons name="arrow-forward" size={20} color="#fff" />
                 </>
@@ -410,14 +539,14 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           showsVerticalScrollIndicator={false}
         >
         {/* Current Status Card */}
-        {subscriptionStatus && (
+        {ss && (
           <Card style={{ marginBottom: 24, padding: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, }}>
               <View style={{
                 width: 48,
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: subscriptionStatus.has_active_subscription 
+                backgroundColor: ss.has_active_subscription 
                   ? Theme.withOpacity(Theme.colors.secondary, 0.1)
                   : Theme.withOpacity(Theme.colors.warning, 0.1),
                 alignItems: 'center',
@@ -425,50 +554,69 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                 marginRight: 16,
               }}>
                 <Ionicons 
-                  name={subscriptionStatus.has_active_subscription ? "checkmark-circle" : "alert-circle"} 
+                  name={ss.has_active_subscription ? "checkmark-circle" : "alert-circle"} 
                   size={28} 
-                  color={subscriptionStatus.has_active_subscription ? Theme.colors.secondary : Theme.colors.warning} 
+                  color={ss.has_active_subscription ? Theme.colors.secondary : Theme.colors.warning} 
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 4 }}>
-                  {subscriptionStatus.has_active_subscription ? 'Active Subscription' : 'No Active Subscription'}
+                  {ss.has_active_subscription ? 'Active Subscription' : 'No Active Subscription'}
                 </Text>
-                {subscriptionStatus.subscription?.plan && (
+                {ss.subscription?.plan && (
                   <Text style={{ fontSize: 14, color: Theme.colors.text.secondary }}>
-                    {subscriptionStatus.subscription.plan.name}
+                    {ss.subscription.plan.name}
                   </Text>
                 )}
               </View>
             </View>
 
-            {subscriptionStatus.has_active_subscription && subscriptionStatus.days_remaining !== undefined && (
+            {ss.has_active_subscription && ss.days_remaining !== undefined && (
               <View style={{
                 backgroundColor: Theme.colors.background.secondary,
                 padding: 12,
                 borderRadius: 8,
                 marginTop: 8,
               }}>
-                <Text style={{ fontSize: 13, color: Theme.colors.text.secondary }}>
-                  {subscriptionStatus.days_remaining} days remaining
+                <Text style={{ fontSize: 14, color: Theme.colors.text.primary, fontWeight: '600' }}>
+                  {ss.days_remaining} days remaining
                 </Text>
+
                 <View style={{
                   height: 6,
-                  backgroundColor: Theme.colors.border,
-                  borderRadius: 3,
-                  marginTop: 8,
+                  backgroundColor: Theme.withOpacity(Theme.colors.primary, 0.15),
+                  borderRadius: 999,
                   overflow: 'hidden',
+                  marginTop: 8,
                 }}>
                   <View style={{
                     height: '100%',
-                    width: `${(subscriptionStatus.days_remaining / (subscriptionStatus.subscription?.plan?.duration || 30)) * 100}%`,
+                    width: `${(ss.days_remaining / (ss.subscription?.plan?.duration || 30)) * 100}%`,
                     backgroundColor: Theme.colors.primary,
                   }} />
                 </View>
               </View>
             )}
 
-            {subscriptionStatus.is_trial && (
+            {isFreePlanExpired && (
+              <View
+                style={{
+                  backgroundColor: Theme.withOpacity(Theme.colors.warning, 0.12),
+                  padding: 12,
+                  borderRadius: 10,
+                  marginTop: 12,
+                }}
+              >
+                <Text style={{ fontSize: 13, color: Theme.colors.text.primary, fontWeight: '700', marginBottom: 4 }}>
+                  Your free plan has ended
+                </Text>
+                <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, lineHeight: 18 }}>
+                  Please subscribe to a paid plan to continue using create features.
+                </Text>
+              </View>
+            )}
+
+            {ss.is_trial && (
               <View style={{
                 backgroundColor: Theme.withOpacity(Theme.colors.info, 0.1),
                 padding: 12,

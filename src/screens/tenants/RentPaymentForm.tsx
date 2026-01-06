@@ -16,6 +16,7 @@ import { AmountInput } from "../../components/AmountInput";
 import { SkeletonLoader } from "../../components/SkeletonLoader";
 import { useLazyGetBedByIdQuery } from "@/services/api/roomsApi";
 import { pgLocationsApi } from "../../services/api/pgLocationsApi";
+import type { PGLocationDetails } from "../../services/api/pgLocationsApi";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
 import {
@@ -492,7 +493,9 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
                 pgLocationsApi.endpoints.getPGLocationDetails.initiate(pgId)
               ).unwrap();
               if (pgResponse.success && pgResponse.data) {
-                const pgData = pgResponse.data;
+                const pgData = pgResponse.data as PGLocationDetails & {
+                  rent_cycle_type?: 'CALENDAR' | 'MIDMONTH';
+                };
                 if (pgData.rent_cycle_type) {
                   setRentCycleData({
                     type: pgData.rent_cycle_type as 'CALENDAR' | 'MIDMONTH',

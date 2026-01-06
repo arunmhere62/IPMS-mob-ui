@@ -9,6 +9,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -23,6 +24,9 @@ import { ReceiptViewModal } from './components';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
 import { useVoidTenantPaymentMutation } from '@/services/api/paymentsApi';
+import type { RootState } from '@/store';
+import { useGetPGLocationDetailsQuery } from '@/services/api/pgLocationsApi';
+import type { ReceiptData } from '@/services/receipt/receiptTypes';
 
 interface RentPayment {
   s_no: number;
@@ -73,6 +77,19 @@ export const TenantRentPaymentsScreen: React.FC = () => {
 
   const canVoidRentPayment = canDeleteRent && !isCheckedOutTenant;
 
+  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const routePgIdRaw = (route.params as any)?.pgId;
+  const effectivePgId =
+    typeof routePgIdRaw === 'number'
+      ? routePgIdRaw
+      : selectedPGLocationId != null
+        ? Number(selectedPGLocationId)
+        : undefined;
+
+  const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(effectivePgId as number, {
+    skip: !effectivePgId,
+  });
+
   const [loading, setLoading] = useState(false);
   const [voidModalVisible, setVoidModalVisible] = useState(false);
   const [voidReason, setVoidReason] = useState('');
@@ -84,8 +101,8 @@ export const TenantRentPaymentsScreen: React.FC = () => {
     navigation.navigate('TenantDetails', { tenantId, refresh: true });
   };
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
-  const [receiptData, setReceiptData] = useState<any>(null);
-  const receiptRef = useRef<any>(null);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const receiptRef = useRef<View | null>(null);
 
   const handleVoidPayment = (payment: RentPayment) => {
     if (!canDeleteRent) {
@@ -120,12 +137,24 @@ export const TenantRentPaymentsScreen: React.FC = () => {
     const periodStart = (payment as any)?.tenant_rent_cycles?.cycle_start || (payment as any)?.start_date;
     const periodEnd = (payment as any)?.tenant_rent_cycles?.cycle_end || (payment as any)?.end_date;
 
+    const pgDetails = pgDetailsResponse?.data;
+
     return {
       receiptNumber: `RCP-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
       paymentDate: new Date(payment.payment_date),
       tenantName: tenantName,
       tenantPhone: tenantPhone,
       pgName: pgName,
+      pgDetails: pgDetails
+        ? {
+            pgId: effectivePgId,
+            pgName: pgDetails.location_name,
+            address: pgDetails.address,
+            pincode: pgDetails.pincode ?? undefined,
+            city: pgDetails.city ?? undefined,
+            state: pgDetails.state ?? undefined,
+          }
+        : undefined,
       roomNumber: route.params?.roomNumber || '',
       bedNumber: route.params?.bedNumber || '',
       rentPeriod: {
@@ -136,6 +165,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
       amountPaid: Number(payment.amount_paid || 0),
       paymentMethod: payment.payment_method || 'CASH',
       remarks: payment.remarks,
+      receiptType: 'RENT' as const,
     };
   };
 

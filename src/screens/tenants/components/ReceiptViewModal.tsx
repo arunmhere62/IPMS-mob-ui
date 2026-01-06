@@ -8,10 +8,11 @@ import {
   Dimensions,
 } from 'react-native';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
+import type { ReceiptData } from '@/services/receipt/receiptTypes';
 
 interface ReceiptViewModalProps {
   visible: boolean;
-  receiptData: any;
+  receiptData: ReceiptData | null;
   receiptRef: React.RefObject<View | null>;
   onClose: () => void;
 }
@@ -28,45 +29,60 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
   const modalMaxWidth = screenWidth * 0.9;
   const availableReceiptWidth = Math.max(0, modalMaxWidth - modalHorizontalPadding * 2);
   const receiptScale = Math.min(1, availableReceiptWidth / baseReceiptWidth);
+  const captureScale = 1;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' }}>
-        <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 20, width: '90%', maxHeight: '85%' }}>
-          <ScrollView
-            style={{ flexGrow: 0 }}
-            contentContainerStyle={{ alignItems: 'center' }}
-            showsVerticalScrollIndicator={false}
+    <>
+      {receiptData ? (
+        <View style={{ position: 'absolute', left: -10000, top: -10000, opacity: 0 }}>
+          <View
+            ref={receiptRef}
+            collapsable={false}
+            style={{ padding: 16, backgroundColor: '#FFFFFF', width: baseReceiptWidth * captureScale }}
           >
-            {receiptData && (
-              <View style={{ width: baseReceiptWidth, transform: [{ scale: receiptScale }] }}>
-                <CompactReceiptGenerator.ReceiptComponent data={receiptData} />
-              </View>
-            )}
-          </ScrollView>
-          
-          {/* Action Buttons */}
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
-            <TouchableOpacity
-              onPress={onClose}
-              style={{
-                flex: 1,
-                padding: 12,
-                backgroundColor: '#F3F4F6',
-                borderRadius: 8,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: '#6B7280', fontWeight: '600' }}>Close</Text>
-            </TouchableOpacity>
+            <CompactReceiptGenerator.ReceiptComponent data={receiptData} />
           </View>
         </View>
-      </View>
-    </Modal>
+      ) : null}
+
+      <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+        onRequestClose={onClose}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 20, width: '90%', maxHeight: '85%' }}>
+            <ScrollView
+              style={{ flexGrow: 0 }}
+              contentContainerStyle={{ alignItems: 'center' }}
+              showsVerticalScrollIndicator={false}
+            >
+              {receiptData ? (
+                <View style={{ width: baseReceiptWidth, transform: [{ scale: receiptScale }] }}>
+                  <CompactReceiptGenerator.ReceiptComponent data={receiptData} />
+                </View>
+              ) : null}
+            </ScrollView>
+
+            {/* Action Buttons */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+              <TouchableOpacity
+                onPress={onClose}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  backgroundColor: '#F3F4F6',
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: '#6B7280', fontWeight: '600' }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 };

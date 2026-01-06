@@ -30,7 +30,7 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
 
   return (
     <SafeAreaView 
-      style={{ flex: 1, backgroundColor , marginBottom: 80}} 
+      style={{ flex: 1, backgroundColor ,}} 
       edges={['left', 'right', ]}
     >
       <ScreenLayoutContext.Provider

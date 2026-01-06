@@ -299,9 +299,14 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
       marginHorizontal: 16, 
       marginBottom: 10, 
       padding: 12, 
-      borderLeftWidth: 4, 
-      borderLeftColor: '#10B981',
-      backgroundColor: Theme.colors.canvas
+      backgroundColor: '#fff',
+      borderWidth: 1,
+      borderColor: Theme.withOpacity('#10B981', 0.35),
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.06,
+      shadowRadius: 10,
+      elevation: 2,
     }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
         <View style={{ flex: 1, marginRight: 10 }}>

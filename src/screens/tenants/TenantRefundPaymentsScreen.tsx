@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -23,6 +24,9 @@ import { ReceiptViewModal } from './components';
 import { AddRefundPaymentModal } from './AddRefundPaymentModal';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
+import type { RootState } from '@/store';
+import { useGetPGLocationDetailsQuery } from '@/services/api/pgLocationsApi';
+import type { ReceiptData } from '@/services/receipt/receiptTypes';
 
 interface RefundPayment {
   s_no: number;
@@ -54,9 +58,22 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
   const bedNumber = route.params?.bedNumber || '';
   const accommodationLabel = `${pgName}${roomNumber ? ` | Room ${roomNumber}` : ''}${bedNumber ? ` | Bed ${bedNumber}` : ''}`;
 
+  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const routePgIdRaw = (route.params as any)?.pgId;
+  const effectivePgId =
+    typeof routePgIdRaw === 'number'
+      ? routePgIdRaw
+      : selectedPGLocationId != null
+        ? Number(selectedPGLocationId)
+        : undefined;
+
+  const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(effectivePgId as number, {
+    skip: !effectivePgId,
+  });
+
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
-  const [receiptData, setReceiptData] = useState<any>(null);
-  const receiptRef = useRef<any>(null);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const receiptRef = useRef<View | null>(null);
 
   const [refundFormVisible, setRefundFormVisible] = useState(false);
   const [refundFormMode, setRefundFormMode] = useState<'add' | 'edit'>('add');
@@ -126,12 +143,23 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
   };
 
   const prepareReceiptData = (payment: RefundPayment) => {
+    const pgDetails = pgDetailsResponse?.data;
     return {
       receiptNumber: `REF-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
       paymentDate: new Date(payment.payment_date),
       tenantName: tenantName,
       tenantPhone: tenantPhone,
       pgName: pgName,
+      pgDetails: pgDetails
+        ? {
+            pgId: effectivePgId,
+            pgName: pgDetails.location_name,
+            address: pgDetails.address,
+            pincode: pgDetails.pincode ?? undefined,
+            city: pgDetails.city ?? undefined,
+            state: pgDetails.state ?? undefined,
+          }
+        : undefined,
       roomNumber: route.params?.roomNumber || '',
       bedNumber: route.params?.bedNumber || '',
       rentPeriod: {

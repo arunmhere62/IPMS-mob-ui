@@ -25,9 +25,30 @@ export type GetPGLocationsParams = {
   _t?: number;
 };
 
+export type PGLocationDetails = {
+  s_no?: number;
+  location_name?: string;
+  address?: string;
+  pincode?: string | null;
+  status?: string;
+  images?: string[] | null;
+  city?: {
+    s_no?: number;
+    name?: string;
+  } | null;
+  state?: {
+    s_no?: number;
+    name?: string;
+  } | null;
+  room_statistics?: unknown;
+  tenant_statistics?: unknown;
+  room_details?: unknown;
+  tenant_details?: unknown;
+};
+
 export type GetPGLocationDetailsResponse = {
   success: boolean;
-  data: any;
+  data: PGLocationDetails;
   message?: string;
 };
 
@@ -108,7 +129,8 @@ export const pgLocationsApi = baseApi.injectEndpoints({
 
     getPGLocationDetails: build.query<GetPGLocationDetailsResponse, number>({
       query: (pgId) => ({ url: `/pg-locations/${pgId}/details`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<GetPGLocationDetailsResponse> | any) => normalizeEntityResponse<any>(response),
+      transformResponse: (response: ApiEnvelope<GetPGLocationDetailsResponse> | any) =>
+        normalizeEntityResponse<PGLocationDetails>(response),
       providesTags: (_res, _err, pgId) => [{ type: 'PGLocationDetails' as const, id: pgId }],
     }),
   }),

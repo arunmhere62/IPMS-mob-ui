@@ -9,12 +9,28 @@ export interface SubscriptionPlan {
   currency: string;
   features: string[] | null;
   is_active: boolean;
+  is_free?: boolean;
+  is_trial?: boolean;
+  limits?: {
+    max_pg_locations?: number | null;
+    max_tenants?: number | null;
+    max_rooms?: number | null;
+    max_beds?: number | null;
+    max_employees?: number | null;
+    max_users?: number | null;
+    max_invoices_per_month?: number | null;
+    max_sms_per_month?: number | null;
+    max_whatsapp_per_month?: number | null;
+  };
   max_pg_locations?: number | null;
   max_tenants?: number | null;
   max_beds?: number | null;
   max_employees?: number | null;
   max_rooms?: number | null;
   max_users?: number | null;
+  max_invoices_per_month?: number | null;
+  max_sms_per_month?: number | null;
+  max_whatsapp_per_month?: number | null;
 }
 
 export interface UserSubscription {
@@ -38,6 +54,7 @@ export interface UserSubscription {
 export interface SubscriptionStatus {
   has_active_subscription: boolean;
   subscription?: UserSubscription;
+  last_subscription?: UserSubscription | null;
   days_remaining?: number;
   is_trial?: boolean;
 }
@@ -122,6 +139,8 @@ export type SubscribeToPlanResponse = {
   };
 };
 
+export type UpgradePlanResponse = SubscribeToPlanResponse;
+
 export type RenewSubscriptionResponse = {
   success: boolean;
   data: {
@@ -178,6 +197,24 @@ export const subscriptionApi = baseApi.injectEndpoints({
       ],
     }),
 
+    upgradePlan: build.mutation<UpgradePlanResponse, { planId: number }>({
+      query: ({ planId }) => ({
+        url: '/subscription/upgrade',
+        method: 'POST',
+        body: { plan_id: planId },
+      }),
+      transformResponse: (response: ApiEnvelope<UpgradePlanResponse> | any) => {
+        const unwrapped = unwrapCentralData<any>(response);
+        const nested = unwrapNestedData(unwrapped);
+        return nested as any;
+      },
+      invalidatesTags: [
+        { type: 'CurrentSubscription', id: 'SINGLE' },
+        { type: 'SubscriptionStatus', id: 'SINGLE' },
+        { type: 'SubscriptionHistory', id: 'LIST' },
+      ],
+    }),
+
     cancelSubscription: build.mutation<CancelSubscriptionResponse, { subscriptionId: number }>({
       query: ({ subscriptionId }) => ({
         url: `/subscription/${subscriptionId}/cancel`,
@@ -223,6 +260,7 @@ export const {
   useGetSubscriptionHistoryQuery,
   useLazyGetSubscriptionHistoryQuery,
   useSubscribeToPlanMutation,
+  useUpgradePlanMutation,
   useCancelSubscriptionMutation,
   useRenewSubscriptionMutation,
 } = subscriptionApi;

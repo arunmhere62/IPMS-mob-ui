@@ -9,6 +9,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -28,6 +29,9 @@ import { ReceiptViewModal } from './components';
 import AdvancePaymentForm from '@/screens/tenants/AdvancePaymentForm';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
+import type { RootState } from '@/store';
+import { useGetPGLocationDetailsQuery } from '@/services/api/pgLocationsApi';
+import type { ReceiptData } from '@/services/receipt/receiptTypes';
 
 interface AdvancePayment {
   s_no: number;
@@ -45,25 +49,6 @@ interface AdvancePayment {
   rooms?: { room_no?: string };
   beds?: { bed_no?: string };
 }
-
-type ReceiptData = {
-  receiptNumber: string;
-  paymentDate: Date;
-  tenantName: string;
-  tenantPhone: string;
-  pgName: string;
-  roomNumber: string;
-  bedNumber: string;
-  rentPeriod: {
-    startDate: Date;
-    endDate: Date;
-  };
-  actualRent: number;
-  amountPaid: number;
-  paymentMethod: string;
-  remarks?: string;
-  receiptType?: 'RENT' | 'ADVANCE' | 'REFUND';
-};
 
 type TenantAdvancePaymentsParams = {
   payments?: AdvancePayment[];
@@ -110,6 +95,12 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   const roomNumber = route.params?.roomNumber || '';
   const bedNumber = route.params?.bedNumber || '';
   const accommodationLabel = `${pgName}${roomNumber ? ` | Room ${roomNumber}` : ''}${bedNumber ? ` | Bed ${bedNumber}` : ''}`;
+
+  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const effectivePgId = pgId || selectedPGLocationId || undefined;
+  const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(Number(effectivePgId), {
+    skip: !effectivePgId,
+  });
 
   const [loading, setLoading] = useState(false);
   const [advancePaymentFormVisible, setAdvancePaymentFormVisible] = useState(false);
@@ -204,12 +195,23 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   };
 
   const prepareReceiptData = (payment: AdvancePayment) => {
+    const pgDetails = pgDetailsResponse?.data;
     const data: ReceiptData = {
       receiptNumber: `ADV-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
       paymentDate: new Date(payment.payment_date),
       tenantName: tenantName,
       tenantPhone: tenantPhone,
       pgName: pgName,
+      pgDetails: pgDetails
+        ? {
+            pgId: Number(effectivePgId),
+            pgName: pgDetails.location_name,
+            address: pgDetails.address,
+            pincode: pgDetails.pincode ?? undefined,
+            city: pgDetails.city ?? undefined,
+            state: pgDetails.state ?? undefined,
+          }
+        : undefined,
       roomNumber: route.params?.roomNumber || '',
       bedNumber: route.params?.bedNumber || '',
       rentPeriod: {

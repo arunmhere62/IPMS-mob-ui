@@ -311,9 +311,14 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
         marginHorizontal: 16, 
         marginBottom: 10, 
         padding: 12, 
-        borderLeftWidth: 4, 
-        borderLeftColor: isPartial ? '#EF4444' : Theme.colors.primary,
-        backgroundColor: isPartial ? '#FEF2F2' : '#fff',
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: isPartial ? Theme.withOpacity(Theme.colors.warning, 0.35) : Theme.colors.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        elevation: 2,
       }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
           <View style={{ flex: 1, marginRight: 10 }}>
