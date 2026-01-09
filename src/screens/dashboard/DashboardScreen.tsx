@@ -81,7 +81,12 @@ export const DashboardScreen: React.FC = () => {
   // Load initial monthly metrics
   useEffect(() => {
     if (selectedPGLocationId) {
-      getMonthlyMetrics({});
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const monthStart = new Date(year, month, 1).toISOString().split('T')[0];
+      const monthEnd = new Date(year, month + 1, 1).toISOString().split('T')[0];
+      getMonthlyMetrics({ monthStart, monthEnd });
     }
   }, [selectedPGLocationId, getMonthlyMetrics]);
 
@@ -450,7 +455,12 @@ export const DashboardScreen: React.FC = () => {
       console.log('🔄 Refreshing dashboard data...');
       await loadAllDashboardData();
       console.log('🔄 Refreshing monthly metrics...');
-      getMonthlyMetrics({});
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const monthStart = new Date(year, month, 1).toISOString().split('T')[0];
+      const monthEnd = new Date(year, month + 1, 1).toISOString().split('T')[0];
+      getMonthlyMetrics({ monthStart, monthEnd });
     } else {
       console.log('🔄 Refreshing PG locations...');
       await refetchPGLocations();

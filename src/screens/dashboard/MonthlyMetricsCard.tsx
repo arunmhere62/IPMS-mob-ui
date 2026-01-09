@@ -67,15 +67,22 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
   }, [showDropdown]);
 
   const mm = monthlyMetrics?.monthly_metrics;
+  const hasData = !!mm;
   const cashReceived = mm?.cash_received ?? 0;
   const rentEarned = mm?.rent_earned ?? 0;
   const refundsPaid = mm?.refunds_paid ?? 0;
   const advancePaid = mm?.advance_paid ?? 0;
   const expensesPaid = mm?.expenses_paid ?? 0;
-  const mrrValue = mm?.mrr_value ?? 0;
-  const collectionRate = rentEarned > 0 ? cashReceived / rentEarned : 0;
-  const collectionRateText = `${(collectionRate * 100).toFixed(1)}%`;
-  const collectionRateColor = collectionRate >= 0.9 ? '#10B981' : collectionRate >= 0.7 ? '#F59E0B' : '#EF4444';
+  const displayCurrency = (value: number) => (hasData ? formatCurrency(value) : isFetching ? '—' : formatCurrency(0));
+  const computedRate = hasData && rentEarned > 0 ? cashReceived / rentEarned : 0;
+  const collectionRateText = hasData ? `${(computedRate * 100).toFixed(1)}%` : isFetching ? '—' : '0%';
+  const collectionRateColor = hasData
+    ? computedRate >= 0.9
+      ? '#10B981'
+      : computedRate >= 0.7
+        ? '#F59E0B'
+        : '#EF4444'
+    : Theme.colors.text.secondary;
 
   const tileBg = Theme.colors.light;
   const tileBorder = Theme.colors.border;
@@ -233,8 +240,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
           </View>
         </View>
 
-        {monthlyMetrics && (
-          <View style={{ marginTop: 12 }}>
+        <View style={{ marginTop: 12 }}>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View
                 style={{
@@ -264,7 +270,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   </View>
                 </View>
                 <Text style={{ color: Theme.colors.text.primary, fontSize: 16, fontWeight: '900', marginTop: 10 }}>
-                  {formatCurrency(cashReceived)}
+                  {displayCurrency(cashReceived)}
                 </Text>
               </View>
 
@@ -296,7 +302,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   </View>
                 </View>
                 <Text style={{ color: Theme.colors.text.primary, fontSize: 16, fontWeight: '900', marginTop: 10 }}>
-                  {formatCurrency(rentEarned)}
+                  {displayCurrency(rentEarned)}
                 </Text>
               </View>
             </View>
@@ -330,44 +336,10 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   </View>
                 </View>
                 <Text style={{ color: Theme.colors.text.primary, fontSize: 16, fontWeight: '900', marginTop: 10 }}>
-                  {formatCurrency(refundsPaid)}
+                  {displayCurrency(refundsPaid)}
                 </Text>
               </View>
 
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: tileBg,
-                  borderRadius: tileRadius,
-                  padding: tilePad,
-                  borderWidth: 1,
-                  borderColor: tileBorder,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ color: Theme.colors.text.secondary, fontSize: 11, fontWeight: '900' }}>Monthly Rent Value</Text>
-                  <View
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 13,
-                      backgroundColor: Theme.withOpacity('#0EA5E9', 0.10),
-                      borderWidth: 1,
-                      borderColor: Theme.withOpacity('#0EA5E9', 0.16),
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Ionicons name="trending-up" size={14} color={'#0EA5E9'} />
-                  </View>
-                </View>
-                <Text style={{ color: Theme.colors.text.primary, fontSize: 16, fontWeight: '900', marginTop: 10 }}>
-                  {formatCurrency(mrrValue)}
-                </Text>
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
               <View
                 style={{
                   flex: 1,
@@ -396,10 +368,12 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   </View>
                 </View>
                 <Text style={{ color: Theme.colors.text.primary, fontSize: 16, fontWeight: '900', marginTop: 10 }}>
-                  {formatCurrency(advancePaid)}
+                  {displayCurrency(advancePaid)}
                 </Text>
               </View>
+            </View>
 
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
               <View
                 style={{
                   flex: 1,
@@ -428,7 +402,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   </View>
                 </View>
                 <Text style={{ color: Theme.colors.text.primary, fontSize: 16, fontWeight: '900', marginTop: 10 }}>
-                  {formatCurrency(expensesPaid)}
+                  {displayCurrency(expensesPaid)}
                 </Text>
               </View>
             </View>
@@ -472,16 +446,6 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
               </Text>
             </View>
           </View>
-        )}
-
-        {!monthlyMetrics && !isFetching && (
-          <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-            <Ionicons name="bar-chart-outline" size={40} color={Theme.colors.text.secondary} />
-            <Text style={{ color: Theme.colors.text.secondary, fontSize: 14, marginTop: 8 }}>
-              No monthly data available
-            </Text>
-          </View>
-        )}
       </Card>
 
       <SlideBottomModal
@@ -525,13 +489,6 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
             <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Expenses</Text>
             <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
               Total expenses recorded for this month.
-            </Text>
-          </View>
-
-          <View>
-            <Text style={{ color: Theme.colors.text.primary, fontSize: 13, fontWeight: '900' }}>Monthly Rent Value</Text>
-            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12, marginTop: 4 }}>
-              Your monthly rent value for this month based on currently occupied beds (a monthly baseline).
             </Text>
           </View>
 

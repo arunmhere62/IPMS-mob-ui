@@ -48,7 +48,7 @@ module.exports = ({ config }) => {
       },
       appEnv: (process.env.APP_ENV || process.env.MODE || 'dev').toLowerCase(),
       // Single source of truth for API URL - change in .env file
-      apiBaseUrl: process.env.API_BASE_URL || "http://72.62.194.189:3000/api/v1",
+      apiBaseUrl: process.env.API_BASE_URL || "https://ipms-mob-api-dev.pgmanagement.site/api/v1",
       // apiBaseUrl: process.env.API_BASE_URL || "http://172.20.10.2:5000/api/v1",
       // Subscription Configuration
       subscriptionMode: process.env.SUBSCRIPTION_MODE === 'true',

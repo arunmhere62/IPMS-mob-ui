@@ -363,7 +363,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
                 item.status === 'PENDING' ? '#CA8A04' :
                 '#DC2626',
             }}>
-              {item.status}
+              {item.status === 'VOIDED' ? 'DELETED' : item.status}
             </Text>
           </View>
                   </View>

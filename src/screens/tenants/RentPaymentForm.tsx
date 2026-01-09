@@ -4,16 +4,15 @@ import {
   Text,
   ScrollView,
   TextInput,
-  ActivityIndicator,
   Alert,
-  TouchableOpacity,
 } from "react-native";
 import { Theme } from "../../theme";
 import { DatePicker } from "../../components/DatePicker";
 import { SlideBottomModal } from "../../components/SlideBottomModal";
 import { OptionSelector, Option } from "../../components/OptionSelector";
 import { AmountInput } from "../../components/AmountInput";
-import { SkeletonLoader } from "../../components/SkeletonLoader";
+import { MissingRentPeriods } from "./components/MissingRentPeriods";
+import { PaymentReference } from "./components/PaymentReference";
 import { useLazyGetBedByIdQuery } from "@/services/api/roomsApi";
 import { pgLocationsApi } from "../../services/api/pgLocationsApi";
 import type { PGLocationDetails } from "../../services/api/pgLocationsApi";
@@ -145,18 +144,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   });
   const [checkingGaps, setCheckingGaps] = useState(false);
 
-  const getPaymentPeriod = (p: PaymentWithCycle): { start?: string; end?: string } => {
-    const start = p.tenant_rent_cycles?.cycle_start || p.start_date;
-    const end = p.tenant_rent_cycles?.cycle_end || p.end_date;
-    return { start, end };
-  };
-
-  const getPaymentPeriodEndTime = (p: PaymentWithCycle): number => {
-    const period = getPaymentPeriod(p);
-    const v = period.end || p.payment_date;
-    const t = v ? new Date(v).getTime() : 0;
-    return Number.isFinite(t) ? t : 0;
-  };
+  
 
   // Function to detect payment gaps
   const detectPaymentGaps = async () => {
@@ -211,6 +199,24 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
 
   // Function to handle gap button click
   const handleGapButtonClick = (gap: RentPaymentGap) => {
+    // Toggle off if the same gap is clicked again
+    if (gapWarning.earliestGap?.gapId === gap.gapId) {
+      setFormData((prev) => ({
+        ...prev,
+        cycle_id: null,
+        start_date: "",
+        end_date: "",
+        actual_rent_amount: (bedRentAmount > 0 ? bedRentAmount.toString() : prev.actual_rent_amount),
+        status: "",
+      }));
+      setGapWarning((prev) => ({
+        ...prev,
+        earliestGap: null,
+        skipGaps: false,
+      }));
+      return;
+    }
+
     const remaining = Number(
       (gap?.remainingDue ?? (gap?.rentDue != null && gap?.totalPaid != null ? Number(gap.rentDue) - Number(gap.totalPaid) : undefined)) ??
         gap?.rentDue ??
@@ -382,89 +388,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   };
 
   // ============================================================================
-  // PAYMENT REFERENCE SECTION - CALENDAR CYCLE
-  // ============================================================================
-
-  // Render rent cycle info for CALENDAR cycle
-  const renderCalendarRentCycleInfo = () => (
-    <View
-      style={{
-        flexDirection: "row",
-        marginBottom: 6,
-        alignItems: "center",
-      }}
-    >
-      <Text
-        style={{
-          fontSize: 12,
-          color: Theme.colors.text.tertiary,
-          width: 100,
-        }}
-      >
-        Rent Cycle:
-      </Text>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: "700",
-          color: Theme.colors.text.primary,
-          flex: 1,
-        }}
-        numberOfLines={1}
-        ellipsizeMode="tail"
-      >
-        📅 Calendar (1st - Last day)
-      </Text>
-    </View>
-  );
-
-  // ============================================================================
-  // PAYMENT REFERENCE SECTION - MIDMONTH CYCLE
-  // ============================================================================
-
-  // Render rent cycle info for MIDMONTH cycle
-  const renderMidmonthRentCycleInfo = () => (
-    <View
-      style={{
-        flexDirection: "row",
-        marginBottom: 6,
-        alignItems: "center",
-      }}
-    >
-      <Text
-        style={{
-          fontSize: 12,
-          color: Theme.colors.text.tertiary,
-          width: 100,
-        }}
-      >
-        Rent Cycle:
-      </Text>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: "700",
-          color: Theme.colors.text.primary,
-          flex: 1,
-        }}
-        numberOfLines={2}
-        ellipsizeMode="tail"
-      >
-        🔄 Mid-Month (Any day - Same day next month - 1)
-      </Text>
-    </View>
-  );
-
-  // Unified rent cycle info renderer
-  const renderRentCycleInfo = () => {
-    if (!rentCycleData) return null;
-
-    if (rentCycleData.type === 'CALENDAR') {
-      return renderCalendarRentCycleInfo();
-    } else {
-      return renderMidmonthRentCycleInfo();
-    }
-  };
+  // Payment reference rendering moved to component PaymentReference
 
   // Fetch bed details and PG location rent cycle data
   useEffect(() => {
@@ -738,259 +662,15 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       enableFullHeightDrag={false}
       enableFlexibleHeightDrag={true}
     >
-      {/* Gap Warning Alert - Modern Clean UI */}
-      {checkingGaps ? (
-        <View
-          style={{
-            marginHorizontal: 0,
-            marginBottom: 16,
-            padding: 14,
-            backgroundColor: '#FFFBEB',
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: '#FCD34D',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 4,
-            elevation: 3,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 }}>
-            <View
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 12,
-                backgroundColor: '#FEF3C7',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 10,
-                borderWidth: 1,
-                borderColor: '#FCD34D',
-              }}
-            >
-              <Text style={{ fontSize: 18 }}>📅</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <SkeletonLoader width="55%" height={14} borderRadius={6} style={{ marginBottom: 8 }} />
-              <SkeletonLoader width="90%" height={12} borderRadius={6} />
-            </View>
-          </View>
-
-          <View style={{ marginBottom: 14 }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <SkeletonLoader width={96} height={44} borderRadius={8} />
-              <SkeletonLoader width={96} height={44} borderRadius={8} />
-              <SkeletonLoader width={96} height={44} borderRadius={8} />
-            </View>
-          </View>
-
-          <SkeletonLoader width="100%" height={42} borderRadius={10} />
-        </View>
-      ) : gapWarning.gaps && gapWarning.gaps.length > 0 ? (
-        <View
-          style={{
-            marginHorizontal: 0,
-            marginBottom: 16,
-            padding: 14,
-            backgroundColor: '#FFFBEB',
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: '#FCD34D',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 4,
-            elevation: 3,
-          }}
-        >
-          {/* Header - Compact */}
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 }}>
-            <View
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 12,
-                backgroundColor: '#FEF3C7',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 10,
-                borderWidth: 1,
-                borderColor: '#FCD34D',
-              }}
-            >
-              <Text style={{ fontSize: 18 }}>📅</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '700',
-                  color: '#1F2937',
-                  marginBottom: 2,
-                }}
-              >
-                Missing Rent Period{gapWarning.gaps.length > 1 ? 's' : ''}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: '#6B7280',
-                  lineHeight: 16,
-                }}
-              >
-                {gapWarning.gaps.length} gap{gapWarning.gaps.length > 1 ? 's' : ''} detected. Tap a period to collect rent.
-              </Text>
-            </View>
-          </View>
-
-          {/* Gap Buttons - Horizontal Scroll */}
-          <View style={{ marginBottom: 14 }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {gapWarning.gaps.map((gap, index) => {
-                const isSelected = gapWarning.earliestGap?.gapId === gap.gapId;
-                const monthDisplay = formatGapMonthDisplay(gap.gapStart, gap.gapEnd);
-                
-                return (
-                  <TouchableOpacity
-                    key={gap.gapId || index}
-                    onPress={() => handleGapButtonClick(gap)}
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      backgroundColor: isSelected ? '#FBBF24' : '#FFFBEB',
-                      borderRadius: 6,
-                      borderWidth: 1,
-                      borderColor: isSelected ? '#F59E0B' : '#FCD34D',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      shadowColor: isSelected ? '#F59E0B' : 'transparent',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: isSelected ? 0.2 : 0,
-                      shadowRadius: 2,
-                      elevation: isSelected ? 2 : 0,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        fontWeight: isSelected ? '700' : '600',
-                        color: isSelected ? '#78350F' : '#92400E',
-                      }}
-                    >
-                      {monthDisplay}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 9,
-                        fontWeight: '500',
-                        color: isSelected ? '#92400E' : '#B45309',
-                        marginTop: 2,
-                      }}
-                    >
-                      {gap.daysMissing}d
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Selected Period Info - Minimal */}
-          {gapWarning.earliestGap && (
-            <View
-              style={{
-                marginBottom: 12,
-                paddingHorizontal: 10,
-                paddingVertical: 8,
-                backgroundColor: '#FEF3C7',
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: '#FCD34D',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 10,
-                  fontWeight: '600',
-                  color: '#6B7280',
-                  marginBottom: 4,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.3,
-                }}
-              >
-                Selected
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: '700',
-                    color: '#1F2937',
-                  }}
-                >
-                  {gapWarning.earliestGap.gapStart}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 11,
-                    color: '#9CA3AF',
-                    marginHorizontal: 6,
-                  }}
-                >
-                  →
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: '700',
-                    color: '#1F2937',
-                  }}
-                >
-                  {gapWarning.earliestGap.gapEnd}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    color: '#6B7280',
-                    marginLeft: 8,
-                  }}
-                >
-                  ({gapWarning.earliestGap.daysMissing}d)
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {/* Action Buttons - Full Width Stack */}
-          <View style={{ gap: 8 }}>
-            <TouchableOpacity
-              onPress={handleContinueToNextPayment}
-              style={{
-                paddingVertical: 11,
-                paddingHorizontal: 12,
-                backgroundColor: '#FFFBEB',
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: '#FCD34D',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '700',
-                  color: '#92400E',
-                }}
-              >
-                Skip All Gaps
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : null}
+      {/* Gap Warning Alert - Modular */}
+      <MissingRentPeriods
+        checkingGaps={checkingGaps}
+        gaps={gapWarning.gaps}
+        selectedGap={gapWarning.earliestGap}
+        onSelectGap={handleGapButtonClick}
+        onSkipAllGaps={handleContinueToNextPayment}
+        formatGapMonthDisplay={formatGapMonthDisplay}
+      />
 
       {errors.general ? (
         <View style={{ marginBottom: 12 }}>
@@ -1004,316 +684,27 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
         </View>
       ) : null}
 
-      {/* Payment Info Card */}
-      {(joiningDate || lastPaymentStartDate || lastPaymentEndDate || bedRentAmount > 0) && (
-        <View
-          style={{
-            marginHorizontal: 0,
-            marginBottom: 16,
-            padding: 12,
-            backgroundColor: Theme.colors.background.blueLight,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: '#BFDBFE',
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-            <View
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 12,
-                backgroundColor: '#DBEAFE',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 10,
-                borderWidth: 1,
-                borderColor: '#BFDBFE',
-              }}
-            >
-              <Text style={{ fontSize: 16 }}>📋</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: Theme.colors.text.primary }}>
-                Payment Reference
-              </Text>
-              <Text style={{ marginTop: 2, fontSize: 11, color: Theme.colors.text.tertiary }}>
-                Use this info to verify period and rent.
-              </Text>
-            </View>
-          </View>
-
-          {checkingGaps ? (
-            <View style={{ gap: 8 }}>
-              <SkeletonLoader width="55%" height={12} borderRadius={6} />
-              <SkeletonLoader width="90%" height={12} borderRadius={6} />
-              <SkeletonLoader width="70%" height={12} borderRadius={6} />
-              <SkeletonLoader width="85%" height={12} borderRadius={6} />
-            </View>
-          ) : (
-            <>
-              {typeof joiningDate === 'string' && joiningDate ? (
-                <View style={{ flexDirection: "row", marginBottom: 4 }}>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: Theme.colors.text.tertiary,
-                      width: 100,
-                    }}
-                  >
-                    Joining Date:
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: Theme.colors.text.primary,
-                    }}
-                  >
-                    {new Date(joiningDate).toLocaleDateString("en-IN", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </Text>
-                </View>
-              ) : null}
-          {previousPayments && previousPayments.length > 0 ? (
-            // Show most recent payment from previousPayments array
-            (() => {
-              const mostRecentPayment = previousPayments.reduce((latest, current) => {
-                const latestEndDate = getPaymentPeriodEndTime(latest);
-                const currentEndDate = getPaymentPeriodEndTime(current);
-                return currentEndDate > latestEndDate ? current : latest;
-              });
-
-              const period = getPaymentPeriod(mostRecentPayment);
-              return (
-                <View style={{ flexDirection: "row", marginBottom: 4 }}>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: Theme.colors.text.tertiary,
-                      width: 100,
-                    }}
-                  >
-                    Last Payment:
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: Theme.colors.text.primary,
-                    }}
-                  >
-                    {period.start && period.end ? (
-                      <>
-                        {new Date(period.start).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                        })}
-                        {" - "}
-                        {new Date(period.end).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </>
-                    ) : (
-                      "N/A"
-                    )}
-                  </Text>
-                </View>
-              );
-            })()
-          ) : lastPaymentStartDate && lastPaymentEndDate ? (
-            <View style={{ flexDirection: "row", marginBottom: 4 }}>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: Theme.colors.text.tertiary,
-                  width: 100,
-                }}
-              >
-                Last Payment:
-              </Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: Theme.colors.text.primary,
-                }}
-              >
-                {new Date(lastPaymentStartDate).toLocaleDateString("en-IN", {
-                  day: "2-digit",
-                  month: "short",
-                })}
-                {" - "}
-                {new Date(lastPaymentEndDate).toLocaleDateString("en-IN", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </Text>
-            </View>
-          ) : null}
-          {bedRentAmount > 0 && (
-            <View style={{ flexDirection: "row", marginBottom: 4 }}>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: Theme.colors.text.tertiary,
-                  width: 100,
-                }}
-              >
-                Bed Rent Amount:
-              </Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "700",
-                  color: Theme.colors.primary,
-                }}
-              >
-                {fetchingBedPrice ? (
-                  <ActivityIndicator size="small" color={Theme.colors.primary} />
-                ) : (
-                  `₹${bedRentAmount.toLocaleString("en-IN")}`
-                )}
-              </Text>
-            </View>
-          )}
-
-          {/* Rent Cycle Info */}
-          {renderRentCycleInfo()}
-
-
-          {/* Previous Payments List */}
-          {previousPayments && previousPayments.length > 0 && (
-            <View
-              style={{
-                marginTop: 8,
-                paddingTop: 8,
-                borderTopWidth: 1,
-                borderTopColor: "#E5E7EB",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: Theme.colors.text.tertiary,
-                  marginBottom: 6,
-                  fontWeight: "600",
-                }}
-              >
-                PREVIOUS PAYMENTS
-              </Text>
-              {previousPayments
-                .sort((a, b) => {
-                  const aEndDate = getPaymentPeriodEndTime(a);
-                  const bEndDate = getPaymentPeriodEndTime(b);
-                  return bEndDate - aEndDate; // Sort by period end descending (most recent first)
-                })
-                .slice(0, 3)
-                .map((prevPayment, index) => (
-                  <View
-                    key={prevPayment.s_no || index}
-                    style={{ flexDirection: "row", marginBottom: 4 }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: Theme.colors.text.tertiary,
-                        width: 100,
-                      }}
-                    >
-                      {index === 0 ? "Most Recent:" : `${index + 1} ago:`}
-                    </Text>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: "600",
-                          color: Theme.colors.text.primary,
-                        }}
-                      >
-                        {(() => {
-                          const p = getPaymentPeriod(prevPayment);
-                          if (!p.start || !p.end) return 'N/A';
-                          return `${new Date(p.start).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                          })} - ${new Date(p.end).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}`;
-                        })()}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          color: Theme.colors.text.secondary,
-                        }}
-                      >
-                        ₹{prevPayment.amount_paid?.toLocaleString("en-IN")} •{" "}
-                        {prevPayment.status}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-            </View>
-          )}
-
-            </>
-          )}
-        </View>
-
-      )}
+      {/* Payment Info Card - Modular */}
+      <PaymentReference
+        checkingGaps={checkingGaps}
+        joiningDate={joiningDate}
+        lastPaymentStartDate={lastPaymentStartDate}
+        lastPaymentEndDate={lastPaymentEndDate}
+        previousPayments={previousPayments}
+        bedRentAmount={bedRentAmount}
+        fetchingBedPrice={fetchingBedPrice}
+        rentCycleType={rentCycleData?.type ?? null}
+        amountToPay={Number(formData.actual_rent_amount || 0)}
+        amountPaid={Number(formData.amount_paid || 0)}
+        showAmountToPay={Boolean(formData.cycle_id && formData.start_date && formData.end_date)}
+      />
 
       {/* Form */}
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
 
         <View style={{ gap: 12, paddingBottom: 16 }}>
 
-        {Boolean(formData.cycle_id && formData.start_date && formData.end_date) && (
-          <View
-            style={{
-              padding: 12,
-              backgroundColor: Theme.colors.background.blueLight,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: Theme.colors.border,
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: "700", color: Theme.colors.text.secondary, marginBottom: 6 }}>
-              Amount to Pay
-            </Text>
-            <Text style={{ fontSize: 20, fontWeight: "900", color: Theme.colors.primary }}>
-              ₹{Number(formData.actual_rent_amount || 0).toLocaleString("en-IN")}
-            </Text>
-            <Text style={{ marginTop: 4, fontSize: 11, color: Theme.colors.text.tertiary }}>
-              This is the expected rent for the selected period.
-            </Text>
-
-            {(() => {
-              const expected = Number(formData.actual_rent_amount || 0);
-              const paid = Number(formData.amount_paid || 0);
-              if (!Number.isFinite(expected) || expected <= 0) return null;
-              if (!Number.isFinite(paid)) return null;
-              if (Math.abs(paid - expected) < 0.01) return null;
-
-              const remaining = Math.max(0, expected - paid);
-              const label = paid > 0 ? `Remaining: ₹${remaining.toLocaleString("en-IN")}` : `Due: ₹${expected.toLocaleString("en-IN")}`;
-
-              return (
-                <Text style={{ marginTop: 6, fontSize: 11, fontWeight: "700", color: '#B45309' }}>
-                  Note: {label}
-                </Text>
-              );
-            })()}
-          </View>
-        )}
+        {/* Amount to Pay moved into PaymentReference */}
         
         <AmountInput
           label="Amount Paid"

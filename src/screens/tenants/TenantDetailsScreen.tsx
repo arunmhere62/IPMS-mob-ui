@@ -972,8 +972,10 @@ const TenantDetailsContent: React.FC<{
             try {
               await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
               showSuccessAlert('Tenant deleted successfully');
-              refreshTenantList();
-              navigation.goBack();
+              // Warm cache + trigger list reload on return (same as other flows)
+              await refreshTenantList();
+              setShouldRefreshTenantsOnBack(true);
+              navigation.navigate('Tenants', { refresh: true });
             } catch (error: unknown) {
               showErrorAlert(error, 'Delete Error');
             }

@@ -320,6 +320,7 @@ export const paymentsApi = baseApi.injectEndpoints({
       invalidatesTags: (_res, _err, arg) => [
         { type: 'TenantPayments', id: 'LIST' },
         { type: 'TenantPayment', id: arg.id },
+        { type: 'Tenants', id: 'LIST' },
         { type: 'Dashboard' as const, id: 'SUMMARY' },
         { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],

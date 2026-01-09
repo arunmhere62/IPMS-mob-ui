@@ -106,22 +106,22 @@ export const TenantRentPaymentsScreen: React.FC = () => {
 
   const handleVoidPayment = (payment: RentPayment) => {
     if (!canDeleteRent) {
-      Alert.alert('Access Denied', "You don't have permission to void rent payments");
+      Alert.alert('Access Denied', "You don't have permission to delete rent payments");
       return;
     }
 
     if (isCheckedOutTenant) {
-      Alert.alert('Not Allowed', 'Cannot void rent payments for a checked-out tenant');
+      Alert.alert('Not Allowed', 'Cannot delete rent payments for a checked-out tenant');
       return;
     }
 
     Alert.alert(
-      'Void Payment',
-      `Voiding this payment will reopen dues for its cycle. This affects reports and balances.\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}\n\nContinue?`,
+      'Delete Payment',
+      `Deleting this payment will reopen dues for its cycle. This affects reports and balances.\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}\n\nContinue?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Continue',
+          text: 'Delete',
           style: 'destructive',
           onPress: () => {
             setVoidTargetPayment(payment);
@@ -213,20 +213,20 @@ export const TenantRentPaymentsScreen: React.FC = () => {
     if (!voidTargetPayment) return;
     const reason = String(voidReason || '').trim();
     if (!reason) {
-      Alert.alert('Reason Required', 'Please enter a reason for voiding this payment.');
+      Alert.alert('Reason Required', 'Please enter a reason for deleting this payment.');
       return;
     }
 
     try {
       setLoading(true);
       await voidTenantPayment({ id: voidTargetPayment.s_no, voided_reason: reason }).unwrap();
-      Alert.alert('Success', 'Payment voided successfully');
+      Alert.alert('Success', 'Payment deleted successfully');
       setVoidModalVisible(false);
       setVoidTargetPayment(null);
       setVoidReason('');
       refreshTenantDetails();
     } catch (error: any) {
-      Alert.alert('Void Error', error?.data?.message || error?.message || 'Failed to void payment');
+      Alert.alert('Delete Error', error?.data?.message || error?.message || 'Failed to delete payment');
     } finally {
       setLoading(false);
     }
@@ -591,10 +591,10 @@ export const TenantRentPaymentsScreen: React.FC = () => {
           setVoidTargetPayment(null);
           setVoidReason('');
         }}
-        title="Void Payment"
+        title="Delete Payment"
         subtitle={voidTargetPayment ? `Payment #${voidTargetPayment.s_no}` : ''}
         onSubmit={submitVoidPayment}
-        submitLabel={loading ? 'Voiding...' : 'Void Payment'}
+        submitLabel={loading ? 'Deleting...' : 'Delete Payment'}
         cancelLabel="Cancel"
         isLoading={loading}
         enableFullHeightDrag={false}
@@ -602,12 +602,12 @@ export const TenantRentPaymentsScreen: React.FC = () => {
       >
         <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
           <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-            Provide a reason. Voiding reopens dues for that cycle and affects reports.
+            Provide a reason. Deleting reopens dues for that cycle and affects reports.
           </Text>
           <TextInput
             value={voidReason}
             onChangeText={setVoidReason}
-            placeholder="Reason for voiding"
+            placeholder="Reason for deletion"
             multiline
             style={{
               borderWidth: 1,

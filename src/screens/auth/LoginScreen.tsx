@@ -132,7 +132,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
             <View style={{ marginTop: Theme.spacing.lg }}>
               <Button
-                title="Create New Account"
+                title="Sign Up"
                 onPress={() => navigation.navigate('Signup')}
                 variant="outline"
                 size='md'

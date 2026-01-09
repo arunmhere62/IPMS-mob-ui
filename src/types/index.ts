@@ -102,7 +102,7 @@ export interface Tenant {
     s_no: number;
     amount_paid: number;
     payment_date: string;
-    status: 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED' | 'REFUNDED';
+    status: 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED' | 'REFUNDED' | 'VOIDED';
     actual_rent_amount?: number;
     start_date?: string;
     end_date?: string;
@@ -111,14 +111,14 @@ export interface Tenant {
     s_no: number;
     amount_paid: number;
     payment_date: string;
-    status: 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED' | 'REFUNDED';
+    status: 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED' | 'REFUNDED' | 'VOIDED';
     actual_rent_amount?: number;
   }>;
   refund_payments?: Array<{
     s_no: number;
     amount_paid: number;
     payment_date: string;
-    status: 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED' | 'REFUNDED';
+    status: 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED' | 'REFUNDED' | 'VOIDED';
   }>;
 }
 
@@ -160,7 +160,7 @@ export interface Payment {
   amount_paid: number;
   payment_date?: string;
   payment_method: 'GPAY' | 'PHONEPE' | 'CASH' | 'BANK_TRANSFER';
-  status: 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED' | 'REFUNDED';
+  status: 'PAID' | 'PARTIAL' | 'PENDING' | 'FAILED' | 'REFUNDED' | 'VOIDED';
   remarks?: string;
   actual_rent_amount: number;
   start_date?: string;
