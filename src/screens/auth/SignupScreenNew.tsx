@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
+  Image,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Theme } from '../../theme';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
@@ -40,7 +51,9 @@ interface Country {
 export const SignupScreenNew: React.FC = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [hasAgreedToLegal, setHasAgreedToLegal] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
   const [requiredLegalDocs, setRequiredLegalDocs] = useState<RequiredLegalDocument[]>([]);
   const [formData, setFormData] = useState<FormData>({
     organizationName: '',
@@ -75,6 +88,16 @@ export const SignupScreenNew: React.FC = () => {
   const [acceptLegalDocument] = useAcceptLegalDocumentMutation();
 
   useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     if (countriesResponse?.success) {
       setCountries((countriesResponse as any).data || []);
     }
@@ -102,15 +125,21 @@ export const SignupScreenNew: React.FC = () => {
     setFormData(prevFormData => ({ ...prevFormData, [field]: value }));
   };
 
+  const validatePhone = (phoneNumber: string): boolean => {
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneNumber) {
+      setPhoneError('Phone number is required');
+      return false;
+    }
+    if (!phoneRegex.test(phoneNumber)) {
+      setPhoneError('Please enter a valid 10-digit phone number');
+      return false;
+    }
+    setPhoneError('');
+    return true;
+  };
+
   const validateForm = () => {
-    if (!formData.organizationName.trim()) {
-      Alert.alert('Error', 'Please enter organization name');
-      return false;
-    }
-    if (!formData.name.trim()) {
-      Alert.alert('Error', 'Please enter your name');
-      return false;
-    }
     if (!formData.phone.trim()) {
       Alert.alert('Error', 'Please enter phone number');
       return false;
@@ -121,6 +150,10 @@ export const SignupScreenNew: React.FC = () => {
     }
     if (!formData.pgName.trim()) {
       Alert.alert('Error', 'Please enter PG name');
+      return false;
+    }
+    if (!formData.name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
       return false;
     }
     if (formData.rentCycleType === 'CALENDAR' && !formData.rentCycleEnd) {
@@ -166,8 +199,7 @@ export const SignupScreenNew: React.FC = () => {
   };
 
   const handleSendOtp = async () => {
-    if (!formData.phone.trim()) {
-      Alert.alert('Error', 'Please enter phone number');
+    if (!validatePhone(formData.phone.trim())) {
       return;
     }
 
@@ -213,10 +245,11 @@ export const SignupScreenNew: React.FC = () => {
 
     setLoading(true);
     try {
+      const pgName = formData.pgName.trim();
       const signupData: any = {
-        organizationName: formData.organizationName.trim(),
+        organizationName: pgName,
         name: formData.name.trim(),
-        pgName: formData.pgName.trim(),
+        pgName,
         rentCycleType: formData.rentCycleType,
         rentCycleStart: formData.rentCycleStart,
         rentCycleEnd: formData.rentCycleEnd,
@@ -258,243 +291,264 @@ export const SignupScreenNew: React.FC = () => {
     }
   };
 
-  const renderStep1 = () => (
+  const renderPhoneVerification = () => (
+    phoneVerified ? null :
     <View>
-      {/* Organization Name */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          Organization Name <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-         Enter your organization name. You can add and manage multiple PGs under a single organization.
-        </Text>
-        <TextInput
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            fontSize: 14,
-            color: Theme.colors.text.primary,
-          }}
-          placeholder="Enter your organization name"
-          placeholderTextColor="#9CA3AF"
-          value={formData.organizationName}
-          onChangeText={(text) => updateFormData('organizationName', text)}
-        />
-      </View>
-      {/* PG Name */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          PG Name <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Name of your first PG under this organization (you can add more PGs later)
-        </Text>
-        <TextInput
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            fontSize: 14,
-            color: Theme.colors.text.primary,
-          }}
-          placeholder="e.g., Green Valley PG, Comfort Homes"
-          placeholderTextColor="#9CA3AF"
-          value={formData.pgName}
-          onChangeText={(text) => updateFormData('pgName', text)}
-        />
-      </View>
+      <CountryPhoneSelector
+        selectedCountry={selectedCountry}
+        onSelectCountry={setSelectedCountry}
+        size="large"
+        phoneValue={formData.phone}
+        onPhoneChange={(text) => {
+          updateFormData('phone', text);
+          setPhoneVerified(false);
+          setPhoneError('');
+        }}
+      />
 
-      {/* Your Name */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          Your Full Name <Text style={{ color: '#EF4444' }}>*</Text>
+      {phoneError && (
+        <Text style={{ fontSize: 12, color: '#EF4444', marginBottom: 12, marginLeft: 4 }}>
+          {phoneError}
         </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Your first and last name
-        </Text>
-        <TextInput
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            fontSize: 14,
-            color: Theme.colors.text.primary,
-          }}
-          placeholder="e.g., John Doe"
-          placeholderTextColor="#9CA3AF"
-          value={formData.name}
-          onChangeText={(text) => updateFormData('name', text)}
-        />
-      </View>
-
-      {/* Phone Number with Country Selector */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          Phone Number <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-          Mobile number with country code for OTP verification
-        </Text>
-        <CountryPhoneSelector
-          selectedCountry={selectedCountry}
-          onSelectCountry={setSelectedCountry}
-          size="medium"
-          phoneValue={formData.phone}
-          onPhoneChange={(text) => {
-            updateFormData('phone', text);
-            setPhoneVerified(false);
-          }}
-        />
-
-        {formData.phone.trim() && !phoneVerified && (
-          <TouchableOpacity
-            style={{
-              backgroundColor: Theme.colors.primary,
-              borderRadius: 8,
-              paddingVertical: 10,
-              marginTop: 8,
-              alignItems: 'center',
-            }}
-            onPress={handleSendOtp}
-            disabled={loading}
-          >
-            <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>
-              {loading ? 'Sending OTP...' : 'Verify Phone Number'}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {phoneVerified && (
-          <View
-            style={{
-              backgroundColor: '#D1FAE5',
-              borderRadius: 8,
-              paddingVertical: 10,
-              marginTop: 8,
-              alignItems: 'center',
-              borderWidth: 1,
-              borderColor: '#6EE7B7',
-            }}
-          >
-            <Text style={{ color: '#059669', fontWeight: '600', fontSize: 14 }}>
-              ✓ Phone Verified
-            </Text>
-          </View>
-        )}
-      </View>
-
-
-      {/* Rent Cycle Type Selection */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-          Rent Cycle Type <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
-        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 12 }}>
-          Select how your PG's rent cycle works. This determines when rent is due each month.
-        </Text>
-
-        {/* Calendar Month Cycle Option */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={{
-            backgroundColor: formData.rentCycleType === 'CALENDAR' ? '#EFF6FF' : 'white',
-            borderRadius: 8,
-            padding: 12,
-            marginBottom: 10,
-            borderWidth: 2,
-            borderColor: formData.rentCycleType === 'CALENDAR' ? Theme.colors.primary : '#E5E7EB',
-          }}
-          onPress={() => {
-            console.log('📅 Calendar pressed, current type:', formData.rentCycleType);
-            setFormData(prev => ({
-              ...prev,
-              rentCycleType: 'CALENDAR',
-              rentCycleStart: 1,
-              rentCycleEnd: 30,
-            }));
-            console.log('📅 Calendar state updated');
-          }}
-        >
-          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 4 }}>
-            📅 Calendar Month Cycle (Most Common)
-          </Text>
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 6 }}>
-            Rent Period: 1st to 30th/31st of every month
-          </Text>
-          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
-            Example: Jan 1 - Jan 31, Feb 1 - Feb 28, etc. Rent due on 1st of next month.
-          </Text>
-        </TouchableOpacity>
-
-        {/* Mid-Month Cycle Option */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={{
-            backgroundColor: formData.rentCycleType === 'MIDMONTH' ? '#EFF6FF' : 'white',
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 2,
-            borderColor: formData.rentCycleType === 'MIDMONTH' ? Theme.colors.primary : '#E5E7EB',
-          }}
-          onPress={() => {
-            console.log('🔄 MIDMONTH pressed, current type:', formData.rentCycleType);
-            setFormData(prev => ({
-              ...prev,
-              rentCycleType: 'MIDMONTH',
-              rentCycleStart: 1,
-              rentCycleEnd: 30,
-            }));
-            console.log('🔄 MIDMONTH state updated');
-          }}
-        >
-          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 4 }}>
-            🔄 Custom Cycle (Mid-Month)
-          </Text>
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 6 }}>
-            Rent Period: Custom dates (e.g., 10th to 9th of next month)
-          </Text>
-          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
-            Example: If tenant checks in on 10th, rent cycle is 10th to 9th every month.
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Conditional Fields Based on Rent Cycle Type */}
-      {formData.rentCycleType === 'MIDMONTH' && (
-        <View style={{ marginBottom: 16, backgroundColor: '#F0F9FF', borderLeftWidth: 4, borderLeftColor: Theme.colors.primary, borderRadius: 8, padding: 12 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 8 }}>
-            ℹ️ How Mid-Month Cycle Works
-          </Text>
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 18, marginBottom: 8 }}>
-            The rent cycle will be automatically set based on each tenant's check-in date.
-          </Text>
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 18, marginBottom: 8 }}>
-            <Text style={{ fontWeight: '600' }}>Example:</Text> If a tenant checks in on the 23rd, their rent cycle will be:
-          </Text>
-          <View style={{ backgroundColor: 'white', borderRadius: 6, padding: 10, marginBottom: 8 }}>
-            <Text style={{ fontSize: 11, color: Theme.colors.text.primary, marginBottom: 4 }}>
-              • <Text style={{ fontWeight: '600' }}>Start Date:</Text> 23rd of every month
-            </Text>
-            <Text style={{ fontSize: 11, color: Theme.colors.text.primary }}>
-              • <Text style={{ fontWeight: '600' }}>End Date:</Text> 22nd of next month
-            </Text>
-          </View>
-          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontStyle: 'italic' }}>
-            No manual configuration needed - the system will handle this automatically for each tenant.
-          </Text>
-        </View>
       )}
+
+      <Button
+        title="Send OTP"
+        onPress={handleSendOtp}
+        loading={loading}
+        variant="primary"
+        size="md"
+      />
+
+      <Text
+        className="mt-6"
+        style={{
+          fontSize: Theme.typography.fontSize.sm,
+          color: Theme.colors.text.secondary,
+          textAlign: 'center',
+          marginBottom: Theme.spacing.md,
+        }}
+      >
+        You will receive a 4-digit OTP on your phone number
+      </Text>
     </View>
   );
+
+  const renderOnboardingAfterOtp = () => {
+    if (!phoneVerified) return null;
+
+    return (
+      <View>
+        <View
+          style={{
+            backgroundColor: '#D1FAE5',
+            borderRadius: 10,
+            padding: 12,
+            borderWidth: 1,
+            borderColor: '#6EE7B7',
+            marginBottom: 16,
+          }}
+        >
+          <Text style={{ color: '#065F46', fontWeight: '700', fontSize: 14, marginBottom: 4 }}>
+            Signup successful
+          </Text>
+          <Text style={{ color: '#065F46', fontSize: 12 }}>
+            Now create your PG setup to continue using the app.
+          </Text>
+        </View>
+
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+            Setup your PG <Text style={{ color: '#EF4444' }}>*</Text>
+          </Text>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+            Almost done. Just a few details to create your account.
+          </Text>
+        </View>
+
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+            PG Name <Text style={{ color: '#EF4444' }}>*</Text>
+          </Text>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+            This will also be used as your organization name for now. You can rename it later.
+          </Text>
+          <TextInput
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 8,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
+              fontSize: 14,
+              color: Theme.colors.text.primary,
+            }}
+            placeholder="e.g., Green Valley PG"
+            placeholderTextColor="#9CA3AF"
+            value={formData.pgName}
+            onChangeText={(text) => updateFormData('pgName', text)}
+          />
+        </View>
+
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+            Your Full Name <Text style={{ color: '#EF4444' }}>*</Text>
+          </Text>
+          <TextInput
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 8,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
+              fontSize: 14,
+              color: Theme.colors.text.primary,
+            }}
+            placeholder="e.g., John Doe"
+            placeholderTextColor="#9CA3AF"
+            value={formData.name}
+            onChangeText={(text) => updateFormData('name', text)}
+          />
+        </View>
+
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+            Rent Cycle Type <Text style={{ color: '#EF4444' }}>*</Text>
+          </Text>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 10 }}>
+            Rent cycle = from which date to which date you count “1 month rent”.
+            Pick the style your PG follows.
+          </Text>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{
+              backgroundColor: formData.rentCycleType === 'CALENDAR' ? '#EFF6FF' : 'white',
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 10,
+              borderWidth: 2,
+              borderColor: formData.rentCycleType === 'CALENDAR' ? Theme.colors.primary : '#E5E7EB',
+            }}
+            onPress={() => {
+              setFormData(prev => ({
+                ...prev,
+                rentCycleType: 'CALENDAR',
+                rentCycleStart: 1,
+                rentCycleEnd: 30,
+              }));
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 4 }}>
+              Calendar Month (Most common)
+            </Text>
+            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+              Easy option: rent is counted from the 1st to the last day of the month.
+            </Text>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 6 }}>
+              Example:
+              Jan cycle = 1 Jan → 31 Jan
+              Feb cycle = 1 Feb → 28 Feb
+            </Text>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 6 }}>
+              Choose this if you collect rent for “full calendar month”.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{
+              backgroundColor: formData.rentCycleType === 'MIDMONTH' ? '#EFF6FF' : 'white',
+              borderRadius: 8,
+              padding: 12,
+              borderWidth: 2,
+              borderColor: formData.rentCycleType === 'MIDMONTH' ? Theme.colors.primary : '#E5E7EB',
+            }}
+            onPress={() => {
+              setFormData(prev => ({
+                ...prev,
+                rentCycleType: 'MIDMONTH',
+                rentCycleStart: 1,
+                rentCycleEnd: 30,
+              }));
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 4 }}>
+              Mid‑Month / Check‑in based
+            </Text>
+            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+              Rent month starts from tenant check‑in date.
+            </Text>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 6 }}>
+              Example:
+              If tenant checks in on 10th:
+              Rent cycle = 10th → 9th next month
+            </Text>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 6 }}>
+              Another example: check‑in on 23rd means cycle is 23rd → 22nd.
+            </Text>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 6 }}>
+              Choose this if you charge rent based on the day they join.
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ marginTop: 14 }}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={{ flexDirection: 'row', alignItems: 'flex-start' }}
+            onPress={() => setHasAgreedToLegal((v) => !v)}
+          >
+            <View
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: 4,
+                borderWidth: 1,
+                borderColor: hasAgreedToLegal ? Theme.colors.primary : '#D1D5DB',
+                backgroundColor: hasAgreedToLegal ? Theme.colors.primary : 'white',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 2,
+              }}
+            >
+              {hasAgreedToLegal ? <Text style={{ color: 'white', fontSize: 12, fontWeight: '700' }}>✓</Text> : null}
+            </View>
+
+            <Text style={{ flex: 1, marginLeft: 10, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 18 }}>
+              I agree to the{' '}
+              <Text
+                style={{ color: Theme.colors.primary, fontWeight: '700' }}
+                onPress={() => openLegalDocByType('TERMS_AND_CONDITIONS', 'Terms & Conditions')}
+              >
+                Terms & Conditions
+              </Text>
+              {' '}and{' '}
+              <Text
+                style={{ color: Theme.colors.primary, fontWeight: '700' }}
+                onPress={() => openLegalDocByType('PRIVACY_POLICY', 'Privacy Policy')}
+              >
+                Privacy Policy
+              </Text>
+              .
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ marginTop: 24 }}>
+          <Button
+            title={'Create Account'}
+            onPress={handleSubmit}
+            loading={loading}
+            variant="primary"
+            size="md"
+          />
+        </View>
+      </View>
+    );
+  };
 
   // OTP Verification Modal Content
   const otpModalContent = (
@@ -528,93 +582,60 @@ export const SignupScreenNew: React.FC = () => {
 
   return (
     <ScreenLayout contentBackgroundColor={CONTENT_COLOR}>
-      <ScreenHeader
-        title={'Create Your Account'}
-        subtitle={'Start completely free - no hidden charges!'}
-        showBackButton={true}
-        onBackPress={() => navigation.goBack()}
-        backgroundColor={Theme.colors.background.blue}
-        syncMobileHeaderBg={true}
-      />
+      {phoneVerified ? (
+        <ScreenHeader
+          title={'Setup your PG'}
+          subtitle={'Complete setup to continue using the app'}
+          showBackButton={true}
+          onBackPress={() => setPhoneVerified(false)}
+          backgroundColor={Theme.colors.background.blue}
+          syncMobileHeaderBg={true}
+        />
+      ) : null}
+
       <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: phoneVerified ? CONTENT_COLOR : Theme.colors.background.primary }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <ScrollView
-          contentContainerStyle={{ padding: 16, paddingBottom: 32, backgroundColor: CONTENT_COLOR }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Card>
-            {renderStep1()}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: phoneVerified ? 'flex-start' : 'center',
+              padding: Theme.spacing.lg,
+            }}
+          >
+            {!phoneVerified ? (
+              <View style={{ alignItems: 'center', marginBottom: keyboardVisible ? Theme.spacing.md : Theme.spacing.xl }}>
+                <Image
+                  source={require('../../../assets/splash-logo.png')}
+                  resizeMode="contain"
+                  style={{ width: 110, height: 110 }}
+                />
+              </View>
+            ) : null}
 
-            <View style={{ marginTop: 14 }}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={{ flexDirection: 'row', alignItems: 'flex-start' }}
-                onPress={() => setHasAgreedToLegal((v) => !v)}
-              >
-                <View
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 4,
-                    borderWidth: 1,
-                    borderColor: hasAgreedToLegal ? Theme.colors.primary : '#D1D5DB',
-                    backgroundColor: hasAgreedToLegal ? Theme.colors.primary : 'white',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginTop: 2,
-                  }}
-                >
-                  {hasAgreedToLegal ? <Text style={{ color: 'white', fontSize: 12, fontWeight: '700' }}>✓</Text> : null}
-                </View>
+            <Card className="mb-6 shadow-none">
+              {renderPhoneVerification()}
+              {renderOnboardingAfterOtp()}
+            </Card>
+          </ScrollView>
+        </TouchableWithoutFeedback>
 
-                <Text style={{ flex: 1, marginLeft: 10, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 18 }}>
-                  I agree to the{' '}
-                  <Text
-                    style={{ color: Theme.colors.primary, fontWeight: '700' }}
-                    onPress={() => openLegalDocByType('TERMS_AND_CONDITIONS', 'Terms & Conditions')}
-                  >
-                    Terms & Conditions
-                  </Text>
-                  {' '}and{' '}
-                  <Text
-                    style={{ color: Theme.colors.primary, fontWeight: '700' }}
-                    onPress={() => openLegalDocByType('PRIVACY_POLICY', 'Privacy Policy')}
-                  >
-                    Privacy Policy
-                  </Text>
-                  .
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ marginTop: 24 }}>
-              <Button
-                title={'Create Account'}
-                onPress={handleSubmit}
-                loading={loading}
-                variant="primary"
-                size="md"
-              />
-            </View>
-          </Card>
-        </ScrollView>
+        {/* OTP Verification Modal */}
+        <SlideBottomModal
+          visible={showOtpVerification}
+          onClose={() => setShowOtpVerification(false)}
+          title="Verify Phone Number"
+          subtitle="Enter the 4-digit OTP sent to your phone"
+          children={otpModalContent}
+          onSubmit={handleVerifyOtp}
+          submitLabel="Verify OTP"
+          cancelLabel="Cancel"
+          isLoading={loading}
+        />
       </KeyboardAvoidingView>
-
-      {/* OTP Verification Modal */}
-      <SlideBottomModal
-        visible={showOtpVerification}
-        onClose={() => setShowOtpVerification(false)}
-        title="Verify Phone Number"
-        subtitle="Enter the 4-digit OTP sent to your phone"
-        children={otpModalContent}
-        onSubmit={handleVerifyOtp}
-        submitLabel="Verify OTP"
-        cancelLabel="Cancel"
-        isLoading={loading}
-      />
     </ScreenLayout>
   );
 };
