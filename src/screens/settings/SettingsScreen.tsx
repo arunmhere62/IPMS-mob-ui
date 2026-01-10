@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppDispatch, RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice';
@@ -18,34 +18,35 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { CONTENT_COLOR } from '@/constant';
 import notificationService from '../../services/notifications/notificationService';
 import { useGetSubscriptionStatusQuery } from '../../services/api/subscriptionApi';
-import { API_BASE_URL } from '../../config';
 import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../services/api/legalDocumentsApi';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface SettingsScreenProps {
-  navigation: any;
+  navigation: NavigationProp<ParamListBase>;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { isSuperAdmin } = usePermissions();
   const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
 
   const [serverLogout] = useLogoutMutation();
-  const [testingNotification, setTestingNotification] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const {
     data: subscriptionStatus,
     isLoading: subscriptionLoading,
     refetch: refetchSubscriptionStatus,
-  } = useGetSubscriptionStatusQuery();
+  } = useGetSubscriptionStatusQuery(undefined, { skip: !isSuperAdmin });
 
   // Fetch subscription status only when screen comes into focus (lazy loading)
   useFocusEffect(
     useCallback(() => {
+      if (!isSuperAdmin) return;
       console.log('🔄 Settings screen focused, fetching subscription...');
       refetchSubscriptionStatus();
-    }, [dispatch])
+    }, [dispatch, isSuperAdmin, refetchSubscriptionStatus])
   );
 
   // Debug log subscription status
@@ -59,6 +60,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   }, [subscriptionStatus, subscriptionLoading]);
 
   const handleRefreshSubscription = async () => {
+    if (!isSuperAdmin) return;
     console.log('🔄 Manual refresh triggered');
     await refetchSubscriptionStatus();
   };
@@ -76,7 +78,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const openPrivacyPolicy = async () => {
     try {
       const status = await getRequiredLegalStatus({ context: 'SIGNUP', type: 'PRIVACY_POLICY' }).unwrap();
-      const doc = ((status as any)?.required || (status?.pending || []))?.[0] as any;
+      const s = status as unknown as {
+        required?: Array<{ url?: string; content_url?: string }>;
+        pending?: Array<{ url?: string; content_url?: string }>;
+      };
+      const doc = (s?.required || s?.pending || [])?.[0];
       const url = doc?.url || doc?.content_url;
       if (!url) {
         Alert.alert('Info', 'Privacy Policy link is not available right now.');
@@ -169,128 +175,128 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
             </View>
           </Card>
 
-          {/* Subscription Card */}
-          <Card style={{ marginBottom: 16, padding: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <View style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: Theme.withOpacity(Theme.colors.primary, 0.1),
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12,
-              }}>
-                <Ionicons name="diamond" size={20} color={Theme.colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Subscription
-                </Text>
-                {subscriptionLoading ? (
-                  <ActivityIndicator size="small" color={Theme.colors.primary} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
-                ) : subscriptionStatus?.has_active_subscription ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                    <Ionicons name="checkmark-circle" size={14} color={Theme.colors.secondary} style={{ marginRight: 4 }} />
-                    <Text style={{ fontSize: 13, color: Theme.colors.secondary, fontWeight: '600' }}>
-                      Active - {subscriptionStatus.subscription?.plan?.name || 'Unknown Plan'}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                    <Ionicons name="alert-circle" size={14} color={Theme.colors.warning} style={{ marginRight: 4 }} />
-                    <Text style={{ fontSize: 13, color: Theme.colors.warning, fontWeight: '600' }}>
-                      No Active Subscription
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
-            </View>
-
-            {subscriptionStatus?.has_active_subscription && subscriptionStatus.days_remaining !== undefined && (
-              <View style={{
-                backgroundColor: Theme.colors.background.secondary,
-                padding: 10,
-                borderRadius: 8,
-                marginBottom: 12,
-              }}>
-                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 6 }}>
-                  {subscriptionStatus.days_remaining} days remaining
-                </Text>
+          {isSuperAdmin ? (
+            <Card style={{ marginBottom: 16, padding: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                 <View style={{
-                  height: 4,
-                  backgroundColor: Theme.colors.border,
-                  borderRadius: 2,
-                  overflow: 'hidden',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: Theme.withOpacity(Theme.colors.primary, 0.1),
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12,
                 }}>
-                  <View style={{
-                    height: '100%',
-                    width: `${(subscriptionStatus.days_remaining / (subscriptionStatus.subscription?.plan?.duration || 30)) * 100}%`,
-                    backgroundColor: Theme.colors.primary,
-                  }} />
+                  <Ionicons name="diamond" size={20} color={Theme.colors.primary} />
                 </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
+                    Subscription
+                  </Text>
+                  {subscriptionLoading ? (
+                    <ActivityIndicator size="small" color={Theme.colors.primary} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
+                  ) : subscriptionStatus?.has_active_subscription ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                      <Ionicons name="checkmark-circle" size={14} color={Theme.colors.secondary} style={{ marginRight: 4 }} />
+                      <Text style={{ fontSize: 13, color: Theme.colors.secondary, fontWeight: '600' }}>
+                        Active - {subscriptionStatus.subscription?.plan?.name || 'Unknown Plan'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                      <Ionicons name="alert-circle" size={14} color={Theme.colors.warning} style={{ marginRight: 4 }} />
+                      <Text style={{ fontSize: 13, color: Theme.colors.warning, fontWeight: '600' }}>
+                        No Active Subscription
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
               </View>
-            )}
 
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {/* Refresh Button */}
-              <TouchableOpacity
-                onPress={handleRefreshSubscription}
-                style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
+              {subscriptionStatus?.has_active_subscription && subscriptionStatus.days_remaining !== undefined && (
+                <View style={{
                   backgroundColor: Theme.colors.background.secondary,
+                  padding: 10,
                   borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: Theme.colors.border,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="refresh" size={18} color={Theme.colors.primary} />
-              </TouchableOpacity>
+                  marginBottom: 12,
+                }}>
+                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 6 }}>
+                    {subscriptionStatus.days_remaining} days remaining
+                  </Text>
+                  <View style={{
+                    height: 4,
+                    backgroundColor: Theme.colors.border,
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                  }}>
+                    <View style={{
+                      height: '100%',
+                      width: `${(subscriptionStatus.days_remaining / (subscriptionStatus.subscription?.plan?.duration || 30)) * 100}%`,
+                      backgroundColor: Theme.colors.primary,
+                    }} />
+                  </View>
+                </View>
+              )}
 
-              <TouchableOpacity
-                onPress={() => navigation.navigate('SubscriptionPlans')}
-                style={{
-                  flex: 1,
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  backgroundColor: Theme.colors.primary,
-                  borderRadius: 8,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="pricetags" size={16} color="#fff" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>
-                  View Plans
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('SubscriptionHistory')}
-                style={{
-                  flex: 1,
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  backgroundColor: Theme.colors.background.blueLight,
-                  borderRadius: 8,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 1,
-                  borderColor: Theme.colors.primary,
-                }}
-              >
-                <Ionicons name="time" size={16} color={Theme.colors.primary} style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.primary }}>
-                  History
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Card>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  onPress={handleRefreshSubscription}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    backgroundColor: Theme.colors.background.secondary,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: Theme.colors.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="refresh" size={18} color={Theme.colors.primary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('SubscriptionPlans')}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    backgroundColor: Theme.colors.primary,
+                    borderRadius: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="pricetags" size={16} color="#fff" style={{ marginRight: 6 }} />
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>
+                    View Plans
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('SubscriptionHistory')}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    backgroundColor: Theme.colors.background.blueLight,
+                    borderRadius: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: Theme.colors.primary,
+                  }}
+                >
+                  <Ionicons name="time" size={16} color={Theme.colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.primary }}>
+                    History
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+          ) : null}
 
           {/* Settings Options */}
           <Card className="mb-4">
