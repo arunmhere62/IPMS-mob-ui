@@ -90,6 +90,43 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
       return;
     }
 
+    const extractMessage = (input: unknown): string => {
+      if (!input) return '';
+      if (typeof input === 'string') return input;
+      if (typeof input !== 'object') return '';
+
+      const obj = input as Record<string, unknown>;
+
+      if (typeof obj.message === 'string') return obj.message;
+
+      const data = obj.data;
+      if (data && typeof data === 'object') {
+        const dataObj = data as Record<string, unknown>;
+        if (typeof dataObj.message === 'string') return dataObj.message;
+        const nested = extractMessage(dataObj);
+        if (nested) return nested;
+      }
+
+      const err = obj.error;
+      if (typeof err === 'string') return err;
+      if (err && typeof err === 'object') {
+        const errObj = err as Record<string, unknown>;
+        if (typeof errObj.message === 'string') return errObj.message;
+        const nested = extractMessage(errObj);
+        if (nested) return nested;
+      }
+
+      const errors = obj.errors;
+      if (Array.isArray(errors) && errors.length > 0) {
+        const first = errors[0] as unknown;
+        const nested = extractMessage(first);
+        if (nested) return nested;
+        if (typeof first === 'string') return first;
+      }
+
+      return '';
+    };
+
     const errObj = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
     const rtkData = errObj?.data ?? (errObj?.error && typeof errObj.error === 'object' ? (errObj.error as Record<string, unknown>).data : undefined);
     const httpClientData =
@@ -98,7 +135,7 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
 
     // First try to use API response handler for new structure
     if (candidateData) {
-      errorMessage = getApiErrorMessage(candidateData);
+      errorMessage = extractMessage(candidateData) || getApiErrorMessage(candidateData);
     }
     
     // Fallback to legacy error extraction if API handler didn't find message

@@ -26,6 +26,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { OTPVerificationScreen } from '../screens/auth/OTPVerificationScreen';
 import { SignupScreenNew } from '../screens/auth/SignupScreenNew';
+import { SignupOtpScreen } from '../screens/auth/SignupOtpScreen';
 import { LegalDocumentsScreen } from '../screens/legal/LegalDocumentsScreen';
 import { LegalWebViewScreen } from '../screens/legal/LegalWebViewScreen';
 
@@ -194,6 +195,7 @@ export const AppNavigator = () => {
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreenNew} />
+            <Stack.Screen name="SignupOtp" component={SignupOtpScreen} />
             <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
             <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen as unknown as React.ComponentType<unknown>} />
             <Stack.Screen name="LegalWebView" component={LegalWebViewScreen} />
