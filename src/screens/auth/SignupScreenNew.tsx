@@ -211,7 +211,7 @@ export const SignupScreenNew: React.FC = () => {
       await sendSignupOtp({ phone: phoneWithCode }).unwrap();
       setShowOtpVerification(true);
       showSuccessAlert('OTP sent to your phone number');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Send OTP error:', error);
       showErrorAlert(error, 'Failed to send OTP');
     } finally {
@@ -232,7 +232,7 @@ export const SignupScreenNew: React.FC = () => {
       setShowOtpVerification(false);
       setOtp('');
       showSuccessAlert('Phone number verified successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Verify OTP error:', error);
       showErrorAlert(error, 'Failed to verify OTP');
     } finally {

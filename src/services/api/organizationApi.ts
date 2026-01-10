@@ -70,8 +70,20 @@ export interface GetOrganizationStatsResponse {
   data: OrganizationStats;
 }
 
+export type UpdateOrganizationDto = {
+  name?: string;
+  description?: string;
+};
+
 type ApiEnvelope<T> = {
   data?: T;
+};
+
+const unwrapData = <T>(response: ApiEnvelope<T> | unknown): T | unknown => {
+  if (response && typeof response === 'object' && 'data' in (response as Record<string, unknown>)) {
+    return (response as ApiEnvelope<T>).data ?? response;
+  }
+  return response;
 };
 
 export const organizationApi = baseApi.injectEndpoints({
@@ -82,26 +94,35 @@ export const organizationApi = baseApi.injectEndpoints({
         method: 'GET',
         params: params || undefined,
       }),
-      transformResponse: (response: ApiEnvelope<GetOrganizationsResponse> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: ApiEnvelope<GetOrganizationsResponse> | unknown) => unwrapData<GetOrganizationsResponse>(response) as GetOrganizationsResponse,
       providesTags: (result) => {
-        const orgs = (result as any)?.data || [];
+        const items = (result as GetOrganizationsResponse | undefined)?.data;
         return [
           { type: 'Organizations' as const, id: 'LIST' },
-          ...orgs.map((o: Organization) => ({ type: 'Organization' as const, id: o.s_no })),
+          ...(Array.isArray(items) ? items.map((o) => ({ type: 'Organization' as const, id: o.s_no })) : []),
         ];
       },
     }),
 
     getOrganizationStats: build.query<GetOrganizationStatsResponse, void>({
       query: () => ({ url: '/organizations/stats', method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<GetOrganizationStatsResponse> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: ApiEnvelope<GetOrganizationStatsResponse> | unknown) => unwrapData<GetOrganizationStatsResponse>(response) as GetOrganizationStatsResponse,
       providesTags: [{ type: 'OrganizationStats' as const, id: 'SINGLE' }],
     }),
 
-    getOrganizationById: build.query<any, number>({
+    getOrganizationById: build.query<unknown, number>({
       query: (id) => ({ url: `/organizations/${id}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: ApiEnvelope<unknown> | unknown) => unwrapData<unknown>(response),
       providesTags: (_res, _err, id) => [{ type: 'Organization' as const, id }],
+    }),
+
+    updateOrganization: build.mutation<unknown, { id: number; data: UpdateOrganizationDto }>({
+      query: ({ id, data }) => ({ url: `/organizations/${id}`, method: 'PATCH', body: data }),
+      transformResponse: (response: ApiEnvelope<unknown> | unknown) => unwrapData<unknown>(response),
+      invalidatesTags: (_res, _err, arg) => [
+        { type: 'Organizations' as const, id: 'LIST' },
+        { type: 'Organization' as const, id: arg.id },
+      ],
     }),
   }),
   overrideExisting: false,
@@ -114,4 +135,5 @@ export const {
   useLazyGetOrganizationStatsQuery,
   useGetOrganizationByIdQuery,
   useLazyGetOrganizationByIdQuery,
+  useUpdateOrganizationMutation,
 } = organizationApi;

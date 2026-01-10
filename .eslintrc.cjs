@@ -9,7 +9,7 @@ module.exports = {
   },
   plugins: ['@typescript-eslint'],
   extends: ['plugin:@typescript-eslint/recommended', 'prettier'],
-  ignorePatterns: ['node_modules/', 'android/', 'ios/', 'dist/', '.expo/', '.eslintrc.cjs', 'app.d.ts', 'nativewind-env.d.ts'],
+  ignorePatterns: ['node_modules/', 'android/', 'ios/', 'dist/', '.expo/', '.eslintrc.cjs', 'app.config.js', 'app.d.ts', 'nativewind-env.d.ts'],
   rules: {
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-unused-vars': [

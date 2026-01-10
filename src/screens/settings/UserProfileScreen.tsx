@@ -23,6 +23,10 @@ import { ChangePasswordModal } from '../../components/ChangePasswordModal';
 import { updateUser } from '../../store/slices/authSlice';
 import { useLazyGetCitiesQuery, useLazyGetStatesQuery } from '../../services/api/locationApi';
 import { useGetUserProfileQuery, useChangePasswordMutation } from '../../services/api/userApi';
+import { useUpdateOrganizationMutation } from '../../services/api/organizationApi';
+import { SlideBottomModal } from '../../components/SlideBottomModal';
+import { InputField } from '../../components/InputField';
+import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
 
 interface UserProfileScreenProps {
   navigation: any;
@@ -36,9 +40,13 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
     skip: !user?.s_no,
   });
   const [changePasswordMutation] = useChangePasswordMutation();
+  const [updateOrganizationMutation] = useUpdateOrganizationMutation();
   const [refreshing, setRefreshing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showOrgEditModal, setShowOrgEditModal] = useState(false);
+  const [orgNameDraft, setOrgNameDraft] = useState('');
+  const [orgSaving, setOrgSaving] = useState(false);
   const [stateName, setStateName] = useState<string>('');
   const [cityName, setCityName] = useState<string>('');
   const [profileData, setProfileData] = useState<any>(null);
@@ -161,7 +169,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
       await changePasswordMutation({ userId: user.s_no, data }).unwrap();
 
       setShowChangePasswordModal(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error changing password:', error);
       throw error;
     }
@@ -199,6 +207,45 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
 
   const userData = user;
   const roleBadge = getRoleBadgeColor(userData?.role_name);
+
+  const canEditOrganization =
+    Boolean(userData?.organization_id) &&
+    (String(userData?.role_name || '').toUpperCase() === 'ADMIN' ||
+      String(userData?.role_name || '').toUpperCase() === 'SUPER_ADMIN');
+
+  const handleOpenOrganizationEdit = () => {
+    const currentName =
+      String(profileData?.organization_name || userData?.organization_name || '').trim();
+    setOrgNameDraft(currentName);
+    setShowOrgEditModal(true);
+  };
+
+  const handleSaveOrganizationName = async () => {
+    const orgId = Number(userData?.organization_id);
+    if (!orgId) {
+      Alert.alert('Error', 'Organization not found for this user');
+      return;
+    }
+
+    const nextName = String(orgNameDraft || '').trim();
+    if (!nextName) {
+      Alert.alert('Error', 'Organization name is required');
+      return;
+    }
+
+    setOrgSaving(true);
+    try {
+      const res = await updateOrganizationMutation({ id: orgId, data: { name: nextName } }).unwrap();
+      showSuccessAlert(res, { title: 'Organization updated' });
+      dispatch(updateUser({ organization_name: nextName }));
+      setShowOrgEditModal(false);
+      await refetchProfile();
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Failed to update organization');
+    } finally {
+      setOrgSaving(false);
+    }
+  };
 
   const showSkeleton = isProfileFetching && !refreshing && !profileData;
 
@@ -370,15 +417,24 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   marginBottom: 16,
                 }}
               >
-                <Text style={{
-                  fontSize: 11,
-                  color: Theme.colors.text.tertiary,
-                  marginBottom: 4,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                }}>
-                  Organization
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{
+                    fontSize: 11,
+                    color: Theme.colors.text.tertiary,
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}>
+                    Organization
+                  </Text>
+
+                  {canEditOrganization && (
+                    <TouchableOpacity onPress={handleOpenOrganizationEdit} style={{ paddingHorizontal: 6, paddingVertical: 2 }}>
+                      <Ionicons name="create-outline" size={16} color={Theme.colors.text.tertiary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
                 <Text style={{
                   fontSize: 14,
                   fontWeight: '600',
@@ -860,6 +916,28 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
         onClose={() => setShowEditModal(false)}
         onProfileUpdated={onRefresh}
       />
+
+      <SlideBottomModal
+        visible={showOrgEditModal}
+        onClose={() => setShowOrgEditModal(false)}
+        title="Edit Organization"
+        subtitle="Update your organization name"
+        onSubmit={handleSaveOrganizationName}
+        onCancel={() => setShowOrgEditModal(false)}
+        submitLabel="Save"
+        cancelLabel="Cancel"
+        isLoading={orgSaving}
+      >
+        <InputField
+          label="Organization Name"
+          value={orgNameDraft}
+          onChangeText={setOrgNameDraft}
+          placeholder="Enter organization name"
+          required={true}
+          prefixIcon="business-outline"
+          containerStyle={{ marginBottom: 16 }}
+        />
+      </SlideBottomModal>
 
       {/* Change Password Modal */}
       <ChangePasswordModal
