@@ -101,13 +101,23 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
         payload?.data?.data?.subscription;
       const subscriptionId = subscription?.s_no ?? subscription?.id;
 
+      const responsePlan =
+        payload?.plan ??
+        payload?.data?.plan ??
+        payload?.data?.data?.plan;
+      const responsePricing =
+        payload?.pricing ??
+        payload?.data?.pricing ??
+        payload?.data?.data?.pricing;
+
       if (paymentUrl) {
-        // Go directly to CCAvenue (skip payment option screen)
-        navigation.navigate('PaymentWebView', {
+        navigation.navigate('SubscriptionConfirm', {
+          title: 'Confirm Subscription',
           paymentUrl,
           orderId,
           subscriptionId,
-          paymentMethod: 'ccavenue',
+          plan: responsePlan,
+          pricing: responsePricing,
         });
       } else {
         showSuccessAlert('Subscription initiated successfully!');
@@ -145,12 +155,23 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
         payload?.data?.data?.subscription;
       const subscriptionId = subscription?.s_no ?? subscription?.id;
 
+      const responsePlan =
+        payload?.plan ??
+        payload?.data?.plan ??
+        payload?.data?.data?.plan;
+      const responsePricing =
+        payload?.pricing ??
+        payload?.data?.pricing ??
+        payload?.data?.data?.pricing;
+
       if (paymentUrl) {
-        navigation.navigate('PaymentWebView', {
+        navigation.navigate('SubscriptionConfirm', {
+          title: 'Confirm Upgrade',
           paymentUrl,
           orderId,
           subscriptionId,
-          paymentMethod: 'ccavenue',
+          plan: responsePlan,
+          pricing: responsePricing,
         });
       } else {
         showSuccessAlert('Upgrade initiated successfully!');

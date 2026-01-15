@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../theme';
 import { Permission } from '../config/rbac.config';
@@ -36,11 +35,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(({ navigation, cur
 
   return (
     <>
-      <BlurView
-        intensity={100}
-        tint="light"
-        style={[styles.container, { paddingBottom: Math.max(insets.bottom + -2, 10) }]}
-      >
+      <View style={[styles.container, { paddingBottom: Math.max(insets.bottom + -2, 10) }]}>
         {accessibleTabs.map((tab) => {
           const isActive = currentRoute === tab.name;
           return (
@@ -68,7 +63,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(({ navigation, cur
             </TouchableOpacity>
           );
         })}
-      </BlurView>
+      </View>
       </>
   );
 });
@@ -88,7 +83,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 0,
-    backgroundColor: 'transparent',
+    backgroundColor: '#fff',
   },
   tab: {
     flex: 1,

@@ -11,6 +11,15 @@ export interface SubscriptionPlan {
   is_active: boolean;
   is_free?: boolean;
   is_trial?: boolean;
+  gst_breakdown?: {
+    cgst_rate: number;
+    cgst_amount: number;
+    sgst_rate: number;
+    sgst_amount: number;
+    igst_rate?: number;
+    igst_amount?: number;
+    total_price_including_gst: number;
+  };
   limits?: {
     max_pg_locations?: number | null;
     max_tenants?: number | null;
@@ -134,6 +143,14 @@ export type SubscribeToPlanResponse = {
   success: boolean;
   data: {
     subscription: UserSubscription;
+    plan?: SubscriptionPlan;
+    pricing?: {
+      currency: string;
+      base_price: number;
+      cgst_amount: number;
+      sgst_amount: number;
+      total_price_including_gst: number;
+    };
     payment_url: string;
     order_id: string;
   };

@@ -213,7 +213,7 @@ function AppContent() {
       <ErrorAlert error={error} onDismiss={clearError} />
       <AppNavigator />
       {/* <NetworkLoggerFloatingButton enabled={__DEV__} /> */}
-      <NetworkLoggerFloatingButton enabled={false} />
+      <NetworkLoggerFloatingButton enabled={true} />
     </NetworkStatusProvider>
   );
 }
