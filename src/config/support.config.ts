@@ -1,1 +1,1 @@
-export const FAQ_WEB_URL = 'https://pg-web-ui.vercel.app/faq';
+export const FAQ_WEB_URL = 'https://indianpgmanagement.com/faq';
