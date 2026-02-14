@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../theme';
 import { Permission } from '../config/rbac.config';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomNavVisibility } from './BottomNavVisibility';
 
 interface BottomNavProps {
   navigation: any;
@@ -28,6 +29,7 @@ const userTabs: TabConfig[] = [
 export const BottomNav: React.FC<BottomNavProps> = React.memo(({ navigation, currentRoute }) => {
   const insets = useSafeAreaInsets();
   const accessibleTabs = userTabs;
+  const { translateY, setHideDistance } = useBottomNavVisibility();
 
   const handleTabPress = (tab: TabConfig, event?: any) => {
     navigation.navigate(tab.name);
@@ -35,7 +37,17 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(({ navigation, cur
 
   return (
     <>
-      <View style={[styles.container, { paddingBottom: Math.max(insets.bottom + -2, 10) }]}>
+      <Animated.View
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          if (typeof h === 'number' && h > 0) setHideDistance(h);
+        }}
+        style={[
+        styles.container,
+        { paddingBottom: Math.max(insets.bottom + -2, 10) },
+        { transform: [{ translateY }] },
+      ]}
+      >
         {accessibleTabs.map((tab) => {
           const isActive = currentRoute === tab.name;
           return (
@@ -63,7 +75,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(({ navigation, cur
             </TouchableOpacity>
           );
         })}
-      </View>
+      </Animated.View>
       </>
   );
 });

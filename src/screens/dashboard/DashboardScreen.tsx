@@ -8,6 +8,7 @@ import { AppDispatch, RootState } from '../../store';
 import { setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
+import { useBottomNavScrollHandler } from '../../components/BottomNavVisibility';
 import { Card } from '../../components/Card';
 import { QuickActions } from '../../components/QuickActions';
 import { MonthlyMetricsCard } from './MonthlyMetricsCard';
@@ -43,6 +44,12 @@ export const DashboardScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [attentionTab, setAttentionTab] = useState<'pending_rent' | 'partial_rent' | 'without_advance'>('pending_rent');
   const [showOwnerInfo, setShowOwnerInfo] = useState(false);
+  const {
+    onScroll: bottomNavOnScroll,
+    scrollEventThrottle: bottomNavThrottle,
+    onScrollEndDrag: bottomNavOnScrollEndDrag,
+    onMomentumScrollEnd: bottomNavOnMomentumScrollEnd,
+  } = useBottomNavScrollHandler();
 
   const {
     data: pgLocationsResponse,
@@ -481,6 +488,10 @@ export const DashboardScreen: React.FC = () => {
       <View style={{ flex: 1, }}>
         <ScrollView
           contentContainerStyle={{ paddingBottom: 80 }}
+          onScroll={bottomNavOnScroll}
+          scrollEventThrottle={bottomNavThrottle}
+          onScrollEndDrag={bottomNavOnScrollEndDrag}
+          onMomentumScrollEnd={bottomNavOnMomentumScrollEnd}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }

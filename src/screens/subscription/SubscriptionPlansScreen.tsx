@@ -244,6 +244,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     void plan.name.toLowerCase().includes('standard');
     void plan.name.toLowerCase().includes('basic');
     const isYearly = plan.duration === 365;
+    const isHalfYearly = plan.duration === 180;
     
     // Get tier icon - only Premium gets special treatment
     const getTierInfo = () => {
@@ -307,6 +308,27 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           padding: 20,
           paddingBottom: 24,
         }}>
+          <View style={{
+            marginHorizontal: -20,
+            backgroundColor: Theme.colors.primary,
+            paddingVertical: 14,
+            paddingHorizontal: 20,
+            borderRadius: 0,
+            alignItems: 'center',
+            marginBottom: 14,
+          }}>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: 0.8, textAlign: 'center' }}>
+              {isYearly
+                ? '12 MONTHS PLAN'
+                : isHalfYearly
+                  ? '6 MONTHS PLAN'
+                  : plan.duration === 90
+                    ? '3 MONTHS PLAN'
+                    : plan.duration === 30
+                      ? '1 MONTH PLAN'
+                      : `${formatDuration(plan.duration).toUpperCase()} PLAN`}
+            </Text>
+          </View>
           {/* Badges Row */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -357,6 +379,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                   </Text>
                 </View>
               )}
+              
             </View>
             {isCurrentPlan && (
               <View style={{
@@ -410,13 +433,10 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                   </Text>
                 </View>
               ) : (
-                <Text style={{ fontSize: 42, fontWeight: '900', color: '#fff' }}>
+                <Text style={{ fontSize: 52, fontWeight: '900', color: '#fff' }}>
                   {formatPrice(plan.price, plan.currency)}
                 </Text>
               )}
-              <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginLeft: 8 }}>
-                /{formatDuration(plan.duration)}
-              </Text>
             </View>
             {savingsPercentage && (
               <View style={{ 

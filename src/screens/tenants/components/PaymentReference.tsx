@@ -39,8 +39,8 @@ const getPaymentPeriodEndTime = (p: PaymentWithCycle): number => {
 };
 
 const renderCalendarRentCycleInfo = () => (
-  <View style={{ flexDirection: 'row', marginBottom: 6, alignItems: 'center' }}>
-    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 100 }}>Rent Cycle:</Text>
+  <View style={{ flexDirection: 'row', marginBottom: 8, alignItems: 'center' }}>
+    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 110 }}>Rent Cycle:</Text>
     <Text style={{ fontSize: 12, fontWeight: '700', color: Theme.colors.text.primary, flex: 1 }} numberOfLines={1} ellipsizeMode="tail">
       📅 Calendar (1st - Last day)
     </Text>
@@ -48,8 +48,8 @@ const renderCalendarRentCycleInfo = () => (
 );
 
 const renderMidmonthRentCycleInfo = () => (
-  <View style={{ flexDirection: 'row', marginBottom: 6, alignItems: 'center' }}>
-    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 100 }}>Rent Cycle:</Text>
+  <View style={{ flexDirection: 'row', marginBottom: 8, alignItems: 'center' }}>
+    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 110 }}>Rent Cycle:</Text>
     <Text style={{ fontSize: 12, fontWeight: '700', color: Theme.colors.text.primary, flex: 1 }} numberOfLines={2} ellipsizeMode="tail">
       🔄 Mid-Month (Any day - Same day next month - 1)
     </Text>
@@ -75,15 +75,20 @@ export const PaymentReference: React.FC<PaymentReferenceProps> = ({
     <View
       style={{
         marginHorizontal: 0,
-        marginBottom: 16,
-        padding: 12,
+        marginBottom: 20,
+        padding: 16,
         backgroundColor: Theme.colors.canvas,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: Theme.colors.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
         <View
           style={{
             width: 34,
@@ -108,20 +113,22 @@ export const PaymentReference: React.FC<PaymentReferenceProps> = ({
       </View>
 
       {checkingGaps ? (
-        <View style={{ gap: 8 }}>
-          <SkeletonLoader width="55%" height={12} borderRadius={6} />
-          <SkeletonLoader width="90%" height={12} borderRadius={6} />
-          <SkeletonLoader width="70%" height={12} borderRadius={6} />
-          <SkeletonLoader width="85%" height={12} borderRadius={6} />
+        <View style={{ gap: 12 }}>
+          <SkeletonLoader width="55%" height={14} borderRadius={6} />
+          <SkeletonLoader width="90%" height={14} borderRadius={6} />
+          <SkeletonLoader width="70%" height={14} borderRadius={6} />
+          <SkeletonLoader width="85%" height={14} borderRadius={6} />
         </View>
       ) : (
         <>
           {typeof joiningDate === 'string' && joiningDate ? (
-            <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 100 }}>Joining Date:</Text>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
-                {new Date(joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-              </Text>
+            <View style={{ flexDirection: 'row', marginBottom: 8, alignItems: 'center' }}>
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 110 }}>Joining Date:</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
+                  {new Date(joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </Text>
+              </View>
             </View>
           ) : null}
 
@@ -135,9 +142,10 @@ export const PaymentReference: React.FC<PaymentReferenceProps> = ({
 
               const period = getPaymentPeriod(mostRecentPayment);
               return (
-                <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 100 }}>Last Payment:</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
+                <View style={{ flexDirection: 'row', marginBottom: 8, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 110 }}>Last Payment:</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
                     {period.start && period.end ? (
                       <>
                         {new Date(period.start).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
@@ -149,22 +157,26 @@ export const PaymentReference: React.FC<PaymentReferenceProps> = ({
                     )}
                   </Text>
                 </View>
+              </View>
               );
             })()
           ) : lastPaymentStartDate && lastPaymentEndDate ? (
-            <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 100 }}>Last Payment:</Text>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
-                {new Date(lastPaymentStartDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                {' - '}
-                {new Date(lastPaymentEndDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-              </Text>
+            <View style={{ flexDirection: 'row', marginBottom: 8, alignItems: 'center' }}>
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 110 }}>Last Payment:</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
+                  {new Date(lastPaymentStartDate || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                  {' - '}
+                  {new Date(lastPaymentEndDate || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </Text>
+              </View>
             </View>
           ) : null}
 
           {bedRentAmount > 0 && (
-            <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 100 }}>Bed Rent Amount:</Text>
+            <View style={{ flexDirection: 'row', marginBottom: 8, alignItems: 'center' }}>
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 110 }}>Bed Rent Amount:</Text>
+              <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 12, fontWeight: '700', color: Theme.colors.primary }}>
                 {fetchingBedPrice ? (
                   <ActivityIndicator size="small" color={Theme.colors.primary} />
@@ -173,27 +185,33 @@ export const PaymentReference: React.FC<PaymentReferenceProps> = ({
                 )}
               </Text>
             </View>
+            </View>
           )}
           {/* Rent Cycle Info */}
           {rentCycleType === 'CALENDAR' ? renderCalendarRentCycleInfo() : null}
           {rentCycleType === 'MIDMONTH' ? renderMidmonthRentCycleInfo() : null}
-          {/* Amount To Pay - Compact */}
+          {/* Amount To Pay - Enhanced */}
           {showAmountToPay && Number.isFinite(amountToPay ?? NaN) && (amountToPay ?? 0) > 0 ? (
             <View
               style={{
-                marginTop: 6,
-                paddingVertical: 8,
-                paddingHorizontal: 10,
+                marginTop: 12,
+                paddingVertical: 12,
+                paddingHorizontal: 14,
                 backgroundColor: Theme.colors.background.blueLight,
                 borderWidth: 1,
                 borderColor: Theme.colors.background.blueMedium,
-                borderRadius: 8,
+                borderRadius: 10,
+                shadowColor: Theme.colors.primary,
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
+                elevation: 2,
               }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: Theme.colors.text.secondary, marginBottom: 2 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.secondary, marginBottom: 4 }}>
                 Amount to Pay
               </Text>
-              <Text style={{ fontSize: 18, fontWeight: '900', color: Theme.colors.primary }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', color: Theme.colors.primary }}>
                 ₹{Number(amountToPay || 0).toLocaleString('en-IN')}
               </Text>
               {(() => {
@@ -205,7 +223,7 @@ export const PaymentReference: React.FC<PaymentReferenceProps> = ({
                 const remaining = Math.max(0, expected - paid);
                 const label = paid > 0 ? `Remaining: ₹${remaining.toLocaleString('en-IN')}` : `Due: ₹${expected.toLocaleString('en-IN')}`;
                 return (
-                  <Text style={{ marginTop: 4, fontSize: 11, fontWeight: '700', color: Theme.colors.primary }}>
+                  <Text style={{ marginTop: 6, fontSize: 12, fontWeight: '700', color: Theme.colors.primary }}>
                     {label}
                   </Text>
                 );
@@ -217,20 +235,20 @@ export const PaymentReference: React.FC<PaymentReferenceProps> = ({
 
           {/* Previous Payments List */}
           {previousPayments && previousPayments.length > 0 && (
-            <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: Theme.colors.border }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 6, fontWeight: '600' }}>
+            <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: Theme.colors.border }}>
+              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 8, fontWeight: '600', letterSpacing: 0.5 }}>
                 PREVIOUS PAYMENTS
               </Text>
               {previousPayments
                 .sort((a, b) => getPaymentPeriodEndTime(b) - getPaymentPeriodEndTime(a))
                 .slice(0, 3)
                 .map((prevPayment, index) => (
-                  <View key={prevPayment.s_no || index} style={{ flexDirection: 'row', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 100 }}>
+                  <View key={prevPayment.s_no || index} style={{ flexDirection: 'row', marginBottom: 6, alignItems: 'flex-start' }}>
+                    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, width: 110, marginTop: 2 }}>
                       {index === 0 ? 'Most Recent:' : `${index + 1} ago:`}
                     </Text>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 2 }}>
                         {(() => {
                           const p = getPaymentPeriod(prevPayment);
                           if (!p.start || !p.end) return 'N/A';

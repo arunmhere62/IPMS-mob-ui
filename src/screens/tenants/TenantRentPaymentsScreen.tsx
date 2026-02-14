@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  useWindowDimensions,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -55,6 +56,13 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { can } = usePermissions();
+  const { width } = useWindowDimensions();
+
+  // Responsive scaling helpers
+  const baseWidth = 375; // iPhone X width as baseline
+  const scale = Math.min(1.25, Math.max(0.9, width / baseWidth));
+  const s = (n: number) => Math.round(n * scale);
+  const maxContentWidth = Math.min(780, width - s(24));
 
   can(Permission.EDIT_PAYMENT);
   const canDeleteRent = can(Permission.DELETE_PAYMENT);
@@ -95,14 +103,13 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const [voidReason, setVoidReason] = useState('');
   const [voidTargetPayment, setVoidTargetPayment] = useState<RentPayment | null>(null);
 
-  // Function to refresh tenant details (navigate back to tenant details)
   const refreshTenantDetails = () => {
-    // Navigate back to tenant details screen with refresh parameter
     navigation.navigate('TenantDetails', { tenantId, refresh: true });
   };
-  const [receiptModalVisible, setReceiptModalVisible] = useState(false);
+
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
-  const receiptRef = useRef<View | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
+  const receiptRef = useRef<View>(null);
 
   const handleVoidPayment = (payment: RentPayment) => {
     if (!canDeleteRent) {
@@ -172,41 +179,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const handleViewReceipt = (payment: RentPayment) => {
     const data = prepareReceiptData(payment);
     setReceiptData(data);
-    setReceiptModalVisible(true);
-  };
-
-  const handleWhatsAppReceipt = async (payment: RentPayment) => {
-    try {
-      const data = prepareReceiptData(payment);
-      setReceiptData(data);
-      
-      setTimeout(async () => {
-        await CompactReceiptGenerator.shareViaWhatsApp(
-          receiptRef,
-          data,
-          tenantPhone || ''
-        );
-        setReceiptData(null);
-      }, 100);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send via WhatsApp');
-      setReceiptData(null);
-    }
-  };
-
-  const handleShareReceipt = async (payment: RentPayment) => {
-    try {
-      const data = prepareReceiptData(payment);
-      setReceiptData(data);
-      
-      setTimeout(async () => {
-        await CompactReceiptGenerator.shareImage(receiptRef);
-        setReceiptData(null);
-      }, 100);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to share receipt');
-      setReceiptData(null);
-    }
+    setShowReceiptModal(true);
   };
 
   const submitVoidPayment = async () => {
@@ -326,6 +299,26 @@ export const TenantRentPaymentsScreen: React.FC = () => {
       });
   }, [visiblePayments]);
 
+  const renderPaymentActions = (payment: RentPayment) => (
+    <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+      <TouchableOpacity
+        onPress={() => handleViewReceipt(payment)}
+        style={{
+          paddingVertical: s(8),
+          paddingHorizontal: s(12),
+          backgroundColor: '#3B82F6',
+          borderRadius: s(8),
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ fontSize: s(12), fontWeight: '600', color: '#FFF' }}>
+          View/Share
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
       <ScreenHeader
@@ -339,19 +332,19 @@ export const TenantRentPaymentsScreen: React.FC = () => {
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
         {/* Tenant Info Header */}
         <View style={{
-          paddingHorizontal: 16,
-          paddingVertical: 12,
+          paddingHorizontal: s(16),
+          paddingVertical: s(12),
           backgroundColor: Theme.colors.background.blueLight,
           borderBottomWidth: 1,
           borderBottomColor: '#E5E7EB',
         }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
+          <Text style={{ fontSize: s(14), fontWeight: '600', color: Theme.colors.text.primary }}>
             {tenantName}
           </Text>
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 4 }}>
+          <Text style={{ fontSize: s(12), color: Theme.colors.text.secondary, marginTop: s(4) }}>
             {payments.length} payment(s)
           </Text>
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 4 }}>
+          <Text style={{ fontSize: s(12), color: Theme.colors.text.secondary, marginTop: s(4) }}>
             {accommodationLabel}
           </Text>
         </View>
@@ -363,7 +356,11 @@ export const TenantRentPaymentsScreen: React.FC = () => {
         )}
 
         {!loading && payments && payments.length > 0 ? (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: s(16), paddingBottom: s(24), alignItems: 'center' }}
+          >
+            <View style={{ width: '100%', maxWidth: maxContentWidth, alignSelf: 'center' }}>
             {groupedPayments.map((group) => {
               const statusColor = getStatusColor(group.status);
 
@@ -381,44 +378,44 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                   key={group.key}
                   scaleValue={0.97}
                   duration={120}
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: s(12) }}
                 >
-                  <Card style={{ padding: 12 }}>
+                  <Card style={{ padding: s(12) }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <View style={{ flex: 1, paddingRight: 10 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
+                      <View style={{ flex: 1, paddingRight: s(10) }}>
+                        <Text style={{ fontSize: s(14), fontWeight: '700', color: Theme.colors.text.primary }}>
                           {group.title}
                         </Text>
                         {!!startLabel && !!endLabel && (
-                          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 4 }}>
+                          <Text style={{ fontSize: s(11), color: Theme.colors.text.secondary, marginTop: s(4) }}>
                             {startLabel} - {endLabel}
                           </Text>
                         )}
-                        <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 4 }}>
+                        <Text style={{ fontSize: s(11), color: Theme.colors.text.secondary, marginTop: s(4) }}>
                           {group.payments.length} payment(s)
                           {'  '}|{'  '}Total ₹{Math.round(group.totalPaid)}
                         </Text>
                         {group.due > 0 && (
-                          <Text style={{ fontSize: 11, color: isSettled ? '#10B981' : '#F97316', marginTop: 4, fontWeight: '700' }}>
+                          <Text style={{ fontSize: s(11), color: isSettled ? '#10B981' : '#F97316', marginTop: s(4), fontWeight: '700' }}>
                             {isSettled ? 'No pending for this month' : `Pending ₹${group.remainingDue.toFixed(2)}`}
                           </Text>
                         )}
                       </View>
 
                       <View style={{
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
-                        borderRadius: 10,
+                        paddingHorizontal: s(10),
+                        paddingVertical: s(6),
+                        borderRadius: s(10),
                         backgroundColor: statusColor.bg,
                         alignSelf: 'flex-start',
                       }}>
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: statusColor.text }}>
+                        <Text style={{ fontSize: s(10), fontWeight: '800', color: statusColor.text }}>
                           {statusColor.icon} {group.status}
                         </Text>
                       </View>
                     </View>
 
-                    <View style={{ height: 10 }} />
+                    <View style={{ height: s(10) }} />
 
                     {group.payments.map((payment) => {
                       const paymentPg = (payment as any)?.pg_id ?? '';
@@ -439,41 +436,41 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                           key={payment.s_no}
                           style={{
                             backgroundColor: '#F9FAFB',
-                            padding: 10,
-                            borderRadius: 10,
-                            marginBottom: 10,
+                            padding: s(10),
+                            borderRadius: s(10),
+                            marginBottom: s(10),
                             borderWidth: 1,
                             borderColor: '#E5E7EB',
                           }}
                         >
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ flex: 1, paddingRight: 10 }}>
-                              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                            <View style={{ flex: 1, paddingRight: s(10) }}>
+                              <Text style={{ fontSize: s(12), color: Theme.colors.text.tertiary }}>
                                 {new Date(payment.payment_date).toLocaleDateString('en-IN', {
                                   day: '2-digit',
                                   month: 'short',
                                   year: 'numeric',
                                 })}
                               </Text>
-                              <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 4 }}>
+                              <Text style={{ fontSize: s(11), color: Theme.colors.text.secondary, marginTop: s(4) }}>
                                 {paymentAccommodationLabel}
                               </Text>
                             </View>
 
                             <View style={{ alignItems: 'flex-end' }}>
-                              <Text style={{ fontSize: 13, fontWeight: '800', color: Theme.colors.text.primary }}>
+                              <Text style={{ fontSize: s(13), fontWeight: '800', color: Theme.colors.text.primary }}>
                                 ₹{Number(payment.amount_paid || 0).toLocaleString('en-IN')}
                               </Text>
-                              <Text style={{ fontSize: 10, fontWeight: '700', color: Theme.colors.text.secondary, marginTop: 2 }}>
+                              <Text style={{ fontSize: s(10), fontWeight: '700', color: Theme.colors.text.secondary, marginTop: s(2) }}>
                                 Bed Rent ₹{Number((payment as any)?.bed_rent_amount_snapshot ?? (payment as any)?.beds?.bed_price ?? 0).toLocaleString('en-IN')}
                               </Text>
                               {payment.status === 'PARTIAL' && installmentSettled !== undefined && installmentSettled !== null && (
                                 <Text
                                   style={{
-                                    fontSize: 10,
+                                    fontSize: s(10),
                                     fontWeight: '800',
                                     color: installmentSettled ? '#10B981' : '#F97316',
-                                    marginTop: 2,
+                                    marginTop: s(2),
                                   }}
                                 >
                                   {installmentSettled ? 'Cleared' : 'Not cleared'}
@@ -482,11 +479,11 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                             </View>
                           </View>
 
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                            <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: s(8) }}>
+                            <Text style={{ fontSize: s(11), color: Theme.colors.text.secondary }}>
                               {payment.payment_method || 'N/A'}
                             </Text>
-                            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            <View style={{ flexDirection: 'row', gap: s(8), flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                               <ActionButtons
                                 onDelete={() => handleVoidPayment(payment)}
                                 showView={false}
@@ -494,41 +491,12 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                                 showDelete={canVoidRentPayment}
                                 disableDelete={!canVoidRentPayment}
                               />
-                              <TouchableOpacity
-                                onPress={() => handleViewReceipt(payment)}
-                                style={{
-                                  paddingVertical: 8,
-                                  paddingHorizontal: 12,
-                                  backgroundColor: '#DBEAFE',
-                                  borderRadius: 8,
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                }}
-                              >
-                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#1D4ED8' }}>
-                                  View Invoice
-                                </Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                onPress={() => handleShareReceipt(payment)}
-                                style={{
-                                  paddingVertical: 8,
-                                  paddingHorizontal: 12,
-                                  backgroundColor: '#FEF3C7',
-                                  borderRadius: 8,
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                }}
-                              >
-                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>
-                                  Share Invoice
-                                </Text>
-                              </TouchableOpacity>
+                              {renderPaymentActions(payment)}
                             </View>
                           </View>
 
                           {!!payment.remarks && (
-                            <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, fontStyle: 'italic', marginTop: 6 }}>
+                            <Text style={{ fontSize: s(10), color: Theme.colors.text.tertiary, fontStyle: 'italic', marginTop: s(6) }}>
                               {payment.remarks}
                             </Text>
                           )}
@@ -539,26 +507,27 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                 </AnimatedPressableCard>
               );
             })}
-            <View style={{ height: 20 }} />
+            <View style={{ height: s(20) }} />
+            </View>
           </ScrollView>
         ) : (
           !loading && (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: s(16) }}>
               <View style={{
-                width: 80,
-                height: 80,
-                borderRadius: 40,
+                width: s(80),
+                height: s(80),
+                borderRadius: s(40),
                 backgroundColor: '#F3F4F6',
                 justifyContent: 'center',
                 alignItems: 'center',
-                marginBottom: 16,
+                marginBottom: s(16),
               }}>
-                <Ionicons name="document-outline" size={48} color={Theme.colors.text.tertiary} />
+                <Ionicons name="document-outline" size={s(48)} color={Theme.colors.text.tertiary} />
               </View>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 8 }}>
+              <Text style={{ fontSize: s(16), fontWeight: '600', color: Theme.colors.text.primary, marginBottom: s(8) }}>
                 No Rent Payments
               </Text>
-              <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, textAlign: 'center' }}>
+              <Text style={{ fontSize: s(13), color: Theme.colors.text.secondary, textAlign: 'center' }}>
                 No rent payments have been recorded for this tenant yet.
               </Text>
             </View>
@@ -568,14 +537,18 @@ export const TenantRentPaymentsScreen: React.FC = () => {
 
       {/* Receipt View Modal */}
       <ReceiptViewModal
-        visible={receiptModalVisible}
+        visible={showReceiptModal}
         receiptData={receiptData}
         receiptRef={receiptRef}
-        onClose={() => setReceiptModalVisible(false)}
+        onClose={() => {
+          setShowReceiptModal(false);
+          // Only clear receipt data after a small delay to ensure sharing is complete
+          setTimeout(() => setReceiptData(null), 1000);
+        }}
       />
 
       {/* Hidden receipt for capture (off-screen) */}
-      {receiptData && !receiptModalVisible && (
+      {receiptData && !showReceiptModal && (
         <View style={{ position: 'absolute', left: -9999 }}>
           <View ref={receiptRef} collapsable={false}>
             <CompactReceiptGenerator.ReceiptComponent data={receiptData} />
@@ -600,8 +573,8 @@ export const TenantRentPaymentsScreen: React.FC = () => {
         enableFullHeightDrag={false}
         enableFlexibleHeightDrag={true}
       >
-        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+        <View style={{ paddingHorizontal: s(16), paddingBottom: s(12) }}>
+          <Text style={{ fontSize: s(12), color: Theme.colors.text.secondary, marginBottom: s(8) }}>
             Provide a reason. Deleting reopens dues for that cycle and affects reports.
           </Text>
           <TextInput
@@ -612,9 +585,9 @@ export const TenantRentPaymentsScreen: React.FC = () => {
             style={{
               borderWidth: 1,
               borderColor: '#E5E7EB',
-              borderRadius: 10,
-              padding: 12,
-              minHeight: 90,
+              borderRadius: s(10),
+              padding: s(12),
+              minHeight: s(90),
               textAlignVertical: 'top',
               backgroundColor: '#FFFFFF',
               color: Theme.colors.text.primary,

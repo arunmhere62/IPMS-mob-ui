@@ -1,3 +1,4 @@
+import { BottomNavVisibilityProvider } from '../components/BottomNavVisibility';
 import React from 'react';
 import { View } from 'react-native';
 import { useSelector } from 'react-redux';
@@ -132,28 +133,30 @@ const MainTabs = () => {
   ];
 
   return (
-    <View style={{ flex: 1, position: 'relative' }}>
-      <View style={{ flex: 1, }}>
-        <Tab.Navigator
-          screenOptions={{
-            headerShown: false,
-            tabBarStyle: { display: 'none' },
-            lazy: true,
-          }}
-          sceneContainerStyle={{ backgroundColor: Theme.colors.background.primary }}
-          initialRouteName="Dashboard"
-        >
-          {screens.map((screen) => (
-            <Tab.Screen
-              key={screen.name}
-              name={screen.name}
-              component={screen.component}
-            />
-          ))}
-        </Tab.Navigator>
+    <BottomNavVisibilityProvider>
+      <View style={{ flex: 1, position: 'relative' }}>
+        <View style={{ flex: 1, }}>
+          <Tab.Navigator
+            screenOptions={{
+              headerShown: false,
+              tabBarStyle: { display: 'none' },
+              lazy: true,
+            }}
+            sceneContainerStyle={{ backgroundColor: Theme.colors.background.primary }}
+            initialRouteName="Dashboard"
+          >
+            {screens.map((screen) => (
+              <Tab.Screen
+                key={screen.name}
+                name={screen.name}
+                component={screen.component}
+              />
+            ))}
+          </Tab.Navigator>
+        </View>
+        <BottomNav navigation={navigation} currentRoute={currentRoute} />
       </View>
-      <BottomNav navigation={navigation} currentRoute={currentRoute} />
-    </View>
+    </BottomNavVisibilityProvider>
   );
 };
 

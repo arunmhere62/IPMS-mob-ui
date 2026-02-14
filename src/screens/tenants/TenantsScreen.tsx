@@ -25,6 +25,7 @@ import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { Tenant, useLazyGetTenantsQuery } from '../../services/api/tenantsApi';
 import { useGetAllRoomsQuery } from '../../services/api/roomsApi';
+import { useBottomNavScrollHandler } from '../../components/BottomNavVisibility';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -35,6 +36,12 @@ interface TenantsScreenProps {
 export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const route = useRoute<any>();
   const { selectedPGLocationId } = useSelector((state: RootState) => state?.pgLocations);
+  const {
+    onScroll: bottomNavOnScroll,
+    scrollEventThrottle: bottomNavThrottle,
+    onScrollEndDrag: bottomNavOnScrollEndDrag,
+    onMomentumScrollEnd: bottomNavOnMomentumScrollEnd,
+  } = useBottomNavScrollHandler();
 
   const [triggerTenants, tenantsQuery] = useLazyGetTenantsQuery();
 
@@ -1313,8 +1320,11 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               viewabilityConfig={viewabilityConfig}
               onScroll={(event) => {
                 scrollPositionRef.current = event.nativeEvent.contentOffset.y;
+                bottomNavOnScroll(event);
               }}
-              scrollEventThrottle={16}
+              onScrollEndDrag={bottomNavOnScrollEndDrag}
+              onMomentumScrollEnd={bottomNavOnMomentumScrollEnd}
+              scrollEventThrottle={bottomNavThrottle}
             />
           </>
         )}

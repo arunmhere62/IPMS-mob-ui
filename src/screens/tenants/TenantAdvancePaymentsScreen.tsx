@@ -234,21 +234,6 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
     setReceiptModalVisible(true);
   };
 
-  const handleShareReceipt = async (payment: AdvancePayment) => {
-    try {
-      const data = prepareReceiptData(payment);
-      setReceiptData(data);
-      
-      setTimeout(async () => {
-        await CompactReceiptGenerator.shareImage(receiptRef);
-        setReceiptData(null);
-      }, 100);
-    } catch (_error) {
-      Alert.alert('Error', 'Failed to share receipt');
-      setReceiptData(null);
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PAID':
@@ -438,21 +423,6 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                           💬 WhatsApp
                         </Text>
                       </TouchableOpacity> */}
-                      <TouchableOpacity
-                        onPress={() => handleShareReceipt(payment)}
-                        style={{
-                          paddingVertical: 8,
-                          paddingHorizontal: 12,
-                          backgroundColor: '#FEF3C7',
-                          borderRadius: 8,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>
-                          Share Invoice
-                        </Text>
-                      </TouchableOpacity>
                     </View>
                   </Card>
                 </AnimatedPressableCard>

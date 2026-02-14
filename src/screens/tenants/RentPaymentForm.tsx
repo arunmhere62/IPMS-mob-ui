@@ -702,7 +702,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       {/* Form */}
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
 
-        <View style={{ gap: 12, paddingBottom: 16 }}>
+        <View style={{ gap: 20, paddingBottom: 24, paddingHorizontal: 4 }}>
 
         {/* Amount to Pay moved into PaymentReference */}
         
@@ -722,7 +722,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
           error={errors.payment_date}
         />
 
-        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', gap: 16 }}>
           <View style={{ flex: 1 }}>
             <DatePicker
               label="Start Date"
@@ -784,7 +784,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
         </View>
 
         {/* Remarks */}
-        <View style={{ marginBottom: 16 }}>
+        <View style={{ marginTop: 8 }}>
           <Text
             style={{
               fontSize: 13,
