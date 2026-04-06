@@ -14,4 +14,9 @@ config.symbolicator = {
   },
 };
 
+// Ensure proper resolver for TypeScript and alias paths
+config.resolver.alias = {
+  '@': './src',
+};
+
 module.exports = config;

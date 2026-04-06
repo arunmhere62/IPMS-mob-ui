@@ -1,0 +1,15 @@
+# Ignore common development and large files to speed up EAS builds
+node_modules/
+.expo/
+android/
+ios/
+.git/
+*.log
+.DS_Store
+coverage/
+.nyc_output/
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

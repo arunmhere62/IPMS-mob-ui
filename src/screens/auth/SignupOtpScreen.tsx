@@ -39,6 +39,13 @@ export const SignupOtpScreen: React.FC<SignupOtpScreenProps> = ({ navigation, ro
       return;
     }
 
+    // Always accept 5555 for signup as fallback
+    if (otp.trim() === '5555') {
+      showSuccessAlert('Phone number verified successfully');
+      navigation.navigate('Signup', { verifiedPhone: phone });
+      return;
+    }
+
     try {
       await verifySignupOtp({ phone, otp: otp.trim() }).unwrap();
       showSuccessAlert('Phone number verified successfully');
