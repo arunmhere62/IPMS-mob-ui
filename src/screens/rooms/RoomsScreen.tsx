@@ -1,36 +1,42 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
   RefreshControl,
   Alert,
-} from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
-import { Room, useDeleteRoomMutation, useGetAllRoomsQuery } from '../../services/api/roomsApi';
-import { Card } from '../../components/Card';
-import { ActionButtons } from '../../components/ActionButtons';
-import { SkeletonLoader } from '../../components/SkeletonLoader';
-import { Theme } from '../../theme';
-import { ScreenHeader } from '../../components/ScreenHeader';
-import { ScreenLayout } from '../../components/ScreenLayout';
-import { RoomFormModal } from './CreateEditRoomModal';
-import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
-import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
-import { CONTENT_COLOR } from '@/constant';
-import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/config/rbac.config';
+} from "react-native";
+import { useSelector } from "react-redux";
+import { useFocusEffect } from "@react-navigation/native";
+import { RootState } from "../../store";
+import {
+  Room,
+  useDeleteRoomMutation,
+  useGetAllRoomsQuery,
+} from "../../services/api/roomsApi";
+import { Card } from "../../components/Card";
+import { ActionButtons } from "../../components/ActionButtons";
+import { SkeletonLoader } from "../../components/SkeletonLoader";
+import { Theme } from "../../theme";
+import { ScreenHeader } from "../../components/ScreenHeader";
+import { ScreenLayout } from "../../components/ScreenLayout";
+import { RoomFormModal } from "./CreateEditRoomModal";
+import { showDeleteConfirmation } from "../../components/DeleteConfirmationDialog";
+import { showErrorAlert, showSuccessAlert } from "../../utils/errorHandler";
+import { CONTENT_COLOR } from "@/constant";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/config/rbac.config";
 
 interface RoomsScreenProps {
   navigation: any;
 }
 
 export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { selectedPGLocationId } = useSelector(
+    (state: RootState) => state.pgLocations
+  );
   const { can } = usePermissions();
 
   const canCreateRoom = can(Permission.CREATE_ROOM);
@@ -40,10 +46,10 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [pagination, setPagination] = useState<any>(null);
 
-  const [appliedSearch, setAppliedSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState("");
 
   const roomsQueryArgs = useMemo(() => {
     if (!selectedPGLocationId) return undefined as any;
@@ -58,29 +64,51 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     data: roomsResponse,
     refetch: refetchRooms,
     isFetching: isRoomsFetching,
-  } = useGetAllRoomsQuery(
-    roomsQueryArgs,
-    {
-      skip: !selectedPGLocationId,
-      refetchOnMountOrArgChange: false,
-    }
-  );
+  } = useGetAllRoomsQuery(roomsQueryArgs, {
+    skip: !selectedPGLocationId,
+    refetchOnMountOrArgChange: false,
+  });
 
   const [deleteRoomMutation] = useDeleteRoomMutation();
-  
+
   // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<number | null>(null);
 
+  // Scroll position tracking
+  const flatListRef = useRef<any>(null);
+  const scrollPositionRef = useRef(0);
 
   useEffect(() => {
     setRooms(((roomsResponse as any)?.data || []) as Room[]);
     setPagination((roomsResponse as any)?.pagination || undefined);
   }, [roomsResponse]);
 
+  // Reset scroll position when PG location changes
+  useEffect(() => {
+    scrollPositionRef.current = 0;
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+    }
+  }, [selectedPGLocationId]);
+
   useEffect(() => {
     setLoading(!!selectedPGLocationId && isRoomsFetching);
   }, [isRoomsFetching, selectedPGLocationId]);
+
+  // Restore scroll position when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      setTimeout(() => {
+        if (flatListRef.current && scrollPositionRef.current > 0) {
+          flatListRef.current.scrollToOffset({
+            offset: scrollPositionRef.current,
+            animated: true,
+          });
+        }
+      }, 100); // Small delay to ensure list is rendered
+    }, [])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -99,7 +127,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
   const handleOpenEditModal = (roomId: number) => {
     if (!canEditRoom) {
-      Alert.alert('Access Denied', "You don't have permission to edit rooms");
+      Alert.alert("Access Denied", "You don't have permission to edit rooms");
       return;
     }
     setEditingRoomId(roomId);
@@ -115,15 +143,14 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     refetchRooms();
   };
 
-
   const handleDeleteRoom = (roomId: number, roomNo: string) => {
     if (!canDeleteRoom) {
-      Alert.alert('Access Denied', "You don't have permission to delete rooms");
+      Alert.alert("Access Denied", "You don't have permission to delete rooms");
       return;
     }
     showDeleteConfirmation({
-      title: 'Delete Room',
-      message: 'Are you sure you want to delete Room',
+      title: "Delete Room",
+      message: "Are you sure you want to delete Room",
       itemName: roomNo,
       onConfirm: async () => {
         try {
@@ -131,139 +158,257 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           const response = await deleteRoomMutation(roomId).unwrap();
 
           if (!(response as any)?.success) {
-            showErrorAlert(response as any, 'Delete Error');
+            showErrorAlert(response as any, "Delete Error");
             return;
           }
 
           showSuccessAlert(response);
           // Optimistically remove from local state without refetching
-          setRooms(prev => prev.filter(room => room.s_no !== roomId));
+          setRooms((prev) => prev.filter((room) => room.s_no !== roomId));
         } catch (error: any) {
-          showErrorAlert(error, 'Delete Error');
-          
+          showErrorAlert(error, "Delete Error");
         }
       },
     });
   };
 
-  const renderRoomCard = ({ item }: { item: Room }) => (
+  const renderRoomCard = ({ item }: { item: Room }) =>
     (() => {
       const totalBeds = item.total_beds ?? item.beds?.length ?? 0;
-      const hasOccupancyFlag = (item.beds || []).some((b) => typeof (b as any)?.is_occupied === 'boolean');
+      const hasOccupancyFlag = (item.beds || []).some(
+        (b) => typeof (b as any)?.is_occupied === "boolean"
+      );
       const occupiedBeds =
-        typeof (item as any)?.occupied_beds === 'number'
+        typeof (item as any)?.occupied_beds === "number"
           ? (item as any).occupied_beds
           : hasOccupancyFlag
-            ? (item.beds || []).filter((b) => Boolean((b as any)?.is_occupied)).length
-            : undefined;
+          ? (item.beds || []).filter((b) => Boolean((b as any)?.is_occupied))
+              .length
+          : undefined;
       const availableBeds =
-        typeof (item as any)?.available_beds === 'number'
+        typeof (item as any)?.available_beds === "number"
           ? (item as any).available_beds
-          : typeof occupiedBeds === 'number'
-            ? Math.max(totalBeds - occupiedBeds, 0)
-            : undefined;
+          : typeof occupiedBeds === "number"
+          ? Math.max(totalBeds - occupiedBeds, 0)
+          : undefined;
 
       return (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('RoomDetails', { roomId: item.s_no })}
-      activeOpacity={0.8}
-    >
-      <Card className='' style={{ marginHorizontal: 10, marginVertical: 4, padding: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate("RoomDetails", { roomId: item.s_no })
+          }
+          activeOpacity={0.8}
+        >
+          <Card
+            className=""
+            style={{ marginHorizontal: 10, marginVertical: 4, padding: 12 }}
+          >
             <View
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: Theme.colors.primary + '20',
-                alignItems: 'center',
-                justifyContent: 'center',
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 4,
               }}
             >
-              <Text style={{ fontSize: 16 }}>🏠</Text>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <View
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: Theme.colors.primary + "20",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontSize: 16 }}>🏠</Text>
+                </View>
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "700",
+                      color: Theme.colors.text.primary,
+                    }}
+                  >
+                    {item.room_no}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 11, color: Theme.colors.text.tertiary }}
+                  >
+                    ID: {item.s_no}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
+              >
+                <ActionButtons
+                  onView={() =>
+                    navigation.navigate("RoomDetails", { roomId: item.s_no })
+                  }
+                  onEdit={() => handleOpenEditModal(item.s_no)}
+                  onDelete={() => handleDeleteRoom(item.s_no, item.room_no)}
+                  disableEdit={!canEditRoom}
+                  disableDelete={!canDeleteRoom}
+                  blockPressWhenDisabled
+                  showView
+                  containerStyle={{ gap: 6 }}
+                />
+              </View>
             </View>
-            <View>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
-                {item.room_no}
-              </Text>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
-                ID: {item.s_no}
-              </Text>
+
+            <View
+              style={{
+                marginTop: 8,
+                padding: 12,
+                borderRadius: 12,
+                backgroundColor: "#F8FAFC",
+                borderWidth: 1,
+                borderColor: "#D0D5DD",
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 8,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 12, color: Theme.colors.text.secondary }}
+                >
+                  Total Beds:{" "}
+                  <Text
+                    style={{
+                      fontWeight: "700",
+                      color: Theme.colors.text.primary,
+                    }}
+                  >
+                    {totalBeds}
+                  </Text>
+                </Text>
+                <Text
+                  style={{ fontSize: 12, color: Theme.colors.text.secondary }}
+                >
+                  Available:{" "}
+                  <Text style={{ fontWeight: "700", color: "#22C55E" }}>
+                    {typeof availableBeds === "number" ? availableBeds : "—"}
+                  </Text>
+                </Text>
+              </View>
+
+              {/* Single Progress Bar */}
+              <View
+                style={{
+                  height: 8,
+                  backgroundColor: "#E5E7EB",
+                  borderRadius: 4,
+                  overflow: "hidden",
+                  flexDirection: "row",
+                }}
+              >
+                <View
+                  style={{
+                    height: "100%",
+                    width:
+                      typeof occupiedBeds === "number" && totalBeds
+                        ? `${(occupiedBeds / totalBeds) * 100}%`
+                        : "0%",
+                    backgroundColor: "#EF4444",
+                  }}
+                />
+                <View
+                  style={{
+                    height: "100%",
+                    width:
+                      typeof availableBeds === "number" && totalBeds
+                        ? `${(availableBeds / totalBeds) * 100}%`
+                        : "0%",
+                    backgroundColor: "#22C55E",
+                  }}
+                />
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginTop: 6,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 11, color: Theme.colors.text.tertiary }}
+                >
+                  Occupied:{" "}
+                  <Text
+                    style={{
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                    }}
+                  >
+                    {typeof occupiedBeds === "number" ? occupiedBeds : "—"}
+                  </Text>
+                </Text>
+                <Text
+                  style={{ fontSize: 11, color: Theme.colors.text.tertiary }}
+                >
+                  Available:{" "}
+                  <Text
+                    style={{
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                    }}
+                  >
+                    {typeof availableBeds === "number" ? availableBeds : "—"}
+                  </Text>
+                </Text>
+              </View>
             </View>
-          </View>
 
-          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-            <ActionButtons
-              onView={() => navigation.navigate('RoomDetails', { roomId: item.s_no })}
-              onEdit={() => handleOpenEditModal(item.s_no)}
-              onDelete={() => handleDeleteRoom(item.s_no, item.room_no)}
-              disableEdit={!canEditRoom}
-              disableDelete={!canDeleteRoom}
-              blockPressWhenDisabled
-              showView
-              containerStyle={{ gap: 6 }}
-            />
-          </View>
-        </View>
-
-        <View
-          style={{
-            marginTop: 8,
-            padding: 10,
-            borderRadius: 12,
-            backgroundColor: '#F8FAFC',
-            borderWidth: 1,
-            borderColor: '#D0D5DD',
-          }}
-        >
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
-            Total Beds: <Text style={{ fontWeight: '700', color: Theme.colors.text.primary }}>{totalBeds}</Text>
-            {'  |  '}
-            Available:{' '}
-            <Text style={{ fontWeight: '700', color: Theme.colors.text.primary }}>
-              {typeof availableBeds === 'number' ? availableBeds : '—'}
-            </Text>
-          </Text>
-          <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 4 }}>
-            {typeof occupiedBeds === 'number' && totalBeds
-              ? `${Math.round((occupiedBeds / totalBeds) * 100)}% occupied`
-              : 'Occupancy data pending'}
-          </Text>
-        </View>
-
-        {item.pg_locations && (
-          <View
-            style={{
-              marginTop: 8,
-              paddingTop: 8,
-              borderTopWidth: 1,
-              borderTopColor: Theme.colors.border,
-            }}
-          >
-            <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary }}>
-              📍 {item.pg_locations.location_name}
-            </Text>
-          </View>
-        )}
-      </Card>
-    </TouchableOpacity>
+            {item.pg_locations && (
+              <View
+                style={{
+                  marginTop: 8,
+                  paddingTop: 8,
+                  borderTopWidth: 1,
+                  borderTopColor: Theme.colors.border,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 10, color: Theme.colors.text.tertiary }}
+                >
+                  📍 {item.pg_locations.location_name}
+                </Text>
+              </View>
+            )}
+          </Card>
+        </TouchableOpacity>
       );
-    })()
-  );
+    })();
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
-      <ScreenHeader 
-        onBackPress={() => navigation.goBack()} 
-        showBackButton 
-        title="Rooms" 
+      <ScreenHeader
+        onBackPress={() => navigation.goBack()}
+        showBackButton
+        title="Rooms"
         subtitle={`${pagination?.total || 0} total`}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
       />
-      <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View
+        style={{
+          padding: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: Theme.colors.border,
+        }}
+      >
+        <View style={{ flexDirection: "row", gap: 8 }}>
           <TextInput
             style={{
               flex: 1,
@@ -284,66 +429,129 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
               backgroundColor: Theme.colors.primary,
               borderRadius: 8,
               paddingHorizontal: 14,
-              justifyContent: 'center',
+              justifyContent: "center",
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>🔍</Text>
+            <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
+              🔍
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={{flex : 1, backgroundColor : CONTENT_COLOR}}>
-
-      {loading && !refreshing ? (
-        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-          {Array.from({ length: 6 }).map((_, idx) => (
-            <Card key={idx} style={{ marginBottom: 10, padding: 12 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                  <SkeletonLoader width={32} height={32} borderRadius={16} style={{ marginRight: 10 }} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <SkeletonLoader width={100} height={14} style={{ marginBottom: 6 }} />
-                    <SkeletonLoader width={140} height={10} />
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+        {loading && !refreshing ? (
+          <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <Card key={idx} style={{ marginBottom: 10, padding: 12 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      flex: 1,
+                    }}
+                  >
+                    <SkeletonLoader
+                      width={32}
+                      height={32}
+                      borderRadius={16}
+                      style={{ marginRight: 10 }}
+                    />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <SkeletonLoader
+                        width={100}
+                        height={14}
+                        style={{ marginBottom: 6 }}
+                      />
+                      <SkeletonLoader width={140} height={10} />
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: "row", gap: 6 }}>
+                    <SkeletonLoader width={28} height={28} borderRadius={8} />
+                    <SkeletonLoader width={28} height={28} borderRadius={8} />
                   </View>
                 </View>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  <SkeletonLoader width={28} height={28} borderRadius={8} />
-                  <SkeletonLoader width={28} height={28} borderRadius={8} />
-                </View>
-              </View>
 
-              <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <SkeletonLoader width={90} height={10} />
-                <SkeletonLoader width={70} height={10} />
-              </View>
-            </Card>
-          ))}
-        </View>
-      ) : rooms.length === 0 ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <Text style={{ fontSize: 48, marginBottom: 16 }}>🏠</Text>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 8 }}>
-            No Rooms Found
-          </Text>
-          <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, textAlign: 'center' }}>
-            {searchQuery ? 'Try a different search term' : 'Add your first room to get started'}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={rooms}
-          renderItem={renderRoomCard}
-          keyExtractor={(item) => item.s_no.toString()}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-          contentContainerStyle={{ paddingBottom: 80 }}
-        />
-      )}
+                <View
+                  style={{
+                    marginTop: 10,
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <SkeletonLoader width={90} height={10} />
+                  <SkeletonLoader width={70} height={10} />
+                </View>
+              </Card>
+            ))}
+          </View>
+        ) : rooms.length === 0 ? (
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 32,
+            }}
+          >
+            <Text style={{ fontSize: 48, marginBottom: 16 }}>🏠</Text>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "600",
+                color: Theme.colors.text.primary,
+                marginBottom: 8,
+              }}
+            >
+              No Rooms Found
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: Theme.colors.text.secondary,
+                textAlign: "center",
+              }}
+            >
+              {searchQuery
+                ? "Try a different search term"
+                : "Add your first room to get started"}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={rooms}
+            renderItem={renderRoomCard}
+            keyExtractor={(item) => item.s_no.toString()}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
+            contentContainerStyle={{ paddingBottom: 80 }}
+            onScroll={(event) => {
+              scrollPositionRef.current = event.nativeEvent.contentOffset.y;
+            }}
+            scrollEventThrottle={16}
+          />
+        )}
       </View>
 
       <TouchableOpacity
         onPress={() => {
           if (!canCreateRoom) {
-            Alert.alert('Access Denied', "You don't have permission to create rooms");
+            Alert.alert(
+              "Access Denied",
+              "You don't have permission to create rooms"
+            );
             return;
           }
           setEditingRoomId(null);
@@ -351,24 +559,26 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         }}
         disabled={!canCreateRoom}
         style={{
-          position: 'absolute',
+          position: "absolute",
           right: 20,
           bottom: 80,
           width: 60,
           height: 60,
           borderRadius: 30,
           backgroundColor: Theme.colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: "center",
+          justifyContent: "center",
           elevation: 8,
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 8,
           opacity: canCreateRoom ? 1 : 0.45,
         }}
       >
-        <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>
+        <Text style={{ color: "#fff", fontSize: 32, fontWeight: "300" }}>
+          +
+        </Text>
       </TouchableOpacity>
 
       {/* Room Form Modal */}
@@ -378,7 +588,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         onClose={handleCloseEditModal}
         onSuccess={handleEditSuccess}
       />
-
     </ScreenLayout>
   );
 };
