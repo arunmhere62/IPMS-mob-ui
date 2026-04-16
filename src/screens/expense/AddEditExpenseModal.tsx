@@ -1,49 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Theme } from '../../theme';
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, TextInput, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Theme } from "../../theme";
 import {
   Expense,
   PaymentMethod,
   useCreateExpenseMutation,
   useUpdateExpenseMutation,
-} from '../../services/api/expensesApi';
-import { DatePicker } from '../../components/DatePicker';
-import { SlideBottomModal } from '../../components/SlideBottomModal';
-import { OptionSelector } from '../../components/OptionSelector';
-import { AmountInput } from '../../components/AmountInput';
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+} from "../../services/api/expensesApi";
+import { DatePicker } from "../../components/DatePicker";
+import { SlideBottomModal } from "../../components/SlideBottomModal";
+import { OptionSelector } from "../../components/OptionSelector";
+import { AmountInput } from "../../components/AmountInput";
+import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 
 interface AddEditExpenseModalProps {
   visible: boolean;
   expense: Expense | null;
   onClose: () => void;
   onSave: () => void;
+  onRefetchMonthlyMetrics?: () => void;
 }
 
 const PAYMENT_METHODS = [
-  { label: 'GPay', value: PaymentMethod.GPAY, icon: 'logo-google', color: '#4285F4' },
-  { label: 'PhonePe', value: PaymentMethod.PHONEPE, icon: 'phone-portrait-outline', color: '#5F259F' },
-  { label: 'Cash', value: PaymentMethod.CASH, icon: 'cash-outline', color: '#10B981' },
-  { label: 'Bank Transfer', value: PaymentMethod.BANK_TRANSFER, icon: 'card-outline', color: '#F59E0B' },
+  {
+    label: "GPay",
+    value: PaymentMethod.GPAY,
+    icon: "logo-google",
+    color: "#4285F4",
+  },
+  {
+    label: "PhonePe",
+    value: PaymentMethod.PHONEPE,
+    icon: "phone-portrait-outline",
+    color: "#5F259F",
+  },
+  {
+    label: "Cash",
+    value: PaymentMethod.CASH,
+    icon: "cash-outline",
+    color: "#10B981",
+  },
+  {
+    label: "Bank Transfer",
+    value: PaymentMethod.BANK_TRANSFER,
+    icon: "card-outline",
+    color: "#F59E0B",
+  },
 ];
 
 const EXPENSE_TYPES = [
-  'Electricity Bill',
-  'Water Bill',
-  'Internet Bill',
-  'Maintenance',
-  'Repairs',
-  'Groceries',
-  'Cleaning',
-  'Security',
-  'Salary',
+  "Electricity Bill",
+  "Water Bill",
+  "Internet Bill",
+  "Maintenance",
+  "Repairs",
+  "Groceries",
+  "Cleaning",
+  "Security",
+  "Salary",
 ];
 
 export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
@@ -51,18 +66,21 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
   expense,
   onClose,
   onSave,
+  onRefetchMonthlyMetrics,
 }) => {
   const [createExpense] = useCreateExpenseMutation();
   const [updateExpense] = useUpdateExpenseMutation();
 
-  const [expenseType, setExpenseType] = useState('');
-  const [customExpenseType, setCustomExpenseType] = useState('');
+  const [expenseType, setExpenseType] = useState("");
+  const [customExpenseType, setCustomExpenseType] = useState("");
   const [showCustomType, setShowCustomType] = useState(false);
-  const [amount, setAmount] = useState('');
-  const [paidTo, setPaidTo] = useState('');
-  const [paidDate, setPaidDate] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
-  const [remarks, setRemarks] = useState('');
+  const [amount, setAmount] = useState("");
+  const [paidTo, setPaidTo] = useState("");
+  const [paidDate, setPaidDate] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    PaymentMethod.CASH
+  );
+  const [remarks, setRemarks] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<any>({});
 
@@ -71,17 +89,17 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
       if (expense) {
         // Edit mode
         const isCustomType = !EXPENSE_TYPES.includes(expense.expense_type);
-        setExpenseType(isCustomType ? '' : expense.expense_type);
-        setCustomExpenseType(isCustomType ? expense.expense_type : '');
+        setExpenseType(isCustomType ? "" : expense.expense_type);
+        setCustomExpenseType(isCustomType ? expense.expense_type : "");
         setShowCustomType(isCustomType);
         setAmount(expense.amount.toString());
         setPaidTo(expense.paid_to);
-        setPaidDate(expense.paid_date.split('T')[0]);
+        setPaidDate(expense.paid_date.split("T")[0]);
         setPaymentMethod(expense.payment_method);
-        setRemarks(expense.remarks || '');
+        setRemarks(expense.remarks || "");
       } else {
         // Add mode - set default date to today
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
         setPaidDate(today);
         setShowCustomType(false);
       }
@@ -93,21 +111,21 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
 
     const finalExpenseType = showCustomType ? customExpenseType : expenseType;
     if (!finalExpenseType.trim()) {
-      newErrors.expenseType = 'Expense type is required';
+      newErrors.expenseType = "Expense type is required";
     }
 
     if (!amount.trim()) {
-      newErrors.amount = 'Amount is required';
+      newErrors.amount = "Amount is required";
     } else if (isNaN(Number(amount)) || Number(amount) <= 0) {
-      newErrors.amount = 'Amount must be a positive number';
+      newErrors.amount = "Amount must be a positive number";
     }
 
     if (!paidTo.trim()) {
-      newErrors.paidTo = 'Paid to is required';
+      newErrors.paidTo = "Paid to is required";
     }
 
     if (!paidDate.trim()) {
-      newErrors.paidDate = 'Date is required';
+      newErrors.paidDate = "Date is required";
     }
 
     setErrors(newErrors);
@@ -115,7 +133,6 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
   };
 
   const handleSave = async () => {
-
     if (!validate()) {
       return;
     }
@@ -133,35 +150,36 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
         remarks: remarks.trim() || undefined,
       };
 
-
       if (expense) {
         // Update existing expense
         await updateExpense({ id: expense.s_no, data }).unwrap();
-        showSuccessAlert('Expense updated successfully');
+        showSuccessAlert("Expense updated successfully");
       } else {
         // Create new expense
         await createExpense(data).unwrap();
-        showSuccessAlert('Expense added successfully');
+        showSuccessAlert("Expense added successfully");
       }
 
       handleClose();
       onSave();
+      // Refresh monthly metrics on dashboard
+      onRefetchMonthlyMetrics?.();
     } catch (error: any) {
-      showErrorAlert(error, 'Expense Error');
+      showErrorAlert(error, "Expense Error");
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setExpenseType('');
-    setCustomExpenseType('');
+    setExpenseType("");
+    setCustomExpenseType("");
     setShowCustomType(false);
-    setAmount('');
-    setPaidTo('');
-    setPaidDate('');
+    setAmount("");
+    setPaidTo("");
+    setPaidDate("");
     setPaymentMethod(PaymentMethod.CASH);
-    setRemarks('');
+    setRemarks("");
     setErrors({});
     onClose();
   };
@@ -170,11 +188,11 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
     <SlideBottomModal
       visible={visible}
       onClose={handleClose}
-      title={expense ? 'Edit Expense' : 'Add Expense'}
-      subtitle={expense ? 'Update expense details' : 'Record a new expense'}
+      title={expense ? "Edit Expense" : "Add Expense"}
+      subtitle={expense ? "Update expense details" : "Record a new expense"}
       onSubmit={handleSave}
       onCancel={handleClose}
-      submitLabel={expense ? 'Update Expense' : 'Add Expense'}
+      submitLabel={expense ? "Update Expense" : "Add Expense"}
       cancelLabel="Cancel"
       isLoading={loading}
     >
@@ -183,7 +201,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
         <Text
           style={{
             fontSize: 14,
-            fontWeight: '600',
+            fontWeight: "600",
             color: Theme.colors.text.primary,
             marginBottom: 12,
           }}
@@ -192,11 +210,11 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
         </Text>
 
         {/* Toggle between predefined and custom */}
-        <View style={{ flexDirection: 'row', marginBottom: 8, gap: 8 }}>
+        <View style={{ flexDirection: "row", marginBottom: 8, gap: 8 }}>
           <TouchableOpacity
             onPress={() => {
               setShowCustomType(false);
-              setCustomExpenseType('');
+              setCustomExpenseType("");
             }}
             style={{
               flex: 1,
@@ -204,16 +222,22 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
               paddingHorizontal: 12,
               borderRadius: 8,
               borderWidth: 1,
-              borderColor: !showCustomType ? Theme.colors.primary : Theme.colors.border,
-              backgroundColor: !showCustomType ? Theme.colors.background.blueLight : Theme.colors.canvas,
-              alignItems: 'center',
+              borderColor: !showCustomType
+                ? Theme.colors.primary
+                : Theme.colors.border,
+              backgroundColor: !showCustomType
+                ? Theme.colors.background.blueLight
+                : Theme.colors.canvas,
+              alignItems: "center",
             }}
           >
             <Text
               style={{
                 fontSize: 13,
-                fontWeight: !showCustomType ? '600' : '400',
-                color: !showCustomType ? Theme.colors.primary : Theme.colors.text.secondary,
+                fontWeight: !showCustomType ? "600" : "400",
+                color: !showCustomType
+                  ? Theme.colors.primary
+                  : Theme.colors.text.secondary,
               }}
             >
               Predefined Types
@@ -222,7 +246,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
           <TouchableOpacity
             onPress={() => {
               setShowCustomType(true);
-              setExpenseType('');
+              setExpenseType("");
             }}
             style={{
               flex: 1,
@@ -230,16 +254,22 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
               paddingHorizontal: 12,
               borderRadius: 8,
               borderWidth: 1,
-              borderColor: showCustomType ? Theme.colors.primary : Theme.colors.border,
-              backgroundColor: showCustomType ? Theme.colors.background.blueLight : Theme.colors.canvas,
-              alignItems: 'center',
+              borderColor: showCustomType
+                ? Theme.colors.primary
+                : Theme.colors.border,
+              backgroundColor: showCustomType
+                ? Theme.colors.background.blueLight
+                : Theme.colors.canvas,
+              alignItems: "center",
             }}
           >
             <Text
               style={{
                 fontSize: 13,
-                fontWeight: showCustomType ? '600' : '400',
-                color: showCustomType ? Theme.colors.primary : Theme.colors.text.secondary,
+                fontWeight: showCustomType ? "600" : "400",
+                color: showCustomType
+                  ? Theme.colors.primary
+                  : Theme.colors.text.secondary,
               }}
             >
               Custom Type
@@ -248,7 +278,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
         </View>
 
         {!showCustomType ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {EXPENSE_TYPES.map((type) => (
               <TouchableOpacity
                 key={type}
@@ -258,15 +288,24 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
                   paddingVertical: 8,
                   borderRadius: 20,
                   borderWidth: 1,
-                  borderColor: expenseType === type ? Theme.colors.primary : Theme.colors.border,
-                  backgroundColor: expenseType === type ? Theme.colors.background.blueLight : Theme.colors.canvas,
+                  borderColor:
+                    expenseType === type
+                      ? Theme.colors.primary
+                      : Theme.colors.border,
+                  backgroundColor:
+                    expenseType === type
+                      ? Theme.colors.background.blueLight
+                      : Theme.colors.canvas,
                 }}
               >
                 <Text
                   style={{
                     fontSize: 13,
-                    fontWeight: expenseType === type ? '600' : '400',
-                    color: expenseType === type ? Theme.colors.primary : Theme.colors.text.primary,
+                    fontWeight: expenseType === type ? "600" : "400",
+                    color:
+                      expenseType === type
+                        ? Theme.colors.primary
+                        : Theme.colors.text.primary,
                   }}
                 >
                   {type}
@@ -283,7 +322,9 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
               color: Theme.colors.text.primary,
               backgroundColor: Theme.colors.input.background,
               borderWidth: 1,
-              borderColor: errors.expenseType ? Theme.colors.danger : Theme.colors.input.border,
+              borderColor: errors.expenseType
+                ? Theme.colors.danger
+                : Theme.colors.input.border,
               borderRadius: 8,
             }}
             placeholder="Enter custom expense type (e.g., Gas Bill, Pest Control)"
@@ -294,7 +335,9 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
           />
         )}
         {errors.expenseType && (
-          <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
+          <Text
+            style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}
+          >
             {errors.expenseType}
           </Text>
         )}
@@ -317,7 +360,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
         <Text
           style={{
             fontSize: 14,
-            fontWeight: '600',
+            fontWeight: "600",
             color: Theme.colors.text.primary,
             marginBottom: 8,
           }}
@@ -326,16 +369,22 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
         </Text>
         <View
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             backgroundColor: Theme.colors.input.background,
             borderWidth: 1,
-            borderColor: errors.paidTo ? Theme.colors.danger : Theme.colors.input.border,
+            borderColor: errors.paidTo
+              ? Theme.colors.danger
+              : Theme.colors.input.border,
             borderRadius: 8,
             paddingHorizontal: 16,
           }}
         >
-          <Ionicons name="person-outline" size={20} color={Theme.colors.text.tertiary} />
+          <Ionicons
+            name="person-outline"
+            size={20}
+            color={Theme.colors.text.tertiary}
+          />
           <TextInput
             style={{
               flex: 1,
@@ -351,7 +400,9 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
           />
         </View>
         {errors.paidTo && (
-          <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
+          <Text
+            style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}
+          >
             {errors.paidTo}
           </Text>
         )}
@@ -376,15 +427,15 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
           description="Select how the expense was paid"
           options={PAYMENT_METHODS.map((method) => {
             const iconMap: { [key: string]: string } = {
-              'GPay': '💰',
-              'PhonePe': '📱',
-              'Cash': '💵',
-              'Bank Transfer': '🏦',
+              GPay: "💰",
+              PhonePe: "📱",
+              Cash: "💵",
+              "Bank Transfer": "🏦",
             };
             return {
               label: method.label,
               value: method.value,
-              icon: iconMap[method.label] || '💳',
+              icon: iconMap[method.label] || "💳",
             };
           })}
           selectedValue={paymentMethod}
@@ -400,7 +451,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
         <Text
           style={{
             fontSize: 14,
-            fontWeight: '600',
+            fontWeight: "600",
             color: Theme.colors.text.primary,
             marginBottom: 8,
           }}
@@ -418,7 +469,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
             borderColor: Theme.colors.input.border,
             borderRadius: 8,
             minHeight: 80,
-            textAlignVertical: 'top',
+            textAlignVertical: "top",
           }}
           placeholder="Add any additional notes"
           placeholderTextColor={Theme.colors.input.placeholder}
