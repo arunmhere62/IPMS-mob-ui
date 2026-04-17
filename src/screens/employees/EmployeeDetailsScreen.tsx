@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,24 +8,31 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-} from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
-import { Theme } from '../../theme';
-import { ActionButtons } from '../../components/ActionButtons';
-import { Card } from '../../components/Card';
-import { ScreenLayout } from '../../components/ScreenLayout';
-import { ScreenHeader } from '../../components/ScreenHeader';
-import { CONTENT_COLOR } from '@/constant';
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
-import { SlideBottomModal } from '@/components/SlideBottomModal';
-import { AmountInput } from '@/components/AmountInput';
-import { useSelector } from 'react-redux';
-import type { RootState } from '@/store';
-import { useGetPgUserAssignmentQuery, useUpdatePgUserSalaryMutation } from '@/services/api/pgUsersApi';
-import { useDeleteEmployeeMutation, useGetEmployeeByIdQuery } from '../../services/api/employeesApi';
-import { useGetUserPermissionsQuery } from '../../services/api/rbacApi';
-import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/config/rbac.config';
+} from "react-native";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import { Theme } from "../../theme";
+import { ActionButtons } from "../../components/ActionButtons";
+import { Card } from "../../components/Card";
+import { ScreenLayout } from "../../components/ScreenLayout";
+import { ScreenHeader } from "../../components/ScreenHeader";
+import { CONTENT_COLOR } from "@/constant";
+import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
+import { SlideBottomModal } from "@/components/SlideBottomModal";
+import { AmountInput } from "@/components/AmountInput";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store";
+import {
+  useGetPgUserAssignmentQuery,
+  useUpdatePgUserSalaryMutation,
+} from "@/services/api/pgUsersApi";
+import {
+  useDeleteEmployeeMutation,
+  useGetEmployeeByIdQuery,
+} from "../../services/api/employeesApi";
+import { useGetUserPermissionsQuery } from "../../services/api/rbacApi";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/config/rbac.config";
+import { ImageViewerModal } from "@/components/ImageViewerModal";
 
 const DetailRow = ({
   label,
@@ -38,12 +45,12 @@ const DetailRow = ({
 }) => (
   <View
     style={{
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
       paddingVertical: 10,
       borderBottomWidth: isLast ? 0 : 1,
-      borderBottomColor: Theme.colors.border + '40',
+      borderBottomColor: Theme.colors.border + "40",
       gap: 12,
     }}
   >
@@ -54,12 +61,14 @@ const DetailRow = ({
       style={{
         flex: 1,
         fontSize: 13,
-        fontWeight: '600',
+        fontWeight: "600",
         color: Theme.colors.text.primary,
-        textAlign: 'right',
+        textAlign: "right",
       }}
     >
-      {value === null || value === undefined || value === '' ? 'N/A' : String(value)}
+      {value === null || value === undefined || value === ""
+        ? "N/A"
+        : String(value)}
     </Text>
   </View>
 );
@@ -106,7 +115,9 @@ const EmployeeDetailsScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { employeeId } = route.params;
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { selectedPGLocationId } = useSelector(
+    (state: RootState) => state.pgLocations
+  );
   const { can, isAdmin: _isAdmin, isSuperAdmin } = usePermissions();
   const canEditEmployee = can(Permission.EDIT_EMPLOYEE);
   const canDeleteEmployee = can(Permission.DELETE_EMPLOYEE);
@@ -120,18 +131,25 @@ const EmployeeDetailsScreen: React.FC = () => {
 
   const { data: employeePerms } = useGetUserPermissionsQuery(employeeId);
 
-  const { data: assignmentResp, refetch: refetchAssignment } = useGetPgUserAssignmentQuery(
-    { userId: employeeId },
-    { skip: !employeeId || !selectedPGLocationId },
-  );
+  const { data: assignmentResp, refetch: refetchAssignment } =
+    useGetPgUserAssignmentQuery(
+      { userId: employeeId },
+      { skip: !employeeId || !selectedPGLocationId }
+    );
   const assignment = (assignmentResp as any)?.data ?? assignmentResp;
 
-  const [updateSalary, { isLoading: isUpdatingSalary }] = useUpdatePgUserSalaryMutation();
+  const [updateSalary, { isLoading: isUpdatingSalary }] =
+    useUpdatePgUserSalaryMutation();
   const [salaryModalVisible, setSalaryModalVisible] = useState(false);
-  const [salaryValue, setSalaryValue] = useState('');
+  const [salaryValue, setSalaryValue] = useState("");
   const [salaryError, setSalaryError] = useState<string | null>(null);
 
   const [deleteEmployee] = useDeleteEmployeeMutation();
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [proofModalVisible, setProofModalVisible] = useState(false);
+  const [selectedProofDocument, setSelectedProofDocument] = useState<
+    string | null
+  >(null);
 
   const profileImageUri = (() => {
     const raw = employee?.profile_images;
@@ -139,12 +157,12 @@ const EmployeeDetailsScreen: React.FC = () => {
 
     let candidate: unknown = raw;
 
-    if (typeof candidate === 'string') {
+    if (typeof candidate === "string") {
       const trimmed = candidate.trim();
       if (!trimmed) return null;
 
       // Some APIs store arrays as JSON strings
-      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
         try {
           const parsed = JSON.parse(trimmed);
           candidate = parsed;
@@ -157,8 +175,10 @@ const EmployeeDetailsScreen: React.FC = () => {
       }
     }
 
-    const uri = Array.isArray(candidate) ? (candidate[0] as any) : (candidate as any);
-    if (typeof uri !== 'string') return null;
+    const uri = Array.isArray(candidate)
+      ? (candidate[0] as any)
+      : (candidate as any);
+    if (typeof uri !== "string") return null;
 
     const finalUri = uri.trim();
     if (!finalUri) return null;
@@ -175,12 +195,18 @@ const EmployeeDetailsScreen: React.FC = () => {
 
   const formatAmount = useMemo(() => {
     return (amount: number) =>
-      new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+      new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0,
+      }).format(amount);
   }, []);
 
   const openSalaryModal = () => {
     const existing = assignment?.monthly_salary_amount;
-    setSalaryValue(existing !== null && existing !== undefined ? String(existing) : '');
+    setSalaryValue(
+      existing !== null && existing !== undefined ? String(existing) : ""
+    );
     setSalaryError(null);
     setSalaryModalVisible(true);
   };
@@ -188,49 +214,58 @@ const EmployeeDetailsScreen: React.FC = () => {
   const submitSalary = async () => {
     const amt = Number(salaryValue);
     if (!salaryValue || !Number.isFinite(amt) || amt < 0) {
-      setSalaryError('Enter a valid salary amount');
+      setSalaryError("Enter a valid salary amount");
       return;
     }
 
     try {
-      await updateSalary({ userId: employeeId, monthly_salary_amount: amt }).unwrap();
-      showSuccessAlert('Salary updated successfully');
+      await updateSalary({
+        userId: employeeId,
+        monthly_salary_amount: amt,
+      }).unwrap();
+      showSuccessAlert("Salary updated successfully");
       setSalaryModalVisible(false);
       refetchAssignment();
     } catch (error: any) {
-      showErrorAlert(error, 'Salary Update Error');
+      showErrorAlert(error, "Salary Update Error");
     }
   };
 
   const handleEdit = useCallback(() => {
     if (!canEditEmployee) {
-      Alert.alert('Access Denied', "You don't have permission to edit employees");
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to edit employees"
+      );
       return;
     }
-    (navigation as any).navigate('AddEmployee', { employeeId });
+    (navigation as any).navigate("AddEmployee", { employeeId });
   }, [navigation, employeeId, canEditEmployee]);
 
   const handleDelete = () => {
     if (!canDeleteEmployee) {
-      Alert.alert('Access Denied', "You don't have permission to delete employees");
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to delete employees"
+      );
       return;
     }
     Alert.alert(
-      'Delete Employee',
-      `Are you sure you want to delete ${employee?.name || 'this employee'}?`,
+      "Delete Employee",
+      `Are you sure you want to delete ${employee?.name || "this employee"}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               await deleteEmployee(employeeId).unwrap();
-              showSuccessAlert('Employee deleted successfully');
+              showSuccessAlert("Employee deleted successfully");
               navigation.goBack();
             } catch (error: any) {
-              console.error('Error deleting employee:', error);
-              showErrorAlert(error, 'Delete Error');
+              console.error("Error deleting employee:", error);
+              showErrorAlert(error, "Delete Error");
             }
           },
         },
@@ -249,14 +284,18 @@ const EmployeeDetailsScreen: React.FC = () => {
       />
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
         {loading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <View
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          >
             <ActivityIndicator size="large" color={Theme.colors.primary} />
             <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
               Loading employee details...
             </Text>
           </View>
         ) : !employee ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <View
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          >
             <Text style={{ color: Theme.colors.text.primary, fontSize: 16 }}>
               Employee not found
             </Text>
@@ -265,74 +304,119 @@ const EmployeeDetailsScreen: React.FC = () => {
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
           >
             <Card
               style={{
                 marginBottom: 12,
                 padding: 14,
                 borderRadius: 16,
-                backgroundColor: '#fff',
-                shadowColor: '#00000015',
+                backgroundColor: "#fff",
+                shadowColor: "#00000015",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.08,
                 shadowRadius: 10,
                 elevation: 2,
               }}
             >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: 12,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    flex: 1,
+                  }}
+                >
                   {profileImageUri ? (
-                    <Image 
-                      source={{ uri: profileImageUri }} 
-                      style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: 14,
-                      }}
-                    />
+                    <TouchableOpacity
+                      onPress={() => setImageModalVisible(true)}
+                      activeOpacity={0.8}
+                    >
+                      <Image
+                        source={{ uri: profileImageUri }}
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 14,
+                        }}
+                      />
+                    </TouchableOpacity>
                   ) : (
                     <View
                       style={{
                         width: 42,
                         height: 42,
                         borderRadius: 14,
-                        backgroundColor: Theme.colors.primary + '20',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        backgroundColor: Theme.colors.primary + "20",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
                       <Text style={{ fontSize: 20 }}>👤</Text>
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1}>
-                      {employee.name || 'N/A'}
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: "700",
+                        color: Theme.colors.text.primary,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {employee.name || "N/A"}
                     </Text>
-                    <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.secondary }}>
-                      {employee.phone || 'N/A'}
+                    <Text
+                      style={{
+                        marginTop: 2,
+                        fontSize: 12,
+                        color: Theme.colors.text.secondary,
+                      }}
+                    >
+                      {employee.phone || "N/A"}
                     </Text>
                     {employee.roles && (
-                      <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.primary }}>
+                      <Text
+                        style={{
+                          marginTop: 2,
+                          fontSize: 12,
+                          color: Theme.colors.primary,
+                        }}
+                      >
                         Role:{employee.roles.role_name}
                       </Text>
                     )}
                   </View>
                 </View>
-                <View style={{ alignItems: 'flex-end', gap: 8 }}>
+                <View style={{ alignItems: "flex-end", gap: 8 }}>
                   <View
                     style={{
                       paddingHorizontal: 8,
                       paddingVertical: 4,
                       borderRadius: 6,
-                      backgroundColor: employee.status === 'ACTIVE' ? '#DCFCE7' : '#FEE2E2',
+                      backgroundColor:
+                        employee.status === "ACTIVE" ? "#DCFCE7" : "#FEE2E2",
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 11,
-                        fontWeight: '700',
-                        color: employee.status === 'ACTIVE' ? '#166534' : '#991B1B',
+                        fontWeight: "700",
+                        color:
+                          employee.status === "ACTIVE" ? "#166534" : "#991B1B",
                       }}
                     >
                       {employee.status}
@@ -355,29 +439,54 @@ const EmployeeDetailsScreen: React.FC = () => {
                 marginBottom: 12,
                 padding: 14,
                 borderRadius: 16,
-                backgroundColor: '#fff',
-                shadowColor: '#00000015',
+                backgroundColor: "#fff",
+                shadowColor: "#00000015",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.08,
                 shadowRadius: 10,
                 elevation: 2,
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: Theme.colors.text.primary,
+                }}
+              >
                 Operations
               </Text>
-              <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary }}>
+              <Text
+                style={{
+                  marginTop: 6,
+                  fontSize: 12,
+                  color: Theme.colors.text.secondary,
+                }}
+              >
                 Employee Permissions
               </Text>
 
               {(employeePerms?.permissions ?? []).length ? (
                 <View style={{ marginTop: 10 }}>
-                  <Text style={{ fontSize: 12, color: Theme.colors.text.primary, marginTop: 6, lineHeight: 18 }}>
-                    {(employeePerms?.permissions ?? []).join('\n')}
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: Theme.colors.text.primary,
+                      marginTop: 6,
+                      lineHeight: 18,
+                    }}
+                  >
+                    {(employeePerms?.permissions ?? []).join("\n")}
                   </Text>
                 </View>
               ) : (
-                <Text style={{ marginTop: 10, fontSize: 12, color: Theme.colors.text.tertiary }}>
+                <Text
+                  style={{
+                    marginTop: 10,
+                    fontSize: 12,
+                    color: Theme.colors.text.tertiary,
+                  }}
+                >
                   No permissions found
                 </Text>
               )}
@@ -389,36 +498,64 @@ const EmployeeDetailsScreen: React.FC = () => {
                   marginBottom: 12,
                   padding: 14,
                   borderRadius: 16,
-                  backgroundColor: '#fff',
-                  shadowColor: '#00000010',
+                  backgroundColor: "#fff",
+                  shadowColor: "#00000010",
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.06,
                   shadowRadius: 6,
                   elevation: 1,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '800', color: Theme.colors.text.primary }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "800",
+                    color: Theme.colors.text.primary,
+                  }}
+                >
                   Access Settings
                 </Text>
-                <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
+                <Text
+                  style={{
+                    marginTop: 6,
+                    fontSize: 12,
+                    color: Theme.colors.text.secondary,
+                    lineHeight: 16,
+                  }}
+                >
                   Customize this employee's access for this organization.
                 </Text>
-                <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
-                  Use Allow / Deny to override role defaults, or Clear to go back to role-based access.
+                <Text
+                  style={{
+                    marginTop: 6,
+                    fontSize: 12,
+                    color: Theme.colors.text.secondary,
+                    lineHeight: 16,
+                  }}
+                >
+                  Use Allow / Deny to override role defaults, or Clear to go
+                  back to role-based access.
                 </Text>
 
                 <TouchableOpacity
-                  onPress={() => (navigation as any).navigate('EmployeePermissionOverrides', { employeeId })}
+                  onPress={() =>
+                    (navigation as any).navigate(
+                      "EmployeePermissionOverrides",
+                      { employeeId }
+                    )
+                  }
                   style={{
                     marginTop: 12,
                     paddingVertical: 12,
                     paddingHorizontal: 14,
                     borderRadius: 14,
                     backgroundColor: Theme.colors.primary,
-                    alignSelf: 'flex-end',
+                    alignSelf: "flex-end",
                   }}
                 >
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                  <Text
+                    style={{ color: "#fff", fontWeight: "800", fontSize: 13 }}
+                  >
                     Manage Access
                   </Text>
                 </TouchableOpacity>
@@ -431,23 +568,42 @@ const EmployeeDetailsScreen: React.FC = () => {
                   marginBottom: 12,
                   padding: 14,
                   borderRadius: 16,
-                  backgroundColor: '#fff',
-                  shadowColor: '#00000010',
+                  backgroundColor: "#fff",
+                  shadowColor: "#00000010",
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.06,
                   shadowRadius: 6,
                   elevation: 1,
                 }}
               >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <View style={{ flex: 1, marginRight: 12 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 6 }}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: Theme.colors.text.primary,
+                        marginBottom: 6,
+                      }}
+                    >
                       Monthly Salary
                     </Text>
-                    <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
-                      {assignment?.monthly_salary_amount !== null && assignment?.monthly_salary_amount !== undefined
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: Theme.colors.text.secondary,
+                      }}
+                    >
+                      {assignment?.monthly_salary_amount !== null &&
+                      assignment?.monthly_salary_amount !== undefined
                         ? formatAmount(Number(assignment.monthly_salary_amount))
-                        : 'Not set'}
+                        : "Not set"}
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -459,7 +615,11 @@ const EmployeeDetailsScreen: React.FC = () => {
                       backgroundColor: Theme.colors.primary,
                     }}
                   >
-                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>Update Salary</Text>
+                    <Text
+                      style={{ color: "#fff", fontWeight: "800", fontSize: 12 }}
+                    >
+                      Update Salary
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </Card>
@@ -469,22 +629,33 @@ const EmployeeDetailsScreen: React.FC = () => {
                 marginBottom: 12,
                 padding: 14,
                 borderRadius: 16,
-                backgroundColor: '#fff',
-                shadowColor: '#00000010',
+                backgroundColor: "#fff",
+                shadowColor: "#00000010",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.06,
                 shadowRadius: 6,
                 elevation: 1,
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: Theme.colors.text.primary,
+                  marginBottom: 8,
+                }}
+              >
                 Address Information
               </Text>
               <DetailRow label="Address" value={employee.address} />
               <DetailRow label="City" value={employee.city?.name} />
               <DetailRow label="State" value={employee.state?.name} />
               <DetailRow label="Pincode" value={employee.pincode} />
-              <DetailRow label="Country" value={employee.country} isLast={true} />
+              <DetailRow
+                label="Country"
+                value={employee.country}
+                isLast={true}
+              />
             </Card>
 
             <Card
@@ -492,29 +663,168 @@ const EmployeeDetailsScreen: React.FC = () => {
                 marginBottom: 12,
                 padding: 14,
                 borderRadius: 16,
-                backgroundColor: '#fff',
-                shadowColor: '#00000010',
+                backgroundColor: "#fff",
+                shadowColor: "#00000010",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.06,
                 shadowRadius: 6,
                 elevation: 1,
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: Theme.colors.text.primary,
+                  marginBottom: 8,
+                }}
+              >
                 Additional Information
               </Text>
               <DetailRow label="Employee ID" value={employee.s_no} />
-              <DetailRow label="Proof Documents" value={employee.proof_documents ? 'Available' : 'Not uploaded'} />
-              <DetailRow 
-                label="Created At" 
-                value={employee.created_at ? new Date(employee.created_at).toLocaleDateString('en-IN') : 'N/A'} 
+              <DetailRow
+                label="Proof Documents"
+                value={employee.proof_documents ? "Available" : "Not uploaded"}
               />
-              <DetailRow 
-                label="Updated At" 
-                value={employee.updated_at ? new Date(employee.updated_at).toLocaleDateString('en-IN') : 'N/A'} 
-                isLast={true} 
+              <DetailRow
+                label="Created At"
+                value={
+                  employee.created_at
+                    ? new Date(employee.created_at).toLocaleDateString("en-IN")
+                    : "N/A"
+                }
+              />
+              <DetailRow
+                label="Updated At"
+                value={
+                  employee.updated_at
+                    ? new Date(employee.updated_at).toLocaleDateString("en-IN")
+                    : "N/A"
+                }
+                isLast={true}
               />
             </Card>
+
+            {/* Proof Documents Section */}
+            {employee?.proof_documents && (
+              <Card
+                style={{
+                  marginBottom: 12,
+                  padding: 14,
+                  borderRadius: 16,
+                  backgroundColor: "#fff",
+                  shadowColor: "#00000010",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 6,
+                  elevation: 1,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 12,
+                  }}
+                >
+                  📄 Proof Documents
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 0 }}
+                  style={{ maxHeight: 120 }}
+                >
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {(() => {
+                      const raw = employee.proof_documents;
+                      let documents: string[] = [];
+
+                      if (typeof raw === "string") {
+                        const trimmed = raw.trim();
+                        if (!trimmed) return [];
+
+                        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                          try {
+                            documents = JSON.parse(trimmed);
+                          } catch {
+                            documents = [trimmed];
+                          }
+                        } else {
+                          documents = [trimmed];
+                        }
+                      } else if (Array.isArray(raw)) {
+                        documents = raw;
+                      }
+
+                      return documents.map((doc, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          onPress={() => {
+                            setSelectedProofDocument(doc);
+                            setProofModalVisible(true);
+                          }}
+                          style={{
+                            width: 120,
+                            padding: 8,
+                            borderRadius: 8,
+                            backgroundColor: "#fff",
+                            borderWidth: 1,
+                            borderColor: Theme.colors.border,
+                            shadowColor: "#00000010",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.06,
+                            shadowRadius: 6,
+                            elevation: 2,
+                          }}
+                        >
+                          <View
+                            style={{ alignItems: "center", marginBottom: 6 }}
+                          >
+                            <View
+                              style={{
+                                width: 60,
+                                height: 60,
+                                borderRadius: 6,
+                                backgroundColor:
+                                  Theme.colors.background.secondary,
+                                borderWidth: 1,
+                                borderColor: Theme.colors.border,
+                                marginBottom: 4,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                overflow: "hidden",
+                              }}
+                            >
+                              <Image
+                                source={{ uri: doc }}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  borderRadius: 4,
+                                }}
+                                resizeMode="cover"
+                              />
+                            </View>
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                color: Theme.colors.text.primary,
+                                fontWeight: "600",
+                                textAlign: "center",
+                              }}
+                            >
+                              Document {index + 1}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ));
+                    })()}
+                  </View>
+                </ScrollView>
+              </Card>
+            )}
           </ScrollView>
         )}
       </View>
@@ -527,7 +837,7 @@ const EmployeeDetailsScreen: React.FC = () => {
         title="Set Monthly Salary"
         subtitle={employee?.name}
         onSubmit={submitSalary}
-        submitLabel={isUpdatingSalary ? 'Saving...' : 'Save'}
+        submitLabel={isUpdatingSalary ? "Saving..." : "Save"}
         cancelLabel="Cancel"
         isLoading={isUpdatingSalary}
       >
@@ -549,6 +859,22 @@ const EmployeeDetailsScreen: React.FC = () => {
           </Text>
         </View>
       </SlideBottomModal>
+
+      <ImageViewerModal
+        visible={imageModalVisible}
+        onClose={() => setImageModalVisible(false)}
+        imageUri={profileImageUri}
+      />
+
+      {/* Proof Documents Modal */}
+      <ImageViewerModal
+        visible={proofModalVisible}
+        onClose={() => {
+          setProofModalVisible(false);
+          setSelectedProofDocument(null);
+        }}
+        imageUri={selectedProofDocument}
+      />
     </ScreenLayout>
   );
 };

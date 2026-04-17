@@ -1,8 +1,4 @@
-import { baseApi } from './baseApi';
-
-
-
-
+import { baseApi } from "./baseApi";
 
 export interface Bed {
   s_no: number;
@@ -11,7 +7,7 @@ export interface Bed {
   pg_id?: number;
   is_occupied?: boolean;
   bed_price?: number | string;
-  images?: any;
+  images?: string[];
   created_at?: string;
   updated_at?: string;
   rooms?: {
@@ -66,14 +62,12 @@ export interface BedResponse {
   message?: string;
 }
 
-
-
 export interface Room {
   s_no: number;
   room_id?: string;
   pg_id: number;
   room_no: string;
-  images?: any;
+  images?: string[];
   created_at?: string;
   updated_at?: string;
   is_deleted?: boolean;
@@ -128,15 +122,28 @@ type ApiEnvelope<T> = {
 };
 
 const unwrapCentralData = <T>(response: any): T => {
-  if (response && typeof response === 'object' && 'success' in response && 'statusCode' in response) {
+  if (
+    response &&
+    typeof response === "object" &&
+    "success" in response &&
+    "statusCode" in response
+  ) {
     return (response as any).data as T;
   }
   return response as T;
 };
 
-const normalizeEntityResponse = <T>(response: any): { success: boolean; data: T; message?: string } => {
+const normalizeEntityResponse = <T>(
+  response: any
+): { success: boolean; data: T; message?: string } => {
   // If already in legacy shape {success,data,message}, keep it
-  if (response && typeof response === 'object' && 'success' in response && 'data' in response && !('statusCode' in response)) {
+  if (
+    response &&
+    typeof response === "object" &&
+    "success" in response &&
+    "data" in response &&
+    !("statusCode" in response)
+  ) {
     return response as any;
   }
 
@@ -148,7 +155,9 @@ const normalizeEntityResponse = <T>(response: any): { success: boolean; data: T;
   };
 };
 
-const normalizeListResponse = <T>(response: any): { success: boolean; data: T[]; pagination?: any; message?: string } => {
+const normalizeListResponse = <T>(
+  response: any
+): { success: boolean; data: T[]; pagination?: any; message?: string } => {
   const unwrapped = unwrapCentralData<any>(response);
 
   // New centralized envelope can return `data` as an array directly
@@ -183,55 +192,67 @@ export const roomsApi = baseApi.injectEndpoints({
     // Rooms
     getAllRooms: build.query<GetRoomsResponse, GetRoomsParams | void>({
       query: (params) => ({
-        url: '/rooms',
-        method: 'GET',
+        url: "/rooms",
+        method: "GET",
         params: params || undefined,
       }),
       keepUnusedDataFor: 300,
-      transformResponse: (response: ApiEnvelope<GetRoomsResponse> | any) => (response as any)?.data ?? response,
+      transformResponse: (response: ApiEnvelope<GetRoomsResponse> | any) =>
+        (response as any)?.data ?? response,
       providesTags: (result) => {
         const rooms = (result as any)?.data || [];
         return [
-          { type: 'Rooms' as const, id: 'LIST' },
-          ...rooms.map((r: Room) => ({ type: 'Room' as const, id: r.s_no })),
+          { type: "Rooms" as const, id: "LIST" },
+          ...rooms.map((r: Room) => ({ type: "Room" as const, id: r.s_no })),
         ];
       },
     }),
 
     getRoomById: build.query<RoomResponse, number>({
-      query: (id) => ({ url: `/rooms/${id}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<RoomResponse> | any) => normalizeEntityResponse<Room>(response),
-      providesTags: (_res, _err, id) => [{ type: 'Room' as const, id }],
+      query: (id) => ({ url: `/rooms/${id}`, method: "GET" }),
+      transformResponse: (response: ApiEnvelope<RoomResponse> | any) =>
+        normalizeEntityResponse<Room>(response),
+      providesTags: (_res, _err, id) => [{ type: "Room" as const, id }],
     }),
 
     createRoom: build.mutation<RoomResponse, CreateRoomDto>({
-      query: (body) => ({ url: '/rooms', method: 'POST', body }),
-      transformResponse: (response: ApiEnvelope<RoomResponse> | any) => normalizeEntityResponse<Room>(response),
+      query: (body) => ({ url: "/rooms", method: "POST", body }),
+      transformResponse: (response: ApiEnvelope<RoomResponse> | any) =>
+        normalizeEntityResponse<Room>(response),
       invalidatesTags: [
-        { type: 'Rooms' as const, id: 'LIST' },
-        { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: "Rooms" as const, id: "LIST" },
+        { type: "Dashboard" as const, id: "SUMMARY" },
       ],
     }),
 
-    updateRoom: build.mutation<RoomResponse, { id: number; data: Partial<CreateRoomDto> }>({
-      query: ({ id, data }) => ({ url: `/rooms/${id}`, method: 'PATCH', body: data }),
-      transformResponse: (response: ApiEnvelope<RoomResponse> | any) => normalizeEntityResponse<Room>(response),
+    updateRoom: build.mutation<
+      RoomResponse,
+      { id: number; data: Partial<CreateRoomDto> }
+    >({
+      query: ({ id, data }) => ({
+        url: `/rooms/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
+      transformResponse: (response: ApiEnvelope<RoomResponse> | any) =>
+        normalizeEntityResponse<Room>(response),
       invalidatesTags: (_res, _err, arg) => [
-        { type: 'Rooms' as const, id: 'LIST' },
-        { type: 'Room' as const, id: arg.id },
-        { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: "Rooms" as const, id: "LIST" },
+        { type: "Room" as const, id: arg.id },
+        { type: "Dashboard" as const, id: "SUMMARY" },
       ],
     }),
 
     deleteRoom: build.mutation<{ success: boolean; message: string }, number>({
-      query: (id) => ({ url: `/rooms/${id}`, method: 'DELETE' }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      query: (id) => ({ url: `/rooms/${id}`, method: "DELETE" }),
+      transformResponse: (response: ApiEnvelope<any> | any) =>
+        (response as any)?.data ?? response,
       invalidatesTags: (res, _err, id) =>
         (res as any)?.success
           ? [
-              { type: 'Rooms' as const, id: 'LIST' },
-              { type: 'Room' as const, id },
-              { type: 'Dashboard' as const, id: 'SUMMARY' },
+              { type: "Rooms" as const, id: "LIST" },
+              { type: "Room" as const, id },
+              { type: "Dashboard" as const, id: "SUMMARY" },
             ]
           : [],
     }),
@@ -239,66 +260,85 @@ export const roomsApi = baseApi.injectEndpoints({
     // Beds
     getAllBeds: build.query<GetBedsResponse, GetBedsParams | void>({
       query: (params) => ({
-        url: '/beds',
-        method: 'GET',
+        url: "/beds",
+        method: "GET",
         params: params || undefined,
       }),
       keepUnusedDataFor: 300,
-      transformResponse: (response: ApiEnvelope<GetBedsResponse> | any) => normalizeListResponse<Bed>(response),
+      transformResponse: (response: ApiEnvelope<GetBedsResponse> | any) =>
+        normalizeListResponse<Bed>(response),
       providesTags: (result) => {
         const beds = (result as any)?.data || [];
         return [
-          { type: 'Beds' as const, id: 'LIST' },
-          ...beds.map((b: Bed) => ({ type: 'Bed' as const, id: b.s_no })),
+          { type: "Beds" as const, id: "LIST" },
+          ...beds.map((b: Bed) => ({ type: "Bed" as const, id: b.s_no })),
         ];
       },
     }),
 
     getBedsByRoomId: build.query<GetBedsResponse, number>({
-      query: (roomId) => ({ url: `/beds/room/${roomId}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<GetBedsResponse> | any) => normalizeListResponse<Bed>(response),
-      providesTags: (_res, _err, roomId) => [{ type: 'Beds' as const, id: roomId }],
-    }),
-
-    getBedById: build.query<BedResponse, number>({
-      query: (id) => ({ url: `/beds/${id}`, method: 'GET' }),
-      transformResponse: (response: ApiEnvelope<BedResponse> | any) => normalizeEntityResponse<Bed>(response),
-      providesTags: (_res, _err, id) => [{ type: 'Bed' as const, id }],
-    }),
-
-    createBed: build.mutation<BedResponse, CreateBedDto>({
-      query: (body) => ({ url: '/beds', method: 'POST', body }),
-      transformResponse: (response: ApiEnvelope<BedResponse> | any) => normalizeEntityResponse<Bed>(response),
-      invalidatesTags: (_res, _err, arg) => [
-        { type: 'Beds' as const, id: 'LIST' },
-        { type: 'Beds' as const, id: arg.room_id },
-        { type: 'Rooms' as const, id: 'LIST' },
-        { type: 'Room' as const, id: arg.room_id },
-        { type: 'Dashboard' as const, id: 'SUMMARY' },
+      query: (roomId) => ({ url: `/beds/room/${roomId}`, method: "GET" }),
+      transformResponse: (response: ApiEnvelope<GetBedsResponse> | any) =>
+        normalizeListResponse<Bed>(response),
+      providesTags: (_res, _err, roomId) => [
+        { type: "Beds" as const, id: roomId },
       ],
     }),
 
-    updateBed: build.mutation<BedResponse, { id: number; data: Partial<CreateBedDto> }>({
-      query: ({ id, data }) => ({ url: `/beds/${id}`, method: 'PATCH', body: data }),
-      transformResponse: (response: ApiEnvelope<BedResponse> | any) => normalizeEntityResponse<Bed>(response),
+    getBedById: build.query<BedResponse, number>({
+      query: (id) => ({ url: `/beds/${id}`, method: "GET" }),
+      transformResponse: (response: ApiEnvelope<BedResponse> | any) =>
+        normalizeEntityResponse<Bed>(response),
+      providesTags: (_res, _err, id) => [{ type: "Bed" as const, id }],
+    }),
+
+    createBed: build.mutation<BedResponse, CreateBedDto>({
+      query: (body) => ({ url: "/beds", method: "POST", body }),
+      transformResponse: (response: ApiEnvelope<BedResponse> | any) =>
+        normalizeEntityResponse<Bed>(response),
       invalidatesTags: (_res, _err, arg) => [
-        { type: 'Beds' as const, id: 'LIST' },
-        ...(typeof arg.data.room_id === 'number' ? [{ type: 'Beds' as const, id: arg.data.room_id }] : []),
-        { type: 'Bed' as const, id: arg.id },
-        { type: 'Rooms' as const, id: 'LIST' },
-        ...(typeof arg.data.room_id === 'number' ? [{ type: 'Room' as const, id: arg.data.room_id }] : []),
-        { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: "Beds" as const, id: "LIST" },
+        { type: "Beds" as const, id: arg.room_id },
+        { type: "Rooms" as const, id: "LIST" },
+        { type: "Room" as const, id: arg.room_id },
+        { type: "Dashboard" as const, id: "SUMMARY" },
+      ],
+    }),
+
+    updateBed: build.mutation<
+      BedResponse,
+      { id: number; data: Partial<CreateBedDto> }
+    >({
+      query: ({ id, data }) => ({
+        url: `/beds/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
+      transformResponse: (response: ApiEnvelope<BedResponse> | any) =>
+        normalizeEntityResponse<Bed>(response),
+      invalidatesTags: (_res, _err, arg) => [
+        { type: "Beds" as const, id: "LIST" },
+        ...(typeof arg.data.room_id === "number"
+          ? [{ type: "Beds" as const, id: arg.data.room_id }]
+          : []),
+        { type: "Bed" as const, id: arg.id },
+        { type: "Rooms" as const, id: "LIST" },
+        ...(typeof arg.data.room_id === "number"
+          ? [{ type: "Room" as const, id: arg.data.room_id }]
+          : []),
+        { type: "Dashboard" as const, id: "SUMMARY" },
       ],
     }),
 
     deleteBed: build.mutation<{ success: boolean; message: string }, number>({
-      query: (id) => ({ url: `/beds/${id}`, method: 'DELETE' }),
-      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      query: (id) => ({ url: `/beds/${id}`, method: "DELETE" }),
+      transformResponse: (response: ApiEnvelope<any> | any) =>
+        (response as any)?.data ?? response,
       invalidatesTags: (_res, _err, id) => [
-        { type: 'Beds' as const, id: 'LIST' },
-        { type: 'Bed' as const, id },
-        { type: 'Rooms' as const, id: 'LIST' },
-        { type: 'Dashboard' as const, id: 'SUMMARY' },
+        { type: "Beds" as const, id: "LIST" },
+        { type: "Bed" as const, id },
+        { type: "Rooms" as const, id: "LIST" },
+        { type: "Dashboard" as const, id: "SUMMARY" },
       ],
     }),
   }),

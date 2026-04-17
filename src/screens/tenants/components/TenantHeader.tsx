@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressableCard } from "../../../components/AnimatedPressableCard";
 import { ActionButtons } from "../../../components/ActionButtons";
@@ -21,6 +21,7 @@ interface TenantHeaderProps {
   onAddAdvance: () => void;
   onAddRefund: () => void;
   onAddCurrentBill?: () => void;
+  onOpenMedia?: (uri: string) => void;
   canAddPayment?: boolean;
   canAddAdvance?: boolean;
   canAddRefund?: boolean;
@@ -40,6 +41,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
   onAddAdvance,
   onAddRefund,
   onAddCurrentBill,
+  onOpenMedia,
   canAddPayment = true,
   canAddAdvance = true,
   canAddRefund = true,
@@ -65,7 +67,11 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
       </View>
 
       {/* Profile Image */}
-      <View style={styles.avatarWrapper}>
+      <TouchableOpacity
+        style={styles.avatarWrapper}
+        onPress={() => tenantImage && onOpenMedia?.(tenantImage)}
+        activeOpacity={0.8}
+      >
         {tenantImage ? (
           <Image
             source={{ uri: tenantImage }}
@@ -77,7 +83,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
             {tenant.name?.charAt(0)?.toUpperCase()}
           </Text>
         )}
-      </View>
+      </TouchableOpacity>
 
       {/* Name */}
       <Text style={styles.name}>{tenant.name}</Text>
@@ -89,8 +95,8 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
           tenant.status === "ACTIVE"
             ? styles.statusActive
             : tenant.status === "CHECKED_OUT"
-              ? styles.statusCheckedOut
-              : styles.statusInactive,
+            ? styles.statusCheckedOut
+            : styles.statusInactive,
         ]}
       >
         <Text
@@ -99,8 +105,8 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
             tenant.status === "ACTIVE"
               ? { color: "#16A34A" }
               : tenant.status === "CHECKED_OUT"
-                ? { color: "#D97706" }
-                : { color: "#DC2626" },
+              ? { color: "#D97706" }
+              : { color: "#DC2626" },
           ]}
         >
           {tenant.status}
@@ -111,7 +117,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
       <View style={styles.contactRow}>
         {!!tenant.phone_no && (
           <AnimatedPressableCard
-            onPress={() => onCall(tenant.phone_no || '')}
+            onPress={() => onCall(tenant.phone_no || "")}
             scaleValue={0.95}
             duration={100}
             style={styles.contactButton}
@@ -123,7 +129,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
 
         {!!tenant.whatsapp_number && (
           <AnimatedPressableCard
-            onPress={() => onWhatsApp(tenant.whatsapp_number || '')}
+            onPress={() => onWhatsApp(tenant.whatsapp_number || "")}
             scaleValue={0.95}
             duration={100}
             style={styles.contactButton}
@@ -137,7 +143,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
       {/* Email */}
       {!!tenant.email && (
         <AnimatedPressableCard
-          onPress={() => onEmail(tenant.email || '')}
+          onPress={() => onEmail(tenant.email || "")}
           scaleValue={0.95}
           duration={100}
           style={{ width: "100%" }}
@@ -151,14 +157,33 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
 
       {/* Action Buttons */}
       <View style={styles.actionGrid}>
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-          <ActionTile title="Add Rent" icon="wallet" onPress={onAddPayment} disabled={!canAddPayment} />
-          <ActionTile title="Add Advance" icon="trending-up" onPress={onAddAdvance} disabled={!canAddAdvance} />
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+          <ActionTile
+            title="Add Rent"
+            icon="wallet"
+            onPress={onAddPayment}
+            disabled={!canAddPayment}
+          />
+          <ActionTile
+            title="Add Advance"
+            icon="trending-up"
+            onPress={onAddAdvance}
+            disabled={!canAddAdvance}
+          />
         </View>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <ActionTile title="Add Refund" icon="trending-down" onPress={onAddRefund} disabled={!canAddRefund} />
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <ActionTile
+            title="Add Refund"
+            icon="trending-down"
+            onPress={onAddRefund}
+            disabled={!canAddRefund}
+          />
           {!!onAddCurrentBill ? (
-            <ActionTile title="Add Bill" icon="document-text" onPress={onAddCurrentBill} />
+            <ActionTile
+              title="Add Bill"
+              icon="document-text"
+              onPress={onAddCurrentBill}
+            />
           ) : (
             <View style={{ flex: 1 }} />
           )}

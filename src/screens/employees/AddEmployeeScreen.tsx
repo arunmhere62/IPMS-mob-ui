@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,26 +9,34 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
-import { Card } from '../../components/Card';
-import { Theme } from '../../theme';
-import { ScreenHeader } from '../../components/ScreenHeader';
-import { ScreenLayout } from '../../components/ScreenLayout';
-import { SearchableDropdown } from '../../components/SearchableDropdown';
-import { ImageUploadS3 } from '../../components/ImageUploadS3';
-import { OptionSelector } from '../../components/OptionSelector';
-import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
-import { useCreateEmployeeMutation, useLazyGetEmployeeByIdQuery, UserGender, useUpdateEmployeeMutation } from '../../services/api/employeesApi';
-import { AmountInput } from '../../components/AmountInput';
-import { useUpdatePgUserSalaryMutation } from '@/services/api/pgUsersApi';
-import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../services/api/locationApi';
-import { useGetPGLocationsQuery } from '../../services/api/pgLocationsApi';
-import { useLazyGetRolesQuery } from '../../services/api/rolesApi';
-import { getFolderConfig } from '../../config/aws.config';
-import { CONTENT_COLOR } from '@/constant';
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+} from "react-native";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
+import { Card } from "../../components/Card";
+import { Theme } from "../../theme";
+import { ScreenHeader } from "../../components/ScreenHeader";
+import { ScreenLayout } from "../../components/ScreenLayout";
+import { SearchableDropdown } from "../../components/SearchableDropdown";
+import { ImageUploadS3 } from "../../components/ImageUploadS3";
+import { OptionSelector } from "../../components/OptionSelector";
+import { CountryPhoneSelector } from "../../components/CountryPhoneSelector";
+import {
+  useCreateEmployeeMutation,
+  useLazyGetEmployeeByIdQuery,
+  UserGender,
+  useUpdateEmployeeMutation,
+} from "../../services/api/employeesApi";
+import { AmountInput } from "../../components/AmountInput";
+import { useUpdatePgUserSalaryMutation } from "@/services/api/pgUsersApi";
+import {
+  useGetStatesQuery,
+  useLazyGetCitiesQuery,
+} from "../../services/api/locationApi";
+import { useGetPGLocationsQuery } from "../../services/api/pgLocationsApi";
+import { useLazyGetRolesQuery } from "../../services/api/rolesApi";
+import { getFolderConfig } from "../../config/aws.config";
+import { CONTENT_COLOR } from "@/constant";
+import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 
 interface AddEmployeeScreenProps {
   navigation: any;
@@ -51,9 +59,14 @@ interface RoleData {
   role_name: string;
 }
 
-export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation, route }) => {
+export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({
+  navigation,
+  route,
+}) => {
   const { user, accessToken } = useSelector((state: RootState) => state.auth);
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { selectedPGLocationId } = useSelector(
+    (state: RootState) => state.pgLocations
+  );
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
 
@@ -61,7 +74,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const [createEmployee] = useCreateEmployeeMutation();
   const [updateEmployee] = useUpdateEmployeeMutation();
   const [updatePgUserSalary] = useUpdatePgUserSalaryMutation();
-  
+
   // Check if we're in edit mode
   const employeeId = route?.params?.employeeId;
   const isEditMode = !!employeeId;
@@ -70,27 +83,30 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const [stateData, setStateData] = useState<StateData[]>([]);
   const [cityData, setCityData] = useState<CityData[]>([]);
   const [roleData, setRoleData] = useState<RoleData[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState<any>({ code: 'IN', name: 'India', flag: '🇮🇳', phoneCode: '+91', phoneLength: 10 });
+  const [selectedCountry, setSelectedCountry] = useState<any>({
+    code: "IN",
+    name: "India",
+    flag: "🇮🇳",
+    phoneCode: "+91",
+    phoneLength: 10,
+  });
 
   // Form state
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
+    name: "",
+    phone: "",
     role_id: null as number | null,
-    gender: '' as UserGender | '',
-    address: '',
+    gender: "" as UserGender | "",
+    address: "",
     city_id: null as number | null,
     state_id: null as number | null,
-    pincode: '',
-    country: 'India',
+    pincode: "",
+    country: "India",
   });
 
   const [profileImages, setProfileImages] = useState<string[]>([]);
   const [proofDocuments, setProofDocuments] = useState<string[]>([]);
-  const [monthlySalaryAmount, setMonthlySalaryAmount] = useState<string>('');
+  const [monthlySalaryAmount, setMonthlySalaryAmount] = useState<string>("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loadingStates, setLoadingStates] = useState(false);
@@ -98,7 +114,8 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const [loadingRoles, setLoadingRoles] = useState(false);
   const [fetchRolesTrigger] = useLazyGetRolesQuery();
 
-  const { data: statesResponse, isFetching: isFetchingStates } = useGetStatesQuery({ countryCode: 'IN' });
+  const { data: statesResponse, isFetching: isFetchingStates } =
+    useGetStatesQuery({ countryCode: "IN" });
   const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
 
   const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, {
@@ -130,13 +147,13 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   // Fetch cities when state is selected
   useEffect(() => {
     if (formData.state_id) {
-      const selectedState = stateData.find(s => s.s_no === formData.state_id);
+      const selectedState = stateData.find((s) => s.s_no === formData.state_id);
       if (selectedState) {
         fetchCities(selectedState.iso_code);
       }
     } else {
       setCityData([]);
-      setFormData(prev => ({ ...prev, city_id: null }));
+      setFormData((prev) => ({ ...prev, city_id: null }));
     }
   }, [formData.state_id, stateData]);
 
@@ -144,43 +161,52 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     try {
       setInitialLoading(true);
       const employee = await fetchEmployeeById(employeeId).unwrap();
-      
+
       setFormData({
-        name: employee.name || '',
-        email: employee.email || '',
-        password: '', // Don't populate password in edit mode
-        confirmPassword: '',
-        phone: employee.phone || '',
+        name: employee.name || "",
+        phone: employee.phone || "",
         role_id: employee.role_id || null,
-        gender: employee.gender || '',
-        address: employee.address || '',
+        gender: employee.gender || "",
+        address: employee.address || "",
         city_id: employee.city_id || null,
         state_id: employee.state_id || null,
-        pincode: employee.pincode || '',
-        country: employee.country || 'India',
+        pincode: employee.pincode || "",
+        country: employee.country || "India",
       });
-      
+
       // Load cities if state is set
       if (employee.state_id && stateData.length > 0) {
-        const selectedState = stateData.find(s => s.s_no === employee.state_id);
+        const selectedState = stateData.find(
+          (s) => s.s_no === employee.state_id
+        );
         if (selectedState) {
           await fetchCities(selectedState.iso_code);
         }
       }
-      
+
       if (employee.profile_images) {
-        setProfileImages(Array.isArray(employee.profile_images) ? employee.profile_images : 
-          typeof employee.profile_images === 'string' ? JSON.parse(employee.profile_images) : []);
+        setProfileImages(
+          Array.isArray(employee.profile_images)
+            ? employee.profile_images
+            : typeof employee.profile_images === "string"
+            ? JSON.parse(employee.profile_images)
+            : []
+        );
       }
       if (employee.proof_documents) {
-        setProofDocuments(Array.isArray(employee.proof_documents) ? employee.proof_documents : 
-          typeof employee.proof_documents === 'string' ? JSON.parse(employee.proof_documents) : []);
+        setProofDocuments(
+          Array.isArray(employee.proof_documents)
+            ? employee.proof_documents
+            : typeof employee.proof_documents === "string"
+            ? JSON.parse(employee.proof_documents)
+            : []
+        );
       }
 
       // Salary is PG-specific; edited from Employee Details or set here.
-      setMonthlySalaryAmount('');
+      setMonthlySalaryAmount("");
     } catch (error: any) {
-      showErrorAlert(error, 'Employee Error');
+      showErrorAlert(error, "Employee Error");
       navigation.goBack();
     } finally {
       setInitialLoading(false);
@@ -195,7 +221,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
         setCityData(response.data);
       }
     } catch (error) {
-      console.error('Error fetching cities:', error);
+      console.error("Error fetching cities:", error);
     } finally {
       setLoadingCities(false);
     }
@@ -208,14 +234,16 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
       const roles = (response as any)?.data || [];
       setRoleData(Array.isArray(roles) ? roles : []);
     } catch (error: any) {
-      console.error('Error fetching roles:', error);
-      showErrorAlert(error, 'Roles Error');
+      console.error("Error fetching roles:", error);
+      showErrorAlert(error, "Roles Error");
     } finally {
       setLoadingRoles(false);
     }
   };
 
-  const safeLocations = Array.isArray((pgLocationsResponse as any)?.data) ? (pgLocationsResponse as any).data : [];
+  const safeLocations = Array.isArray((pgLocationsResponse as any)?.data)
+    ? (pgLocationsResponse as any).data
+    : [];
 
   const selectedPGLocation = selectedPGLocationId
     ? safeLocations.find((loc: any) => loc.s_no === selectedPGLocationId)
@@ -237,33 +265,10 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
 
-    const email = formData.email.trim();
-    const password = formData.password.trim();
-    const confirmPassword = formData.confirmPassword.trim();
-
-    if (!isEditMode) {
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        newErrors.email = 'Invalid email format';
-      }
-    }
-
-    // Password is optional in both create and edit.
-    // If user types either field, enforce match + min length.
-    if (password || confirmPassword) {
-      if (password.length < 6) {
-        newErrors.password = 'Password must be at least 6 characters';
-      }
-      if (!confirmPassword) {
-        newErrors.confirmPassword = 'Please confirm your password';
-      } else if (password !== confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match';
-      }
-    }
-
-    const localPhoneDigits = formData.phone.trim().replace(/[^\d]/g, '');
+    const localPhoneDigits = formData.phone.trim().replace(/[^\d]/g, "");
     const expectedPhoneLength = selectedCountry?.phoneLength ?? 10;
 
     if (localPhoneDigits && localPhoneDigits.length !== expectedPhoneLength) {
@@ -271,17 +276,17 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     }
 
     if (!formData.role_id) {
-      newErrors.role_id = 'Role is required';
+      newErrors.role_id = "Role is required";
     }
 
     if (!localPhoneDigits) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = "Phone number is required";
     } else if (localPhoneDigits.length !== expectedPhoneLength) {
       newErrors.phone = `Phone number must be ${expectedPhoneLength} digits`;
     }
 
     if (!formData.gender) {
-      newErrors.gender = 'Gender is required';
+      newErrors.gender = "Gender is required";
     }
 
     setErrors(newErrors);
@@ -290,14 +295,20 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fill in all required fields correctly');
+      Alert.alert(
+        "Validation Error",
+        "Please fill in all required fields correctly"
+      );
       return;
     }
 
     if (monthlySalaryAmount) {
       const amt = Number(monthlySalaryAmount);
       if (!Number.isFinite(amt) || amt < 0) {
-        Alert.alert('Validation Error', 'Please enter a valid monthly salary amount');
+        Alert.alert(
+          "Validation Error",
+          "Please enter a valid monthly salary amount"
+        );
         return;
       }
     }
@@ -305,19 +316,11 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     try {
       setLoading(true);
 
-      const localPhoneDigits = formData.phone.trim().replace(/[^\d]/g, '');
-
-      const email = formData.email.trim();
-      const password = formData.password.trim();
-      const confirmPassword = formData.confirmPassword.trim();
-
-      const shouldSendPassword = !!password && password === confirmPassword;
+      const localPhoneDigits = formData.phone.trim().replace(/[^\d]/g, "");
 
       const payload = {
         name: formData.name.trim(),
-        email: email || undefined,
-        password: shouldSendPassword ? password : undefined,
-        phone: `${selectedCountry?.phoneCode ?? '+91'}${localPhoneDigits}`,
+        phone: `${selectedCountry?.phoneCode ?? "+91"}${localPhoneDigits}`,
         role_id: formData.role_id!,
         gender: formData.gender as UserGender,
         address: formData.address.trim() || undefined,
@@ -334,10 +337,13 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
         await updateEmployee({ id: employeeId, data: payload as any }).unwrap();
 
         if (selectedPGLocationId && monthlySalaryAmount) {
-          await updatePgUserSalary({ userId: employeeId, monthly_salary_amount: Number(monthlySalaryAmount) }).unwrap();
+          await updatePgUserSalary({
+            userId: employeeId,
+            monthly_salary_amount: Number(monthlySalaryAmount),
+          }).unwrap();
         }
 
-        showSuccessAlert('Employee updated successfully');
+        showSuccessAlert("Employee updated successfully");
         navigation.goBack();
       } else {
         // Create new employee
@@ -345,14 +351,17 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
         const createdId = (created as any)?.s_no;
         if (selectedPGLocationId && createdId && monthlySalaryAmount) {
-          await updatePgUserSalary({ userId: createdId, monthly_salary_amount: Number(monthlySalaryAmount) }).unwrap();
+          await updatePgUserSalary({
+            userId: createdId,
+            monthly_salary_amount: Number(monthlySalaryAmount),
+          }).unwrap();
         }
 
-        showSuccessAlert('Employee created successfully');
+        showSuccessAlert("Employee created successfully");
         navigation.goBack();
       }
     } catch (error: any) {
-      showErrorAlert(error, 'Employee Error');
+      showErrorAlert(error, "Employee Error");
     } finally {
       setLoading(false);
     }
@@ -362,15 +371,24 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     return (
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
         <ScreenHeader
-          title={isEditMode ? 'Edit Employee' : 'Add New Employee'}
+          title={isEditMode ? "Edit Employee" : "Add New Employee"}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
           backgroundColor={Theme.colors.background.blue}
           syncMobileHeaderBg={true}
         />
-        <View style={{ flex: 1, backgroundColor: CONTENT_COLOR, alignItems: 'center', justifyContent: 'center' }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: CONTENT_COLOR,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>Loading employee data...</Text>
+          <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
+            Loading employee data...
+          </Text>
         </View>
       </ScreenLayout>
     );
@@ -379,7 +397,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
       <ScreenHeader
-        title={isEditMode ? 'Edit Employee' : 'Add New Employee'}
+        title={isEditMode ? "Edit Employee" : "Add New Employee"}
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
         backgroundColor={Theme.colors.background.blue}
@@ -389,8 +407,8 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 80}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 80}
         >
           <ScrollView
             style={{ flex: 1 }}
@@ -401,122 +419,78 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
             <View style={{ padding: 16 }}>
               {/* Personal Information */}
               <Card style={{ padding: 16, marginBottom: 16 }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
                   👤 Personal Information
                 </Text>
 
                 {/* Name */}
                 <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-                    Full Name <Text style={{ color: '#EF4444' }}>*</Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Full Name <Text style={{ color: "#EF4444" }}>*</Text>
                   </Text>
                   <TextInput
                     value={formData.name}
-                    onChangeText={(value) => updateField('name', value)}
+                    onChangeText={(value) => updateField("name", value)}
                     placeholder="Enter full name"
                     style={{
                       borderWidth: 1,
-                      borderColor: errors.name ? '#EF4444' : Theme.colors.border,
+                      borderColor: errors.name
+                        ? "#EF4444"
+                        : Theme.colors.border,
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
+                      backgroundColor: "#fff",
                     }}
                   />
                   {errors.name && (
-                    <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.name}</Text>
-                  )}
-                </View>
-
-                {/* Email (only in create mode) */}
-                {!isEditMode && (
-                  <View style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-                      Email Address
+                    <Text
+                      style={{ fontSize: 11, color: "#EF4444", marginTop: 4 }}
+                    >
+                      {errors.name}
                     </Text>
-                    <TextInput
-                      value={formData.email}
-                      onChangeText={(value) => updateField('email', value)}
-                      placeholder="Enter email address"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      style={{
-                        borderWidth: 1,
-                        borderColor: errors.email ? '#EF4444' : Theme.colors.border,
-                        borderRadius: 8,
-                        padding: 12,
-                        fontSize: 14,
-                        backgroundColor: '#fff',
-                      }}
-                    />
-                    {errors.email && (
-                      <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.email}</Text>
-                    )}
-                  </View>
-                )}
-
-                {/* Password */}
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-                    {isEditMode ? 'New Password' : 'Password'}
-                  </Text>
-                  <TextInput
-                    value={formData.password}
-                    onChangeText={(value) => updateField('password', value)}
-                    placeholder={isEditMode ? 'Enter new password (optional)' : 'Enter password (optional)'}
-                    secureTextEntry
-                    style={{
-                      borderWidth: 1,
-                      borderColor: errors.password ? '#EF4444' : Theme.colors.border,
-                      borderRadius: 8,
-                      padding: 12,
-                      fontSize: 14,
-                      backgroundColor: '#fff',
-                    }}
-                  />
-                  {errors.password && (
-                    <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.password}</Text>
-                  )}
-                </View>
-
-                {/* Confirm Password */}
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-                    Confirm Password
-                  </Text>
-                  <TextInput
-                    value={formData.confirmPassword}
-                    onChangeText={(value) => updateField('confirmPassword', value)}
-                    placeholder="Re-enter password"
-                    secureTextEntry
-                    style={{
-                      borderWidth: 1,
-                      borderColor: errors.confirmPassword ? '#EF4444' : Theme.colors.border,
-                      borderRadius: 8,
-                      padding: 12,
-                      fontSize: 14,
-                      backgroundColor: '#fff',
-                    }}
-                  />
-                  {errors.confirmPassword && (
-                    <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.confirmPassword}</Text>
                   )}
                 </View>
 
                 {/* Phone Number */}
                 <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-                    Phone Number <Text style={{ color: '#EF4444' }}>*</Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Phone Number <Text style={{ color: "#EF4444" }}>*</Text>
                   </Text>
                   <CountryPhoneSelector
                     selectedCountry={selectedCountry}
                     onSelectCountry={setSelectedCountry}
                     phoneValue={formData.phone}
-                    onPhoneChange={(value) => updateField('phone', value)}
+                    onPhoneChange={(value) => updateField("phone", value)}
                     size="medium"
                   />
                   {errors.phone && (
-                    <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.phone}</Text>
+                    <Text
+                      style={{ fontSize: 11, color: "#EF4444", marginTop: 4 }}
+                    >
+                      {errors.phone}
+                    </Text>
                   )}
                 </View>
 
@@ -524,16 +498,25 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                 <OptionSelector
                   label="Gender"
                   options={[
-                    { label: 'Male', value: 'MALE', icon: '👨' },
-                    { label: 'Female', value: 'FEMALE', icon: '👩' },
+                    { label: "Male", value: "MALE", icon: "👨" },
+                    { label: "Female", value: "FEMALE", icon: "👩" },
                   ]}
                   selectedValue={formData.gender || null}
-                  onSelect={(value) => updateField('gender', value as UserGender)}
+                  onSelect={(value) =>
+                    updateField("gender", value as UserGender)
+                  }
                   required={true}
                   containerStyle={{ marginBottom: 16 }}
                 />
                 {errors.gender && (
-                  <Text style={{ fontSize: 11, color: '#EF4444', marginTop: -10, marginBottom: 16 }}>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: "#EF4444",
+                      marginTop: -10,
+                      marginBottom: 16,
+                    }}
+                  >
                     {errors.gender}
                   </Text>
                 )}
@@ -541,7 +524,14 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
               {/* Work Information */}
               <Card style={{ padding: 16, marginBottom: 16 }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
                   💼 Work Information
                 </Text>
 
@@ -549,13 +539,13 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                 <SearchableDropdown
                   label="Role"
                   placeholder="Select a role"
-                  items={roleData.map(role => ({
+                  items={roleData.map((role) => ({
                     id: role.s_no,
                     label: role.role_name,
                     value: role.s_no,
                   }))}
                   selectedValue={formData.role_id}
-                  onSelect={(item) => updateField('role_id', item.id)}
+                  onSelect={(item) => updateField("role_id", item.id)}
                   loading={loadingRoles}
                   error={errors.role_id}
                   required={true}
@@ -571,7 +561,13 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       required={false}
                       disabled={loading}
                     />
-                    <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 6 }}>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: Theme.colors.text.tertiary,
+                        marginTop: 6,
+                      }}
+                    >
                       This is saved per employee per selected PG.
                     </Text>
                   </View>
@@ -597,7 +593,14 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
               {/* Address Information */}
               <Card style={{ padding: 16, marginBottom: 16 }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
                   📍 Address Information
                 </Text>
 
@@ -605,13 +608,15 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                 <SearchableDropdown
                   label="State"
                   placeholder="Select a state"
-                  items={stateData.map(state => ({
+                  items={stateData.map((state) => ({
                     id: state.s_no,
                     label: state.name,
                     value: state.iso_code,
                   }))}
                   selectedValue={formData.state_id}
-                  onSelect={(item) => setFormData(prev => ({ ...prev, state_id: item.id }))}
+                  onSelect={(item) =>
+                    setFormData((prev) => ({ ...prev, state_id: item.id }))
+                  }
                   loading={loadingStates}
                   required={false}
                 />
@@ -620,13 +625,15 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                 <SearchableDropdown
                   label="City"
                   placeholder="Select a city"
-                  items={cityData.map(city => ({
+                  items={cityData.map((city) => ({
                     id: city.s_no,
                     label: city.name,
                     value: city.s_no,
                   }))}
                   selectedValue={formData.city_id}
-                  onSelect={(item) => setFormData(prev => ({ ...prev, city_id: item.id }))}
+                  onSelect={(item) =>
+                    setFormData((prev) => ({ ...prev, city_id: item.id }))
+                  }
                   loading={loadingCities}
                   disabled={!formData.state_id}
                   required={false}
@@ -634,12 +641,19 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
                 {/* Address */}
                 <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
                     Address
                   </Text>
                   <TextInput
                     value={formData.address}
-                    onChangeText={(value) => updateField('address', value)}
+                    onChangeText={(value) => updateField("address", value)}
                     placeholder="Enter full address (optional)"
                     multiline
                     numberOfLines={3}
@@ -649,20 +663,27 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
-                      textAlignVertical: 'top',
+                      backgroundColor: "#fff",
+                      textAlignVertical: "top",
                     }}
                   />
                 </View>
 
                 {/* Pincode */}
                 <View style={{ marginBottom: 0 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
                     Pincode
                   </Text>
                   <TextInput
                     value={formData.pincode}
-                    onChangeText={(value) => updateField('pincode', value)}
+                    onChangeText={(value) => updateField("pincode", value)}
                     placeholder="Enter pincode (optional)"
                     keyboardType="number-pad"
                     maxLength={6}
@@ -672,7 +693,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
+                      backgroundColor: "#fff",
                     }}
                   />
                 </View>
@@ -680,7 +701,14 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
               {/* Profile Images */}
               <Card style={{ padding: 16, marginBottom: 16 }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
                   📷 Profile Image
                 </Text>
                 <ImageUploadS3
@@ -698,7 +726,14 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
               {/* Proof Documents */}
               <Card style={{ padding: 16, marginBottom: 16 }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
                   📄 Proof Documents
                 </Text>
                 <ImageUploadS3
@@ -712,8 +747,15 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   entityId={employeeId?.toString()}
                   autoSave={false}
                 />
-                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 8 }}>
-                  Upload Aadhaar, PAN, Driving License, or other ID proofs (max 3 documents)
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: Theme.colors.text.secondary,
+                    marginTop: 8,
+                  }}
+                >
+                  Upload Aadhaar, PAN, Driving License, or other ID proofs (max
+                  3 documents)
                 </Text>
               </Card>
 
@@ -722,18 +764,20 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                 onPress={handleSubmit}
                 disabled={loading}
                 style={{
-                  backgroundColor: loading ? '#9CA3AF' : Theme.colors.primary,
+                  backgroundColor: loading ? "#9CA3AF" : Theme.colors.primary,
                   padding: 16,
                   borderRadius: 8,
-                  alignItems: 'center',
+                  alignItems: "center",
                   marginBottom: 32,
                 }}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
-                    {isEditMode ? 'Update Employee' : 'Create Employee'}
+                  <Text
+                    style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}
+                  >
+                    {isEditMode ? "Update Employee" : "Create Employee"}
                   </Text>
                 )}
               </TouchableOpacity>

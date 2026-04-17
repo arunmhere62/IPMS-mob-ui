@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useState, useEffect, useRef } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -8,36 +8,35 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
-} from 'react-native';
-import { SlideBottomModal } from '../../components/SlideBottomModal';
-import { DatePicker } from '../../components/DatePicker';
-import { AmountInput } from '../../components/AmountInput';
-import { OptionSelector, Option } from '../../components/OptionSelector';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
-import { Card } from '../../components/Card';
-import { Theme } from '../../theme';
-import { ScreenHeader } from '../../components/ScreenHeader';
-import { ScreenLayout } from '../../components/ScreenLayout';
-import { SkeletonLoader } from '../../components/SkeletonLoader';
-import { ActionTile } from '../../components/ActionButtons';
-import { CONTENT_COLOR } from '@/constant';
-import RentPaymentForm from './RentPaymentForm';
-import { AddRefundPaymentModal } from './AddRefundPaymentModal';
-import { EditRefundPaymentModal } from '../../components/EditRefundPaymentModal';
-import { CheckoutTenantForm } from './CheckoutTenantForm';
-import { Ionicons } from '@expo/vector-icons';
-import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
-import { SearchableDropdown } from '../../components/SearchableDropdown';
+} from "react-native";
+import { SlideBottomModal } from "../../components/SlideBottomModal";
+import { DatePicker } from "../../components/DatePicker";
+import { AmountInput } from "../../components/AmountInput";
+import { OptionSelector, Option } from "../../components/OptionSelector";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
+import { Card } from "../../components/Card";
+import { Theme } from "../../theme";
+import { ScreenHeader } from "../../components/ScreenHeader";
+import { ScreenLayout } from "../../components/ScreenLayout";
+import { SkeletonLoader } from "../../components/SkeletonLoader";
+import { ActionTile } from "../../components/ActionButtons";
+import { CONTENT_COLOR } from "@/constant";
+import RentPaymentForm from "./RentPaymentForm";
+import { AddRefundPaymentModal } from "./AddRefundPaymentModal";
+import { EditRefundPaymentModal } from "../../components/EditRefundPaymentModal";
+import { CheckoutTenantForm } from "./CheckoutTenantForm";
+import { Ionicons } from "@expo/vector-icons";
+import { CompactReceiptGenerator } from "@/services/receipt/compactReceiptGenerator";
+import { SearchableDropdown } from "../../components/SearchableDropdown";
 import {
   TenantHeader,
   PendingPaymentAlert,
   AccommodationDetails,
   PersonalInformation,
-  ImageViewerModal,
   ReceiptViewModal,
-} from './components';
+} from "./components";
 import {
   useCreateAdvancePaymentMutation,
   useCreateRefundPaymentMutation,
@@ -47,19 +46,30 @@ import {
   useUpdateRefundPaymentMutation,
   useCreateTenantPaymentMutation,
   useLazyDetectPaymentGapsQuery,
-} from '@/services/api/paymentsApi';
+} from "@/services/api/paymentsApi";
 import type {
   AdvancePayment as PaymentsAdvancePayment,
   CreateTenantPaymentDto,
   CreateAdvancePaymentDto,
   CreateRefundPaymentDto,
   RefundPayment as PaymentsRefundPayment,
-} from '@/services/api/paymentsApi';
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
-import AdvancePaymentForm from './AdvancePaymentForm';
-import { useGetAllBedsQuery, useGetAllRoomsQuery } from '@/services/api/roomsApi';
-import type { Bed, GetBedsParams, GetRoomsParams, Room } from '@/services/api/roomsApi';
-import { useGetPGLocationsQuery, useGetPGLocationDetailsQuery } from '@/services/api/pgLocationsApi';
+} from "@/services/api/paymentsApi";
+import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
+import AdvancePaymentForm from "./AdvancePaymentForm";
+import {
+  useGetAllBedsQuery,
+  useGetAllRoomsQuery,
+} from "@/services/api/roomsApi";
+import type {
+  Bed,
+  GetBedsParams,
+  GetRoomsParams,
+  Room,
+} from "@/services/api/roomsApi";
+import {
+  useGetPGLocationsQuery,
+  useGetPGLocationDetailsQuery,
+} from "@/services/api/pgLocationsApi";
 import {
   TenantPayment,
   useCheckoutTenantWithDateMutation,
@@ -68,20 +78,26 @@ import {
   useLazyGetTenantsQuery,
   useTransferTenantMutation,
   useUpdateTenantCheckoutDateMutation,
-} from '@/services/api/tenantsApi';
-import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/config/rbac.config';
-import type { Payment, PGLocation } from '@/types';
+} from "@/services/api/tenantsApi";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/config/rbac.config";
+import type { Payment, PGLocation } from "@/types";
+import { ImageViewerModal } from "@/components/ImageViewerModal";
 
 type NavigationLike = {
   navigate: (name: string, params?: unknown) => void;
   goBack: () => void;
   addListener: (event: string, callback: (e: unknown) => void) => () => void;
   setParams: (params: Record<string, unknown>) => void;
-  getState: () => { routes: Array<{ params?: Record<string, unknown> }>; index: number };
+  getState: () => {
+    routes: Array<{ params?: Record<string, unknown> }>;
+    index: number;
+  };
 };
 
-type CompactReceiptData = Parameters<typeof CompactReceiptGenerator.ReceiptComponent>[0]['data'];
+type CompactReceiptData = Parameters<
+  typeof CompactReceiptGenerator.ReceiptComponent
+>[0]["data"];
 
 type TransferDifferenceCycle = {
   remainingDue?: number;
@@ -169,20 +185,24 @@ const TenantDetailsContent: React.FC<{
   canDeleteRefund,
 }) => {
   const PAYMENT_METHODS: Option[] = [
-    { label: 'GPay', value: 'GPAY', icon: '📱' },
-    { label: 'PhonePe', value: 'PHONEPE', icon: '📱' },
-    { label: 'Cash', value: 'CASH', icon: '💵' },
-    { label: 'Bank Transfer', value: 'BANK_TRANSFER', icon: '🏦' },
+    { label: "GPay", value: "GPAY", icon: "📱" },
+    { label: "PhonePe", value: "PHONEPE", icon: "📱" },
+    { label: "Cash", value: "CASH", icon: "💵" },
+    { label: "Bank Transfer", value: "BANK_TRANSFER", icon: "🏦" },
   ];
 
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { selectedPGLocationId } = useSelector(
+    (state: RootState) => state.pgLocations
+  );
   const { user: _user } = useSelector((state: RootState) => state.auth);
 
-  const [shouldRefreshTenantsOnBack, setShouldRefreshTenantsOnBack] = useState(false);
+  const [shouldRefreshTenantsOnBack, setShouldRefreshTenantsOnBack] =
+    useState(false);
 
   // Checkout date modal state
-  const [checkoutDateModalVisible, setCheckoutDateModalVisible] = useState(false);
-  const [newCheckoutDate, setNewCheckoutDate] = useState('');
+  const [checkoutDateModalVisible, setCheckoutDateModalVisible] =
+    useState(false);
+  const [newCheckoutDate, setNewCheckoutDate] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   // Transfer tenant modal state
@@ -190,15 +210,24 @@ const TenantDetailsContent: React.FC<{
   const [transferPgId, setTransferPgId] = useState<number | null>(null);
   const [transferRoomId, setTransferRoomId] = useState<number | null>(null);
   const [transferBedId, setTransferBedId] = useState<number | null>(null);
-  const [transferEffectiveFrom, setTransferEffectiveFrom] = useState<string>('');
+  const [transferEffectiveFrom, setTransferEffectiveFrom] =
+    useState<string>("");
   const [transferLoading, setTransferLoading] = useState(false);
 
-  const [collectTransferDiffVisible, setCollectTransferDiffVisible] = useState(false);
-  const [collectTransferDiffAmount, setCollectTransferDiffAmount] = useState('');
-  const [collectTransferDiffPaymentDate, setCollectTransferDiffPaymentDate] = useState('');
-  const [collectTransferDiffPaymentMethod, setCollectTransferDiffPaymentMethod] = useState<string | null>(null);
-  const [collectTransferDiffRemarks, setCollectTransferDiffRemarks] = useState('');
-  const [collectTransferDiffLoading, setCollectTransferDiffLoading] = useState(false);
+  const [collectTransferDiffVisible, setCollectTransferDiffVisible] =
+    useState(false);
+  const [collectTransferDiffAmount, setCollectTransferDiffAmount] =
+    useState("");
+  const [collectTransferDiffPaymentDate, setCollectTransferDiffPaymentDate] =
+    useState("");
+  const [
+    collectTransferDiffPaymentMethod,
+    setCollectTransferDiffPaymentMethod,
+  ] = useState<string | null>(null);
+  const [collectTransferDiffRemarks, setCollectTransferDiffRemarks] =
+    useState("");
+  const [collectTransferDiffLoading, setCollectTransferDiffLoading] =
+    useState(false);
 
   const {
     data: tenantResponse,
@@ -222,31 +251,44 @@ const TenantDetailsContent: React.FC<{
   const [createTenantPayment] = useCreateTenantPaymentMutation();
   const [triggerDetectPaymentGaps] = useLazyDetectPaymentGapsQuery();
   const rentStatusHydratedRef = useRef<number | null>(null);
-  
+
   // Clone tenant data to avoid frozen state issues
-  const currentTenant = tenantResponse?.data ? JSON.parse(JSON.stringify(tenantResponse.data)) : null;
+  const currentTenant = tenantResponse?.data
+    ? JSON.parse(JSON.stringify(tenantResponse.data))
+    : null;
 
   const activeTransferDiffCycle =
-    (currentTenant as { transfer_difference_due_cycle?: TransferDifferenceCycle } | null | undefined)
-      ?.transfer_difference_due_cycle ?? null;
+    (
+      currentTenant as
+        | { transfer_difference_due_cycle?: TransferDifferenceCycle }
+        | null
+        | undefined
+    )?.transfer_difference_due_cycle ?? null;
 
-  const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, { skip: false });
+  const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, {
+    skip: false,
+  });
 
   const effectiveReceiptPgId =
-    (currentTenant as { pg_id?: number | null } | null | undefined)?.pg_id ?? selectedPGLocationId ?? null;
+    (currentTenant as { pg_id?: number | null } | null | undefined)?.pg_id ??
+    selectedPGLocationId ??
+    null;
 
-  const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(Number(effectiveReceiptPgId), {
-    skip: !effectiveReceiptPgId,
-  });
+  const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(
+    Number(effectiveReceiptPgId),
+    {
+      skip: !effectiveReceiptPgId,
+    }
+  );
 
   const {
     data: transferRoomsResponse,
     isFetching: transferRoomsLoading,
     error: transferRoomsError,
   } = useGetAllRoomsQuery(
-    (transferPgId ? ({ pg_id: transferPgId, page: 1, limit: 200 } satisfies GetRoomsParams) : undefined) as
-      | GetRoomsParams
-      | void,
+    (transferPgId
+      ? ({ pg_id: transferPgId, page: 1, limit: 200 } satisfies GetRoomsParams)
+      : undefined) as GetRoomsParams | void,
     { skip: !transferPgId }
   );
 
@@ -256,12 +298,12 @@ const TenantDetailsContent: React.FC<{
     error: transferBedsError,
   } = useGetAllBedsQuery(
     transferRoomId
-      ? (({
+      ? ({
           room_id: transferRoomId,
           only_unoccupied: true,
           page: 1,
           limit: 500,
-        } satisfies GetBedsParams) as GetBedsParams)
+        } satisfies GetBedsParams as GetBedsParams)
       : undefined,
     { skip: !transferRoomId }
   );
@@ -273,40 +315,50 @@ const TenantDetailsContent: React.FC<{
     setTransferPgId(currentTenant.pg_id ?? selectedPGLocationId ?? null);
     setTransferRoomId(null);
     setTransferBedId(null);
-    setTransferEffectiveFrom(currentTenant.check_in_date ? String(currentTenant.check_in_date).split('T')[0] : '');
+    setTransferEffectiveFrom(
+      currentTenant.check_in_date
+        ? String(currentTenant.check_in_date).split("T")[0]
+        : ""
+    );
   }, [transferModalVisible]);
 
   useEffect(() => {
     if (!transferModalVisible) return;
     if (transferRoomsError) {
-      showErrorAlert(transferRoomsError, 'Failed to load rooms');
+      showErrorAlert(transferRoomsError, "Failed to load rooms");
     }
   }, [transferRoomsError, transferModalVisible]);
 
   useEffect(() => {
     if (!transferModalVisible) return;
     if (transferBedsError) {
-      showErrorAlert(transferBedsError, 'Failed to load beds');
+      showErrorAlert(transferBedsError, "Failed to load beds");
     }
   }, [transferBedsError, transferModalVisible]);
 
-  const pgItems = ((pgLocationsResponse?.data ?? []) as PGLocation[]).map((pg: PGLocation) => ({
-    id: Number(pg.s_no),
-    label: String(pg.location_name ?? `PG ${pg.s_no}`),
-    value: pg.s_no,
-  }));
+  const pgItems = ((pgLocationsResponse?.data ?? []) as PGLocation[]).map(
+    (pg: PGLocation) => ({
+      id: Number(pg.s_no),
+      label: String(pg.location_name ?? `PG ${pg.s_no}`),
+      value: pg.s_no,
+    })
+  );
 
-  const roomItems = ((transferRoomsResponse?.data ?? []) as Room[]).map((r: Room) => ({
-    id: Number(r.s_no),
-    label: `Room ${r.room_no}`,
-    value: r.s_no,
-  }));
+  const roomItems = ((transferRoomsResponse?.data ?? []) as Room[]).map(
+    (r: Room) => ({
+      id: Number(r.s_no),
+      label: `Room ${r.room_no}`,
+      value: r.s_no,
+    })
+  );
 
-  const bedItems = ((transferBedsResponse?.data ?? []) as Bed[]).map((b: Bed) => ({
-    id: Number(b.s_no),
-    label: `Bed ${b.bed_no}`,
-    value: b.s_no,
-  }));
+  const bedItems = ((transferBedsResponse?.data ?? []) as Bed[]).map(
+    (b: Bed) => ({
+      id: Number(b.s_no),
+      label: `Bed ${b.bed_no}`,
+      value: b.s_no,
+    })
+  );
 
   const _handleOpenTransfer = () => {
     if (!currentTenant) return;
@@ -318,11 +370,13 @@ const TenantDetailsContent: React.FC<{
     if (!activeTransferDiffCycle) return;
 
     const remaining = Number(activeTransferDiffCycle.remainingDue || 0);
-    setCollectTransferDiffAmount(remaining > 0 ? remaining.toFixed(2) : '');
-    setCollectTransferDiffPaymentDate(new Date().toISOString().split('T')[0]);
+    setCollectTransferDiffAmount(remaining > 0 ? remaining.toFixed(2) : "");
+    setCollectTransferDiffPaymentDate(new Date().toISOString().split("T")[0]);
     setCollectTransferDiffPaymentMethod(null);
     setCollectTransferDiffRemarks(
-      `TRANSFER_DIFF ${String(activeTransferDiffCycle.start_date)} to ${String(activeTransferDiffCycle.end_date)}`,
+      `TRANSFER_DIFF ${String(activeTransferDiffCycle.start_date)} to ${String(
+        activeTransferDiffCycle.end_date
+      )}`
     );
     setCollectTransferDiffVisible(true);
   };
@@ -331,39 +385,52 @@ const TenantDetailsContent: React.FC<{
     if (!currentTenant) return;
     if (!activeTransferDiffCycle) return;
     if (!canCreateRent) {
-      Alert.alert('Access Denied', "You don't have permission to create rent payments");
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to create rent payments"
+      );
       return;
     }
 
     const amount = Number(collectTransferDiffAmount);
-    const expected = Number(activeTransferDiffCycle.due || activeTransferDiffCycle.expected_from_allocations || 0);
+    const expected = Number(
+      activeTransferDiffCycle.due ||
+        activeTransferDiffCycle.expected_from_allocations ||
+        0
+    );
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      Alert.alert('Invalid amount', 'Please enter a valid amount.');
+      Alert.alert("Invalid amount", "Please enter a valid amount.");
       return;
     }
 
     if (!collectTransferDiffPaymentDate) {
-      Alert.alert('Missing field', 'Please select Payment Date.');
+      Alert.alert("Missing field", "Please select Payment Date.");
       return;
     }
 
     if (!collectTransferDiffPaymentMethod) {
-      Alert.alert('Missing field', 'Please select Payment Method.');
+      Alert.alert("Missing field", "Please select Payment Method.");
       return;
     }
 
     if (!expected || expected <= 0) {
-      Alert.alert('Cannot collect', 'Expected amount for this cycle could not be calculated.');
+      Alert.alert(
+        "Cannot collect",
+        "Expected amount for this cycle could not be calculated."
+      );
       return;
     }
 
     if (amount > expected) {
-      Alert.alert('Invalid amount', `Amount cannot exceed expected amount (₹${expected}).`);
+      Alert.alert(
+        "Invalid amount",
+        `Amount cannot exceed expected amount (₹${expected}).`
+      );
       return;
     }
 
-    const status = amount >= expected ? 'PAID' : 'PARTIAL';
+    const status = amount >= expected ? "PAID" : "PARTIAL";
 
     try {
       setCollectTransferDiffLoading(true);
@@ -376,19 +443,20 @@ const TenantDetailsContent: React.FC<{
         amount_paid: amount,
         actual_rent_amount: expected,
         payment_date: collectTransferDiffPaymentDate,
-        payment_method: collectTransferDiffPaymentMethod as Payment['payment_method'],
-        status: status as Payment['status'],
+        payment_method:
+          collectTransferDiffPaymentMethod as Payment["payment_method"],
+        status: status as Payment["status"],
         cycle_id: Number(activeTransferDiffCycle.cycle_id),
         remarks: collectTransferDiffRemarks || undefined,
       } satisfies CreateTenantPaymentDto).unwrap();
 
-      showSuccessAlert('Transfer difference collected');
+      showSuccessAlert("Transfer difference collected");
       setCollectTransferDiffVisible(false);
       setShouldRefreshTenantsOnBack(true);
       refetchTenant();
       refreshTenantList();
     } catch (error: unknown) {
-      showErrorAlert(error, 'Failed to collect transfer difference');
+      showErrorAlert(error, "Failed to collect transfer difference");
     } finally {
       setCollectTransferDiffLoading(false);
     }
@@ -396,8 +464,16 @@ const TenantDetailsContent: React.FC<{
 
   const handleSubmitTransfer = async () => {
     if (!currentTenant) return;
-    if (!transferPgId || !transferRoomId || !transferBedId || !transferEffectiveFrom) {
-      Alert.alert('Missing fields', 'Please select PG, Room, Bed and Effective Date.');
+    if (
+      !transferPgId ||
+      !transferRoomId ||
+      !transferBedId ||
+      !transferEffectiveFrom
+    ) {
+      Alert.alert(
+        "Missing fields",
+        "Please select PG, Room, Bed and Effective Date."
+      );
       return;
     }
 
@@ -410,13 +486,13 @@ const TenantDetailsContent: React.FC<{
         to_bed_id: transferBedId,
         effective_from: transferEffectiveFrom,
       }).unwrap();
-      showSuccessAlert('Tenant transferred successfully');
+      showSuccessAlert("Tenant transferred successfully");
       setTransferModalVisible(false);
       setShouldRefreshTenantsOnBack(true);
       refetchTenant();
       refreshTenantList();
     } catch (error: unknown) {
-      showErrorAlert(error, 'Transfer failed');
+      showErrorAlert(error, "Transfer failed");
     } finally {
       setTransferLoading(false);
     }
@@ -431,28 +507,35 @@ const TenantDetailsContent: React.FC<{
 
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  
+
   // Rent payment form state
   const [rentPaymentFormVisible, setRentPaymentFormVisible] = useState(false);
-  
+
   // Advance payment modal state
-  const [advancePaymentModalVisible, setAdvancePaymentModalVisible] = useState(false);
-  
+  const [advancePaymentModalVisible, setAdvancePaymentModalVisible] =
+    useState(false);
+
   // Refund payment modal state
-  const [refundPaymentModalVisible, setRefundPaymentModalVisible] = useState(false);
-  
+  const [refundPaymentModalVisible, setRefundPaymentModalVisible] =
+    useState(false);
+
   // Edit advance payment modal state
-  const [editAdvancePaymentModalVisible, setEditAdvancePaymentModalVisible] = useState(false);
-  const [editingAdvancePayment, setEditingAdvancePayment] = useState<PaymentsAdvancePayment | null>(null);
+  const [editAdvancePaymentModalVisible, setEditAdvancePaymentModalVisible] =
+    useState(false);
+  const [editingAdvancePayment, setEditingAdvancePayment] =
+    useState<PaymentsAdvancePayment | null>(null);
 
   // Edit refund payment modal state
-  const [editRefundPaymentModalVisible, setEditRefundPaymentModalVisible] = useState(false);
-  const [editingRefundPayment, setEditingRefundPayment] = useState<PaymentsRefundPayment | null>(null);
-
+  const [editRefundPaymentModalVisible, setEditRefundPaymentModalVisible] =
+    useState(false);
+  const [editingRefundPayment, setEditingRefundPayment] =
+    useState<PaymentsRefundPayment | null>(null);
 
   // Receipt modal state
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
-  const [receiptData, setReceiptData] = useState<CompactReceiptData | null>(null);
+  const [receiptData, setReceiptData] = useState<CompactReceiptData | null>(
+    null
+  );
   const receiptRef = React.useRef<View>(null);
 
   useEffect(() => {
@@ -492,9 +575,11 @@ const TenantDetailsContent: React.FC<{
       const route = navigation.getState();
       const currentRoute = route.routes[route.index];
       const shouldRefresh = currentRoute?.params?.refresh;
-      
+
       if (shouldRefresh) {
-        console.log('Refresh parameter detected in TenantDetails, reloading data');
+        console.log(
+          "Refresh parameter detected in TenantDetails, reloading data"
+        );
         setShouldRefreshTenantsOnBack(true);
         refetchTenant();
         refreshTenantList();
@@ -509,12 +594,12 @@ const TenantDetailsContent: React.FC<{
       setShouldRefreshTenantsOnBack(true);
       await triggerTenants({ page: 1, limit: 20 }).unwrap();
     } catch (error) {
-      console.error('Error refreshing tenant list:', error);
+      console.error("Error refreshing tenant list:", error);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e: unknown) => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e: unknown) => {
       if (!shouldRefreshTenantsOnBack) return;
 
       const evt = e as { preventDefault?: () => void };
@@ -523,7 +608,7 @@ const TenantDetailsContent: React.FC<{
       evt.preventDefault?.();
 
       // Ensure Tenants list refreshes after operations (rent/advance/refund/etc)
-      navigation.navigate('Tenants', { refresh: true });
+      navigation.navigate("Tenants", { refresh: true });
     });
 
     return unsubscribe;
@@ -531,7 +616,7 @@ const TenantDetailsContent: React.FC<{
 
   const handleBackPress = () => {
     if (shouldRefreshTenantsOnBack) {
-      navigation.navigate('Tenants', { refresh: true });
+      navigation.navigate("Tenants", { refresh: true });
       return;
     }
     navigation.goBack();
@@ -544,22 +629,30 @@ const TenantDetailsContent: React.FC<{
     }));
   };
 
-  const _handleSaveAdvancePayment = async (data: Partial<CreateAdvancePaymentDto>) => {
+  const _handleSaveAdvancePayment = async (
+    data: Partial<CreateAdvancePaymentDto>
+  ) => {
     if (!canCreateAdvance) {
-      Alert.alert('Access Denied', "You don't have permission to create advance payments");
-      throw new Error('ACCESS_DENIED');
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to create advance payments"
+      );
+      throw new Error("ACCESS_DENIED");
     }
     try {
       // Ensure pg_id is available from tenant or selected location
       const pgId = currentTenant?.pg_id || selectedPGLocationId;
-      
+
       if (!pgId) {
-        throw new Error('PG Location ID is required');
+        throw new Error("PG Location ID is required");
       }
 
-      await createAdvancePayment({ ...(data as CreateAdvancePaymentDto), pg_id: pgId }).unwrap();
+      await createAdvancePayment({
+        ...(data as CreateAdvancePaymentDto),
+        pg_id: pgId,
+      }).unwrap();
 
-      showSuccessAlert('Advance payment created successfully');
+      showSuccessAlert("Advance payment created successfully");
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: unknown) {
@@ -579,15 +672,18 @@ const TenantDetailsContent: React.FC<{
     remarks?: string;
   }) => {
     if (!canCreateRefund) {
-      Alert.alert('Access Denied', "You don't have permission to create refund payments");
-      throw new Error('ACCESS_DENIED');
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to create refund payments"
+      );
+      throw new Error("ACCESS_DENIED");
     }
     try {
       // Ensure pg_id is available from tenant or selected location
       const pgId = currentTenant?.pg_id || selectedPGLocationId;
-      
+
       if (!pgId) {
-        throw new Error('PG Location ID is required');
+        throw new Error("PG Location ID is required");
       }
 
       const dto: CreateRefundPaymentDto = {
@@ -598,14 +694,15 @@ const TenantDetailsContent: React.FC<{
         amount_paid: data.amount_paid,
         actual_rent_amount: data.actual_rent_amount,
         payment_date: data.payment_date,
-        payment_method: data.payment_method as CreateRefundPaymentDto['payment_method'],
-        status: data.status as CreateRefundPaymentDto['status'],
+        payment_method:
+          data.payment_method as CreateRefundPaymentDto["payment_method"],
+        status: data.status as CreateRefundPaymentDto["status"],
         remarks: data.remarks,
       };
 
       await createRefundPayment(dto).unwrap();
 
-      showSuccessAlert('Refund payment created successfully');
+      showSuccessAlert("Refund payment created successfully");
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: unknown) {
@@ -619,21 +716,33 @@ const TenantDetailsContent: React.FC<{
   };
 
   // Receipt handlers
-  const prepareReceiptData = (payment: TenantPaymentWithRelations): CompactReceiptData => {
-    const periodStartRaw = payment?.tenant_rent_cycles?.cycle_start || payment?.start_date || payment?.payment_date;
-    const periodEndRaw = payment?.tenant_rent_cycles?.cycle_end || payment?.end_date || payment?.payment_date;
+  const prepareReceiptData = (
+    payment: TenantPaymentWithRelations
+  ): CompactReceiptData => {
+    const periodStartRaw =
+      payment?.tenant_rent_cycles?.cycle_start ||
+      payment?.start_date ||
+      payment?.payment_date;
+    const periodEndRaw =
+      payment?.tenant_rent_cycles?.cycle_end ||
+      payment?.end_date ||
+      payment?.payment_date;
 
     const pgDetails = pgDetailsResponse?.data;
 
     return {
-      receiptNumber: `RCP-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
+      receiptNumber: `RCP-${payment.s_no}-${new Date(
+        payment.payment_date
+      ).getFullYear()}`,
       paymentDate: new Date(payment.payment_date),
-      tenantName: (currentTenant as any)?.name || 'Tenant',
-      tenantPhone: (currentTenant as any)?.phone_no || '',
-      pgName: payment?.pg_locations?.location_name || 'PG',
+      tenantName: (currentTenant as any)?.name || "Tenant",
+      tenantPhone: (currentTenant as any)?.phone_no || "",
+      pgName: payment?.pg_locations?.location_name || "PG",
       pgDetails: pgDetails
         ? {
-            pgId: effectiveReceiptPgId ? Number(effectiveReceiptPgId) : undefined,
+            pgId: effectiveReceiptPgId
+              ? Number(effectiveReceiptPgId)
+              : undefined,
             pgName: pgDetails.location_name,
             address: pgDetails.address,
             pincode: pgDetails.pincode ?? undefined,
@@ -641,32 +750,45 @@ const TenantDetailsContent: React.FC<{
             state: pgDetails.state ?? undefined,
           }
         : undefined,
-      roomNumber: payment?.rooms?.room_no || '',
-      bedNumber: payment?.beds?.bed_no || '',
+      roomNumber: payment?.rooms?.room_no || "",
+      bedNumber: payment?.beds?.bed_no || "",
       rentPeriod: {
-        startDate: periodStartRaw ? new Date(periodStartRaw) : new Date(payment.payment_date),
-        endDate: periodEndRaw ? new Date(periodEndRaw) : new Date(payment.payment_date),
+        startDate: periodStartRaw
+          ? new Date(periodStartRaw)
+          : new Date(payment.payment_date),
+        endDate: periodEndRaw
+          ? new Date(periodEndRaw)
+          : new Date(payment.payment_date),
       },
       actualRent: Number(payment.actual_rent_amount || 0),
       amountPaid: Number(payment.amount_paid || 0),
-      paymentMethod: payment.payment_method || 'CASH',
+      paymentMethod: payment.payment_method || "CASH",
       remarks: payment.remarks,
-      receiptType: 'RENT',
+      receiptType: "RENT",
     };
   };
 
-  const prepareAdvanceReceiptData = (payment: PaymentsAdvancePayment): CompactReceiptData => {
+  const prepareAdvanceReceiptData = (
+    payment: PaymentsAdvancePayment
+  ): CompactReceiptData => {
     const paymentDate = new Date(payment.payment_date);
     const pgDetails = pgDetailsResponse?.data;
     return {
-      receiptNumber: `ADV-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
+      receiptNumber: `ADV-${payment.s_no}-${new Date(
+        payment.payment_date
+      ).getFullYear()}`,
       paymentDate,
-      tenantName: (currentTenant as any)?.name || 'Tenant',
-      tenantPhone: (currentTenant as any)?.phone_no || '',
-      pgName: (payment as any)?.pg_locations?.location_name || (currentTenant as any)?.pg_locations?.location_name || 'PG',
+      tenantName: (currentTenant as any)?.name || "Tenant",
+      tenantPhone: (currentTenant as any)?.phone_no || "",
+      pgName:
+        (payment as any)?.pg_locations?.location_name ||
+        (currentTenant as any)?.pg_locations?.location_name ||
+        "PG",
       pgDetails: pgDetails
         ? {
-            pgId: effectiveReceiptPgId ? Number(effectiveReceiptPgId) : undefined,
+            pgId: effectiveReceiptPgId
+              ? Number(effectiveReceiptPgId)
+              : undefined,
             pgName: pgDetails.location_name,
             address: pgDetails.address,
             pincode: pgDetails.pincode ?? undefined,
@@ -674,17 +796,23 @@ const TenantDetailsContent: React.FC<{
             state: pgDetails.state ?? undefined,
           }
         : undefined,
-      roomNumber: (payment as any)?.rooms?.room_no || (currentTenant as any)?.rooms?.room_no || '',
-      bedNumber: (payment as any)?.beds?.bed_no || (currentTenant as any)?.beds?.bed_no || '',
+      roomNumber:
+        (payment as any)?.rooms?.room_no ||
+        (currentTenant as any)?.rooms?.room_no ||
+        "",
+      bedNumber:
+        (payment as any)?.beds?.bed_no ||
+        (currentTenant as any)?.beds?.bed_no ||
+        "",
       rentPeriod: {
         startDate: paymentDate,
         endDate: paymentDate,
       },
       actualRent: Number(payment.amount_paid || 0),
       amountPaid: Number(payment.amount_paid || 0),
-      paymentMethod: payment.payment_method || 'CASH',
+      paymentMethod: payment.payment_method || "CASH",
       remarks: payment.remarks,
-      receiptType: 'ADVANCE' as const,
+      receiptType: "ADVANCE" as const,
     };
   };
 
@@ -698,18 +826,18 @@ const TenantDetailsContent: React.FC<{
     try {
       const data = prepareReceiptData(payment as TenantPaymentWithRelations);
       setReceiptData(data);
-      
+
       // Wait for component to render
       setTimeout(async () => {
         await CompactReceiptGenerator.shareViaWhatsApp(
           receiptRef,
           data,
-          currentTenant?.phone_no || ''
+          currentTenant?.phone_no || ""
         );
         setReceiptData(null);
       }, 100);
     } catch (error) {
-      Alert.alert('Error', 'Failed to send via WhatsApp');
+      Alert.alert("Error", "Failed to send via WhatsApp");
       setReceiptData(null);
     }
   };
@@ -718,14 +846,14 @@ const TenantDetailsContent: React.FC<{
     try {
       const data = prepareReceiptData(payment as TenantPaymentWithRelations);
       setReceiptData(data);
-      
+
       // Wait for component to render
       setTimeout(async () => {
         await CompactReceiptGenerator.shareImage(receiptRef);
         setReceiptData(null);
       }, 100);
     } catch (error) {
-      Alert.alert('Error', 'Failed to share receipt');
+      Alert.alert("Error", "Failed to share receipt");
       setReceiptData(null);
     }
   };
@@ -737,55 +865,68 @@ const TenantDetailsContent: React.FC<{
     setReceiptModalVisible(true);
   };
 
-  const _handleWhatsAppAdvanceReceipt = async (payment: PaymentsAdvancePayment) => {
+  const _handleWhatsAppAdvanceReceipt = async (
+    payment: PaymentsAdvancePayment
+  ) => {
     try {
       const data = prepareAdvanceReceiptData(payment);
       setReceiptData(data);
-      
+
       // Wait for component to render
       setTimeout(async () => {
         await CompactReceiptGenerator.shareViaWhatsApp(
           receiptRef,
           data,
-          currentTenant?.phone_no || ''
+          currentTenant?.phone_no || ""
         );
         setReceiptData(null);
       }, 100);
     } catch (error) {
-      Alert.alert('Error', 'Failed to send via WhatsApp');
+      Alert.alert("Error", "Failed to send via WhatsApp");
       setReceiptData(null);
     }
   };
 
-  const _handleShareAdvanceReceipt = async (payment: PaymentsAdvancePayment) => {
+  const _handleShareAdvanceReceipt = async (
+    payment: PaymentsAdvancePayment
+  ) => {
     try {
       const data = prepareAdvanceReceiptData(payment);
       setReceiptData(data);
-      
+
       // Wait for component to render
       setTimeout(async () => {
         await CompactReceiptGenerator.shareImage(receiptRef);
         setReceiptData(null);
       }, 100);
     } catch (error) {
-      Alert.alert('Error', 'Failed to share receipt');
+      Alert.alert("Error", "Failed to share receipt");
       setReceiptData(null);
     }
   };
 
   const _handleEditAdvancePayment = (payment: PaymentsAdvancePayment) => {
     if (!canEditAdvance) {
-      Alert.alert('Access Denied', "You don't have permission to edit advance payments");
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to edit advance payments"
+      );
       return;
     }
     setEditingAdvancePayment(payment);
     setEditAdvancePaymentModalVisible(true);
   };
 
-  const handleUpdateAdvancePayment = async (id: number, data: Partial<CreateAdvancePaymentDto>) => {
+  const handleUpdateAdvancePayment = async (
+    id: number,
+    data: Partial<CreateAdvancePaymentDto>
+  ) => {
     if (!canEditAdvance) {
-      Alert.alert('Access Denied', "You don't have permission to edit advance payments");
-      throw new Error('ACCESS_DENIED');
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to edit advance payments"
+      );
+      throw new Error("ACCESS_DENIED");
     }
     try {
       await updateAdvancePayment({ id, data }).unwrap();
@@ -800,28 +941,33 @@ const TenantDetailsContent: React.FC<{
 
   const _handleDeleteAdvancePayment = (payment: PaymentsAdvancePayment) => {
     if (!canDeleteAdvance) {
-      Alert.alert('Access Denied', "You don't have permission to delete advance payments");
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to delete advance payments"
+      );
       return;
     }
     Alert.alert(
-      'Delete Advance Payment',
-      `Are you sure you want to delete this payment?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
+      "Delete Advance Payment",
+      `Are you sure you want to delete this payment?\n\nAmount: ₹${
+        payment.amount_paid
+      }\nDate: ${new Date(payment.payment_date).toLocaleDateString("en-IN")}`,
       [
         {
-          text: 'Cancel',
-          style: 'cancel',
+          text: "Cancel",
+          style: "cancel",
         },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               await deleteAdvancePayment(payment.s_no).unwrap();
-              showSuccessAlert('Advance payment deleted successfully');
+              showSuccessAlert("Advance payment deleted successfully");
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: unknown) {
-              showErrorAlert(error, 'Delete Error');
+              showErrorAlert(error, "Delete Error");
             }
           },
         },
@@ -831,17 +977,26 @@ const TenantDetailsContent: React.FC<{
 
   const _handleEditRefundPayment = (payment: PaymentsRefundPayment) => {
     if (!canEditRefund) {
-      Alert.alert('Access Denied', "You don't have permission to edit refund payments");
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to edit refund payments"
+      );
       return;
     }
     setEditingRefundPayment(payment);
     setEditRefundPaymentModalVisible(true);
   };
 
-  const handleUpdateRefundPayment = async (id: number, data: Partial<CreateRefundPaymentDto>) => {
+  const handleUpdateRefundPayment = async (
+    id: number,
+    data: Partial<CreateRefundPaymentDto>
+  ) => {
     if (!canEditRefund) {
-      Alert.alert('Access Denied', "You don't have permission to edit refund payments");
-      throw new Error('ACCESS_DENIED');
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to edit refund payments"
+      );
+      throw new Error("ACCESS_DENIED");
     }
     try {
       await updateRefundPayment({ id, data }).unwrap();
@@ -854,42 +1009,61 @@ const TenantDetailsContent: React.FC<{
     }
   };
 
-
   // Checkout handlers
   const handleCheckout = () => {
     setCheckoutDateModalVisible(true);
-    setNewCheckoutDate('');
+    setNewCheckoutDate("");
   };
 
   const _confirmCheckout = async () => {
     if (!newCheckoutDate) {
-      Alert.alert('Error', 'Please select a checkout date');
+      Alert.alert("Error", "Please select a checkout date");
       return;
     }
 
     try {
       setCheckoutLoading(true);
-      await checkoutTenantWithDate({ id: currentTenant.s_no, check_out_date: newCheckoutDate }).unwrap();
-      showSuccessAlert('Tenant checked out successfully');
+      await checkoutTenantWithDate({
+        id: currentTenant.s_no,
+        check_out_date: newCheckoutDate,
+      }).unwrap();
+      showSuccessAlert("Tenant checked out successfully");
       setCheckoutDateModalVisible(false);
-      setNewCheckoutDate('');
+      setNewCheckoutDate("");
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: unknown) {
-      const errObj = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
-      const errData = errObj?.data && typeof errObj.data === 'object' ? (errObj.data as Record<string, unknown>) : undefined;
-      const nestedError = errObj?.error && typeof errObj.error === 'object' ? (errObj.error as Record<string, unknown>) : undefined;
-      const nestedData = nestedError?.data && typeof nestedError.data === 'object' ? (nestedError.data as Record<string, unknown>) : undefined;
+      const errObj =
+        error && typeof error === "object"
+          ? (error as Record<string, unknown>)
+          : undefined;
+      const errData =
+        errObj?.data && typeof errObj.data === "object"
+          ? (errObj.data as Record<string, unknown>)
+          : undefined;
+      const nestedError =
+        errObj?.error && typeof errObj.error === "object"
+          ? (errObj.error as Record<string, unknown>)
+          : undefined;
+      const nestedData =
+        nestedError?.data && typeof nestedError.data === "object"
+          ? (nestedError.data as Record<string, unknown>)
+          : undefined;
       const msg =
-        (typeof errData?.message === 'string' ? errData.message : undefined) ||
-        (typeof nestedData?.message === 'string' ? nestedData.message : undefined) ||
-        (typeof errObj?.message === 'string' ? errObj.message : undefined) ||
-        '';
+        (typeof errData?.message === "string" ? errData.message : undefined) ||
+        (typeof nestedData?.message === "string"
+          ? nestedData.message
+          : undefined) ||
+        (typeof errObj?.message === "string" ? errObj.message : undefined) ||
+        "";
 
-      if (typeof msg === 'string' && msg.toLowerCase().includes('pending dues')) {
-        Alert.alert('Cannot Checkout', msg);
+      if (
+        typeof msg === "string" &&
+        msg.toLowerCase().includes("pending dues")
+      ) {
+        Alert.alert("Cannot Checkout", msg);
       } else {
-        showErrorAlert(error, 'Checkout Error');
+        showErrorAlert(error, "Checkout Error");
       }
     } finally {
       setCheckoutLoading(false);
@@ -898,33 +1072,38 @@ const TenantDetailsContent: React.FC<{
 
   const handleCloseCheckoutModal = () => {
     setCheckoutDateModalVisible(false);
-    setNewCheckoutDate('');
+    setNewCheckoutDate("");
   };
 
   const _handleDeleteRefundPayment = (payment: PaymentsRefundPayment) => {
     if (!canDeleteRefund) {
-      Alert.alert('Access Denied', "You don't have permission to delete refund payments");
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to delete refund payments"
+      );
       return;
     }
     Alert.alert(
-      'Delete Refund Payment',
-      `Are you sure you want to delete this refund?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
+      "Delete Refund Payment",
+      `Are you sure you want to delete this refund?\n\nAmount: ₹${
+        payment.amount_paid
+      }\nDate: ${new Date(payment.payment_date).toLocaleDateString("en-IN")}`,
       [
         {
-          text: 'Cancel',
-          style: 'cancel',
+          text: "Cancel",
+          style: "cancel",
         },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               await deleteRefundPayment(payment.s_no).unwrap();
-              showSuccessAlert('Refund payment deleted successfully');
+              showSuccessAlert("Refund payment deleted successfully");
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: unknown) {
-              showErrorAlert(error, 'Delete Error');
+              showErrorAlert(error, "Delete Error");
             }
           },
         },
@@ -934,13 +1113,16 @@ const TenantDetailsContent: React.FC<{
 
   const handleDeleteTenant = () => {
     if (!canDeleteTenant) {
-      Alert.alert('Access Denied', "You don't have permission to delete tenants");
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to delete tenants"
+      );
       return;
     }
 
     const eligibleForDelete = (() => {
       if (!currentTenant) return false;
-      if (currentTenant.status !== 'ACTIVE') return false;
+      if (currentTenant.status !== "ACTIVE") return false;
       if (currentTenant.check_out_date) return false;
       if ((currentTenant.rent_payments || []).length > 0) return false;
       if ((currentTenant.advance_payments || []).length > 0) return false;
@@ -951,33 +1133,35 @@ const TenantDetailsContent: React.FC<{
 
     if (!eligibleForDelete) {
       Alert.alert(
-        'Cannot Delete Tenant',
-        'Tenant can be deleted only if they were added by mistake and have no history.\n\nDelete is allowed only when:\n- Status is ACTIVE\n- No checkout date\n- No rent/advance/refund payments\n- No bills\n\nIf tenant stayed or has any history, please use Checkout instead.',
+        "Cannot Delete Tenant",
+        "Tenant can be deleted only if they were added by mistake and have no history.\n\nDelete is allowed only when:\n- Status is ACTIVE\n- No checkout date\n- No rent/advance/refund payments\n- No bills\n\nIf tenant stayed or has any history, please use Checkout instead."
       );
       return;
     }
 
     Alert.alert(
-      'Delete Tenant',
-      `Are you sure you want to delete ${currentTenant?.name || 'this tenant'}? This action cannot be undone.`,
+      "Delete Tenant",
+      `Are you sure you want to delete ${
+        currentTenant?.name || "this tenant"
+      }? This action cannot be undone.`,
       [
         {
-          text: 'Cancel',
-          style: 'cancel',
+          text: "Cancel",
+          style: "cancel",
         },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
-              showSuccessAlert('Tenant deleted successfully');
+              showSuccessAlert("Tenant deleted successfully");
               // Warm cache + trigger list reload on return (same as other flows)
               await refreshTenantList();
               setShouldRefreshTenantsOnBack(true);
-              navigation.navigate('Tenants', { refresh: true });
+              navigation.navigate("Tenants", { refresh: true });
             } catch (error: unknown) {
-              showErrorAlert(error, 'Delete Error');
+              showErrorAlert(error, "Delete Error");
             }
           },
         },
@@ -1008,28 +1192,37 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleChangeCheckoutDate = () => {
-    setNewCheckoutDate(currentTenant?.check_out_date ? new Date(currentTenant.check_out_date).toISOString().split('T')[0] : '');
+    setNewCheckoutDate(
+      currentTenant?.check_out_date
+        ? new Date(currentTenant.check_out_date).toISOString().split("T")[0]
+        : ""
+    );
     setCheckoutDateModalVisible(true);
   };
 
   const handleClearCheckout = () => {
     Alert.alert(
-      'Clear Checkout',
-      'This will reactivate the tenant and clear the checkout date. Continue?',
+      "Clear Checkout",
+      "This will reactivate the tenant and clear the checkout date. Continue?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Clear',
-          style: 'destructive',
+          text: "Clear",
+          style: "destructive",
           onPress: async () => {
             try {
               setCheckoutLoading(true);
-              await updateTenantCheckoutDate({ id: tenantId, clear_checkout: true }).unwrap();
-              showSuccessAlert('Checkout cleared and tenant reactivated successfully');
+              await updateTenantCheckoutDate({
+                id: tenantId,
+                clear_checkout: true,
+              }).unwrap();
+              showSuccessAlert(
+                "Checkout cleared and tenant reactivated successfully"
+              );
               refetchTenant();
               refreshTenantList(); // Refresh tenant list
             } catch (error: unknown) {
-              showErrorAlert(error, 'Clear Checkout Error');
+              showErrorAlert(error, "Clear Checkout Error");
             } finally {
               setCheckoutLoading(false);
             }
@@ -1042,13 +1235,16 @@ const TenantDetailsContent: React.FC<{
   const confirmUpdateCheckoutDate = async () => {
     try {
       setCheckoutLoading(true);
-      await updateTenantCheckoutDate({ id: tenantId, check_out_date: newCheckoutDate }).unwrap();
-      showSuccessAlert('Checkout date updated successfully');
+      await updateTenantCheckoutDate({
+        id: tenantId,
+        check_out_date: newCheckoutDate,
+      }).unwrap();
+      showSuccessAlert("Checkout date updated successfully");
       setCheckoutDateModalVisible(false);
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
     } catch (error: unknown) {
-      showErrorAlert(error, 'Update Checkout Date Error');
+      showErrorAlert(error, "Update Checkout Date Error");
     } finally {
       setCheckoutLoading(false);
     }
@@ -1057,43 +1253,105 @@ const TenantDetailsContent: React.FC<{
   if (tenantLoading || !currentTenant) {
     return (
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
-        <ScreenHeader title="Tenant Details" showBackButton={true} onBackPress={handleBackPress} />
+        <ScreenHeader
+          title="Tenant Details"
+          showBackButton={true}
+          onBackPress={handleBackPress}
+        />
         <View style={{ backgroundColor: CONTENT_COLOR, flex: 1 }}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: 16 }}
+          >
             <Card style={{ padding: 16, marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <SkeletonLoader width={56} height={56} borderRadius={28} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <SkeletonLoader width={'70%'} height={18} borderRadius={6} />
-                  <SkeletonLoader width={'45%'} height={14} borderRadius={6} style={{ marginTop: 10 }} />
+                  <SkeletonLoader width={"70%"} height={18} borderRadius={6} />
+                  <SkeletonLoader
+                    width={"45%"}
+                    height={14}
+                    borderRadius={6}
+                    style={{ marginTop: 10 }}
+                  />
                 </View>
               </View>
 
-              <View style={{ flexDirection: 'row', marginTop: 16 }}>
-                <SkeletonLoader width={44} height={44} borderRadius={10} style={{ marginRight: 10 }} />
-                <SkeletonLoader width={44} height={44} borderRadius={10} style={{ marginRight: 10 }} />
-                <SkeletonLoader width={44} height={44} borderRadius={10} style={{ marginRight: 10 }} />
+              <View style={{ flexDirection: "row", marginTop: 16 }}>
+                <SkeletonLoader
+                  width={44}
+                  height={44}
+                  borderRadius={10}
+                  style={{ marginRight: 10 }}
+                />
+                <SkeletonLoader
+                  width={44}
+                  height={44}
+                  borderRadius={10}
+                  style={{ marginRight: 10 }}
+                />
+                <SkeletonLoader
+                  width={44}
+                  height={44}
+                  borderRadius={10}
+                  style={{ marginRight: 10 }}
+                />
                 <SkeletonLoader width={44} height={44} borderRadius={10} />
               </View>
             </Card>
 
             <Card style={{ padding: 16, marginBottom: 12 }}>
-              <SkeletonLoader width={'50%'} height={16} borderRadius={6} />
-              <SkeletonLoader width={'85%'} height={14} borderRadius={6} style={{ marginTop: 10 }} />
-              <SkeletonLoader width={'75%'} height={14} borderRadius={6} style={{ marginTop: 10 }} />
+              <SkeletonLoader width={"50%"} height={16} borderRadius={6} />
+              <SkeletonLoader
+                width={"85%"}
+                height={14}
+                borderRadius={6}
+                style={{ marginTop: 10 }}
+              />
+              <SkeletonLoader
+                width={"75%"}
+                height={14}
+                borderRadius={6}
+                style={{ marginTop: 10 }}
+              />
             </Card>
 
             <Card style={{ padding: 16, marginBottom: 12 }}>
-              <SkeletonLoader width={'60%'} height={16} borderRadius={6} />
-              <SkeletonLoader width={'95%'} height={12} borderRadius={6} style={{ marginTop: 12 }} />
-              <SkeletonLoader width={'90%'} height={12} borderRadius={6} style={{ marginTop: 10 }} />
-              <SkeletonLoader width={'80%'} height={12} borderRadius={6} style={{ marginTop: 10 }} />
+              <SkeletonLoader width={"60%"} height={16} borderRadius={6} />
+              <SkeletonLoader
+                width={"95%"}
+                height={12}
+                borderRadius={6}
+                style={{ marginTop: 12 }}
+              />
+              <SkeletonLoader
+                width={"90%"}
+                height={12}
+                borderRadius={6}
+                style={{ marginTop: 10 }}
+              />
+              <SkeletonLoader
+                width={"80%"}
+                height={12}
+                borderRadius={6}
+                style={{ marginTop: 10 }}
+              />
             </Card>
 
             <Card style={{ padding: 16, marginBottom: 12 }}>
-              <SkeletonLoader width={'55%'} height={16} borderRadius={6} />
-              <SkeletonLoader width={'100%'} height={48} borderRadius={10} style={{ marginTop: 12 }} />
-              <SkeletonLoader width={'100%'} height={48} borderRadius={10} style={{ marginTop: 12 }} />
+              <SkeletonLoader width={"55%"} height={16} borderRadius={6} />
+              <SkeletonLoader
+                width={"100%"}
+                height={48}
+                borderRadius={10}
+                style={{ marginTop: 12 }}
+              />
+              <SkeletonLoader
+                width={"100%"}
+                height={48}
+                borderRadius={10}
+                style={{ marginTop: 12 }}
+              />
             </Card>
           </ScrollView>
         </View>
@@ -1102,10 +1360,12 @@ const TenantDetailsContent: React.FC<{
   }
 
   const tenant = currentTenant;
-  const isTenantActive = tenant?.status === 'ACTIVE';
+  const isTenantActive = tenant?.status === "ACTIVE";
 
-  const previousPaymentsForForm: PaymentWithCycle[] = (tenant?.rent_payments || []).map((p: TenantPaymentWithCycle) => {
-    const paymentDate = p.payment_date ?? '';
+  const previousPaymentsForForm: PaymentWithCycle[] = (
+    tenant?.rent_payments || []
+  ).map((p: TenantPaymentWithCycle) => {
+    const paymentDate = p.payment_date ?? "";
     return {
       ...(p as unknown as Payment),
       tenant_id: tenant.s_no,
@@ -1113,8 +1373,8 @@ const TenantDetailsContent: React.FC<{
       room_id: tenant.room_id ?? 0,
       bed_id: tenant.bed_id ?? 0,
       payment_date: paymentDate,
-      payment_method: (p.payment_method ?? 'CASH') as Payment['payment_method'],
-      status: (p.status ?? 'PENDING') as Payment['status'],
+      payment_method: (p.payment_method ?? "CASH") as Payment["payment_method"],
+      status: (p.status ?? "PENDING") as Payment["status"],
       tenant_rent_cycles: p.tenant_rent_cycles,
     };
   });
@@ -1122,30 +1382,44 @@ const TenantDetailsContent: React.FC<{
   const sortedPreviousPaymentsForForm = previousPaymentsForForm
     .slice()
     .sort((a, b) => {
-      const bEnd = b.tenant_rent_cycles?.cycle_end || b.end_date || b.payment_date || '';
-      const aEnd = a.tenant_rent_cycles?.cycle_end || a.end_date || a.payment_date || '';
+      const bEnd =
+        b.tenant_rent_cycles?.cycle_end || b.end_date || b.payment_date || "";
+      const aEnd =
+        a.tenant_rent_cycles?.cycle_end || a.end_date || a.payment_date || "";
       return new Date(bEnd).getTime() - new Date(aEnd).getTime();
     });
 
-  const transferHistory = ((tenant as TenantViewModel | null | undefined)?.tenant_allocations || [])
+  const transferHistory = (
+    (tenant as TenantViewModel | null | undefined)?.tenant_allocations || []
+  )
     .slice()
-    .sort((a: TenantAllocation, b: TenantAllocation) => new Date(b.effective_from).getTime() - new Date(a.effective_from).getTime()) as TenantAllocation[];
+    .sort(
+      (a: TenantAllocation, b: TenantAllocation) =>
+        new Date(b.effective_from).getTime() -
+        new Date(a.effective_from).getTime()
+    ) as TenantAllocation[];
 
-  const formatDateOnly = (d: string | number | Date | null | undefined): string => {
-    if (!d) return '';
+  const formatDateOnly = (
+    d: string | number | Date | null | undefined
+  ): string => {
+    if (!d) return "";
     try {
-      return String(d).includes('T') ? String(d).split('T')[0] : String(d);
+      return String(d).includes("T") ? String(d).split("T")[0] : String(d);
     } catch {
       return String(d);
     }
   };
 
-  const toLocalDateOnly = (dateLike: string | number | Date | null | undefined): Date | undefined => {
+  const toLocalDateOnly = (
+    dateLike: string | number | Date | null | undefined
+  ): Date | undefined => {
     if (!dateLike) return undefined;
-    const dateStr = String(dateLike).includes('T') ? String(dateLike).split('T')[0] : String(dateLike);
+    const dateStr = String(dateLike).includes("T")
+      ? String(dateLike).split("T")[0]
+      : String(dateLike);
     const match = /^\d{4}-\d{2}-\d{2}$/.exec(dateStr);
     if (!match) return undefined;
-    const [y, m, d] = dateStr.split('-').map((n) => Number(n));
+    const [y, m, d] = dateStr.split("-").map((n) => Number(n));
     return new Date(y, m - 1, d);
   };
 
@@ -1155,25 +1429,27 @@ const TenantDetailsContent: React.FC<{
     const pendingDue = Number(t?.pending_due_amount ?? 0);
     const partialDue = Number(t?.partial_due_amount ?? 0);
     const pendingMonths = Number(t?.pending_months ?? 0);
-    const unpaidMonthsCount = Array.isArray(t?.unpaid_months) ? t.unpaid_months.length : 0;
-    const paymentStatus = String(t?.payment_status ?? '');
+    const unpaidMonthsCount = Array.isArray(t?.unpaid_months)
+      ? t.unpaid_months.length
+      : 0;
+    const paymentStatus = String(t?.payment_status ?? "");
 
-    let label = 'RENT STATUS';
-    let color = '#6B7280';
-    let bg = '#9CA3AF20';
+    let label = "RENT STATUS";
+    let color = "#6B7280";
+    let bg = "#9CA3AF20";
 
     if (rentDue <= 0) {
-      label = 'RENT PAID';
-      color = '#10B981';
-      bg = '#10B98120';
+      label = "RENT PAID";
+      color = "#10B981";
+      bg = "#10B98120";
     } else if (partialDue > 0) {
-      label = pendingDue > 0 ? 'RENT PARTIAL + PENDING' : 'RENT PARTIAL';
-      color = '#F97316';
-      bg = '#F9731620';
+      label = pendingDue > 0 ? "RENT PARTIAL + PENDING" : "RENT PARTIAL";
+      color = "#F97316";
+      bg = "#F9731620";
     } else {
-      label = paymentStatus === 'NO_PAYMENT' ? 'RENT NOT PAID' : 'RENT PENDING';
-      color = '#EF4444';
-      bg = '#EF444420';
+      label = paymentStatus === "NO_PAYMENT" ? "RENT NOT PAID" : "RENT PENDING";
+      color = "#EF4444";
+      bg = "#EF444420";
     }
 
     return {
@@ -1189,836 +1465,1223 @@ const TenantDetailsContent: React.FC<{
   })();
 
   return (
-    <ScreenLayout  backgroundColor={Theme.colors.background.blue} >
-      <ScreenHeader 
-        title="Tenant Details" 
-        showBackButton={true} 
+    <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+      <ScreenHeader
+        title="Tenant Details"
+        showBackButton={true}
         onBackPress={handleBackPress}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
-      >
-        
-      </ScreenHeader>
+      ></ScreenHeader>
 
-      <View style={{ flex: 1, backgroundColor : CONTENT_COLOR }}>
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
         <ScrollView style={{ flex: 1 }}>
-        {/* Tenant Header */}
-        <TenantHeader
-          tenant={tenant}
-          showEdit={canEditTenant}
-          onEdit={() => {
-            if (!canEditTenant) return;
-            navigation.navigate('AddTenant', { tenantId: currentTenant.s_no });
-          }}
-          onDelete={handleDeleteTenant}
-          showDelete={
-            !!canDeleteTenant &&
-            tenant?.status === 'ACTIVE' &&
-            !tenant?.check_out_date &&
-            (tenant?.rent_payments?.length || 0) === 0 &&
-            (tenant?.advance_payments?.length || 0) === 0 &&
-            (tenant?.refund_payments?.length || 0) === 0 &&
-            (tenant?.current_bills?.length || 0) === 0
-          }
-          disableDelete={false}
-          onCall={handleCall}
-          onWhatsApp={handleWhatsApp}
-          onEmail={handleEmail}
-          onAddPayment={handleAddRentPayment}
-          onAddAdvance={() => {
-            if (!canCreateAdvance) return;
-            setAdvancePaymentModalVisible(true);
-          }}
-          onAddRefund={() => {
-            if (!canCreateRefund) return;
-            setRefundPaymentModalVisible(true);
-          }}
-          canAddPayment={canCreateRent && isTenantActive}
-          canAddAdvance={canCreateAdvance && isTenantActive}
-          canAddRefund={canCreateRefund && isTenantActive}
-        />
-
-        {/* Pending Payment Alert */}
-        {tenant.pending_payment && (
-          <PendingPaymentAlert pendingPayment={tenant.pending_payment} />
-        )}
-
-        {!tenant.pending_payment && derivedRentStatus.rentDue <= 0 && derivedRentStatus.partialDue <= 0 && derivedRentStatus.pendingDue <= 0 && (
-          <Card
-            style={{
-              marginHorizontal: 16,
-              marginBottom: 12,
-              padding: 14,
-              backgroundColor: '#10B98120',
-              borderWidth: 0.5,
-              borderColor: '#10B981',
+          {/* Tenant Header */}
+          <TenantHeader
+            tenant={tenant}
+            showEdit={canEditTenant}
+            onEdit={() => {
+              if (!canEditTenant) return;
+              navigation.navigate("AddTenant", {
+                tenantId: currentTenant.s_no,
+              });
             }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 }}>
-                <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                <Text style={{ fontSize: 14, fontWeight: '800', color: '#10B981', marginLeft: 8 }}>
-                  No pending payments
-                </Text>
-              </View>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.secondary }}>
-                All clear
-              </Text>
-            </View>
-          </Card>
-        )}
-
-        {!tenant.pending_payment && (derivedRentStatus.rentDue > 0 || derivedRentStatus.partialDue > 0 || derivedRentStatus.pendingDue > 0) && (
-          <Card
-            style={{
-              marginHorizontal: 16,
-              marginBottom: 12,
-              padding: 14,
-              backgroundColor: derivedRentStatus.bg,
-              borderWidth: 1,
-              borderColor: derivedRentStatus.color,
+            onDelete={handleDeleteTenant}
+            showDelete={
+              !!canDeleteTenant &&
+              tenant?.status === "ACTIVE" &&
+              !tenant?.check_out_date &&
+              (tenant?.rent_payments?.length || 0) === 0 &&
+              (tenant?.advance_payments?.length || 0) === 0 &&
+              (tenant?.refund_payments?.length || 0) === 0 &&
+              (tenant?.current_bills?.length || 0) === 0
+            }
+            disableDelete={false}
+            onCall={handleCall}
+            onWhatsApp={handleWhatsApp}
+            onEmail={handleEmail}
+            onAddPayment={handleAddRentPayment}
+            onAddAdvance={() => {
+              if (!canCreateAdvance) return;
+              setAdvancePaymentModalVisible(true);
             }}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: derivedRentStatus.color, flex: 1 }}>
-                {derivedRentStatus.label}
-              </Text>
-              <Text style={{ fontSize: 18, fontWeight: '900', color: derivedRentStatus.color }}>
-                ₹{derivedRentStatus.rentDue.toLocaleString('en-IN')}
-              </Text>
-            </View>
+            onAddRefund={() => {
+              if (!canCreateRefund) return;
+              setRefundPaymentModalVisible(true);
+            }}
+            onOpenMedia={openImageViewer}
+            canAddPayment={canCreateRent && isTenantActive}
+            canAddAdvance={canCreateAdvance && isTenantActive}
+            canAddRefund={canCreateRefund && isTenantActive}
+          />
 
-            <View style={{ marginTop: 10 }}>
-              {derivedRentStatus.pendingDue > 0 && (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>Pending</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.primary }}>
-                    ₹{derivedRentStatus.pendingDue.toLocaleString('en-IN')}
-                  </Text>
-                </View>
-              )}
+          {/* Pending Payment Alert */}
+          {tenant.pending_payment && (
+            <PendingPaymentAlert pendingPayment={tenant.pending_payment} />
+          )}
 
-              {derivedRentStatus.partialDue > 0 && (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>Partial balance</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.primary }}>
-                    ₹{derivedRentStatus.partialDue.toLocaleString('en-IN')}
-                  </Text>
-                </View>
-              )}
-
-              {(derivedRentStatus.pendingMonths > 0 || derivedRentStatus.unpaidMonthsCount > 0) && (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>Months</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.primary }}>
-                    {derivedRentStatus.unpaidMonthsCount || derivedRentStatus.pendingMonths}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </Card>
-        )}
-
-        {activeTransferDiffCycle && (
-          <Card style={{ marginHorizontal: 16, marginBottom: 12, padding: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary, flex: 1 }}>
-                Transfer Difference Due
-              </Text>
-              <Ionicons name="swap-horizontal" size={18} color={Theme.colors.primary} />
-            </View>
-
-            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 8 }}>
-              Cycle: {String(activeTransferDiffCycle.start_date)} - {String(activeTransferDiffCycle.end_date)}
-            </Text>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-              <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>Pending</Text>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: '#EF4444' }}>
-                ₹{Number(activeTransferDiffCycle.remainingDue || 0).toLocaleString('en-IN')}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={openCollectTransferDifference}
-              style={{
-                backgroundColor: Theme.colors.primary,
-                paddingVertical: 10,
-                borderRadius: 8,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Collect Transfer Difference</Text>
-            </TouchableOpacity>
-          </Card>
-        )}
-
-
-
-        {/* Accommodation Details */}
-        <AccommodationDetails
-          tenant={tenant}
-        />
-
-        {/* Personal Information */}
-        <PersonalInformation tenant={tenant} onOpenMedia={openImageViewer} />
-
-
-        {/* Rent Payments Button - Always Show */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('TenantRentPaymentsScreen', {
-            payments: tenant?.rent_payments || [],
-            tenantName: tenant.name,
-            tenantId: tenant.s_no,
-            tenantPhone: tenant.phone_no,
-            tenantStatus: tenant.status,
-            pgName: tenant.pg_locations?.location_name || 'PG',
-            roomNumber: tenant.rooms?.room_no || '',
-            bedNumber: tenant.beds?.bed_no || '',
-            roomId: tenant.room_id,
-            bedId: tenant.bed_id,
-            pgId: tenant.pg_id || selectedPGLocationId || 0,
-            joiningDate: tenant.check_in_date,
-          })}
-          style={{
-            marginHorizontal: 16,
-            marginBottom: 12,
-            paddingVertical: 12,
-            paddingHorizontal: 12,
-            backgroundColor: Theme.colors.background.secondary,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: Theme.colors.border,
-            opacity: tenant?.rent_payments?.length > 0 ? 1 : 0.7,
-          }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <View
+          {!tenant.pending_payment &&
+            derivedRentStatus.rentDue <= 0 &&
+            derivedRentStatus.partialDue <= 0 &&
+            derivedRentStatus.pendingDue <= 0 && (
+              <Card
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  backgroundColor: Theme.colors.background.blueLight,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: 10,
+                  marginHorizontal: 16,
+                  marginBottom: 12,
+                  padding: 14,
+                  backgroundColor: "#10B98120",
+                  borderWidth: 0.5,
+                  borderColor: "#10B981",
                 }}
               >
-                <Ionicons name="receipt-outline" size={18} color={Theme.colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Rent Payments
-                </Text>
-                <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.tertiary }}>
-                  {tenant?.rent_payments?.length || 0} records
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
-          </View>
-        </TouchableOpacity>
-
-        {/* Advance Payments Button - Always Show */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('TenantAdvancePaymentsScreen', {
-            payments: tenant?.advance_payments || [],
-            tenantName: tenant.name,
-            tenantId: tenant.s_no,
-            pgId: tenant.pg_id || selectedPGLocationId || 0,
-            tenantJoinedDate: tenant.check_in_date,
-            tenantPhone: tenant.phone_no,
-            pgName: tenant.pg_locations?.location_name || 'PG',
-            roomNumber: tenant.rooms?.room_no || '',
-            bedNumber: tenant.beds?.bed_no || '',
-          })}
-          style={{
-            marginHorizontal: 16,
-            marginBottom: 12,
-            paddingVertical: 12,
-            paddingHorizontal: 12,
-            backgroundColor: Theme.colors.background.secondary,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: Theme.colors.border,
-            opacity: tenant?.advance_payments?.length > 0 ? 1 : 0.7,
-          }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <View
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  backgroundColor: '#ECFDF5',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: 10,
-                }}
-              >
-                <Ionicons name="wallet-outline" size={18} color="#10B981" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Advance Payments
-                </Text>
-                <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.tertiary }}>
-                  {tenant?.advance_payments?.length || 0} records
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
-          </View>
-        </TouchableOpacity>
-
-        {/* Refund Payments Button - Always Show */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('TenantRefundPaymentsScreen', {
-            payments: tenant?.refund_payments || [],
-            tenantName: tenant.name,
-            tenantId: tenant.s_no,
-            tenantPhone: tenant.phone_no,
-            pgName: tenant.pg_locations?.location_name || 'PG',
-            roomNumber: tenant.rooms?.room_no || '',
-            bedNumber: tenant.beds?.bed_no || '',
-            roomId: tenant.room_id,
-            bedId: tenant.bed_id,
-            pgId: tenant.pg_id || selectedPGLocationId || 0,
-          })}
-          style={{
-            marginHorizontal: 16,
-            marginBottom: 12,
-            paddingVertical: 12,
-            paddingHorizontal: 12,
-            backgroundColor: Theme.colors.background.secondary,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: Theme.colors.border,
-            opacity: tenant?.refund_payments?.length > 0 ? 1 : 0.7,
-          }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <View
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  backgroundColor: '#FFFBEB',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: 10,
-                }}
-              >
-                <Ionicons name="arrow-undo-outline" size={18} color="#F59E0B" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
-                  Refund Payments
-                </Text>
-                <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.tertiary }}>
-                  {tenant?.refund_payments?.length || 0} records
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
-          </View>
-        </TouchableOpacity>
-
-        {transferHistory.length > 0 && (
-          <View style={{ marginBottom: 12 }}>
-            <TouchableOpacity
-              onPress={() =>
-                setExpandedSections((prev) => ({
-                  ...prev,
-                  transferHistory: !prev.transferHistory,
-                }))
-              }
-              style={{
-                marginHorizontal: 16,
-                paddingVertical: 12,
-                paddingHorizontal: 12,
-                backgroundColor: Theme.colors.background.secondary,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: Theme.colors.border,
-              }}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
                   <View
                     style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 10,
-                      backgroundColor: '#EEF2FF',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 10,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      flex: 1,
+                      paddingRight: 10,
                     }}
                   >
-                    <Ionicons name="time-outline" size={18} color={Theme.colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
-                      Transfer History
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color="#10B981"
+                    />
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "800",
+                        color: "#10B981",
+                        marginLeft: 8,
+                      }}
+                    >
+                      No pending payments
                     </Text>
-                    <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.tertiary }}>
-                      {transferHistory.length} records
-                    </Text>
                   </View>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "800",
+                      color: Theme.colors.text.secondary,
+                    }}
+                  >
+                    All clear
+                  </Text>
+                </View>
+              </Card>
+            )}
+
+          {!tenant.pending_payment &&
+            (derivedRentStatus.rentDue > 0 ||
+              derivedRentStatus.partialDue > 0 ||
+              derivedRentStatus.pendingDue > 0) && (
+              <Card
+                style={{
+                  marginHorizontal: 16,
+                  marginBottom: 12,
+                  padding: 14,
+                  backgroundColor: derivedRentStatus.bg,
+                  borderWidth: 1,
+                  borderColor: derivedRentStatus.color,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "800",
+                      color: derivedRentStatus.color,
+                      flex: 1,
+                    }}
+                  >
+                    {derivedRentStatus.label}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: "900",
+                      color: derivedRentStatus.color,
+                    }}
+                  >
+                    ₹{derivedRentStatus.rentDue.toLocaleString("en-IN")}
+                  </Text>
                 </View>
 
-                <Ionicons
-                  name={expandedSections.transferHistory ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color={Theme.colors.text.tertiary}
-                />
-              </View>
-            </TouchableOpacity>
-
-            {expandedSections.transferHistory && (
-              <View style={{ marginTop: 10 }}>
-                {transferHistory.map((a: TenantAllocation, idx: number) => {
-                  const isCurrent = !a.effective_to;
-                  const from = formatDateOnly(a.effective_from);
-                  const to = a.effective_to ? formatDateOnly(a.effective_to) : 'Present';
-                  const isLast = idx === transferHistory.length - 1;
-
-                  const pgName = a.pg_locations?.location_name || `PG ${a.pg_id}`;
-                  const roomNo = a.rooms?.room_no || a.room_id;
-                  const bedNo = a.beds?.bed_no || a.bed_id;
-
-                  return (
-                    <View key={a.s_no || idx} style={{ marginHorizontal: 16, marginBottom: 10, flexDirection: 'row' }}>
-                      <View style={{ width: 18, alignItems: 'center' }}>
-                        
-                        {!isLast && (
-                          <View
-                            style={{
-                              width: 2,
-                              flex: 1,
-                              backgroundColor: Theme.colors.border,
-                              marginTop: 6,
-                            }}
-                          />
-                        )}
-                      </View>
-
-                      <Card
+                <View style={{ marginTop: 10 }}>
+                  {derivedRentStatus.pendingDue > 0 && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Text
                         style={{
-                          flex: 1,
-                          padding: 12,
-                          borderRadius: 12,
-                          borderWidth: 1,
-                          borderColor: Theme.colors.border,
-                          backgroundColor: Theme.colors.background.secondary,
+                          fontSize: 12,
+                          color: Theme.colors.text.secondary,
                         }}
                       >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 13, fontWeight: '800', color: Theme.colors.text.primary }}>
-                            {from} - {to}
-                          </Text>
-                          {isCurrent && (
+                        Pending
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "800",
+                          color: Theme.colors.text.primary,
+                        }}
+                      >
+                        ₹{derivedRentStatus.pendingDue.toLocaleString("en-IN")}
+                      </Text>
+                    </View>
+                  )}
+
+                  {derivedRentStatus.partialDue > 0 && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: Theme.colors.text.secondary,
+                        }}
+                      >
+                        Partial balance
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "800",
+                          color: Theme.colors.text.primary,
+                        }}
+                      >
+                        ₹{derivedRentStatus.partialDue.toLocaleString("en-IN")}
+                      </Text>
+                    </View>
+                  )}
+
+                  {(derivedRentStatus.pendingMonths > 0 ||
+                    derivedRentStatus.unpaidMonthsCount > 0) && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: Theme.colors.text.secondary,
+                        }}
+                      >
+                        Months
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "800",
+                          color: Theme.colors.text.primary,
+                        }}
+                      >
+                        {derivedRentStatus.unpaidMonthsCount ||
+                          derivedRentStatus.pendingMonths}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </Card>
+            )}
+
+          {activeTransferDiffCycle && (
+            <Card
+              style={{ marginHorizontal: 16, marginBottom: 12, padding: 12 }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    flex: 1,
+                  }}
+                >
+                  Transfer Difference Due
+                </Text>
+                <Ionicons
+                  name="swap-horizontal"
+                  size={18}
+                  color={Theme.colors.primary}
+                />
+              </View>
+
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: Theme.colors.text.secondary,
+                  marginBottom: 8,
+                }}
+              >
+                Cycle: {String(activeTransferDiffCycle.start_date)} -{" "}
+                {String(activeTransferDiffCycle.end_date)}
+              </Text>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 10,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 12, color: Theme.colors.text.secondary }}
+                >
+                  Pending
+                </Text>
+                <Text
+                  style={{ fontSize: 14, fontWeight: "800", color: "#EF4444" }}
+                >
+                  ₹
+                  {Number(
+                    activeTransferDiffCycle.remainingDue || 0
+                  ).toLocaleString("en-IN")}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={openCollectTransferDifference}
+                style={{
+                  backgroundColor: Theme.colors.primary,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{ color: "white", fontWeight: "800", fontSize: 13 }}
+                >
+                  Collect Transfer Difference
+                </Text>
+              </TouchableOpacity>
+            </Card>
+          )}
+
+          {/* Accommodation Details */}
+          <AccommodationDetails tenant={tenant} />
+
+          {/* Personal Information */}
+          <PersonalInformation tenant={tenant} onOpenMedia={openImageViewer} />
+
+          {/* Rent Payments Button - Always Show */}
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("TenantRentPaymentsScreen", {
+                payments: tenant?.rent_payments || [],
+                tenantName: tenant.name,
+                tenantId: tenant.s_no,
+                tenantPhone: tenant.phone_no,
+                tenantStatus: tenant.status,
+                pgName: tenant.pg_locations?.location_name || "PG",
+                roomNumber: tenant.rooms?.room_no || "",
+                bedNumber: tenant.beds?.bed_no || "",
+                roomId: tenant.room_id,
+                bedId: tenant.bed_id,
+                pgId: tenant.pg_id || selectedPGLocationId || 0,
+                joiningDate: tenant.check_in_date,
+              })
+            }
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 12,
+              paddingVertical: 12,
+              paddingHorizontal: 12,
+              backgroundColor: Theme.colors.background.secondary,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: Theme.colors.border,
+              opacity: tenant?.rent_payments?.length > 0 ? 1 : 0.7,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
+              >
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    backgroundColor: Theme.colors.background.blueLight,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 10,
+                  }}
+                >
+                  <Ionicons
+                    name="receipt-outline"
+                    size={18}
+                    color={Theme.colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: Theme.colors.text.primary,
+                    }}
+                  >
+                    Rent Payments
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 2,
+                      fontSize: 12,
+                      color: Theme.colors.text.tertiary,
+                    }}
+                  >
+                    {tenant?.rent_payments?.length || 0} records
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Theme.colors.text.tertiary}
+              />
+            </View>
+          </TouchableOpacity>
+
+          {/* Advance Payments Button - Always Show */}
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("TenantAdvancePaymentsScreen", {
+                payments: tenant?.advance_payments || [],
+                tenantName: tenant.name,
+                tenantId: tenant.s_no,
+                pgId: tenant.pg_id || selectedPGLocationId || 0,
+                tenantJoinedDate: tenant.check_in_date,
+                tenantPhone: tenant.phone_no,
+                pgName: tenant.pg_locations?.location_name || "PG",
+                roomNumber: tenant.rooms?.room_no || "",
+                bedNumber: tenant.beds?.bed_no || "",
+              })
+            }
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 12,
+              paddingVertical: 12,
+              paddingHorizontal: 12,
+              backgroundColor: Theme.colors.background.secondary,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: Theme.colors.border,
+              opacity: tenant?.advance_payments?.length > 0 ? 1 : 0.7,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
+              >
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    backgroundColor: "#ECFDF5",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 10,
+                  }}
+                >
+                  <Ionicons name="wallet-outline" size={18} color="#10B981" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: Theme.colors.text.primary,
+                    }}
+                  >
+                    Advance Payments
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 2,
+                      fontSize: 12,
+                      color: Theme.colors.text.tertiary,
+                    }}
+                  >
+                    {tenant?.advance_payments?.length || 0} records
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Theme.colors.text.tertiary}
+              />
+            </View>
+          </TouchableOpacity>
+
+          {/* Refund Payments Button - Always Show */}
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("TenantRefundPaymentsScreen", {
+                payments: tenant?.refund_payments || [],
+                tenantName: tenant.name,
+                tenantId: tenant.s_no,
+                tenantPhone: tenant.phone_no,
+                pgName: tenant.pg_locations?.location_name || "PG",
+                roomNumber: tenant.rooms?.room_no || "",
+                bedNumber: tenant.beds?.bed_no || "",
+                roomId: tenant.room_id,
+                bedId: tenant.bed_id,
+                pgId: tenant.pg_id || selectedPGLocationId || 0,
+              })
+            }
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 12,
+              paddingVertical: 12,
+              paddingHorizontal: 12,
+              backgroundColor: Theme.colors.background.secondary,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: Theme.colors.border,
+              opacity: tenant?.refund_payments?.length > 0 ? 1 : 0.7,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
+              >
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    backgroundColor: "#FFFBEB",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 10,
+                  }}
+                >
+                  <Ionicons
+                    name="arrow-undo-outline"
+                    size={18}
+                    color="#F59E0B"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: Theme.colors.text.primary,
+                    }}
+                  >
+                    Refund Payments
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 2,
+                      fontSize: 12,
+                      color: Theme.colors.text.tertiary,
+                    }}
+                  >
+                    {tenant?.refund_payments?.length || 0} records
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Theme.colors.text.tertiary}
+              />
+            </View>
+          </TouchableOpacity>
+
+          {transferHistory.length > 0 && (
+            <View style={{ marginBottom: 12 }}>
+              <TouchableOpacity
+                onPress={() =>
+                  setExpandedSections((prev) => ({
+                    ...prev,
+                    transferHistory: !prev.transferHistory,
+                  }))
+                }
+                style={{
+                  marginHorizontal: 16,
+                  paddingVertical: 12,
+                  paddingHorizontal: 12,
+                  backgroundColor: Theme.colors.background.secondary,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: Theme.colors.border,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      flex: 1,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        backgroundColor: "#EEF2FF",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
+                      <Ionicons
+                        name="time-outline"
+                        size={18}
+                        color={Theme.colors.primary}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: "700",
+                          color: Theme.colors.text.primary,
+                        }}
+                      >
+                        Transfer History
+                      </Text>
+                      <Text
+                        style={{
+                          marginTop: 2,
+                          fontSize: 12,
+                          color: Theme.colors.text.tertiary,
+                        }}
+                      >
+                        {transferHistory.length} records
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Ionicons
+                    name={
+                      expandedSections.transferHistory
+                        ? "chevron-up"
+                        : "chevron-down"
+                    }
+                    size={20}
+                    color={Theme.colors.text.tertiary}
+                  />
+                </View>
+              </TouchableOpacity>
+
+              {expandedSections.transferHistory && (
+                <View style={{ marginTop: 10 }}>
+                  {transferHistory.map((a: TenantAllocation, idx: number) => {
+                    const isCurrent = !a.effective_to;
+                    const from = formatDateOnly(a.effective_from);
+                    const to = a.effective_to
+                      ? formatDateOnly(a.effective_to)
+                      : "Present";
+                    const isLast = idx === transferHistory.length - 1;
+
+                    const pgName =
+                      a.pg_locations?.location_name || `PG ${a.pg_id}`;
+                    const roomNo = a.rooms?.room_no || a.room_id;
+                    const bedNo = a.beds?.bed_no || a.bed_id;
+
+                    return (
+                      <View
+                        key={a.s_no || idx}
+                        style={{
+                          marginHorizontal: 16,
+                          marginBottom: 10,
+                          flexDirection: "row",
+                        }}
+                      >
+                        <View style={{ width: 18, alignItems: "center" }}>
+                          {!isLast && (
                             <View
                               style={{
-                                paddingHorizontal: 8,
-                                paddingVertical: 3,
-                                borderRadius: 999,
-                                backgroundColor: '#10B98120',
+                                width: 2,
+                                flex: 1,
+                                backgroundColor: Theme.colors.border,
+                                marginTop: 6,
+                              }}
+                            />
+                          )}
+                        </View>
+
+                        <Card
+                          style={{
+                            flex: 1,
+                            padding: 12,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: Theme.colors.border,
+                            backgroundColor: Theme.colors.background.secondary,
+                          }}
+                        >
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: "800",
+                                color: Theme.colors.text.primary,
                               }}
                             >
-                              <Text style={{ fontSize: 10, fontWeight: '800', color: '#10B981' }}>CURRENT</Text>
-                            </View>
-                          )}
-                        </View>
+                              {from} - {to}
+                            </Text>
+                            {isCurrent && (
+                              <View
+                                style={{
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 3,
+                                  borderRadius: 999,
+                                  backgroundColor: "#10B98120",
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: "800",
+                                    color: "#10B981",
+                                  }}
+                                >
+                                  CURRENT
+                                </Text>
+                              </View>
+                            )}
+                          </View>
 
-                        <View style={{ marginTop: 8, gap: 4 }}>
-                          <View style={{ flexDirection: 'row' }}>
-                            <Text style={{ width: 72, fontSize: 11, color: Theme.colors.text.tertiary }}>PG</Text>
-                            <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: Theme.colors.text.secondary }}>
-                              {pgName}
-                            </Text>
-                          </View>
-                          <View style={{ flexDirection: 'row' }}>
-                            <Text style={{ width: 72, fontSize: 11, color: Theme.colors.text.tertiary }}>Room / Bed</Text>
-                            <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: Theme.colors.text.secondary }}>
-                              Room {roomNo}  •  Bed {bedNo}
-                            </Text>
-                          </View>
-                          {a.bed_price_snapshot != null && (
-                            <View style={{ flexDirection: 'row' }}>
-                              <Text style={{ width: 72, fontSize: 11, color: Theme.colors.text.tertiary }}>Price</Text>
-                              <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', color: Theme.colors.text.secondary }}>
-                                ₹{Number(a.bed_price_snapshot || 0).toLocaleString('en-IN')}
+                          <View style={{ marginTop: 8, gap: 4 }}>
+                            <View style={{ flexDirection: "row" }}>
+                              <Text
+                                style={{
+                                  width: 72,
+                                  fontSize: 11,
+                                  color: Theme.colors.text.tertiary,
+                                }}
+                              >
+                                PG
+                              </Text>
+                              <Text
+                                style={{
+                                  flex: 1,
+                                  fontSize: 12,
+                                  fontWeight: "600",
+                                  color: Theme.colors.text.secondary,
+                                }}
+                              >
+                                {pgName}
                               </Text>
                             </View>
-                          )}
-                        </View>
-                      </Card>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-        )}
-        
-        {/* Checkout Actions - Only show if there's a checkout date */}
-        {(() => {
-          const isCheckedOut = !!currentTenant?.check_out_date;
-          const isActive = currentTenant?.status === 'ACTIVE';
-          const hasEditPermission = !!canEditTenant;
+                            <View style={{ flexDirection: "row" }}>
+                              <Text
+                                style={{
+                                  width: 72,
+                                  fontSize: 11,
+                                  color: Theme.colors.text.tertiary,
+                                }}
+                              >
+                                Room / Bed
+                              </Text>
+                              <Text
+                                style={{
+                                  flex: 1,
+                                  fontSize: 12,
+                                  fontWeight: "600",
+                                  color: Theme.colors.text.secondary,
+                                }}
+                              >
+                                Room {roomNo} • Bed {bedNo}
+                              </Text>
+                            </View>
+                            {a.bed_price_snapshot != null && (
+                              <View style={{ flexDirection: "row" }}>
+                                <Text
+                                  style={{
+                                    width: 72,
+                                    fontSize: 11,
+                                    color: Theme.colors.text.tertiary,
+                                  }}
+                                >
+                                  Price
+                                </Text>
+                                <Text
+                                  style={{
+                                    flex: 1,
+                                    fontSize: 12,
+                                    fontWeight: "700",
+                                    color: Theme.colors.text.secondary,
+                                  }}
+                                >
+                                  ₹
+                                  {Number(
+                                    a.bed_price_snapshot || 0
+                                  ).toLocaleString("en-IN")}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </Card>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
 
-          const resolveDisabledReason = (action: 'CHECKOUT' | 'CHANGE_CHECKOUT' | 'CLEAR_CHECKOUT' | 'TRANSFER') => {
-            if (!hasEditPermission) return "No permission";
-            if (checkoutLoading) return "Please wait";
+          {/* Checkout Actions - Only show if there's a checkout date */}
+          {(() => {
+            const isCheckedOut = !!currentTenant?.check_out_date;
+            const isActive = currentTenant?.status === "ACTIVE";
+            const hasEditPermission = !!canEditTenant;
 
-            if (action === 'CHECKOUT') {
-              if (!isActive) return 'Tenant is not active';
-              if (isCheckedOut) return 'Already checked out';
-              return '';
-            }
+            const resolveDisabledReason = (
+              action:
+                | "CHECKOUT"
+                | "CHANGE_CHECKOUT"
+                | "CLEAR_CHECKOUT"
+                | "TRANSFER"
+            ) => {
+              if (!hasEditPermission) return "No permission";
+              if (checkoutLoading) return "Please wait";
 
-            if (action === 'CHANGE_CHECKOUT' || action === 'CLEAR_CHECKOUT') {
-              if (!isCheckedOut) return 'Tenant not checked out yet';
-              return '';
-            }
+              if (action === "CHECKOUT") {
+                if (!isActive) return "Tenant is not active";
+                if (isCheckedOut) return "Already checked out";
+                return "";
+              }
 
-            if (action === 'TRANSFER') {
-              if (!isActive) return 'Tenant is not active';
-              if (isCheckedOut) return 'Tenant is checked out';
-              return '';
-            }
+              if (action === "CHANGE_CHECKOUT" || action === "CLEAR_CHECKOUT") {
+                if (!isCheckedOut) return "Tenant not checked out yet";
+                return "";
+              }
 
-            return '';
-          };
+              if (action === "TRANSFER") {
+                if (!isActive) return "Tenant is not active";
+                if (isCheckedOut) return "Tenant is checked out";
+                return "";
+              }
 
-          const checkoutReason = resolveDisabledReason('CHECKOUT');
-          const changeReason = resolveDisabledReason('CHANGE_CHECKOUT');
-          const clearReason = resolveDisabledReason('CLEAR_CHECKOUT');
-          const _transferReason = resolveDisabledReason('TRANSFER');
+              return "";
+            };
 
-          return (
-            <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-                <ActionTile
-                  title="Checkout"
-                  icon="log-out-outline"
-                  onPress={handleCheckout}
-                  disabledReason={checkoutReason}
-                  loading={checkoutLoading}
-                />
-                {/* <ActionTile
+            const checkoutReason = resolveDisabledReason("CHECKOUT");
+            const changeReason = resolveDisabledReason("CHANGE_CHECKOUT");
+            const clearReason = resolveDisabledReason("CLEAR_CHECKOUT");
+            const _transferReason = resolveDisabledReason("TRANSFER");
+
+            return (
+              <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
+                <View
+                  style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}
+                >
+                  <ActionTile
+                    title="Checkout"
+                    icon="log-out-outline"
+                    onPress={handleCheckout}
+                    disabledReason={checkoutReason}
+                    loading={checkoutLoading}
+                  />
+                  {/* <ActionTile
                   title="Transfer"
                   icon="swap-horizontal-outline"
                   onPress={handleOpenTransfer}
                   disabledReason={transferReason}
                 /> */}
+                </View>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <ActionTile
+                    title="Change Checkout"
+                    icon="calendar-outline"
+                    onPress={handleChangeCheckoutDate}
+                    disabledReason={changeReason}
+                  />
+                  <ActionTile
+                    title="Clear Checkout"
+                    icon="refresh-outline"
+                    onPress={handleClearCheckout}
+                    disabledReason={clearReason}
+                  />
+                </View>
               </View>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <ActionTile
-                  title="Change Checkout"
-                  icon="calendar-outline"
-                  onPress={handleChangeCheckoutDate}
-                  disabledReason={changeReason}
-                />
-                <ActionTile
-                  title="Clear Checkout"
-                  icon="refresh-outline"
-                  onPress={handleClearCheckout}
-                  disabledReason={clearReason}
-                />
-              </View>
-            </View>
-          );
-        })()}
+            );
+          })()}
 
-        {/* Bottom Spacing */}
-        <View style={{ height: 32 }} />
-      </ScrollView>
+          {/* Bottom Spacing */}
+          <View style={{ height: 32 }} />
+        </ScrollView>
 
-      {/* Full Screen Image Viewer Modal */}
-      <ImageViewerModal
-        visible={imageViewerVisible}
-        imageUri={selectedImage}
-        onClose={closeImageViewer}
-      />
-
-      {/* Checkout Modal */}
-      {tenant && (
-        <SlideBottomModal
-          visible={checkoutDateModalVisible}
-          title="Checkout Tenant"
-          subtitle={`Mark ${tenant?.name || ''} as checked out from the selected date.`}
-          isLoading={checkoutLoading}
-          submitLabel="Confirm Checkout"
-          cancelLabel="Cancel"
-          onClose={handleCloseCheckoutModal}
-          onSubmit={confirmUpdateCheckoutDate}
-        >
-          <View style={{
-            marginBottom: 10,
-            padding: 10,
-            backgroundColor: Theme.colors.background.blueLight,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: Theme.colors.border,
-          }}>
-            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
-              Checkout stops the tenant from being treated as ACTIVE after that date.
-              Choose the last day the tenant stayed in this PG.
-            </Text>
-          </View>
-          <CheckoutTenantForm
-            tenant={tenant}
-            checkoutDate={newCheckoutDate}
-            onDateChange={setNewCheckoutDate}
-          />
-        </SlideBottomModal>
-      )}
-
-      {tenant && (
-        <SlideBottomModal
-          visible={transferModalVisible}
-          title="Transfer Tenant"
-          subtitle={`Move ${tenant?.name || ''} to a different bed from an effective date.`}
-          isLoading={transferLoading}
-          submitLabel="Confirm Transfer"
-          cancelLabel="Cancel"
-          onClose={() => setTransferModalVisible(false)}
-          onSubmit={handleSubmitTransfer}
-        >
-          <View style={{
-            marginBottom: 10,
-            padding: 10,
-            backgroundColor: Theme.colors.background.blueLight,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: Theme.colors.border,
-          }}>
-            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
-              Effective From is the first day the tenant will stay in the new bed.
-              Transfer is allowed only once per rent cycle.
-            </Text>
-          </View>
-          <SearchableDropdown
-            label="PG Location"
-            placeholder="Select PG"
-            items={pgItems}
-            selectedValue={transferPgId}
-            onSelect={(item) => {
-              const nextPg = item.id || null;
-              setTransferPgId(nextPg);
-              setTransferRoomId(null);
-              setTransferBedId(null);
-            }}
-            loading={false}
-            disabled={false}
-            required={true}
-          />
-
-          <SearchableDropdown
-            label="Room"
-            placeholder="Select room"
-            items={roomItems}
-            selectedValue={transferRoomId}
-            onSelect={(item) => {
-              const nextRoom = item.id || null;
-              setTransferRoomId(nextRoom);
-              setTransferBedId(null);
-            }}
-            loading={transferRoomsLoading}
-            disabled={!transferPgId}
-            required={true}
-          />
-
-          <SearchableDropdown
-            label="Bed"
-            placeholder="Select bed"
-            items={bedItems}
-            selectedValue={transferBedId}
-            onSelect={(item) => setTransferBedId(item.id || null)}
-            loading={transferBedsLoading}
-            disabled={!transferRoomId}
-            required={true}
-          />
-
-          <DatePicker
-            label="Effective From"
-            value={transferEffectiveFrom}
-            onChange={setTransferEffectiveFrom}
-            required={true}
-            minimumDate={toLocalDateOnly(tenant?.check_in_date)}
-          />
-        </SlideBottomModal>
-      )}
-
-      {/* Rent Payment Form (Add/Edit) */}
-      {tenant && (
-        <RentPaymentForm
-          visible={rentPaymentFormVisible}
-          tenantId={tenant.s_no}
-          tenantName={tenant.name}
-          roomId={tenant.room_id || 0}
-          bedId={tenant.bed_id || 0}
-          pgId={tenant.pg_id || selectedPGLocationId || 0}
-          rentAmount={tenant.rooms?.rent_price || 0}
-          joiningDate={tenant.check_in_date}
-          lastPaymentStartDate={
-            sortedPreviousPaymentsForForm.length > 0
-              ? (sortedPreviousPaymentsForForm[0].tenant_rent_cycles?.cycle_start || sortedPreviousPaymentsForForm[0].start_date)
-              : undefined
-          }
-          lastPaymentEndDate={
-            sortedPreviousPaymentsForForm.length > 0
-              ? (sortedPreviousPaymentsForForm[0].tenant_rent_cycles?.cycle_end || sortedPreviousPaymentsForForm[0].end_date)
-              : undefined
-          }
-          previousPayments={sortedPreviousPaymentsForForm}
-          onClose={() => {
-            setRentPaymentFormVisible(false);
-          }}
-          onSuccess={() => {
-            refetchTenant();
-            refreshTenantList();
-          }}
+        {/* Full Screen Image Viewer Modal */}
+        <ImageViewerModal
+          visible={imageViewerVisible}
+          imageUri={selectedImage}
+          onClose={closeImageViewer}
         />
-      )}
 
-      {tenant && (
-        <SlideBottomModal
-          visible={collectTransferDiffVisible}
-          title="Collect Transfer Difference"
-          subtitle={tenant?.name ? `Tenant: ${tenant.name}` : 'Tenant'}
-          isLoading={collectTransferDiffLoading}
-          submitLabel="Collect"
-          cancelLabel="Cancel"
-          onClose={() => setCollectTransferDiffVisible(false)}
-          onSubmit={handleSubmitCollectTransferDifference}
-        >
-          <AmountInput
-            label="Amount"
-            value={collectTransferDiffAmount}
-            onChangeText={setCollectTransferDiffAmount}
-            required
-            containerStyle={{ marginBottom: 16 }}
-          />
-
-          <View style={{ marginBottom: 16 }}>
-            <DatePicker
-              label="Payment Date"
-              value={collectTransferDiffPaymentDate}
-              onChange={setCollectTransferDiffPaymentDate}
-              required
-            />
-          </View>
-
-          <OptionSelector
-            label="Payment Method"
-            options={PAYMENT_METHODS}
-            selectedValue={collectTransferDiffPaymentMethod}
-            onSelect={(value) => setCollectTransferDiffPaymentMethod(value)}
-            required
-            containerStyle={{ marginBottom: 16 }}
-          />
-
-          <View style={{ marginBottom: 8 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
-              Remarks (Optional)
-            </Text>
-            <TextInput
-              value={collectTransferDiffRemarks}
-              onChangeText={setCollectTransferDiffRemarks}
-              placeholder="e.g. Transfer difference collection"
-              placeholderTextColor={Theme.colors.input.placeholder}
-              multiline
-              numberOfLines={3}
+        {/* Checkout Modal */}
+        {tenant && (
+          <SlideBottomModal
+            visible={checkoutDateModalVisible}
+            title="Checkout Tenant"
+            subtitle={`Mark ${
+              tenant?.name || ""
+            } as checked out from the selected date.`}
+            isLoading={checkoutLoading}
+            submitLabel="Confirm Checkout"
+            cancelLabel="Cancel"
+            onClose={handleCloseCheckoutModal}
+            onSubmit={confirmUpdateCheckoutDate}
+          >
+            <View
               style={{
-                backgroundColor: Theme.colors.input.background,
+                marginBottom: 10,
+                padding: 10,
+                backgroundColor: Theme.colors.background.blueLight,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: Theme.colors.input.border,
-                borderRadius: 8,
-                paddingHorizontal: 12,
-                paddingVertical: 12,
-                fontSize: 14,
-                color: Theme.colors.text.primary,
-                minHeight: 80,
-                textAlignVertical: 'top',
+                borderColor: Theme.colors.border,
               }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: Theme.colors.text.secondary,
+                  lineHeight: 16,
+                }}
+              >
+                Checkout stops the tenant from being treated as ACTIVE after
+                that date. Choose the last day the tenant stayed in this PG.
+              </Text>
+            </View>
+            <CheckoutTenantForm
+              tenant={tenant}
+              checkoutDate={newCheckoutDate}
+              onDateChange={setNewCheckoutDate}
             />
+          </SlideBottomModal>
+        )}
+
+        {tenant && (
+          <SlideBottomModal
+            visible={transferModalVisible}
+            title="Transfer Tenant"
+            subtitle={`Move ${
+              tenant?.name || ""
+            } to a different bed from an effective date.`}
+            isLoading={transferLoading}
+            submitLabel="Confirm Transfer"
+            cancelLabel="Cancel"
+            onClose={() => setTransferModalVisible(false)}
+            onSubmit={handleSubmitTransfer}
+          >
+            <View
+              style={{
+                marginBottom: 10,
+                padding: 10,
+                backgroundColor: Theme.colors.background.blueLight,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: Theme.colors.border,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: Theme.colors.text.secondary,
+                  lineHeight: 16,
+                }}
+              >
+                Effective From is the first day the tenant will stay in the new
+                bed. Transfer is allowed only once per rent cycle.
+              </Text>
+            </View>
+            <SearchableDropdown
+              label="PG Location"
+              placeholder="Select PG"
+              items={pgItems}
+              selectedValue={transferPgId}
+              onSelect={(item) => {
+                const nextPg = item.id || null;
+                setTransferPgId(nextPg);
+                setTransferRoomId(null);
+                setTransferBedId(null);
+              }}
+              loading={false}
+              disabled={false}
+              required={true}
+            />
+
+            <SearchableDropdown
+              label="Room"
+              placeholder="Select room"
+              items={roomItems}
+              selectedValue={transferRoomId}
+              onSelect={(item) => {
+                const nextRoom = item.id || null;
+                setTransferRoomId(nextRoom);
+                setTransferBedId(null);
+              }}
+              loading={transferRoomsLoading}
+              disabled={!transferPgId}
+              required={true}
+            />
+
+            <SearchableDropdown
+              label="Bed"
+              placeholder="Select bed"
+              items={bedItems}
+              selectedValue={transferBedId}
+              onSelect={(item) => setTransferBedId(item.id || null)}
+              loading={transferBedsLoading}
+              disabled={!transferRoomId}
+              required={true}
+            />
+
+            <DatePicker
+              label="Effective From"
+              value={transferEffectiveFrom}
+              onChange={setTransferEffectiveFrom}
+              required={true}
+              minimumDate={toLocalDateOnly(tenant?.check_in_date)}
+            />
+          </SlideBottomModal>
+        )}
+
+        {/* Rent Payment Form (Add/Edit) */}
+        {tenant && (
+          <RentPaymentForm
+            visible={rentPaymentFormVisible}
+            tenantId={tenant.s_no}
+            tenantName={tenant.name}
+            roomId={tenant.room_id || 0}
+            bedId={tenant.bed_id || 0}
+            pgId={tenant.pg_id || selectedPGLocationId || 0}
+            rentAmount={tenant.rooms?.rent_price || 0}
+            joiningDate={tenant.check_in_date}
+            lastPaymentStartDate={
+              sortedPreviousPaymentsForForm.length > 0
+                ? sortedPreviousPaymentsForForm[0].tenant_rent_cycles
+                    ?.cycle_start || sortedPreviousPaymentsForForm[0].start_date
+                : undefined
+            }
+            lastPaymentEndDate={
+              sortedPreviousPaymentsForForm.length > 0
+                ? sortedPreviousPaymentsForForm[0].tenant_rent_cycles
+                    ?.cycle_end || sortedPreviousPaymentsForForm[0].end_date
+                : undefined
+            }
+            previousPayments={sortedPreviousPaymentsForForm}
+            onClose={() => {
+              setRentPaymentFormVisible(false);
+            }}
+            onSuccess={() => {
+              refetchTenant();
+              refreshTenantList();
+            }}
+          />
+        )}
+
+        {tenant && (
+          <SlideBottomModal
+            visible={collectTransferDiffVisible}
+            title="Collect Transfer Difference"
+            subtitle={tenant?.name ? `Tenant: ${tenant.name}` : "Tenant"}
+            isLoading={collectTransferDiffLoading}
+            submitLabel="Collect"
+            cancelLabel="Cancel"
+            onClose={() => setCollectTransferDiffVisible(false)}
+            onSubmit={handleSubmitCollectTransferDifference}
+          >
+            <AmountInput
+              label="Amount"
+              value={collectTransferDiffAmount}
+              onChangeText={setCollectTransferDiffAmount}
+              required
+              containerStyle={{ marginBottom: 16 }}
+            />
+
+            <View style={{ marginBottom: 16 }}>
+              <DatePicker
+                label="Payment Date"
+                value={collectTransferDiffPaymentDate}
+                onChange={setCollectTransferDiffPaymentDate}
+                required
+              />
+            </View>
+
+            <OptionSelector
+              label="Payment Method"
+              options={PAYMENT_METHODS}
+              selectedValue={collectTransferDiffPaymentMethod}
+              onSelect={(value) => setCollectTransferDiffPaymentMethod(value)}
+              required
+              containerStyle={{ marginBottom: 16 }}
+            />
+
+            <View style={{ marginBottom: 8 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: Theme.colors.text.primary,
+                  marginBottom: 6,
+                }}
+              >
+                Remarks (Optional)
+              </Text>
+              <TextInput
+                value={collectTransferDiffRemarks}
+                onChangeText={setCollectTransferDiffRemarks}
+                placeholder="e.g. Transfer difference collection"
+                placeholderTextColor={Theme.colors.input.placeholder}
+                multiline
+                numberOfLines={3}
+                style={{
+                  backgroundColor: Theme.colors.input.background,
+                  borderWidth: 1,
+                  borderColor: Theme.colors.input.border,
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 12,
+                  fontSize: 14,
+                  color: Theme.colors.text.primary,
+                  minHeight: 80,
+                  textAlignVertical: "top",
+                }}
+              />
+            </View>
+          </SlideBottomModal>
+        )}
+
+        {/* Advance Payment Form (Add/Edit) */}
+        {tenant && (
+          <AdvancePaymentForm
+            visible={
+              advancePaymentModalVisible || editAdvancePaymentModalVisible
+            }
+            mode={editAdvancePaymentModalVisible ? "edit" : "add"}
+            tenantId={tenant.s_no}
+            tenantName={tenant.name}
+            tenantJoinedDate={tenant.check_in_date}
+            pgId={tenant.pg_id || selectedPGLocationId || 0}
+            roomId={tenant.room_id || 0}
+            bedId={tenant.bed_id || 0}
+            paymentId={editingAdvancePayment?.s_no}
+            existingPayment={editingAdvancePayment}
+            onClose={() => {
+              setAdvancePaymentModalVisible(false);
+              setEditAdvancePaymentModalVisible(false);
+              setEditingAdvancePayment(null);
+            }}
+            onSuccess={() => {
+              refetchTenant();
+              refreshTenantList();
+            }}
+            onSave={handleUpdateAdvancePayment}
+          />
+        )}
+
+        {/* Add Refund Payment Modal */}
+        {tenant && (
+          <AddRefundPaymentModal
+            visible={refundPaymentModalVisible}
+            tenant={tenant}
+            onClose={() => setRefundPaymentModalVisible(false)}
+            onSave={handleSaveRefundPayment}
+          />
+        )}
+
+        {/* Edit Refund Payment Modal */}
+        {tenant && (
+          <EditRefundPaymentModal
+            visible={editRefundPaymentModalVisible}
+            payment={editingRefundPayment}
+            onClose={() => {
+              setEditRefundPaymentModalVisible(false);
+              setEditingRefundPayment(null);
+            }}
+            onSave={handleUpdateRefundPayment}
+          />
+        )}
+
+        {/* Receipt View Modal */}
+        <ReceiptViewModal
+          visible={receiptModalVisible}
+          receiptData={receiptData}
+          receiptRef={receiptRef}
+          onClose={() => setReceiptModalVisible(false)}
+        />
+
+        {/* Hidden receipt for capture (off-screen) */}
+        {receiptData && !receiptModalVisible && (
+          <View style={{ position: "absolute", left: -9999 }}>
+            <View ref={receiptRef} collapsable={false}>
+              <CompactReceiptGenerator.ReceiptComponent data={receiptData} />
+            </View>
           </View>
-        </SlideBottomModal>
-      )}
-
-      {/* Advance Payment Form (Add/Edit) */}
-      {tenant && (
-        <AdvancePaymentForm
-          visible={advancePaymentModalVisible || editAdvancePaymentModalVisible}
-          mode={editAdvancePaymentModalVisible ? "edit" : "add"}
-          tenantId={tenant.s_no}
-          tenantName={tenant.name}
-          tenantJoinedDate={tenant.check_in_date}
-          pgId={tenant.pg_id || selectedPGLocationId || 0}
-          roomId={tenant.room_id || 0}
-          bedId={tenant.bed_id || 0}
-          paymentId={editingAdvancePayment?.s_no}
-          existingPayment={editingAdvancePayment}
-          onClose={() => {
-            setAdvancePaymentModalVisible(false);
-            setEditAdvancePaymentModalVisible(false);
-            setEditingAdvancePayment(null);
-          }}
-          onSuccess={() => {
-            refetchTenant();
-            refreshTenantList();
-          }}
-          onSave={handleUpdateAdvancePayment}
-        />
-      )}
-
-      {/* Add Refund Payment Modal */}
-      {tenant && (
-        <AddRefundPaymentModal
-          visible={refundPaymentModalVisible}
-          tenant={tenant}
-          onClose={() => setRefundPaymentModalVisible(false)}
-          onSave={handleSaveRefundPayment}
-        />
-      )}
-
-      {/* Edit Refund Payment Modal */}
-      {tenant && (
-        <EditRefundPaymentModal
-          visible={editRefundPaymentModalVisible}
-          payment={editingRefundPayment}
-          onClose={() => {
-            setEditRefundPaymentModalVisible(false);
-            setEditingRefundPayment(null);
-          }}
-          onSave={handleUpdateRefundPayment}
-        />
-      )}
-
-
-      {/* Receipt View Modal */}
-      <ReceiptViewModal
-        visible={receiptModalVisible}
-        receiptData={receiptData}
-        receiptRef={receiptRef}
-        onClose={() => setReceiptModalVisible(false)}
-      />
-
-      {/* Hidden receipt for capture (off-screen) */}
-      {receiptData && !receiptModalVisible && (
-        <View style={{ position: 'absolute', left: -9999 }}>
-          <View ref={receiptRef} collapsable={false}>
-            <CompactReceiptGenerator.ReceiptComponent data={receiptData} />
-          </View>
-        </View>
-      )}
+        )}
       </View>
     </ScreenLayout>
   );
@@ -2044,11 +2707,11 @@ function TenantDetailsScreenWrapper() {
   const canCreateRefund = canCreateRent;
   const canEditRefund = canEditRent;
   const canDeleteRefund = canDeleteRent;
-  
+
   return (
-    <TenantDetailsContent 
-      tenantId={tenantId} 
-      navigation={navigation} 
+    <TenantDetailsContent
+      tenantId={tenantId}
+      navigation={navigation}
       canEditTenant={canEditTenant}
       canDeleteTenant={canDeleteTenant}
       canCreateRent={canCreateRent}
