@@ -366,10 +366,14 @@ export const TenantRentPaymentsScreen: React.FC = () => {
 
               const startLabel = group.periodStart
                 ? new Date(group.periodStart).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                : '';
+                : group.payments[0]?.payment_date
+                  ? new Date(group.payments[0].payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                  : '';
               const endLabel = group.periodEnd
                 ? new Date(group.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                : '';
+                : group.payments[0]?.payment_date
+                  ? new Date(group.payments[0].payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                  : '';
 
               const isSettled = group.remainingDue <= 0 && group.due > 0;
 
@@ -386,9 +390,9 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                         <Text style={{ fontSize: s(14), fontWeight: '700', color: Theme.colors.text.primary }}>
                           {group.title}
                         </Text>
-                        {!!startLabel && !!endLabel && (
+                        {(!!startLabel || !!endLabel) && (
                           <Text style={{ fontSize: s(11), color: Theme.colors.text.secondary, marginTop: s(4) }}>
-                            {startLabel} - {endLabel}
+                            {startLabel}{startLabel && endLabel && ' - '}{endLabel}
                           </Text>
                         )}
                         <Text style={{ fontSize: s(11), color: Theme.colors.text.secondary, marginTop: s(4) }}>

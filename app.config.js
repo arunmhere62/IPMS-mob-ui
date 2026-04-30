@@ -50,8 +50,9 @@ module.exports = ({ config }) => {
       // Single source of truth for API URL - change in .env file
       // apiBaseUrl: process.env.API_BASE_URL || "https://ipms-mob-api-dev.pgmanagement.site/api/v1",
       // apiBaseUrl: process.env.API_BASE_URL || "https://ipms-mob-api.vercel.app/api/v1",
-      apiBaseUrl: process.env.API_BASE_URL || "https://ipms-mob-api.pgmanagement.site/api/v1",
+      // apiBaseUrl: process.env.API_BASE_URL || "https://ipms-mob-api.pgmanagement.site/api/v1",
       // apiBaseUrl: process.env.API_BASE_URL || "http://192.168.29.97:5001/api/v1",
+      apiBaseUrl: process.env.API_BASE_URL || "https://mobapi.indianpgmanagement.com/api/v1",
       // Subscription Configuration
       subscriptionMode: process.env.SUBSCRIPTION_MODE === 'true',
       showDevBanner: process.env.SHOW_DEV_BANNER === 'true'

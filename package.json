@@ -46,7 +46,6 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-notifications": "~0.32.15",
     "expo-print": "~15.0.8",
-    "expo-sensors": "~15.0.8",
     "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",

@@ -9,7 +9,7 @@ import type { PGLocation } from '../types';
 
 export const PGLocationSelector: React.FC = () => {
   const dispatch = useDispatch();
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
+  const { selectedPGLocationId, isRehydrated } = useSelector((state: RootState) => state.pgLocations);
   const { user, accessToken } = useSelector((state: RootState) => state.auth);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -48,10 +48,11 @@ export const PGLocationSelector: React.FC = () => {
   }, [accessToken, error, isError, isFetching, isLoading, isUninitialized, safeLocations.length, selectedPGLocationId, user?.organization_id, user?.s_no, pgLocationsResponse]);
 
   useEffect(() => {
-    if (!selectedPGLocationId && safeLocations.length > 0) {
+    // Only auto-select after persist rehydration is complete
+    if (isRehydrated && !selectedPGLocationId && safeLocations.length > 0) {
       dispatch(setSelectedPGLocation(safeLocations[0].s_no));
     }
-  }, [dispatch, safeLocations, selectedPGLocationId]);
+  }, [dispatch, safeLocations, selectedPGLocationId, isRehydrated]);
 
   const handleLocationChange = (locationId: number) => {
     dispatch(setSelectedPGLocation(locationId));

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
+  RefreshControl,
 } from 'react-native';
 import { SlideBottomModal } from '../../components/SlideBottomModal';
 import { DatePicker } from '../../components/DatePicker';
@@ -192,6 +193,8 @@ const TenantDetailsContent: React.FC<{
   const [transferBedId, setTransferBedId] = useState<number | null>(null);
   const [transferEffectiveFrom, setTransferEffectiveFrom] = useState<string>('');
   const [transferLoading, setTransferLoading] = useState(false);
+
+  const [refreshing, setRefreshing] = useState(false);
 
   const [collectTransferDiffVisible, setCollectTransferDiffVisible] = useState(false);
   const [collectTransferDiffAmount, setCollectTransferDiffAmount] = useState('');
@@ -510,6 +513,17 @@ const TenantDetailsContent: React.FC<{
       await triggerTenants({ page: 1, limit: 20 }).unwrap();
     } catch (error) {
       console.error('Error refreshing tenant list:', error);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetchTenant();
+    } catch (error) {
+      console.error('Error refreshing tenant data:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -1059,7 +1073,16 @@ const TenantDetailsContent: React.FC<{
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
         <ScreenHeader title="Tenant Details" showBackButton={true} onBackPress={handleBackPress} />
         <View style={{ backgroundColor: CONTENT_COLOR, flex: 1 }}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+          <ScrollView 
+            style={{ flex: 1 }} 
+            contentContainerStyle={{ padding: 16 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+              />
+            }
+          >
             <Card style={{ padding: 16, marginBottom: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <SkeletonLoader width={56} height={56} borderRadius={28} />
@@ -1201,7 +1224,15 @@ const TenantDetailsContent: React.FC<{
       </ScreenHeader>
 
       <View style={{ flex: 1, backgroundColor : CONTENT_COLOR }}>
-        <ScrollView style={{ flex: 1 }}>
+        <ScrollView 
+          style={{ flex: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
+        >
         {/* Tenant Header */}
         <TenantHeader
           tenant={tenant}

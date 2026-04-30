@@ -20,6 +20,13 @@ import { useBottomNavScrollHandler } from "../../components/BottomNavVisibility"
 import { Card } from "../../components/Card";
 import { QuickActions } from "../../components/QuickActions";
 import { MonthlyMetricsCard } from "./MonthlyMetricsCard";
+import {
+  SkeletonLoader,
+  DashboardHeaderSkeleton,
+  DashboardMetricsSkeleton,
+  DashboardAttentionSkeleton,
+  DashboardMonthlyMetricsSkeleton,
+} from "../../components/SkeletonLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { SlideBottomModal } from "../../components/SlideBottomModal";
 import { useGetPGLocationsQuery } from "../../services/api/pgLocationsApi";
@@ -52,7 +59,7 @@ export const DashboardScreen: React.FC = () => {
   const navigation =
     useNavigation<NavigationProp<Record<DashboardRouteName, undefined>>>();
   const dispatch = useDispatch<AppDispatch>();
-  const { selectedPGLocationId } = useSelector(
+  const { selectedPGLocationId, isRehydrated } = useSelector(
     (state: RootState) => state.pgLocations
   );
   usePermissions();
@@ -558,16 +565,16 @@ export const DashboardScreen: React.FC = () => {
   const selectedAttention =
     widgetItems.find((w) => w.key === attentionTab) ?? widgetItems[0];
 
-  // Step 2: Auto-select first PG location when locations are loaded
+  // Step 2: Auto-select first PG location when locations are loaded (only after rehydration)
   useEffect(() => {
-    if (locations.length > 0 && !selectedPGLocationId) {
+    if (isRehydrated && locations.length > 0 && !selectedPGLocationId) {
       console.log(
         "✅ Auto-selecting first PG location:",
         locations[0].location_name
       );
       dispatch(setSelectedPGLocation(locations[0].s_no));
     }
-  }, [locations, selectedPGLocationId, dispatch]);
+  }, [locations, selectedPGLocationId, dispatch, isRehydrated]);
 
   // Step 3: Load all PG-dependent data ONLY after PG location is selected
   useEffect(() => {
@@ -631,6 +638,9 @@ export const DashboardScreen: React.FC = () => {
           }
         >
           <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+            {dashboardFetching ? (
+              <DashboardHeaderSkeleton />
+            ) : (
             <View
               style={{
                 backgroundColor: Theme.colors.background.blueMedium,
@@ -764,6 +774,7 @@ export const DashboardScreen: React.FC = () => {
                 </View>
               </View>
             </View>
+            )}
           </View>
 
           <SlideBottomModal
@@ -829,6 +840,9 @@ export const DashboardScreen: React.FC = () => {
           />
 
           <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+            {dashboardFetching ? (
+              <DashboardMetricsSkeleton />
+            ) : (
             <View style={{ flexDirection: "row", gap: 12 }}>
               <Card
                 style={{
@@ -933,6 +947,7 @@ export const DashboardScreen: React.FC = () => {
                 </Text>
               </Card>
             </View>
+            )}
 
             {!!dashboardError && (
               <Text style={{ color: "#EF4444", fontSize: 12, marginTop: 10 }}>
@@ -942,6 +957,10 @@ export const DashboardScreen: React.FC = () => {
           </View>
 
           <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+            {dashboardFetching ? (
+              <DashboardAttentionSkeleton />
+            ) : (
+              <>
             <Text
               style={{
                 color: Theme.colors.text.primary,
@@ -960,9 +979,12 @@ export const DashboardScreen: React.FC = () => {
             >
               Quick follow-ups for pending rent and advance
             </Text>
+            </>
+            )}
           </View>
 
           <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+            {dashboardFetching ? null : (
             <Card
               shadowColor="shadow-none"
               style={{
@@ -1417,14 +1439,19 @@ export const DashboardScreen: React.FC = () => {
                 </View>
               </View>
             </Card>
+            )}
           </View>
 
-          <MonthlyMetricsCard
-            monthlyMetrics={monthlyMetrics}
-            isFetching={monthlyMetricsFetching}
-            onDateRangeChange={handleDateRangeChange}
-            formatCurrency={formatCurrency}
-          />
+          {monthlyMetricsFetching ? (
+            <DashboardMonthlyMetricsSkeleton />
+          ) : (
+            <MonthlyMetricsCard
+              monthlyMetrics={monthlyMetrics}
+              isFetching={monthlyMetricsFetching}
+              onDateRangeChange={handleDateRangeChange}
+              formatCurrency={formatCurrency}
+            />
+          )}
         </ScrollView>
       </View>
     </ScreenLayout>

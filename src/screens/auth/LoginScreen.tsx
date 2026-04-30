@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Theme } from '../../theme';
 import { useSendOtpMutation } from '../../services/api/authApi';
 import { Button } from '../../components/Button';
@@ -36,11 +37,39 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
     const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
 
+    // Load saved phone number and country
+    loadSavedPhone();
+
     return () => {
       showSub.remove();
       hideSub.remove();
     };
   }, []);
+
+  const loadSavedPhone = async () => {
+    try {
+      const savedPhone = await AsyncStorage.getItem('saved_phone');
+      const savedCountry = await AsyncStorage.getItem('saved_country');
+      if (savedPhone) {
+        setPhone(savedPhone);
+      }
+      if (savedCountry) {
+        const country: Country = JSON.parse(savedCountry);
+        setSelectedCountry(country);
+      }
+    } catch (error) {
+      console.error('Error loading saved phone:', error);
+    }
+  };
+
+  const savePhone = async (phoneNumber: string, country: Country) => {
+    try {
+      await AsyncStorage.setItem('saved_phone', phoneNumber);
+      await AsyncStorage.setItem('saved_country', JSON.stringify(country));
+    } catch (error) {
+      console.error('Error saving phone:', error);
+    }
+  };
 
   const validatePhone = (phoneNumber: string): boolean => {
     const phoneRegex = /^[0-9]{10}$/;
@@ -66,6 +95,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       const fullPhone = selectedCountry.phoneCode + ' ' + phone;
       const res = await sendOtp({ phone: fullPhone }).unwrap();
       showSuccessAlert(res);
+      
+      // Save phone number and country for future use
+      await savePhone(phone, selectedCountry);
+      
       navigation.navigate('OTPVerification', { phone: fullPhone });
     } catch (err: any) {
       showErrorAlert(err, 'OTP Error');

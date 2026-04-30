@@ -1,11 +1,14 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { REHYDRATE } from 'redux-persist';
 
 interface PGLocationState {
   selectedPGLocationId: number | null;
+  isRehydrated: boolean;
 }
 
 const initialState: PGLocationState = {
   selectedPGLocationId: null,
+  isRehydrated: false,
 };
 
 const pgLocationSlice = createSlice({
@@ -15,6 +18,11 @@ const pgLocationSlice = createSlice({
     setSelectedPGLocation: (state, action) => {
       state.selectedPGLocationId = action.payload;
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(REHYDRATE, (state) => {
+      state.isRehydrated = true;
+    });
   },
 });
 
