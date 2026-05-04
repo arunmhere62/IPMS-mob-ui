@@ -403,7 +403,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
       <Text style={styles.label}>{label}</Text>
       <View style={styles.headerRow}>
         <Text style={styles.subtitle}>
-          {images.filter(uri => uri && uri.trim() !== '').length} / {maxImages} images
+          {Array.isArray(images) ? images.filter(uri => typeof uri === 'string' && uri.trim() !== '').length : 0} / {maxImages} images
         </Text>
         {useS3 && (
           <View style={styles.s3Badge}>

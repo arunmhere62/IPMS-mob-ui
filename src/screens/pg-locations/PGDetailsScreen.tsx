@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -180,6 +181,12 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({
       Alert.alert("Error", "Failed to load PG details");
     }
   }, [pgDetailsResponse, error]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

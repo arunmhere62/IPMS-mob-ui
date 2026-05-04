@@ -16,7 +16,7 @@ import { Theme } from '../../theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
-import { CONTENT_COLOR } from '@/constant';
+import { CONTENT_COLOR } from '../../constant';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { EditProfileModal } from './EditProfileModal';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal';
@@ -330,7 +330,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
             >
               {userData?.profile_images ? (
                 <Image
-                  source={{ uri: userData.profile_images }}
+                  source={{ uri: Array.isArray(userData.profile_images) ? userData.profile_images[0] : userData.profile_images }}
                   style={{ width: 76, height: 76, borderRadius: 38 }}
                   resizeMode="cover"
                 />

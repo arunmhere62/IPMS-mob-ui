@@ -206,40 +206,42 @@ export const DashboardScreen: React.FC = () => {
       };
 
       if (tab === "pending_rent") {
+        const unpaidMonths = (
+          tenant as unknown as {
+            unpaid_months?: Array<{ cycle_start?: string; cycle_end?: string }>;
+          }
+        )?.unpaid_months ?? [];
+        const gaps = unpaidMonths.map((m) => ({
+          gapStart: m?.cycle_start ?? "",
+          gapEnd: m?.cycle_end ?? "",
+        }));
         return {
-          gapCount: readCount(
-            (tenant as unknown as { pending_gap_count?: unknown })
-              ?.pending_gap_count
-          ),
+          gapCount: gaps.length,
           gapDueAmount: readNum(
-            (tenant as unknown as { pending_gap_due_amount?: unknown })
-              ?.pending_gap_due_amount
+            (tenant as unknown as { pending_due_amount?: unknown })
+              ?.pending_due_amount
           ),
-          gaps:
-            (
-              tenant as unknown as {
-                pending_gaps?: Array<{ gapStart?: unknown; gapEnd?: unknown }>;
-              }
-            )?.pending_gaps ?? [],
+          gaps,
         };
       }
 
       if (tab === "partial_rent") {
+        const unpaidMonths = (
+          tenant as unknown as {
+            unpaid_months?: Array<{ cycle_start?: string; cycle_end?: string }>;
+          }
+        )?.unpaid_months ?? [];
+        const gaps = unpaidMonths.map((m) => ({
+          gapStart: m?.cycle_start ?? "",
+          gapEnd: m?.cycle_end ?? "",
+        }));
         return {
-          gapCount: readCount(
-            (tenant as unknown as { partial_gap_count?: unknown })
-              ?.partial_gap_count
-          ),
+          gapCount: gaps.length,
           gapDueAmount: readNum(
-            (tenant as unknown as { partial_gap_due_amount?: unknown })
-              ?.partial_gap_due_amount
+            (tenant as unknown as { partial_due_amount?: unknown })
+              ?.partial_due_amount
           ),
-          gaps:
-            (
-              tenant as unknown as {
-                partial_gaps?: Array<{ gapStart?: unknown; gapEnd?: unknown }>;
-              }
-            )?.partial_gaps ?? [],
+          gaps,
         };
       }
 
@@ -472,46 +474,8 @@ export const DashboardScreen: React.FC = () => {
           subtitle: "Collect dues quickly",
           tint: "#EF4444",
           icon: "alert-circle" as const,
-          count: (() => {
-            const list = (tenantStatus?.pending_rent?.tenants ??
-              []) as Tenant[];
-            const fallback = (tenantStatus?.partial_rent?.tenants ??
-              []) as Tenant[];
-            const union = [...list, ...fallback].filter((t) => {
-              const snap = getGapSnapshotForTab("pending_rent", t);
-              return (
-                snap.gapCount > 0 ||
-                (typeof snap.gapDueAmount === "number" && snap.gapDueAmount > 0)
-              );
-            });
-            const uniq = new Set<string>();
-            union.forEach((t) => {
-              const id = typeof t?.s_no === "number" ? String(t.s_no) : "";
-              if (id) uniq.add(id);
-            });
-            return uniq.size;
-          })(),
-          tenants: (() => {
-            const list = (tenantStatus?.pending_rent?.tenants ??
-              []) as Tenant[];
-            const fallback = (tenantStatus?.partial_rent?.tenants ??
-              []) as Tenant[];
-            const union = [...list, ...fallback].filter((t) => {
-              const snap = getGapSnapshotForTab("pending_rent", t);
-              return (
-                snap.gapCount > 0 ||
-                (typeof snap.gapDueAmount === "number" && snap.gapDueAmount > 0)
-              );
-            });
-            const seen = new Set<number>();
-            return union.filter((t) => {
-              const id = typeof t?.s_no === "number" ? t.s_no : NaN;
-              if (!Number.isFinite(id)) return false;
-              if (seen.has(id)) return false;
-              seen.add(id);
-              return true;
-            });
-          })(),
+          count: tenantStatus?.pending_rent?.count ?? 0,
+          tenants: (tenantStatus?.pending_rent?.tenants ?? []) as Tenant[],
         },
         {
           key: "partial_rent" as const,
@@ -519,35 +483,8 @@ export const DashboardScreen: React.FC = () => {
           subtitle: "Follow-up needed",
           tint: "#F59E0B",
           icon: "warning" as const,
-          count: (() => {
-            const list = (tenantStatus?.partial_rent?.tenants ??
-              []) as Tenant[];
-            const uniq = new Set<string>();
-            list.forEach((t) => {
-              const snap = getGapSnapshotForTab("partial_rent", t);
-              if (
-                snap.gapCount <= 0 &&
-                !(
-                  typeof snap.gapDueAmount === "number" && snap.gapDueAmount > 0
-                )
-              )
-                return;
-              const id = typeof t?.s_no === "number" ? String(t.s_no) : "";
-              if (id) uniq.add(id);
-            });
-            return uniq.size;
-          })(),
-          tenants: (() => {
-            const list = (tenantStatus?.partial_rent?.tenants ??
-              []) as Tenant[];
-            return list.filter((t) => {
-              const snap = getGapSnapshotForTab("partial_rent", t);
-              return (
-                snap.gapCount > 0 ||
-                (typeof snap.gapDueAmount === "number" && snap.gapDueAmount > 0)
-              );
-            });
-          })(),
+          count: tenantStatus?.partial_rent?.count ?? 0,
+          tenants: (tenantStatus?.partial_rent?.tenants ?? []) as Tenant[],
         },
         {
           key: "without_advance" as const,
@@ -559,7 +496,7 @@ export const DashboardScreen: React.FC = () => {
           tenants: tenantStatus?.without_advance?.tenants ?? [],
         },
       ] as const,
-    [getGapSnapshotForTab, tenantStatus]
+    [tenantStatus]
   );
 
   const selectedAttention =

@@ -103,7 +103,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setGender(effectiveUser.gender || '');
       setStateId(effectiveUser.state_id || null);
       setCityId(effectiveUser.city_id || null);
-      setProfileImages(effectiveUser.profile_images ? [effectiveUser.profile_images] : []);
+      setProfileImages(Array.isArray(effectiveUser.profile_images) ? effectiveUser.profile_images : (effectiveUser.profile_images ? [effectiveUser.profile_images] : []));
 
       setPhoneVerifiedFor(null);
       setShowPhoneOtpModal(false);

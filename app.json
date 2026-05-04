@@ -37,6 +37,7 @@
     },
     "android": {
       "package": "com.pgmanagement.app",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-logo.png",
         "backgroundColor": "#0F172A"
