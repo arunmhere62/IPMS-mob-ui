@@ -77,20 +77,36 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
 
   const openPrivacyPolicy = async () => {
     try {
-      const status = await getRequiredLegalStatus({ context: 'SIGNUP', type: 'PRIVACY_POLICY' }).unwrap();
-      const s = status as unknown as {
-        required?: Array<{ url?: string; content_url?: string }>;
-        pending?: Array<{ url?: string; content_url?: string }>;
-      };
-      const doc = (s?.required || s?.pending || [])?.[0];
-      const url = doc?.url || doc?.content_url;
+      const res = await getRequiredLegalStatus({ context: 'SETTINGS' }).unwrap();
+      const docs = (res as any)?.required || [];
+      const doc = docs.find((d: any) => String(d?.type || '').toUpperCase() === 'PRIVACY_POLICY');
+      const url = doc?.url;
       if (!url) {
         Alert.alert('Info', 'Privacy Policy link is not available right now.');
         return;
       }
       navigation.navigate('LegalWebView', { title: 'Privacy Policy', url: addEmbedParam(String(url)) });
     } catch {
-      Alert.alert('Info', 'Privacy Policy link is not available right now.');
+      Alert.alert('Error', 'Failed to load Privacy Policy');
+    }
+  };
+
+  const openTermsAndConditions = async () => {
+    try {
+      const res = await getRequiredLegalStatus({ context: 'SETTINGS' }).unwrap();
+      const docs = (res as any)?.required || [];
+      const doc = docs.find((d: any) => {
+        const type = String(d?.type || '').toUpperCase();
+        return type === 'TERMS_OF_SERVICE' || type === 'TERMS_AND_CONDITIONS';
+      });
+      const url = doc?.url;
+      if (!url) {
+        Alert.alert('Info', 'Terms & Conditions link is not available right now.');
+        return;
+      }
+      navigation.navigate('LegalWebView', { title: 'Terms & Conditions', url: addEmbedParam(String(url)) });
+    } catch {
+      Alert.alert('Error', 'Failed to load Terms & Conditions');
     }
   };
 
@@ -153,6 +169,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const settingsOptions = [
     { title: 'Profile', icon: '👤', onPress: () => navigation.navigate('UserProfile') },
     { title: 'Report Issue', icon: '🐛', onPress: () => navigation.navigate('Tickets'), },
+    { title: 'Terms & Conditions', icon: '📄', onPress: openTermsAndConditions },
     { title: 'Privacy Policy', icon: '🔒', onPress: openPrivacyPolicy },
     { title: 'Help & Support', icon: '❓', onPress: () => navigation.navigate('FaqWebView') },
     // { title: 'About', icon: 'ℹ️', onPress: () => { } },

@@ -29,7 +29,7 @@ const unwrapApiOrCentralData = <T>(response: any): T => {
   return response as T;
 };
 
-export type LegalAcceptanceContext = 'SIGNUP' | 'LOGIN';
+export type LegalAcceptanceContext = 'SIGNUP' | 'LOGIN' | 'SETTINGS';
 
 export type RequiredLegalDocument = {
   s_no: number;

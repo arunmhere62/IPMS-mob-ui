@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView } from 'react-native';
+import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Theme } from '../../theme';
 import { useSendOtpMutation } from '../../services/api/authApi';
+import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../services/api/legalDocumentsApi';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
@@ -24,6 +25,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [legalDocs, setLegalDocs] = useState<any[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<Country>({
     code: 'IN',
     name: 'India',
@@ -32,6 +34,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     phoneLength: 10,
   });
   const [sendOtp, { isLoading: sendingOtp }] = useSendOtpMutation();
+  const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -40,11 +43,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     // Load saved phone number and country
     loadSavedPhone();
 
+    // Fetch legal documents on mount
+    fetchLegalDocuments();
+
     return () => {
       showSub.remove();
       hideSub.remove();
     };
   }, []);
+
+  const fetchLegalDocuments = async () => {
+    try {
+      const res = await getRequiredLegalStatus({ context: 'LOGIN' }).unwrap();
+      const docs = (res as any)?.required || [];
+      setLegalDocs(docs);
+    } catch (error) {
+      console.error('Failed to fetch legal documents:', error);
+    }
+  };
 
   const loadSavedPhone = async () => {
     try {
@@ -172,8 +188,49 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               />
             </View>
           </Card>
+
+          {/* Legal Links */}
+          <View style={{ marginTop: Theme.spacing.lg, alignItems: 'center' }}>
+            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+              By continuing, you agree to our
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity onPress={() => handleOpenLegal(['TERMS_OF_SERVICE', 'TERMS_AND_CONDITIONS'], 'Terms & Conditions')}>
+                <Text style={{ fontSize: 12, color: Theme.colors.primary, textDecorationLine: 'underline' }}>
+                  Terms & Conditions
+                </Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>and</Text>
+              <TouchableOpacity onPress={() => handleOpenLegal(['PRIVACY_POLICY'], 'Privacy Policy')}>
+                <Text style={{ fontSize: 12, color: Theme.colors.primary, textDecorationLine: 'underline' }}>
+                  Privacy Policy
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
+
+  function handleOpenLegal(types: string[], fallbackTitle: string) {
+    const doc = legalDocs.find((d: any) => types.includes(String(d?.type || '').toUpperCase()));
+    const url = doc?.url;
+    if (!url) {
+      Alert.alert('Info', `${fallbackTitle} is not available right now.`);
+      return;
+    }
+    const embedUrl = addEmbedParam(String(url));
+    navigation.navigate('LegalWebView', { title: fallbackTitle, url: embedUrl });
+  }
+
+  function addEmbedParam(rawUrl: string) {
+    try {
+      const u = new URL(rawUrl);
+      u.searchParams.set('embed', '1');
+      return u.toString();
+    } catch {
+      return rawUrl;
+    }
+  }
 };
