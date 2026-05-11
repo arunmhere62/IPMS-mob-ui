@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   View,
   TouchableOpacity,
@@ -15,9 +15,31 @@ import { Ionicons } from "@expo/vector-icons";
 import { useBottomNavVisibility } from "./BottomNavVisibility";
 import { usePermissions } from "@/hooks/usePermissions";
 
+// Fallback hook for when BottomNavVisibilityProvider is not available
+const useBottomNavVisibilitySafe = () => {
+  try {
+    return useBottomNavVisibility();
+  } catch {
+    // Provider not available, return default values
+    const translateY = useRef(new Animated.Value(0)).current;
+    return useMemo(() => ({
+      hidden: false,
+      hide: () => {},
+      show: () => {},
+      translateY,
+      hideDistance: 100,
+      setHideDistance: () => {},
+    }), [translateY]);
+  }
+};
+
 interface BottomNavProps {
-  navigation: any;
-  currentRoute: string;
+  navigation?: any;
+  currentRoute?: string;
+  // Configurable tabs for tenant portal or custom navigation
+  tabs?: TabConfig[];
+  activeTab?: string;
+  onTabPress?: (tabName: string) => void;
 }
 
 interface TabConfig {
@@ -179,17 +201,24 @@ const TabItem = ({
 };
 
 export const BottomNav: React.FC<BottomNavProps> = React.memo(
-  ({ navigation, currentRoute }) => {
+  ({ navigation, currentRoute, tabs, activeTab: propActiveTab, onTabPress }) => {
     const insets = useSafeAreaInsets();
-    const accessibleTabs = userTabs;
-    const { translateY, setHideDistance } = useBottomNavVisibility();
+    // Use configurable tabs if provided, otherwise use default user tabs
+    const accessibleTabs = tabs || userTabs;
+    const { translateY, setHideDistance } = useBottomNavVisibilitySafe();
     const [moreModalVisible, setMoreModalVisible] = useState(false);
     const { can } = usePermissions();
 
     const handleTabPress = (tab: TabConfig) => {
+      // If onTabPress is provided, use it (configurable mode)
+      if (onTabPress) {
+        onTabPress(tab.name);
+        return;
+      }
+      // Otherwise use navigation (admin mode)
       if (tab.name === "More") {
         setMoreModalVisible(true);
-      } else {
+      } else if (navigation) {
         navigation.navigate(tab.name);
       }
     };
@@ -218,7 +247,10 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
           ]}
         >
           {accessibleTabs.map((tab) => {
-            const isActive = currentRoute === tab.name;
+            // Use activeTab prop if provided (configurable mode), otherwise use currentRoute
+            const isActive = propActiveTab !== undefined
+              ? propActiveTab === tab.name
+              : currentRoute === tab.name;
             return (
               <TabItem
                 key={tab.name}
@@ -230,7 +262,8 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
           })}
         </Animated.View>
 
-        {/* More Menu Modal */}
+        {/* More Menu Modal - only for admin mode with default tabs */}
+        {!tabs && (
         <Modal
           visible={moreModalVisible}
           transparent
@@ -320,6 +353,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
             </View>
           </TouchableOpacity>
         </Modal>
+        )}
       </>
     );
   }

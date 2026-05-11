@@ -2,23 +2,27 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './slices/authSlice';
+import tenantAuthReducer from './slices/tenantAuthSlice';
 import pgLocationReducer from './slices/pgLocationSlice';
 import organizationReducer from './slices/organizationSlice';
 import rbacReducer from './slices/rbacSlice';
 import { baseApi } from '../services/api/baseApi';
+import { tenantBaseApi } from '../services/api/tenantBaseApi';
 
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth', 'pgLocations'], // Persist auth and selected PG location
+  whitelist: ['auth', 'tenantAuth', 'pgLocations'], // Persist auth, tenant auth, and selected PG location
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
+  tenantAuth: tenantAuthReducer,
   pgLocations: pgLocationReducer,
   organizations: organizationReducer,
   rbac: rbacReducer,
   [baseApi.reducerPath]: baseApi.reducer,
+  [tenantBaseApi.reducerPath]: tenantBaseApi.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -30,7 +34,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(baseApi.middleware),
+    }).concat(baseApi.middleware, tenantBaseApi.middleware),
 });
 
 export const persistor = persistStore(store);

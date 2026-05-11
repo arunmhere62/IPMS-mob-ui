@@ -111,10 +111,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       const fullPhone = selectedCountry.phoneCode + ' ' + phone;
       const res = await sendOtp({ phone: fullPhone }).unwrap();
       showSuccessAlert(res);
-      
-      // Save phone number and country for future use
       await savePhone(phone, selectedCountry);
-      
       navigation.navigate('OTPVerification', { phone: fullPhone });
     } catch (err: any) {
       showErrorAlert(err, 'OTP Error');
@@ -143,6 +140,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             />
           </View>
           <Card className="mb-6 shadow-none">
+            {/* Title */}
+            <View style={{ alignItems: 'center', marginBottom: Theme.spacing.lg }}>
+              <Text style={{
+                fontSize: 20,
+                fontWeight: '700',
+                color: Theme.colors.primary,
+                marginBottom: Theme.spacing.xs,
+              }}>
+                🛡️ PG Owner Login
+              </Text>
+              <Text style={{
+                fontSize: Theme.typography.fontSize.sm,
+                color: Theme.colors.text.secondary,
+              }}>
+                Manage your PG properties
+              </Text>
+            </View>
+
             {/* Country + Phone in Single Row */}
             <CountryPhoneSelector
               selectedCountry={selectedCountry}
@@ -169,14 +184,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               variant="primary"
               size="md"
             />
-            
-            <Text className='mt-6' style={{ 
-              fontSize: Theme.typography.fontSize.sm, 
-              color: Theme.colors.text.secondary, 
-              textAlign: 'center', 
-              marginBottom: Theme.spacing.md 
+
+            <Text style={{
+              fontSize: Theme.typography.fontSize.sm,
+              color: Theme.colors.text.secondary,
+              textAlign: 'center',
+              marginTop: Theme.spacing.md,
+              marginBottom: Theme.spacing.md,
             }}>
-              You will receive a 6-digit OTP on your registered phone number
+              You will receive an OTP on your registered phone number
             </Text>
 
             <View style={{ marginTop: Theme.spacing.lg }}>
@@ -207,6 +223,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+
+          {/* Back to Role Selection */}
+          <View style={{ marginTop: Theme.spacing.lg, alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('RoleSelection')}
+              style={{
+                paddingVertical: Theme.spacing.sm,
+                paddingHorizontal: Theme.spacing.md,
+              }}
+            >
+              <Text style={{
+                fontSize: Theme.typography.fontSize.sm,
+                color: Theme.colors.text.secondary,
+                fontWeight: '500',
+              }}>
+                ← Back to Welcome
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>

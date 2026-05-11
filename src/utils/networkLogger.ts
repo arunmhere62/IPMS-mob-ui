@@ -18,9 +18,9 @@ type TruncateOptions = {
 };
 
 const defaultTruncateOptions: TruncateOptions = {
-  maxStringLength: 20000,
-  maxArrayLength: 200,
-  maxDepth: 20,
+  maxStringLength: 10000, // Keep UI responsive - show preview only
+  maxArrayLength: 50,     // Reduce array items
+  maxDepth: 10,           // Reduce nesting
 };
 
 const truncateValue = (
@@ -32,8 +32,12 @@ const truncateValue = (
   if (value === null || value === undefined) return value;
   if (typeof value === 'number' || typeof value === 'boolean') return value;
   if (typeof value === 'string') {
+    // Check if it's a base64 image/data URI
+    const isBase64Image = value.startsWith('data:image') || value.length > 1000;
     if (value.length <= options.maxStringLength) return value;
-    return `${value.slice(0, options.maxStringLength)}… (truncated, ${value.length} chars)`;
+    // For large strings (especially base64), show a short preview
+    const preview = value.slice(0, 100);
+    return `${preview}… [${value.length} chars - truncated for display]`;
   }
 
   if (typeof value !== 'object') return String(value);

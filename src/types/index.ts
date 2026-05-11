@@ -42,6 +42,8 @@ export interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
+  selectedRole: 'pg_owner' | 'tenant' | null;
+  lastUserRole: 'admin' | 'tenant' | null; // Remember last login type
 }
 
 export interface Tenant {

@@ -8,6 +8,8 @@ const initialState: AuthState = {
   isAuthenticated: false,
   loading: false,
   error: null,
+  selectedRole: null,
+  lastUserRole: null,
 };
 
 const authSlice = createSlice({
@@ -26,6 +28,10 @@ const authSlice = createSlice({
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken || null;
       state.isAuthenticated = true;
+    },
+    setRole: (state, action: PayloadAction<'pg_owner' | 'tenant'>) => {
+      state.selectedRole = action.payload;
+      state.lastUserRole = action.payload === 'pg_owner' ? 'admin' : 'tenant';
     },
     updateUser: (state, action: PayloadAction<Partial<User>>) => {
       if (state.user) {

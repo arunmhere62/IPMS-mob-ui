@@ -24,12 +24,18 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // Auth Screens
+import { RoleSelectionScreen } from '../screens/auth/RoleSelectionScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { OTPVerificationScreen } from '../screens/auth/OTPVerificationScreen';
 import { SignupScreenNew } from '../screens/auth/SignupScreenNew';
 import { SignupOtpScreen } from '../screens/auth/SignupOtpScreen';
 import { LegalDocumentsScreen } from '../screens/legal/LegalDocumentsScreen';
 import { LegalWebViewScreen } from '../screens/legal/LegalWebViewScreen';
+
+// Tenant Portal Screens
+import { TenantLoginScreen } from '../screens/tenant-portal/TenantLoginScreen';
+import { TenantOTPVerificationScreen } from '../screens/tenant-portal/TenantOTPVerificationScreen';
+import { TenantDashboardScreen } from '../screens/tenant-portal/TenantDashboardScreen';
 
 // Main Screens
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
@@ -161,8 +167,13 @@ const MainTabs = () => {
 };
 
 export const AppNavigator = () => {
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, lastUserRole: adminLastRole } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated: isTenantAuthenticated, lastUserRole: tenantLastRole } = useSelector((state: RootState) => state.tenantAuth);
   const dispatch = useDispatch();
+
+  // Determine which login screen to show based on last user role
+  const lastUserRole = adminLastRole || tenantLastRole;
+  const initialAuthRoute = lastUserRole === 'admin' ? 'Login' : lastUserRole === 'tenant' ? 'TenantLogin' : 'RoleSelection';
 
   usePermissionsPolling();
 
@@ -190,19 +201,29 @@ export const AppNavigator = () => {
       theme={navigationTheme}
     >
       <Stack.Navigator
+        initialRouteName={!isAuthenticated && !isTenantAuthenticated ? initialAuthRoute : undefined}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: Theme.colors.background.primary },
         }}
       >
-        {!isAuthenticated ? (
+        {!isAuthenticated && !isTenantAuthenticated ? (
           <>
+            <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="TenantLogin" component={TenantLoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreenNew} />
             <Stack.Screen name="SignupOtp" component={SignupOtpScreen} />
             <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
             <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen as unknown as React.ComponentType<unknown>} />
             <Stack.Screen name="LegalWebView" component={LegalWebViewScreen} />
+            {/* Tenant Portal Auth Screens */}
+            <Stack.Screen name="TenantOTPVerification" component={TenantOTPVerificationScreen} />
+          </>
+        ) : isTenantAuthenticated ? (
+          <>
+            {/* Tenant Portal Screens */}
+            <Stack.Screen name="TenantDashboard" component={TenantDashboardScreen} />
           </>
         ) : (
           <>
