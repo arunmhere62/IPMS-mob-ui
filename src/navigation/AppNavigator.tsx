@@ -36,6 +36,9 @@ import { LegalWebViewScreen } from '../screens/legal/LegalWebViewScreen';
 import { TenantLoginScreen } from '../screens/tenant-portal/TenantLoginScreen';
 import { TenantOTPVerificationScreen } from '../screens/tenant-portal/TenantOTPVerificationScreen';
 import { TenantDashboardScreen } from '../screens/tenant-portal/TenantDashboardScreen';
+import { TenantTicketsScreen } from '../screens/tenant-portal/TenantTicketsScreen';
+import { TenantCreateTicketScreen } from '../screens/tenant-portal/TenantCreateTicketScreen';
+import { TenantTicketDetailScreen } from '../screens/tenant-portal/TenantTicketDetailScreen';
 
 // Main Screens
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
@@ -76,6 +79,8 @@ import { TenantRefundPaymentsScreen } from '@/screens/tenants/TenantRefundPaymen
 import { TenantAdvancePaymentsScreen } from '@/screens/tenants/TenantAdvancePaymentsScreen';
 import { NetworkLoggerScreen } from '@/screens/network/NetworkLoggerScreen';
 import { FaqWebViewScreen } from '@/screens/settings/FaqWebViewScreen';
+import { PgTenantTicketsScreen } from '@/screens/pg-tenant-tickets/PgTenantTicketsScreen';
+import { PgTenantTicketDetailScreen } from '@/screens/pg-tenant-tickets/PgTenantTicketDetailScreen';
 
 const Stack = createNativeStackNavigator<ParamListBase>();
 const Tab = createBottomTabNavigator<ParamListBase>();
@@ -224,6 +229,9 @@ export const AppNavigator = () => {
           <>
             {/* Tenant Portal Screens */}
             <Stack.Screen name="TenantDashboard" component={TenantDashboardScreen} />
+            <Stack.Screen name="TenantTickets" component={TenantTicketsScreen} />
+            <Stack.Screen name="TenantCreateTicket" component={TenantCreateTicketScreen} />
+            <Stack.Screen name="TenantTicketDetail" component={TenantTicketDetailScreen as any} />
           </>
         ) : (
           <>
@@ -263,6 +271,8 @@ export const AppNavigator = () => {
             <Stack.Screen name="TenantRefundPaymentsScreen" component={TenantRefundPaymentsScreen} />
             <Stack.Screen name="NetworkLogger" component={NetworkLoggerScreen} />
             <Stack.Screen name="FaqWebView" component={FaqWebViewScreen} />
+            <Stack.Screen name="PgTenantTickets" component={PgTenantTicketsScreen} />
+            <Stack.Screen name="PgTenantTicketDetail" component={PgTenantTicketDetailScreen} />
           </>
 
         )}

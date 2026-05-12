@@ -131,8 +131,45 @@ const moreMenuItems: MenuItem[] = [
     permission: Permission.VIEW_PAYMENT,
   },
   { name: "Expenses", label: "Expenses", icon: "receipt", route: "Expenses" },
+  { name: "TenantTickets", label: "Tenant Tickets", icon: "ticket-outline", route: "PgTenantTickets" },
   { name: "Settings", label: "Settings", icon: "settings", route: "Settings" },
 ];
+
+const MenuGridItem = ({ item, onPress }: { item: MenuItem; onPress: () => void }) => {
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const opacityAnim = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 0.9, useNativeDriver: true, tension: 300, friction: 8 }),
+      Animated.timing(opacityAnim, { toValue: 0.7, duration: 100, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 300, friction: 8 }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+    ]).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: opacityAnim }}>
+      <TouchableOpacity
+        style={styles.menuGridItem}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <View style={styles.menuGridIconContainer}>
+          <Ionicons name={item.icon as any} size={24} color={Theme.colors.primary} />
+        </View>
+        <Text style={styles.menuGridLabel}>{item.label}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
 
 const TabItem = ({
   tab,
@@ -281,73 +318,13 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
                 showsVerticalScrollIndicator={false}
               >
                 <View style={styles.menuGrid}>
-                  {filteredMenuItems.map((item) => {
-                    const scaleAnim = React.useRef(
-                      new Animated.Value(1)
-                    ).current;
-                    const opacityAnim = React.useRef(
-                      new Animated.Value(1)
-                    ).current;
-
-                    const handlePressIn = () => {
-                      Animated.parallel([
-                        Animated.spring(scaleAnim, {
-                          toValue: 0.9,
-                          useNativeDriver: true,
-                          tension: 300,
-                          friction: 8,
-                        }),
-                        Animated.timing(opacityAnim, {
-                          toValue: 0.7,
-                          duration: 100,
-                          useNativeDriver: true,
-                        }),
-                      ]).start();
-                    };
-
-                    const handlePressOut = () => {
-                      Animated.parallel([
-                        Animated.spring(scaleAnim, {
-                          toValue: 1,
-                          useNativeDriver: true,
-                          tension: 300,
-                          friction: 8,
-                        }),
-                        Animated.timing(opacityAnim, {
-                          toValue: 1,
-                          duration: 150,
-                          useNativeDriver: true,
-                        }),
-                      ]).start();
-                    };
-
-                    return (
-                      <Animated.View
-                        key={item.name}
-                        style={{
-                          transform: [{ scale: scaleAnim }],
-                          opacity: opacityAnim,
-                        }}
-                      >
-                        <TouchableOpacity
-                          style={styles.menuGridItem}
-                          onPress={() => handleMenuItemPress(item)}
-                          onPressIn={handlePressIn}
-                          onPressOut={handlePressOut}
-                          activeOpacity={1}
-                        >
-                          <View style={styles.menuGridIconContainer}>
-                            <Ionicons
-                              name={item.icon as any}
-                              size={24}
-                              color={Theme.colors.primary}
-                            />
-                          </View>
-                          <Text style={styles.menuGridLabel}>{item.label}</Text>
-                        </TouchableOpacity>
-                      </Animated.View>
-                    );
-                  })}
+                  {filteredMenuItems.map((item) => (
+                    <MenuGridItem
+                      key={item.name}
+                      item={item}
+                      onPress={() => handleMenuItemPress(item)}
+                    />
+                  ))}
                 </View>
               </ScrollView>
             </View>

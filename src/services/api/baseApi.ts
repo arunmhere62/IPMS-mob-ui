@@ -309,6 +309,8 @@ export const baseApi = createApi({
     'S3Objects',
     'S3Object',
     'LegalRequiredStatus',
+    'PgTenantTickets',
+    'PgTenantTicket',
   ],
   endpoints: () => ({}),
 });

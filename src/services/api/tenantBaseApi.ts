@@ -239,5 +239,5 @@ export const tenantBaseApi = createApi({
   reducerPath: 'tenantBaseApi',
   baseQuery: baseQueryWithTenantRefresh,
   endpoints: () => ({}),
-  tagTypes: ['TenantProfile', 'TenantPayments', 'TenantDues'],
+  tagTypes: ['TenantProfile', 'TenantPayments', 'TenantDues', 'TenantTickets', 'TenantTicketDetail', 'S3Objects', 'S3Object'],
 });
