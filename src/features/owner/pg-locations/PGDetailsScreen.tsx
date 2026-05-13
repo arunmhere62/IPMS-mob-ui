@@ -11,17 +11,17 @@ import {
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { Theme } from "../../theme";
-import { ScreenHeader } from "../../components/ScreenHeader";
-import { ScreenLayout } from "../../components/ScreenLayout";
-import { Card } from "../../components/Card";
-import { ActionButtons } from "../../components/ActionButtons";
-import { showDeleteConfirmation } from "../../components/DeleteConfirmationDialog";
-import { showErrorAlert, showSuccessAlert } from "../../utils/errorHandler";
+import { Theme } from "../../../theme";
+import { ScreenHeader } from "../../../components/ScreenHeader";
+import { ScreenLayout } from "../../../components/ScreenLayout";
+import { Card } from "../../../components/Card";
+import { ActionButtons } from "../../../components/ActionButtons";
+import { showDeleteConfirmation } from "../../../components/DeleteConfirmationDialog";
+import { showErrorAlert, showSuccessAlert } from "../../../utils/errorHandler";
 import {
   useDeletePGLocationMutation,
   useGetPGLocationDetailsQuery,
-} from "../../services/api/pgLocationsApi";
+} from "../../../services/api/pgLocationsApi";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 

@@ -13,29 +13,29 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { AppDispatch, RootState } from '../../store';
-import { setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
-import { Theme } from '../../theme';
-import { ScreenHeader } from '../../components/ScreenHeader';
-import { ScreenLayout } from '../../components/ScreenLayout';
-import { Card } from '../../components/Card';
-import { AnimatedButton } from '../../components/AnimatedButton';
-import { ActionButtons } from '../../components/ActionButtons';
-import { SkeletonLoader } from '../../components/SkeletonLoader';
-import { SearchableDropdown } from '../../components/SearchableDropdown';
-import { SlideBottomModal } from '../../components/SlideBottomModal';
-import { ImageUploadS3 } from '../../components/ImageUploadS3';
-import { OptionSelector } from '../../components/OptionSelector';
-import { showDeleteConfirmation } from '../../components/DeleteConfirmationDialog';
-import { getFolderConfig } from '../../config/aws.config';
-import { showErrorAlert, showSuccessAlert } from '../../utils/errorHandler';
-import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../services/api/locationApi';
+import { AppDispatch, RootState } from '../../../store';
+import { setSelectedPGLocation } from '../../../store/slices/pgLocationSlice';
+import { Theme } from '../../../theme';
+import { ScreenHeader } from '../../../components/ScreenHeader';
+import { ScreenLayout } from '../../../components/ScreenLayout';
+import { Card } from '../../../components/Card';
+import { AnimatedButton } from '../../../components/AnimatedButton';
+import { ActionButtons } from '../../../components/ActionButtons';
+import { SkeletonLoader } from '../../../components/SkeletonLoader';
+import { SearchableDropdown } from '../../../components/SearchableDropdown';
+import { SlideBottomModal } from '../../../components/SlideBottomModal';
+import { ImageUploadS3 } from '../../../components/ImageUploadS3';
+import { OptionSelector } from '../../../components/OptionSelector';
+import { showDeleteConfirmation } from '../../../components/DeleteConfirmationDialog';
+import { getFolderConfig } from '../../../config/aws.config';
+import { showErrorAlert, showSuccessAlert } from '../../../utils/errorHandler';
+import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../../services/api/locationApi';
 import {
   useLazyGetPGLocationsQuery,
   useCreatePGLocationMutation,
   useUpdatePGLocationMutation,
   useDeletePGLocationMutation,
-} from '../../services/api/pgLocationsApi';
+} from '../../../services/api/pgLocationsApi';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
 

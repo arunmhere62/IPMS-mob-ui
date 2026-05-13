@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { TenantProfileData } from '../../../services/api/tenantPortalApi';
-import { Theme } from '../../../theme';
 import { StatusBadge, InfoRow, SectionCard, CardHeader, EmptyState } from '../components';
 import { useFormatters } from '../hooks/useFormatters';
+import Theme from '@/theme';
+import { TenantProfileData } from '@/services/api/tenantPortalApi';
 
 const C = Theme.colors;
 

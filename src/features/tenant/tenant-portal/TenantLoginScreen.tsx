@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TouchableOpacity, Image, ScrollView } from 'react-native';
-import { Theme } from '../../theme';
-import { useTenantSendOtpMutation } from '../../services/api/tenantPortalAuthApi';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { CountryPhoneSelector } from '../../components/CountryPhoneSelector';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { useTenantSendOtpMutation } from '@/services/api/tenantPortalAuthApi';
+import Theme from '@/theme';
+import { Card } from '@/components/Card';
+import { CountryPhoneSelector } from '@/components/CountryPhoneSelector';
+import { Button } from '@/components/Button';
 
 interface Country {
   code: string;
@@ -91,7 +91,7 @@ export const TenantLoginScreen: React.FC<TenantLoginScreenProps> = ({ navigation
           {/* Logo */}
           <View style={{ alignItems: 'center', marginBottom: keyboardVisible ? Theme.spacing.md : Theme.spacing.xl }}>
             <Image
-              source={require('../../../assets/splash-logo.png')}
+              source={require('../../../../assets/splash-logo.png')}
               resizeMode="contain"
               style={{ width: 110, height: 110 }}
             />

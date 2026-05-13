@@ -13,13 +13,13 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { RootState } from '../../store';
-import { tenantLogout, setTenantData } from '../../store/slices/tenantAuthSlice';
-import { Theme } from '../../theme';
-import { useGetTenantProfileQuery } from '../../services/api/tenantPortalApi';
-import { BottomNav } from '../../components/BottomNav';
-import { useGetTenantTicketsQuery } from '../../services/api/tenantTicketsApi';
 import { HomeTab, PaymentsTab, TicketsTab, ProfileTab } from './tabs';
+import Theme from '@/theme';
+import { RootState } from '@/store';
+import { setTenantData, tenantLogout } from '@/store/slices/tenantAuthSlice';
+import { BottomNav } from '@/components/BottomNav';
+import { useGetTenantProfileQuery } from '@/services/api/tenantPortalApi';
+import { useGetTenantTicketsQuery } from '@/services/api/tenantTicketsApi';
 
 interface TenantDashboardScreenProps {
   navigation: any;

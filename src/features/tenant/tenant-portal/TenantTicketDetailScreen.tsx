@@ -6,16 +6,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store';
-import { Theme } from '../../theme';
-import {
-  tenantTicketsApi,
-  useGetTenantTicketByIdQuery,
-  useAddTenantTicketCommentMutation,
-  useCloseTenantTicketMutation,
-  TenantTicketComment,
-} from '../../services/api/tenantTicketsApi';
-import { useTicketSocket } from '../../hooks/useTicketSocket';
+import Theme from '@/theme';
+import { RootState } from '@/store';
+import { TenantTicketComment, tenantTicketsApi, useAddTenantTicketCommentMutation, useCloseTenantTicketMutation, useGetTenantTicketByIdQuery } from '@/services/api/tenantTicketsApi';
+import { useTicketSocket } from '@/hooks/useTicketSocket';
+
 
 const C = Theme.colors;
 const ST = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 44;

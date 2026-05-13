@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
-import { Theme } from '../../theme';
 import { useDispatch } from 'react-redux';
-import { setTenantCredentials } from '../../store/slices/tenantAuthSlice';
-import { useTenantVerifyOtpMutation, useTenantSendOtpMutation } from '../../services/api/tenantPortalAuthApi';
-import { AppDispatch } from '../../store';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { OTPInput } from '../../components/OTPInput';
-import { ScreenLayout } from '../../components/ScreenLayout';
-import { ScreenHeader } from '../../components/ScreenHeader';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
-import { navigationRef } from '../../navigation/navigationRef';
+import { AppDispatch } from '@/store';
+import { useTenantSendOtpMutation, useTenantVerifyOtpMutation } from '@/services/api/tenantPortalAuthApi';
+import { setTenantCredentials } from '@/store/slices/tenantAuthSlice';
+import { navigationRef } from '@/navigation/navigationRef';
+import { ScreenLayout } from '@/components/ScreenLayout';
+import { ScreenHeader } from '@/components/ScreenHeader';
+import Theme from '@/theme';
+import { Card } from '@/components/Card';
+import { OTPInput } from '@/components/OTPInput';
+import { Button } from '@/components/Button';
 
 interface TenantOTPVerificationScreenProps {
   navigation: any;

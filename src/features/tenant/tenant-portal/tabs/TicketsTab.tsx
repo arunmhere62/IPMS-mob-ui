@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { TenantTicket } from '../../../services/api/tenantTicketsApi';
-import { Theme } from '../../../theme';
 import { EmptyState } from '../components';
+import Theme from '@/theme';
+import { TenantTicket } from '@/services/api/tenantTicketsApi';
 
 const C = Theme.colors;
 

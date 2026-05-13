@@ -5,9 +5,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Theme } from '../../theme';
-import { BottomNav } from '../../components/BottomNav';
-import { useGetTenantTicketsQuery, TenantTicket, TenantTicketStatus } from '../../services/api/tenantTicketsApi';
+import { BottomNav } from '@/components/BottomNav';
+import Theme from '@/theme';
+import { TenantTicket, TenantTicketStatus, useGetTenantTicketsQuery } from '@/services/api/tenantTicketsApi';
 
 const C = Theme.colors;
 const ST = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 44;

@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { TenantProfileData } from '../../../services/api/tenantPortalApi';
-import { Theme } from '../../../theme';
 import { StatusBadge, SectionCard, CardHeader, EmptyState } from '../components';
 import { useFormatters } from '../hooks/useFormatters';
+import Theme from '@/theme';
+import { TenantProfileData } from '@/services/api/tenantPortalApi';
 
 const C = Theme.colors;
 

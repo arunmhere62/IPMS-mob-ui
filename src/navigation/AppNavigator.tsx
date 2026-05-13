@@ -33,12 +33,6 @@ import { LegalDocumentsScreen } from '../screens/legal/LegalDocumentsScreen';
 import { LegalWebViewScreen } from '../screens/legal/LegalWebViewScreen';
 
 // Tenant Portal Screens
-import { TenantLoginScreen } from '../screens/tenant-portal/TenantLoginScreen';
-import { TenantOTPVerificationScreen } from '../screens/tenant-portal/TenantOTPVerificationScreen';
-import { TenantDashboardScreen } from '../screens/tenant-portal/TenantDashboardScreen';
-import { TenantTicketsScreen } from '../screens/tenant-portal/TenantTicketsScreen';
-import { TenantCreateTicketScreen } from '../screens/tenant-portal/TenantCreateTicketScreen';
-import { TenantTicketDetailScreen } from '../screens/tenant-portal/TenantTicketDetailScreen';
 
 // Main Screens
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
@@ -53,9 +47,9 @@ import { AdvancePaymentsScreen } from '../screens/payments/AdvancePaymentsScreen
 import { RefundPaymentsScreen } from '../screens/payments/RefundPaymentsScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { UserProfileScreen } from '../screens/settings/UserProfileScreen';
-import { PGLocationsScreen } from '../screens/pg-locations/PGLocationsScreen';
-import { PGDetailsScreen } from '../screens/pg-locations/PGDetailsScreen';
-import { OrganizationsScreen } from '../screens/organizations/OrganizationsScreen';
+import { PGLocationsScreen } from '../features/owner/pg-locations/PGLocationsScreen';
+import { PGDetailsScreen } from '../features/owner/pg-locations/PGDetailsScreen';
+import { OrganizationsScreen } from '../features/owner/organizations/OrganizationsScreen';
 import { BottomNav } from '../components/BottomNav';
 import { ExpenseScreen } from '@/screens/expense/ExpenseScreen';
 import { EmployeesScreen } from '@/screens/employees/EmployeesScreen';
@@ -81,6 +75,12 @@ import { NetworkLoggerScreen } from '@/screens/network/NetworkLoggerScreen';
 import { FaqWebViewScreen } from '@/screens/settings/FaqWebViewScreen';
 import { PgTenantTicketsScreen } from '@/screens/pg-tenant-tickets/PgTenantTicketsScreen';
 import { PgTenantTicketDetailScreen } from '@/screens/pg-tenant-tickets/PgTenantTicketDetailScreen';
+import { TenantOTPVerificationScreen } from '@/features/tenant/tenant-portal/TenantOTPVerificationScreen';
+import { TenantDashboardScreen } from '@/features/tenant/tenant-portal/TenantDashboardScreen';
+import { TenantTicketsScreen } from '@/features/tenant/tenant-portal/TenantTicketsScreen';
+import { TenantCreateTicketScreen } from '@/features/tenant/tenant-portal/TenantCreateTicketScreen';
+import { TenantTicketDetailScreen } from '@/features/tenant/tenant-portal/TenantTicketDetailScreen';
+import { TenantLoginScreen } from '@/features/tenant/tenant-portal/TenantLoginScreen';
 
 const Stack = createNativeStackNavigator<ParamListBase>();
 const Tab = createBottomTabNavigator<ParamListBase>();

@@ -5,15 +5,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Theme } from '../../theme';
-import { BottomNav } from '../../components/BottomNav';
-import { ImageUploadS3 } from '../../components/ImageUploadS3';
-import {
-  useCreateTenantTicketMutation,
-  useAddTenantTicketCommentMutation,
-  TenantTicketCategory,
-  TenantTicketPriority,
-} from '../../services/api/tenantTicketsApi';
+import Theme from '@/theme';
+import { TenantTicketCategory, TenantTicketPriority, useAddTenantTicketCommentMutation, useCreateTenantTicketMutation } from '@/services/api/tenantTicketsApi';
+import ImageUploadS3 from '@/components/ImageUploadS3';
+import { BottomNav } from '@/components/BottomNav';
 
 const C = Theme.colors;
 const ST = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 44;

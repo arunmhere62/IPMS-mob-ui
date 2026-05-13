@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
-import { useGetAllOrganizationsQuery } from '../../services/api/organizationApi';
-import { Theme } from '../../theme';
-import { Card } from '../../components/Card';
-import { ScreenHeader } from '../../components/ScreenHeader';
-import { ScreenLayout } from '../../components/ScreenLayout';
+import { useGetAllOrganizationsQuery } from '../../../services/api/organizationApi';
+import { Theme } from '../../../theme';
+import { Card } from '../../../components/Card';
+import { ScreenHeader } from '../../../components/ScreenHeader';
+import { ScreenLayout } from '../../../components/ScreenLayout';
 
 interface OrganizationsScreenProps {
   navigation: any;
