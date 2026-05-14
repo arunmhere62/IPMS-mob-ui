@@ -36,33 +36,6 @@ interface CountryPhoneSelectorProps {
   onPhoneChange?: (phone: string) => void;
 }
 
-const getSizeStyles = (size: 'small' | 'medium' | 'large' = 'medium') => {
-  switch (size) {
-    case 'small':
-      return {
-        containerPadding: 8,
-        fontSize: 12,
-        inputPadding: 8,
-        flagSize: 18,
-      };
-    case 'large':
-      return {
-        containerPadding: 16,
-        fontSize: 16,
-        inputPadding: 14,
-        flagSize: 28,
-      };
-    case 'medium':
-    default:
-      return {
-        containerPadding: 12,
-        fontSize: 14,
-        inputPadding: 12,
-        flagSize: 24,
-      };
-  }
-};
-
 export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
   selectedCountry = COUNTRIES[0], // Default to India
   onSelectCountry,
@@ -72,7 +45,6 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const sizeStyles = getSizeStyles(size);
   const lastEmittedPhoneRef = useRef<string | null>(null);
 
   const sanitizePhoneInput = (raw: string) => {
@@ -244,6 +216,9 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
             onPhoneChange?.(localDigits);
           }}
           keyboardType="phone-pad"
+          autoComplete="tel"
+          textContentType="telephoneNumber"
+          importantForAutofill="yes"
           maxLength={20}
           blurOnSubmit
           onSubmitEditing={() => Keyboard.dismiss()}

@@ -7,14 +7,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { RootState } from '../store';
+import { RootState } from '@/features/owner/store';
 import { Theme } from '../theme';
 import { SearchableDropdown } from './SearchableDropdown';
 import { DatePicker } from './DatePicker';
 import { SlideBottomModal } from './SlideBottomModal';
-import { useCreateVisitorMutation, useUpdateVisitorMutation, useGetVisitorByIdQuery } from '../services/api/visitorsApi';
-import { useGetAllRoomsQuery, useGetAllBedsQuery } from '../services/api/roomsApi';
-import { useGetStatesQuery, useLazyGetCitiesQuery } from '../services/api/locationApi';
+import { useCreateVisitorMutation, useUpdateVisitorMutation, useGetVisitorByIdQuery } from '../features/owner/api/visitorsApi';
+import { useGetAllRoomsQuery, useGetAllBedsQuery } from '../features/owner/api/roomsApi';
+import { useGetStatesQuery, useLazyGetCitiesQuery } from '../features/owner/api/locationApi';
 import { CountryPhoneSelector } from './CountryPhoneSelector';
 import { COUNTRIES } from './CountryPhoneSelector';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';

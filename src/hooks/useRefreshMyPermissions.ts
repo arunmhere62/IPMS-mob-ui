@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { useLazyGetMyPermissionsQuery } from '../services/api/rbacApi';
-import { setPermissionsMap, clearPermissions } from '../store/slices/rbacSlice';
+import { useLazyGetMyPermissionsQuery } from '../features/owner/api/rbacApi';
+import { setPermissionsMap, clearPermissions } from '../features/owner/store/slices/rbacSlice';
+import { RootState } from '@/features/owner/store';
 
 type Options = {
   ttlMs?: number;

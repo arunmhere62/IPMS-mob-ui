@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { store, persistor } from "./src/store";
 import {
   ActivityIndicator,
   View,
@@ -26,16 +25,16 @@ import * as Notifications from "expo-notifications";
 import { Animated, Easing } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import LottieView from "lottie-react-native";
+import { persistor, store } from "@/features/owner/store";
 
 // CRITICAL: Set notification handler at the TOP LEVEL (outside component)
 // This ensures notifications are handled even when app is in background/killed
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
   }),
 });
 

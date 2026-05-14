@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux';
-import { RootState } from '../store';
 import { Permission } from '../config/rbac.config';
 import { getBackendPermissionKeyCandidates } from '../config/rbac-backend-map';
+import { RootState } from '@/features/owner/store';
 
 /**
  * Custom hook for role-based access control

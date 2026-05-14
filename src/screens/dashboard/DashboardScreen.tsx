@@ -12,14 +12,12 @@ import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
 import { Theme } from "../../theme";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../../store";
-import { setSelectedPGLocation } from "../../store/slices/pgLocationSlice";
+import { setSelectedPGLocation } from "../../features/owner/store/slices/pgLocationSlice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { ScreenLayout } from "../../components/ScreenLayout";
 import { useBottomNavScrollHandler } from "../../components/BottomNavVisibility";
 import { Card } from "../../components/Card";
 import { QuickActions } from "../../components/QuickActions";
-import { MonthlyMetricsCard } from "./MonthlyMetricsCard";
 import {
   SkeletonLoader,
   DashboardHeaderSkeleton,
@@ -29,17 +27,19 @@ import {
 } from "../../components/SkeletonLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { SlideBottomModal } from "../../components/SlideBottomModal";
-import { useGetPGLocationsQuery } from "../../services/api/pgLocationsApi";
+import { useGetPGLocationsQuery } from "../../features/owner/api/pgLocationsApi";
 import type {
   DashboardSummaryResponse,
   DashboardMonthlyMetricsResponse,
-} from "../../services/api/dashboardApi";
+} from "../../features/owner/api/dashboardApi";
 import {
   useGetDashboardSummaryQuery,
   useLazyGetDashboardMonthlyMetricsQuery,
-} from "../../services/api/dashboardApi";
-import type { Tenant } from "../../services/api/tenantsApi";
+} from "../../features/owner/api/dashboardApi";
 import { usePermissions } from "../../hooks/usePermissions";
+import { Tenant } from "@/features/owner/api/tenantsApi";
+import { AppDispatch, RootState } from "@/features/owner/store";
+import { MonthlyMetricsCard } from "@/features/owner/screens/dashboard/MonthlyMetricsCard";
 
 type DashboardRouteName =
   | "PGLocations"

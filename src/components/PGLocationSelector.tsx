@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../store';
-import { setSelectedPGLocation } from '../store/slices/pgLocationSlice';
+import { RootState } from '@/features/owner/store';
+import { setSelectedPGLocation } from '../features/owner/store/slices/pgLocationSlice';
 import { Theme } from '../theme';
-import { useGetPGLocationsQuery } from '../services/api/pgLocationsApi';
+import { useGetPGLocationsQuery } from '../features/owner/api/pgLocationsApi';
 import type { PGLocation } from '../types';
 
 export const PGLocationSelector: React.FC = () => {

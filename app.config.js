@@ -13,11 +13,18 @@ module.exports = ({ config }) => {
   };
 
   const basePlugins = Array.isArray(baseExpoConfig.plugins) ? baseExpoConfig.plugins : [];
+  const hasPaymentResultIntentFilter = (baseExpoConfig.android?.intentFilters ?? []).some((intentFilter) => {
+    return intentFilter?.data?.some((data) => data?.scheme === 'pgapp' && data?.host === 'payment-result');
+  });
   const pluginsWithoutNotifications = basePlugins.filter((plugin) => {
     if (plugin === 'expo-notifications') return false;
     if (Array.isArray(plugin) && plugin[0] === 'expo-notifications') return false;
     return true;
   });
+  const existingNotificationsPlugin = basePlugins.find((plugin) => Array.isArray(plugin) && plugin[0] === 'expo-notifications');
+  const existingNotificationsOptions = Array.isArray(existingNotificationsPlugin) && typeof existingNotificationsPlugin[1] === 'object'
+    ? existingNotificationsPlugin[1]
+    : {};
 
   return {
     ...baseExpoConfig,
@@ -26,7 +33,7 @@ module.exports = ({ config }) => {
       usesCleartextTraffic: true,
       intentFilters: [
         ...((baseExpoConfig.android?.intentFilters ?? [])),
-        paymentResultIntentFilter,
+        ...(hasPaymentResultIntentFilter ? [] : [paymentResultIntentFilter]),
       ],
     },
     plugins: [
@@ -35,6 +42,7 @@ module.exports = ({ config }) => {
       [
         "expo-notifications",
         {
+          ...existingNotificationsOptions,
           color: "#3B82F6",
           sounds: []
         }

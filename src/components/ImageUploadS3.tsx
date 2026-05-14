@@ -12,7 +12,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Theme } from '../theme';
-import { useUploadToS3Mutation } from '../services/api/storageApi';
+import { useUploadToS3Mutation } from '../features/owner/api/storageApi';
 
 interface ImageUploadS3Props {
   images: string[];

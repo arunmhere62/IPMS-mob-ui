@@ -7,10 +7,10 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { store } from '../../store';
-import { notificationsApi } from '../api/notificationsApi';
+import { notificationsApi } from '../../features/owner/api/notificationsApi';
 import { FEATURES } from '../../config/env.config';
 import Constants from 'expo-constants';
+import { store } from '@/features/owner/store';
 
 export interface NotificationData {
   type: string;
@@ -58,11 +58,10 @@ class NotificationService {
       // Configure notification handler first
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
           shouldShowBanner: true,
           shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
         }),
       });
 
@@ -161,11 +160,10 @@ class NotificationService {
       // Configure notification handler
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
           shouldShowBanner: true,
           shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
         }),
       });
 
@@ -284,11 +282,10 @@ class NotificationService {
     // Configure notification handler
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
         shouldShowBanner: true,
         shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
       }),
     });
 
