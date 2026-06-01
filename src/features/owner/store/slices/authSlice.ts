@@ -47,8 +47,11 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
+    setLastUserRole: (state, action: PayloadAction<'admin' | null>) => {
+      state.lastUserRole = action.payload;
+    },
   },
 });
 
-export const { logout, setCredentials, updateUser, clearError, resetLoading } = authSlice.actions;
+export const { logout, setCredentials, updateUser, clearError, resetLoading, setLastUserRole } = authSlice.actions;
 export default authSlice.reducer;

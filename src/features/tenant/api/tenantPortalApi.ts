@@ -153,6 +153,38 @@ export interface TenantDuesData {
   }>;
 }
 
+export interface TicketOverview {
+  total: number;
+  open: number;
+  inProgress: number;
+  resolved: number;
+  closed: number;
+  highPriority: number;
+}
+
+export interface Ticket {
+  s_no: number;
+  title: string;
+  status: string;
+  priority: string;
+  category: string;
+  created_at: string;
+  _count: {
+    tenant_ticket_comments: number;
+  };
+}
+
+export interface UnreadTickets {
+  count: number;
+  tickets: Ticket[];
+}
+
+export interface TenantTicketStatsData {
+  overview: TicketOverview;
+  recentTickets: Ticket[];
+  unreadTickets: UnreadTickets;
+}
+
 // Full API response: Central envelope -> actual data (no ResponseUtil wrapper)
 export interface TenantProfileResponse {
   statusCode: number;
@@ -177,6 +209,12 @@ export interface TenantDuesResponse {
   success: boolean;
   message: string;
   data: TenantDuesData;
+}
+
+export interface TenantTicketStatsResponse {
+  success: boolean;
+  message: string;
+  data: TenantTicketStatsData;
 }
 
 export const tenantPortalApi = tenantBaseApi.injectEndpoints({
@@ -204,6 +242,14 @@ export const tenantPortalApi = tenantBaseApi.injectEndpoints({
         method: 'GET',
       }),
     }),
+
+    // Get tenant ticket stats
+    getTenantTicketStats: build.query<TenantTicketStatsResponse, void>({
+      query: () => ({
+        url: 'tenant/ticket-stats',
+        method: 'GET',
+      }),
+    }),
   }),
 });
 
@@ -212,4 +258,5 @@ export const {
   useLazyGetTenantProfileQuery,
   useGetTenantPaymentsQuery,
   useGetTenantDuesQuery,
+  useGetTenantTicketStatsQuery,
 } = tenantPortalApi;

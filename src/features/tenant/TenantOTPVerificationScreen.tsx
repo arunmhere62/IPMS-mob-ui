@@ -15,6 +15,7 @@ import Theme from '@/theme';
 import { Card } from '@/components/Card';
 import { OTPInput } from '@/components/OTPInput';
 import { Button } from '@/components/Button';
+import notificationService from '@/services/notifications/notificationService';
 
 interface TenantOTPVerificationScreenProps {
   navigation: any;
@@ -101,6 +102,11 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
           void registerPushToken({ fcm_token: token, device_type: 'expo' });
         }
       });
+
+      // Initialize notification service to set up tap listeners
+      if (actualData?.tenant?.tenant_id) {
+        void notificationService.initialize(actualData.tenant.tenant_id);
+      }
 
       // Navigate to Tenant Dashboard
       setTimeout(() => {

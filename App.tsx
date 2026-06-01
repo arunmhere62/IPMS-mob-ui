@@ -264,7 +264,21 @@ export default function App() {
 function AppContent() {
   const { error, clearError } = useError();
 
-  // Removed all notification setup code - now handled only in LoginScreen
+  // Re-initialize notifications on app load if user is already authenticated
+  // This handles hot reload scenarios where listeners need to be refreshed
+  useEffect(() => {
+    const reinitializeNotifications = () => {
+      const state = store.getState();
+      const userId = state.auth.user?.s_no || state.tenantAuth.tenant?.tenant_id;
+
+      if (userId) {
+        console.log('[App] 🔄 Re-initializing notifications for authenticated user:', userId);
+        void notificationService.initialize(userId, true); // Force re-init for hot reload
+      }
+    };
+
+    reinitializeNotifications();
+  }, []);
 
   return (
     <NetworkStatusProvider>

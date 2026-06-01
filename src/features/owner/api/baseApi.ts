@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../../../config';
 import type { RootState } from '@/features/owner/store';
 import { networkLogger } from '../../../utils/networkLogger';
 import { setCredentials, logout } from '../store/slices/authSlice';
+import { setTenantLastUserRole } from '@/features/tenant/store/tenantAuthSlice';
 
 const toPlainHeaders = (headers: any): Record<string, any> => {
   if (!headers) return {};
@@ -227,6 +228,8 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
 
       result = await rawBaseQuery(args, api, extraOptions);
     } else {
+      // Clear tenant's lastUserRole so redirect goes to owner login
+      api.dispatch(setTenantLastUserRole(null));
       api.dispatch(logout());
     }
   }

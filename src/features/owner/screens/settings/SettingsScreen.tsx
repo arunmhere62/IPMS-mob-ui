@@ -5,6 +5,7 @@ import { useFocusEffect, type NavigationProp, type ParamListBase } from '@react-
 import { Ionicons } from '@expo/vector-icons';
 import { AppDispatch, RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice';
+import { setTenantLastUserRole } from '@/features/tenant/store/tenantAuthSlice';
 import { setSelectedPGLocation } from '../../store/slices/pgLocationSlice';
 import { clearOrganizations } from '../../store/slices/organizationSlice';
 import { clearPermissions } from '../../store/slices/rbacSlice';
@@ -146,6 +147,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               dispatch(clearOrganizations());
               dispatch(clearPermissions());
               dispatch(setSelectedPGLocation(null));
+              // Clear tenant's lastUserRole so next redirect goes to owner login
+              dispatch(setTenantLastUserRole(null));
               dispatch(logout());
 
               // Remove persisted redux state from disk

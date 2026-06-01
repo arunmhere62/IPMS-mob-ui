@@ -6,7 +6,8 @@ import {
   fetchBaseQuery,
 } from '@reduxjs/toolkit/query/react';
 import { RootState } from '@/features/owner/store';
-import { updateTenantAccessToken, tenantLogout } from '../store/tenantAuthSlice';
+import { updateTenantTokens, tenantLogout } from '../store/tenantAuthSlice';
+import { setLastUserRole as setAdminLastUserRole } from '@/features/owner/store/slices/authSlice';
 import { networkLogger } from '../../../utils/networkLogger';
 import { API_BASE_URL } from '../../../config';
 
@@ -48,16 +49,37 @@ const rawBaseQuery = fetchBaseQuery({
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as RootState;
     const tenantToken = state.tenantAuth?.accessToken;
-    
+    const tenant = state.tenantAuth?.tenant;
+
     console.log('TenantBaseApi - Tenant token:', tenantToken ? 'present' : 'missing');
-    
+
     if (tenantToken) {
       headers.set('Authorization', `Bearer ${tenantToken}`);
       console.log('TenantBaseApi - Authorization header set');
     } else {
       console.log('TenantBaseApi - No tenant token available!');
     }
-    
+
+    // Set tenant headers from Redux store
+    if (tenant?.tenant_id) {
+      headers.set('x-tenant-id', String(tenant.tenant_id));
+      console.log('TenantBaseApi - x-tenant-id header set:', tenant.tenant_id);
+    }
+
+    // pg_id from separate pg state
+    const pgId = state.tenantAuth?.pg?.pg_id;
+    if (pgId) {
+      headers.set('x-pg-id', String(pgId));
+      console.log('TenantBaseApi - x-pg-id header set:', pgId);
+    }
+
+    // organization_id from tenant data
+    const orgId = tenant?.organization_id;
+    if (orgId) {
+      headers.set('x-organization-id', String(orgId));
+      console.log('TenantBaseApi - x-organization-id header set:', orgId);
+    }
+
     return headers;
   },
 });
@@ -198,13 +220,18 @@ const baseQueryWithTenantRefresh: BaseQueryFn<string | FetchArgs, unknown, Fetch
       const refreshed = await refreshTenantToken(api);
       
       if (refreshed) {
-        // Update tenant token in Redux
-        api.dispatch(updateTenantAccessToken(refreshed.accessToken));
-        
+        // Update both tokens in Redux (token rotation)
+        api.dispatch(updateTenantTokens({
+          accessToken: refreshed.accessToken,
+          refreshToken: refreshed.refreshToken,
+        }));
+
         // Retry the original request with new token
         result = await rawBaseQuery(args, api, extraOptions);
       } else {
         // Refresh failed, logout tenant
+        // Clear owner's lastUserRole so redirect goes to tenant login
+        api.dispatch(setAdminLastUserRole(null));
         api.dispatch(tenantLogout());
       }
     } finally {

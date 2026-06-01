@@ -18,6 +18,7 @@ import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../owner/api/leg
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import notificationService from '../../../services/notifications/notificationService';
 
 interface OTPVerificationScreenProps {
   navigation: any;
@@ -85,10 +86,13 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
           refreshToken: result.refreshToken,
         })
       );
-      
+
       // Register push notification token after successful login
       await registerPushToken();
-      
+
+      // Initialize notification service to set up tap listeners
+      await notificationService.initialize(result.user.s_no);
+
       showSuccessAlert('Login successful!');
 
       const status = await getRequiredLegalStatus({ context: 'LOGIN' }).unwrap();

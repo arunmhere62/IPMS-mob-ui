@@ -203,6 +203,9 @@ const TenantDetailsContent: React.FC<{
   const [collectTransferDiffRemarks, setCollectTransferDiffRemarks] = useState('');
   const [collectTransferDiffLoading, setCollectTransferDiffLoading] = useState(false);
 
+  // Delete tenant loading state
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const {
     data: tenantResponse,
     isLoading: tenantLoading,
@@ -971,19 +974,22 @@ const TenantDetailsContent: React.FC<{
       return;
     }
 
+    const deleteConfirmationMessage = `⚠️ PERMANENT ACTION ⚠️\n\nYou are about to DELETE "${currentTenant?.name || 'this tenant'}".\n\n📋 What will happen:\n• Tenant record will be permanently removed\n• All personal information will be deleted\n• The bed will become available for new tenants\n• This action CANNOT be undone\n\n✅ This delete is allowed because:\n• Tenant has ACTIVE status\n• No rent payments recorded\n• No advance payments recorded\n• No refund payments recorded\n• No bills generated\n• No checkout date set\n\n💡 If tenant has any payment history, use CHECKOUT instead of delete.`;
+
     Alert.alert(
-      'Delete Tenant',
-      `Are you sure you want to delete ${currentTenant?.name || 'this tenant'}? This action cannot be undone.`,
+      '🗑️ Delete Tenant?',
+      deleteConfirmationMessage,
       [
         {
           text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Delete',
+          text: 'Delete Permanently',
           style: 'destructive',
           onPress: async () => {
             try {
+              setDeleteLoading(true);
               await deleteTenantMutation(currentTenant?.s_no || 0).unwrap();
               showSuccessAlert('Tenant deleted successfully');
               // Warm cache + trigger list reload on return (same as other flows)
@@ -992,6 +998,8 @@ const TenantDetailsContent: React.FC<{
               navigation.navigate('Tenants', { refresh: true });
             } catch (error: unknown) {
               showErrorAlert(error, 'Delete Error');
+            } finally {
+              setDeleteLoading(false);
             }
           },
         },
@@ -1242,6 +1250,7 @@ const TenantDetailsContent: React.FC<{
             navigation.navigate('AddTenant', { tenantId: currentTenant.s_no });
           }}
           onDelete={handleDeleteTenant}
+          disableDelete={deleteLoading}
           showDelete={
             !!canDeleteTenant &&
             tenant?.status === 'ACTIVE' &&
@@ -1251,7 +1260,6 @@ const TenantDetailsContent: React.FC<{
             (tenant?.refund_payments?.length || 0) === 0 &&
             (tenant?.current_bills?.length || 0) === 0
           }
-          disableDelete={false}
           onCall={handleCall}
           onWhatsApp={handleWhatsApp}
           onEmail={handleEmail}

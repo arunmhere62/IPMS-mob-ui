@@ -18,6 +18,7 @@ import {
   PgTenantTicketComment,
 } from '../../api/pgTicketsApi';
 import { useTicketSocket } from '../../../../hooks/useTicketSocket';
+import { useFocusEffect } from '@react-navigation/native';
 
 const C = Theme.colors;
 
@@ -51,7 +52,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
   const [viewerIndex, setViewerIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  const { data, isLoading, isError, error } = useGetPgTenantTicketByIdQuery({ id: ticketId, pgId });
+  const { data, isLoading, isError, error, refetch } = useGetPgTenantTicketByIdQuery({ id: ticketId, pgId });
   const [updateStatus, { isLoading: updatingStatus }] = useUpdatePgTicketStatusMutation();
   const [addComment, { isLoading: sending }] = useAddPgTicketCommentMutation();
 
@@ -78,6 +79,15 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
   }, []);
 
   useTicketSocket({ token: accessToken, ticketId, onNewComment, onStatusChanged });
+
+  // Refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (ticketId) {
+        refetch();
+      }
+    }, [ticketId, refetch])
+  );
 
   useEffect(() => {
     if (comments.length > 0) {
@@ -348,6 +358,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8,
     backgroundColor: '#fff',
     borderTopWidth: 1, borderTopColor: '#f3f4f6',
+    paddingBottom: Platform.OS === 'ios' ? 24 : 16,
   },
   input: {
     flex: 1, backgroundColor: '#f9fafb', borderRadius: 20, paddingHorizontal: 14,

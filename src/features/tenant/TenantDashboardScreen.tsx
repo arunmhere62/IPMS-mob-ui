@@ -16,8 +16,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { HomeTab, PaymentsTab, TicketsTab, ProfileTab } from './tabs';
 import Theme from '@/theme';
 import { setTenantData, tenantLogout } from '@/features/tenant/store/tenantAuthSlice';
+import { setLastUserRole as setAdminLastUserRole } from '@/features/owner/store/slices/authSlice';
 import { BottomNav } from '@/components/BottomNav';
-import { useGetTenantProfileQuery } from '@/features/tenant/api/tenantPortalApi';
+import { useGetTenantProfileQuery, useGetTenantTicketStatsQuery } from '@/features/tenant/api/tenantPortalApi';
 import { useGetTenantTicketsQuery } from '@/features/tenant/api/tenantTicketsApi';
 import { RootState } from '../owner/store';
 
@@ -46,6 +47,13 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
     refetchOnMountOrArgChange: true,
   });
   const raw = profileData?.data;
+
+  // Ticket stats query
+  const { data: ticketStatsData, refetch: refetchTicketStats } = useGetTenantTicketStatsQuery(undefined, {
+    skip: !accessToken,
+    refetchOnMountOrArgChange: true,
+  });
+  const ticketStats = ticketStatsData?.data;
 
   // Tickets query (only when tab active)
   const { data: ticketsData, isLoading: ticketsLoading, refetch: refetchTickets } = useGetTenantTicketsQuery(
@@ -91,16 +99,22 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
     setRefreshing(true);
     try {
       if (activeTab === 'tickets') await refetchTickets();
+      else if (activeTab === 'home') {
+        await refetchProfile();
+        await refetchTicketStats();
+      }
       else await refetchProfile();
     } finally {
       setRefreshing(false);
     }
-  }, [activeTab, refetchProfile, refetchTickets]);
+  }, [activeTab, refetchProfile, refetchTickets, refetchTicketStats]);
 
   const isPaid = raw?.payment_status === 'PAID';
   const isPending = raw?.payment_status === 'PENDING';
 
   const handleLogout = () => {
+    // Clear owner's lastUserRole so next redirect goes to tenant login
+    dispatch(setAdminLastUserRole(null));
     dispatch(tenantLogout());
   };
 
@@ -113,7 +127,7 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
 
     switch (activeTab) {
       case 'home':
-        return raw ? <HomeTab raw={raw} isPaid={isPaid} isPending={isPending} /> : null;
+        return raw ? <HomeTab raw={raw} isPaid={isPaid} isPending={isPending} ticketStats={ticketStats} /> : null;
       case 'payments':
         return raw ? <PaymentsTab raw={raw} /> : null;
       case 'tickets':
@@ -131,15 +145,17 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={C.primary} />
 
-      {/* Custom Header */}
-      <LinearGradient colors={[C.primary, C.primaryDark]} style={[styles.header, { paddingTop: ST + 12 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-        <View>
-          <Text style={styles.headerTitle}>Tenant Portal</Text>
-          <Text style={styles.headerSub}>Welcome back, {raw?.name?.split(' ')[0] ?? tenant?.name ?? 'Tenant'}</Text>
+      {/* Modern Header - colored on all tabs */}
+      <LinearGradient colors={[C.primary, C.primaryDark]} style={[styles.header, { paddingTop: ST + 16 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.headerTitle}>{activeTab === 'home' ? `Hello, ${raw?.name?.split(' ')[0] ?? tenant?.name ?? 'Tenant'}` : tenantTabs.find(t => t.name === activeTab)?.label ?? 'Tenant'}</Text>
+            {activeTab === 'home' && <Text style={styles.headerSub}>Welcome to your dashboard</Text>}
+          </View>
+          <TouchableOpacity style={styles.headerAvatar}>
+            <Text style={styles.headerAvatarText}>{(raw?.name?.[0] ?? 'T').toUpperCase()}</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.headerAvatar}>
-          <Text style={styles.headerAvatarText}>{(raw?.name?.[0] ?? 'T').toUpperCase()}</Text>
-        </TouchableOpacity>
       </LinearGradient>
 
       <ScrollView
@@ -163,15 +179,16 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
 };
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.background.secondary },
-  header: { paddingHorizontal: 20, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
-  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  headerAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
-  headerAvatarText: { fontSize: 17, fontWeight: '800', color: '#fff' },
+  root: { flex: 1, backgroundColor: '#f8fafc' },
+  header: { paddingHorizontal: 20, paddingBottom: 20 },
+  headerContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  headerSub: { fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  headerAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
+  headerAvatarText: { fontSize: 18, fontWeight: '700', color: '#fff' },
   scroll: { flex: 1 },
 
   // Error
-  errorBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fee2e2', borderRadius: 12, padding: 12, marginBottom: 12, gap: 8 },
-  errorText: { fontSize: 12, color: C.dangerDark, flex: 1, fontWeight: '500' },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef2f2', borderRadius: 12, padding: 12, marginBottom: 12, gap: 8, borderWidth: 1, borderColor: '#fecaca' },
+  errorText: { fontSize: 13, color: '#dc2626', flex: 1, fontWeight: '500' },
 });

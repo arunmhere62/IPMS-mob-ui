@@ -19,6 +19,7 @@ import { useBottomNavScrollHandler } from "../../../../components/BottomNavVisib
 import { Card } from "../../../../components/Card";
 import { QuickActions } from "../../../../components/QuickActions";
 import { MonthlyMetricsCard } from "./MonthlyMetricsCard";
+import { TicketStatsCard } from "./TicketStatsCard";
 import {
   SkeletonLoader,
   DashboardHeaderSkeleton,
@@ -36,6 +37,7 @@ import type {
 import {
   useGetDashboardSummaryQuery,
   useLazyGetDashboardMonthlyMetricsQuery,
+  useGetDashboardTicketStatsQuery,
 } from "../../api/dashboardApi";
 import { usePermissions } from "../../../../hooks/usePermissions";
 import { AppDispatch, RootState } from "../../store";
@@ -116,6 +118,15 @@ export const DashboardScreen: React.FC = () => {
   const monthlyMetrics = (
     monthlyMetricsResponse as DashboardMonthlyMetricsResponse | undefined
   )?.data;
+
+  const {
+    data: ticketStatsResponse,
+    isFetching: ticketStatsFetching,
+  } = useGetDashboardTicketStatsQuery(undefined, {
+    skip: !selectedPGLocationId,
+  });
+
+  const ticketStats = ticketStatsResponse?.data;
 
   // Load initial monthly metrics
   useEffect(() => {
@@ -1378,6 +1389,15 @@ export const DashboardScreen: React.FC = () => {
             </Card>
             )}
           </View>
+
+          {ticketStats ? (
+            <TicketStatsCard
+              overview={ticketStats.overview}
+              recentTickets={ticketStats.recentTickets}
+              unreadTickets={ticketStats.unreadTickets}
+              isLoading={ticketStatsFetching}
+            />
+          ) : null}
 
           {monthlyMetricsFetching ? (
             <DashboardMonthlyMetricsSkeleton />

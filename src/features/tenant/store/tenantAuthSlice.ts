@@ -7,6 +7,7 @@ export type TenantUser = {
   phone: string;
   email: string | null;
   status: string;
+  organization_id?: number | null;
   // Room/Bed info
   room_no?: string | null;
   bed_no?: string | null;
@@ -73,7 +74,7 @@ const initialState: TenantAuthState = {
 const tenantPersistConfig = {
   key: 'tenantAuth',
   storage: AsyncStorage,
-  whitelist: ['tenant', 'pg', 'rentCycles', 'recentPayments'],
+  whitelist: ['tenant', 'pg', 'rentCycles', 'recentPayments', 'lastUserRole'], // Persist lastUserRole to remember login type
   blacklist: ['accessToken', 'refreshToken', 'isAuthenticated'], // Blacklist sensitive data - require fresh login
 };
 
@@ -142,6 +143,15 @@ const tenantAuthSlice = createSlice({
       state.accessToken = action.payload;
     },
 
+    // Update both tokens after refresh (token rotation)
+    updateTenantTokens: (
+      state,
+      action: PayloadAction<{ accessToken: string; refreshToken: string }>
+    ) => {
+      state.accessToken = action.payload.accessToken;
+      state.refreshToken = action.payload.refreshToken;
+    },
+
     // Clear tenant auth state (keeps lastUserRole for remembering user type)
     tenantLogout: (state) => {
       state.tenant = null;
@@ -184,7 +194,9 @@ export const {
   setTenantData,
   updateTenantInfo,
   updateTenantAccessToken,
+  updateTenantTokens,
   tenantLogout,
+  setLastUserRole: setTenantLastUserRole,
   setTenantLoading,
   setTenantError,
   clearTenantError,

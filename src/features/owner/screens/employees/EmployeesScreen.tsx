@@ -31,6 +31,7 @@ interface EmployeesScreenProps {
 export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
+  const canCreateEmployee = can(Permission.CREATE_EMPLOYEE);
   const canEditEmployee = can(Permission.EDIT_EMPLOYEE);
   const canDeleteEmployee = can(Permission.DELETE_EMPLOYEE);
   const canViewEmployee = can(Permission.VIEW_EMPLOYEE);
@@ -332,28 +333,30 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
           scrollEventThrottle={16}
         />
 
-        {/* Add Button */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('AddEmployee')}
-          style={{
-            position: 'absolute',
-            bottom: 80,
-            right: 16,
-            backgroundColor: Theme.colors.primary,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
-          }}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
+        {/* Add Button - only show if user has CREATE_EMPLOYEE permission */}
+        {canCreateEmployee && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('AddEmployee')}
+            style={{
+              position: 'absolute',
+              bottom: 80,
+              right: 16,
+              backgroundColor: Theme.colors.primary,
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+            }}
+          >
+            <Ionicons name="add" size={28} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
     </ScreenLayout>
   );

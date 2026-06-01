@@ -9,7 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import Theme from '@/theme';
 import { RootState } from '@/features/owner/store';
-import { TenantTicketComment, tenantTicketsApi, useAddTenantTicketCommentMutation, useCloseTenantTicketMutation, useGetTenantTicketByIdQuery } from '@/features/tenant/api/tenantTicketsApi';
+import { TenantTicketComment, tenantTicketsApi, useAddTenantTicketCommentMutation, useGetTenantTicketByIdQuery } from '@/features/tenant/api/tenantTicketsApi';
 import { useTicketSocket } from '@/hooks/useTicketSocket';
 
 
@@ -35,7 +35,6 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
 
   const { data: ticket, isLoading, isFetching, refetch } = useGetTenantTicketByIdQuery(ticketId);
   const [addComment, { isLoading: sending }] = useAddTenantTicketCommentMutation();
-  const [closeTicket, { isLoading: closing }] = useCloseTenantTicketMutation();
 
   const [message, setMessage] = useState('');
   const [liveComments, setLiveComments] = useState<TenantTicketComment[]>([]);
@@ -96,23 +95,6 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleClose = () => {
-    Alert.alert('Close Ticket', 'Mark this ticket as closed?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Close Ticket',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await closeTicket(ticketId).unwrap();
-          } catch (e: any) {
-            Alert.alert('Error', e?.data?.message ?? 'Failed to close ticket');
-          }
-        },
-      },
-    ]);
-  };
-
   useEffect(() => {
     if (allComments.length > 0) {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 200);
@@ -155,7 +137,7 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
+      keyboardVerticalOffset={Platform.OS === 'android' ? 0 : 0}
     >
       <StatusBar barStyle="light-content" backgroundColor={C.primary} />
 
@@ -172,14 +154,6 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
             </Text>
           </View>
         </View>
-        {!isClosed && (
-          <TouchableOpacity onPress={handleClose} style={styles.closeBtn} disabled={closing}>
-            {closing
-              ? <ActivityIndicator size="small" color="rgba(255,255,255,0.8)" />
-              : <Ionicons name="close-circle-outline" size={22} color="rgba(255,255,255,0.9)" />
-            }
-          </TouchableOpacity>
-        )}
       </LinearGradient>
 
       {/* Ticket info strip */}
@@ -248,7 +222,7 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { paddingHorizontal: 16, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
   backBtn: { padding: 4 },
   headerMeta: { flex: 1 },
   headerTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
@@ -283,7 +257,7 @@ const styles = StyleSheet.create({
   emptyChatText: { fontSize: 13, color: '#9ca3af', marginTop: 10, textAlign: 'center' },
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 10,
-    paddingHorizontal: 14, paddingTop: 10, paddingBottom: 20,
+    paddingHorizontal: 14, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 24 : 16,
     backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#e5e7eb',
   },
   input: {

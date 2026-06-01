@@ -82,7 +82,7 @@ export const TenantLoginScreen: React.FC<TenantLoginScreenProps> = ({ navigation
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{
+        contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
             padding: Theme.spacing.lg,

@@ -219,6 +219,8 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
           autoComplete="tel"
           textContentType="telephoneNumber"
           importantForAutofill="yes"
+          autoCorrect={false}
+          spellCheck={false}
           maxLength={20}
           blurOnSubmit
           onSubmitEditing={() => Keyboard.dismiss()}
