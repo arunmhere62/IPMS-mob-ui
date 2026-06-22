@@ -4,6 +4,7 @@ import { WebView } from 'react-native-webview';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Theme } from '@/theme';
+import { showErrorAlert } from '@/utils/errorHandler';
 
 interface PaymentWebViewScreenProps {
   navigation: any;
@@ -191,15 +192,12 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           onError={(syntheticEvent) => {
             const { nativeEvent } = syntheticEvent;
             console.error('❌ WebView error:', nativeEvent);
-            Alert.alert(
-              'Payment Error',
-              `Failed to load: ${nativeEvent?.url || 'unknown URL'}\n\nThis usually happens when the payment gateway redirects to a callback URL that is not reachable. Please verify backend CCAVENUE_REDIRECT_URL / CCAVENUE_CANCEL_URL (should be your public API domain and typically include /api/v1/subscription/payment/callback).`
-            );
+            showErrorAlert(null, 'Payment Load Error');
           }}
           onHttpError={(syntheticEvent) => {
             const { nativeEvent } = syntheticEvent;
             console.error('❌ WebView HTTP error:', nativeEvent);
-            Alert.alert('Error', 'Payment page returned an error. Please try again.');
+            showErrorAlert(null, 'Payment Page Error');
           }}
         />
       </View>

@@ -50,8 +50,8 @@ export const LegalDocumentsScreen: React.FC<LegalDocumentsScreenProps> = ({ navi
     if (!url) return;
     try {
       await Linking.openURL(url);
-    } catch (e) {
-      Alert.alert('Error', 'Unable to open document link');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Open Document Error');
     }
   };
 

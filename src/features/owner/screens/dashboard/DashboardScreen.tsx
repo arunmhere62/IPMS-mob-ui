@@ -42,6 +42,8 @@ import {
 import { usePermissions } from "../../../../hooks/usePermissions";
 import { AppDispatch, RootState } from "../../store";
 import { Tenant } from "../../api";
+import { useGetPublicAppStatusQuery } from "../../api/appSettingsApi";
+import { AnnouncementBanner } from "../../../../components/AnnouncementBanner";
 
 type DashboardRouteName =
   | "PGLocations"
@@ -568,12 +570,20 @@ export const DashboardScreen: React.FC = () => {
 
     setRefreshing(false);
   };
+  const { data: appStatus } = useGetPublicAppStatusQuery();
+
   return (
     <ScreenLayout
       backgroundColor={Theme.colors.background.blue}
       contentBackgroundColor={Theme.colors.background.secondary}
     >
       <ScreenHeader title="Dashboard" showPGSelector={true} />
+      {appStatus?.show_announcement && appStatus.announcement_title ? (
+        <AnnouncementBanner
+          title={appStatus.announcement_title}
+          message={appStatus.announcement_message}
+        />
+      ) : null}
       <View style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={{ paddingBottom: 80 }}

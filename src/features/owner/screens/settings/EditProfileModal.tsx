@@ -161,7 +161,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const handleSendPhoneOtp = async () => {
     const candidate = normalizePhone(buildFullPhoneNumber());
     if (!candidate) {
-      Alert.alert('Error', 'Please enter phone number');
+      showErrorAlert(null, 'Phone Number Required');
       return;
     }
 

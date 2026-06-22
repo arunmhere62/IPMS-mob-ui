@@ -1,4 +1,5 @@
 import React, { useEffect, useContext, useMemo } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, StatusBar, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
@@ -35,6 +36,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   notificationBarColor
 }) => {
   const layout = useContext(ScreenLayoutContext);
+  const insets = useSafeAreaInsets();
 
   const effectiveBackgroundColor = useMemo(() => {
     // If the header is transparent, we still want status-bar auto detection
@@ -97,7 +99,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   }, [effectiveBackgroundColor, statusBarStyle, syncMobileHeaderBg, notificationBarColor]);
 
   return (
-    <View style={{ backgroundColor: headerContainerBackgroundColor, padding: 14, paddingTop: 60, paddingBottom: 14 }}>
+    <View style={{ backgroundColor: headerContainerBackgroundColor, padding: 14, paddingTop: insets.top + 14, paddingBottom: 14 }}>
       <View style={{ marginBottom: (children || showPGSelector) ? 4 : 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {/* Back Button */}

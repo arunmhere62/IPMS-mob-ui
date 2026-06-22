@@ -28,8 +28,8 @@ import { BedFormModal } from '../beds/BedFormModal';
 import { RoomFormModal } from './CreateEditRoomModal';
 import { showDeleteConfirmation } from '../../../../components/DeleteConfirmationDialog';
 import { Ionicons } from '@expo/vector-icons';
-import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
 
@@ -88,7 +88,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
 
   useEffect(() => {
     if (isRoomError) {
-      Alert.alert('Error', 'Failed to load room details');
+      showErrorAlert(null, 'Load Room Error');
       navigation.goBack();
     }
   }, [isRoomError, navigation]);

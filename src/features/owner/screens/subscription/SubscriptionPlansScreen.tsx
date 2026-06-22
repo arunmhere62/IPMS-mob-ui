@@ -16,7 +16,7 @@ import { Card } from '@/components/Card';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { Theme } from '@/theme';
 import { CONTENT_COLOR } from '@/constant';
-import { showSuccessAlert } from '@/utils/errorHandler';
+import { showSuccessAlert, showErrorAlert } from '@/utils/errorHandler';
 import {
   SubscriptionPlan,
   useGetPlansQuery,
@@ -132,14 +132,9 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
       } else {
         showSuccessAlert('Subscription initiated successfully!');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Subscribe error:', error);
-      const maybeData = (error as any)?.data;
-      const message =
-        (maybeData && (maybeData.message || maybeData.error)) ||
-        (error as any)?.message ||
-        'Failed to subscribe';
-      Alert.alert('Error', message);
+      showErrorAlert(error, 'Subscribe Error');
     }
   };
 
@@ -186,14 +181,9 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
       } else {
         showSuccessAlert('Upgrade initiated successfully!');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Upgrade error:', error);
-      const maybeData = (error as any)?.data;
-      const message =
-        (maybeData && (maybeData.message || maybeData.error)) ||
-        (error as any)?.message ||
-        'Failed to upgrade';
-      Alert.alert('Error', message);
+      showErrorAlert(error, 'Upgrade Error');
     }
   };
 

@@ -8,6 +8,8 @@ import { Theme } from '../../../../theme';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { CONTENT_COLOR } from '@/constant';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 import {
   useGetPgTenantTicketsQuery,
   PgTenantTicket,
@@ -45,7 +47,27 @@ const PRIORITY_COLORS: Record<string, string> = {
 interface Props { navigation: any }
 
 export function PgTenantTicketsScreen({ navigation }: Props) {
+  const { can } = usePermissions();
   const [activeFilter, setActiveFilter] = useState<string | undefined>(undefined);
+
+  if (!can(Permission.VIEW_TICKET)) {
+    return (
+      <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+        <ScreenHeader
+          title="Access Denied"
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+          showPGSelector={false}
+        />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Ionicons name="lock-closed-outline" size={48} color="#9ca3af" />
+          <Text style={{ fontSize: 16, fontWeight: '600', color: '#374151', marginTop: 12 }}>
+            You don't have permission to view tickets
+          </Text>
+        </View>
+      </ScreenLayout>
+    );
+  }
 
   const { data, isLoading, isFetching, refetch } = useGetPgTenantTicketsQuery(
     { status: activeFilter },

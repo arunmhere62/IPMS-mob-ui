@@ -223,13 +223,13 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
   const handleSaveOrganizationName = async () => {
     const orgId = Number(userData?.organization_id);
     if (!orgId) {
-      Alert.alert('Error', 'Organization not found for this user');
+      showErrorAlert(null, 'Organization Not Found');
       return;
     }
 
     const nextName = String(orgNameDraft || '').trim();
     if (!nextName) {
-      Alert.alert('Error', 'Organization name is required');
+      showErrorAlert(null, 'Organization Name Required');
       return;
     }
 

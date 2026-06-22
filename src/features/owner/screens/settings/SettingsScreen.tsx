@@ -21,6 +21,9 @@ import notificationService from '@/services/notifications/notificationService';
 import { useGetSubscriptionStatusQuery } from '@/features/owner/api/subscriptionApi';
 import { useLazyGetRequiredLegalDocumentsStatusQuery } from '@/features/owner/api/legalDocumentsApi';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useGetPublicAppStatusQuery } from '@/features/owner/api/appSettingsApi';
+import { Platform } from 'react-native';
+import { showErrorAlert } from '@/utils/errorHandler';
 
 interface SettingsScreenProps {
   navigation: NavigationProp<ParamListBase>;
@@ -30,6 +33,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { isSuperAdmin } = usePermissions();
+  const { data: appStatus } = useGetPublicAppStatusQuery();
+  const currentVersion =
+    Platform.OS === 'android'
+      ? appStatus?.current_version_android
+      : appStatus?.current_version_ios;
   const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
 
   const [serverLogout] = useLogoutMutation();
@@ -88,7 +96,23 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
       }
       navigation.navigate('LegalWebView', { title: 'Privacy Policy', url: addEmbedParam(String(url)) });
     } catch {
-      Alert.alert('Error', 'Failed to load Privacy Policy');
+      showErrorAlert(null, 'Load Privacy Policy Error');
+    }
+  };
+
+  const openContactUs = async () => {
+    try {
+      const res = await getRequiredLegalStatus({ context: 'SETTINGS' }).unwrap();
+      const docs = (res as any)?.required || [];
+      const doc = docs.find((d: any) => String(d?.type || '').toUpperCase() === 'CONTACT_US');
+      const url = doc?.url;
+      if (!url) {
+        Alert.alert('Info', 'Contact Us link is not available right now.');
+        return;
+      }
+      navigation.navigate('LegalWebView', { title: 'Contact Us', url: addEmbedParam(String(url)) });
+    } catch {
+      showErrorAlert(null, 'Load Contact Us Error');
     }
   };
 
@@ -107,7 +131,23 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
       }
       navigation.navigate('LegalWebView', { title: 'Terms & Conditions', url: addEmbedParam(String(url)) });
     } catch {
-      Alert.alert('Error', 'Failed to load Terms & Conditions');
+      showErrorAlert(null, 'Load Terms Error');
+    }
+  };
+
+  const openRefundPolicy = async () => {
+    try {
+      const res = await getRequiredLegalStatus({ context: 'SETTINGS' }).unwrap();
+      const docs = (res as any)?.required || [];
+      const doc = docs.find((d: any) => String(d?.type || '').toUpperCase() === 'REFUND_POLICY');
+      const url = doc?.url;
+      if (!url) {
+        Alert.alert('Info', 'Refund Policy link is not available right now.');
+        return;
+      }
+      navigation.navigate('LegalWebView', { title: 'Refund Policy', url: addEmbedParam(String(url)) });
+    } catch {
+      showErrorAlert(null, 'Load Refund Policy Error');
     }
   };
 
@@ -159,10 +199,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               }
 
               console.log('✅ User logged out successfully');
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
+              // Navigation is handled automatically by AppNavigator based on auth state
             } finally {
               setLoggingOut(false);
             }
@@ -178,6 +215,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
     { title: 'Report Issue', icon: '🐛', onPress: () => navigation.navigate('Tickets'), },
     { title: 'Terms & Conditions', icon: '📄', onPress: openTermsAndConditions },
     { title: 'Privacy Policy', icon: '🔒', onPress: openPrivacyPolicy },
+    { title: 'Refund Policy', icon: '💰', onPress: openRefundPolicy },
+    { title: 'Contact Us', icon: '📞', onPress: openContactUs },
     { title: 'Help & Support', icon: '❓', onPress: () => navigation.navigate('FaqWebView') },
     // { title: 'About', icon: 'ℹ️', onPress: () => { } },
   ];
@@ -356,7 +395,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
 
           {/* App Version */}
           <Text className="text-center text-gray-500 text-sm mb-4">
-            Version 1.0.0
+            {currentVersion ? `Version ${currentVersion}` : 'Version —'}
           </Text>
         </ScrollView>
       </View>

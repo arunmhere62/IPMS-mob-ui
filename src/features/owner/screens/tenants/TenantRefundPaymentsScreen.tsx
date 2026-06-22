@@ -193,8 +193,8 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
         );
         setReceiptData(null);
       }, 100);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send via WhatsApp');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'WhatsApp Share Error');
       setReceiptData(null);
     }
   };
@@ -208,8 +208,8 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
         await CompactReceiptGenerator.shareImage(receiptRef);
         setReceiptData(null);
       }, 100);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to share invoice');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Share Invoice Error');
       setReceiptData(null);
     }
   };

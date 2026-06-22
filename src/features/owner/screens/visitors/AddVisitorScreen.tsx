@@ -193,9 +193,8 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
         const items = (response as any)?.data;
         setStates(Array.isArray(items) ? items : []);
       }
-    } catch (error) {
-      console.error('Error fetching states:', error);
-      Alert.alert('Error', 'Failed to load states');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Load States Error');
     } finally {
       setLoadingStates(false);
     }
@@ -209,9 +208,8 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
         const items = (response as any)?.data;
         setCities(Array.isArray(items) ? items : []);
       }
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-      Alert.alert('Error', 'Failed to load cities');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Load Cities Error');
     } finally {
       setLoadingCities(false);
     }

@@ -21,6 +21,8 @@ import { BottomNav } from '@/components/BottomNav';
 import { useGetTenantProfileQuery, useGetTenantTicketStatsQuery } from '@/features/tenant/api/tenantPortalApi';
 import { useGetTenantTicketsQuery } from '@/features/tenant/api/tenantTicketsApi';
 import { RootState } from '../owner/store';
+import { useGetPublicAppStatusQuery } from '@/features/owner/api/appSettingsApi';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 
 interface TenantDashboardScreenProps {
   navigation: any;
@@ -40,6 +42,7 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
   const { tenant, accessToken } = useSelector((state: RootState) => state.tenantAuth);
   const [activeTab, setActiveTab] = useState('home');
   const [refreshing, setRefreshing] = useState(false);
+  const { data: appStatus } = useGetPublicAppStatusQuery();
 
   // Profile query
   const { data: profileData, isLoading: profileLoading, error, refetch: refetchProfile } = useGetTenantProfileQuery(undefined, {
@@ -144,6 +147,14 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={C.primary} />
+
+      {/* Announcement banner — shown on dashboard only */}
+      {appStatus?.show_announcement && appStatus.announcement_title ? (
+        <AnnouncementBanner
+          title={appStatus.announcement_title}
+          message={appStatus.announcement_message}
+        />
+      ) : null}
 
       {/* Modern Header - colored on all tabs */}
       <LinearGradient colors={[C.primary, C.primaryDark]} style={[styles.header, { paddingTop: ST + 16 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>

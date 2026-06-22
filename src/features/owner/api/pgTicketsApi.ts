@@ -12,8 +12,9 @@ export type PgTenantTicket = {
   status: PgTicketStatus;
   created_at: string;
   updated_at: string;
+  assigned_to?: number | null;
   tenants?: { s_no: number; name: string; phone_no?: string };
-  users?: { s_no: number; name: string };
+  users?: { s_no: number; name: string } | null;
   _count?: { tenant_ticket_comments: number };
 };
 

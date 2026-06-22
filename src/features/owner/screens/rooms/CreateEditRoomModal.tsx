@@ -85,7 +85,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
 
   useEffect(() => {
     if (visible && roomId && isRoomError) {
-      Alert.alert('Error', 'Failed to load room data');
+      showErrorAlert(null, 'Load Room Error');
       onClose();
     }
   }, [visible, roomId, isRoomError, onClose]);
@@ -159,7 +159,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
     }
 
     if (!selectedPGLocationId) {
-      Alert.alert('Error', 'Invalid PG location');
+      showErrorAlert(null, 'Invalid PG Location');
       return;
     }
 

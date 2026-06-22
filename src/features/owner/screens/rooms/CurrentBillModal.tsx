@@ -81,7 +81,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
     }
 
     if (!selectedPGLocationId) {
-      Alert.alert('Error', 'Invalid PG location');
+      showErrorAlert(null, 'Invalid PG Location');
       return;
     }
 

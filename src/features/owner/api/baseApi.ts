@@ -314,6 +314,7 @@ export const baseApi = createApi({
     'LegalRequiredStatus',
     'PgTenantTickets',
     'PgTenantTicket',
+    'AppSettings',
   ],
   endpoints: () => ({}),
 });

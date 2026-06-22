@@ -171,8 +171,8 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
       const items = unwrapArray(response);
       setPgLocations(items);
       return items;
-    } catch (error) {
-      Alert.alert('Error', 'Failed to load PG locations');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Load PG Locations Error');
       setPgLocations([]);
       return [] as PGLocation[];
     } finally {
@@ -279,19 +279,19 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
 
   const validateForm = () => {
     if (!formData.locationName.trim()) {
-      Alert.alert('Error', 'Please enter PG location name');
+      showErrorAlert(null, 'PG Location Name Required');
       return false;
     }
     if (!formData.address.trim()) {
-      Alert.alert('Error', 'Please enter address');
+      showErrorAlert(null, 'Address Required');
       return false;
     }
     if (!formData.stateId) {
-      Alert.alert('Error', 'Please select a state');
+      showErrorAlert(null, 'State Required');
       return false;
     }
     if (!formData.cityId) {
-      Alert.alert('Error', 'Please select a city');
+      showErrorAlert(null, 'City Required');
       return false;
     }
     return true;

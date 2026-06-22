@@ -725,8 +725,8 @@ const TenantDetailsContent: React.FC<{
         );
         setReceiptData(null);
       }, 100);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send via WhatsApp');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'WhatsApp Share Error');
       setReceiptData(null);
     }
   };
@@ -741,8 +741,8 @@ const TenantDetailsContent: React.FC<{
         await CompactReceiptGenerator.shareImage(receiptRef);
         setReceiptData(null);
       }, 100);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to share receipt');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Share Receipt Error');
       setReceiptData(null);
     }
   };
@@ -768,8 +768,8 @@ const TenantDetailsContent: React.FC<{
         );
         setReceiptData(null);
       }, 100);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send via WhatsApp');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'WhatsApp Share Error');
       setReceiptData(null);
     }
   };
@@ -784,8 +784,8 @@ const TenantDetailsContent: React.FC<{
         await CompactReceiptGenerator.shareImage(receiptRef);
         setReceiptData(null);
       }, 100);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to share receipt');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Share Receipt Error');
       setReceiptData(null);
     }
   };

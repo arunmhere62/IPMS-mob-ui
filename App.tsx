@@ -19,6 +19,7 @@ import { ErrorProvider } from "./src/providers/ErrorProvider";
 import ErrorAlert from "./src/components/ErrorAlert/ErrorAlert";
 import { useError } from "./src/providers/ErrorProvider";
 import { NetworkLoggerFloatingButton } from "./src/components/NetworkLoggerFloatingButton";
+import { AppStatusGate } from "./src/providers/AppStatusGate";
 import notificationService from "./src/services/notifications/notificationService";
 import { ToastProvider } from "./src/providers/ToastProvider";
 import * as Notifications from "expo-notifications";
@@ -283,7 +284,9 @@ function AppContent() {
   return (
     <NetworkStatusProvider>
       <ErrorAlert error={error} onDismiss={clearError} />
-      <AppNavigator />
+      <AppStatusGate>
+        <AppNavigator />
+      </AppStatusGate>
       <NetworkLoggerFloatingButton enabled={__DEV__} />
     </NetworkStatusProvider>
   );

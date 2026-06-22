@@ -25,6 +25,7 @@ import { ReceiptViewModal } from './components';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
 import { useVoidTenantPaymentMutation } from '@/features/owner/api/paymentsApi';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import type { RootState } from '@/features/owner/store';
 import { useGetPGLocationDetailsQuery } from '@/features/owner/api/pgLocationsApi';
 import type { ReceiptData } from '@/services/receipt/receiptTypes';
@@ -193,13 +194,13 @@ export const TenantRentPaymentsScreen: React.FC = () => {
     try {
       setLoading(true);
       await voidTenantPayment({ id: voidTargetPayment.s_no, voided_reason: reason }).unwrap();
-      Alert.alert('Success', 'Payment deleted successfully');
+      showSuccessAlert('Payment deleted successfully');
       setVoidModalVisible(false);
       setVoidTargetPayment(null);
       setVoidReason('');
       refreshTenantDetails();
-    } catch (error: any) {
-      Alert.alert('Delete Error', error?.data?.message || error?.message || 'Failed to delete payment');
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Delete Error');
     } finally {
       setLoading(false);
     }

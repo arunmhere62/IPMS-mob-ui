@@ -20,6 +20,7 @@ import { ScreenLayout } from '@/components/ScreenLayout';
 import { SearchableDropdown } from '@/components/SearchableDropdown';
 import { ImageUploadS3 } from '@/components/ImageUploadS3';
 import { CONTENT_COLOR } from '@/constant';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 interface CreateTicketScreenProps {
   navigation: any;
@@ -71,7 +72,7 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
     }
 
     try {
-      await createTicketMutation({
+      const res = await createTicketMutation({
         title: title.trim(),
         description: description.trim(),
         category: category as any,
@@ -80,18 +81,10 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
         pg_id: selectedPGLocationId || undefined,
       }).unwrap();
 
-      Alert.alert(
-        'Success',
-        'Your ticket has been submitted successfully. We will review it shortly.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create ticket');
+      showSuccessAlert(res);
+      navigation.goBack();
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Create Ticket Error');
     }
   };
 

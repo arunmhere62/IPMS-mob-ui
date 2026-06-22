@@ -449,6 +449,17 @@ export const tenantsApi = baseApi.injectEndpoints({
         { type: 'Dashboard' as const, id: 'MONTHLY_METRICS' }
       ],
     }),
+
+    // Phone Verification APIs
+    sendPhoneOtp: build.mutation<{ phone: string; message: string; expiresInMinutes: number }, { phone: string }>({
+      query: (body) => ({ url: '/tenants/send-otp', method: 'POST', body }),
+      transformResponse: (response: ApiEnvelope<any> | any) => unwrapCentralData<any>(response),
+    }),
+
+    verifyPhoneOtp: build.mutation<{ phone: string; verified: boolean }, { phone: string; otp: string }>({
+      query: (body) => ({ url: '/tenants/verify-otp', method: 'POST', body }),
+      transformResponse: (response: ApiEnvelope<any> | any) => unwrapCentralData<any>(response),
+    }),
   }),
   overrideExisting: false,
 });
@@ -465,4 +476,6 @@ export const {
   useCheckoutTenantWithDateMutation,
   useUpdateTenantCheckoutDateMutation,
   useTransferTenantMutation,
+  useSendPhoneOtpMutation,
+  useVerifyPhoneOtpMutation,
 } = tenantsApi;

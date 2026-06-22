@@ -19,6 +19,9 @@ import {
 } from '../../api/pgTicketsApi';
 import { useTicketSocket } from '../../../../hooks/useTicketSocket';
 import { useFocusEffect } from '@react-navigation/native';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
 const C = Theme.colors;
 
@@ -39,11 +42,13 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 interface Props { navigation: any; route: any }
 
 export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
+  const { can } = usePermissions();
   const rawId = (route.params as any)?.ticketId;
   const rawPgId = (route.params as any)?.pgId;
   const ticketId: number = typeof rawId === 'string' ? parseInt(rawId, 10) : rawId;
   const pgId: number | undefined = rawPgId ? (typeof rawPgId === 'string' ? parseInt(rawPgId, 10) : rawPgId) : undefined;
   const accessToken = useSelector((s: RootState) => s.auth.accessToken);
+  const canEditTicket = can(Permission.EDIT_TICKET);
   const [message, setMessage] = useState('');
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [liveComments, setLiveComments] = useState<PgTenantTicketComment[]>([]);
@@ -98,22 +103,55 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
   const handleStatusChange = async (status: PgTicketStatus) => {
     setShowStatusPicker(false);
     if (status === currentStatus) return;
-    try {
-      await updateStatus({ id: ticketId, pgId, status }).unwrap();
-    } catch {
-      Alert.alert('Error', 'Failed to update status');
-    }
+
+    // Get status description for confirmation
+    const statusMessages: Record<string, string> = {
+      'OPEN': 'Ticket will be marked as Open - waiting for response',
+      'IN_PROGRESS': 'Ticket will be marked as In Progress - actively working on it',
+      'RESOLVED': 'Ticket will be marked as Resolved - issue is fixed',
+      'CLOSED': 'Ticket will be marked as Closed - conversation ends',
+    };
+
+    Alert.alert(
+      'Change Ticket Status?',
+      `${statusMessages[status]}\n\nA notification will be sent to the tenant about this status change.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            try {
+              // Send status notification BEFORE updating status (for CLOSED, send first)
+              const statusNotification = `Ticket status updated to: ${status.replace('_', ' ')}`;
+              if (status === 'CLOSED') {
+                await addComment({ id: ticketId, pgId, comment: statusNotification }).unwrap();
+              }
+
+              const res = await updateStatus({ id: ticketId, pgId, status }).unwrap();
+              showSuccessAlert(res);
+
+              // Send status notification AFTER updating status (for non-CLOSED statuses)
+              if (status !== 'CLOSED') {
+                await addComment({ id: ticketId, pgId, comment: statusNotification }).unwrap();
+              }
+            } catch (error: unknown) {
+              showErrorAlert(error, 'Error');
+            }
+          }
+        }
+      ]
+    );
   };
 
-  const handleSend = async () => {
-    const text = message.trim();
+  const handleSend = async (overrideText?: string) => {
+    const text = (overrideText ?? message).trim();
     if (!text) return;
     setMessage('');
     try {
       await addComment({ id: ticketId, pgId, comment: text }).unwrap();
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch {
-      Alert.alert('Error', 'Failed to send reply');
+    } catch (error: unknown) {
+      showErrorAlert(error, "Error");
       setMessage(text);
     }
   };
@@ -124,6 +162,18 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
         <ScreenHeader title="Ticket Detail" showBackButton onBackPress={() => navigation.goBack()} showPGSelector={false} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={C.primary} />
+        </View>
+      </ScreenLayout>
+    );
+  }
+
+  if (!can(Permission.VIEW_TICKET)) {
+    return (
+      <ScreenLayout backgroundColor={C.background?.blue ?? C.primary}>
+        <ScreenHeader title="Access Denied" showBackButton onBackPress={() => navigation.goBack()} showPGSelector={false} />
+        <View style={styles.loadingContainer}>
+          <Ionicons name="lock-closed-outline" size={40} color="#ef4444" />
+          <Text style={{ color: '#374151', fontWeight: '600', marginTop: 12 }}>You don't have permission to view tickets</Text>
         </View>
       </ScreenLayout>
     );
@@ -218,17 +268,54 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
         <View style={styles.flex}>
           {/* Info strip */}
           <View style={styles.infoStrip}>
-            <View style={styles.infoChipRow}>
-              <View style={styles.infoChip}><Text style={styles.infoChipText}>{ticket.category}</Text></View>
-              <View style={styles.infoChip}><Text style={styles.infoChipText}>{ticket.priority}</Text></View>
+            <View style={styles.infoLeftSection}>
+              <View style={styles.infoChipRow}>
+                <View style={styles.infoChip}><Text style={styles.infoChipText}>{ticket.category}</Text></View>
+                <View style={styles.infoChip}><Text style={styles.infoChipText}>{ticket.priority}</Text></View>
+              </View>
+              
+              {/* Assigned user */}
+              <View style={styles.assignedUserRow}>
+                <Text style={styles.assignedLabel}>Assigned to:</Text>
+                {ticket.users?.name ? (
+                  <Text style={styles.assignedValue}>{ticket.users.name}</Text>
+                ) : (
+                  <View style={styles.unassignedContainer}>
+                    <Text style={styles.assignedValue}>Unassigned</Text>
+                    {canEditTicket && (
+                      <TouchableOpacity
+                        style={styles.claimBtn}
+                        onPress={() => {
+                          Alert.alert(
+                            'Assign Ticket to Me',
+                            'This will assign this ticket to you. Once assigned, only you or a superadmin can reply. Continue?',
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Assign',
+                                onPress: () => {
+                                  handleSend('I will handle this ticket.');
+                                }
+                              }
+                            ]
+                          );
+                        }}
+                      >
+                        <Text style={styles.claimBtnText}>Assign to me</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* Status selector */}
-            <TouchableOpacity
-              style={[styles.statusBtn, { backgroundColor: sc.bg }]}
-              onPress={() => setShowStatusPicker(v => !v)}
-              disabled={updatingStatus}
-            >
+            {canEditTicket && (
+              <TouchableOpacity
+                style={[styles.statusBtn, { backgroundColor: sc.bg }]}
+                onPress={() => setShowStatusPicker(v => !v)}
+                disabled={updatingStatus}
+              >
               {updatingStatus
                 ? <ActivityIndicator size="small" color={sc.text} />
                 : <>
@@ -238,7 +325,8 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
                     <Ionicons name="chevron-down" size={13} color={sc.text} />
                   </>
               }
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Status dropdown */}
@@ -284,8 +372,8 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
             </View>
           )}
 
-          {/* Input */}
-          {!isClosed && (
+          {/* Input - blocked if unassigned */}
+          {!isClosed && canEditTicket && ticket.users?.name && (
             <View style={styles.inputBar}>
               <TextInput
                 style={styles.input}
@@ -298,7 +386,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
               />
               <TouchableOpacity
                 style={[styles.sendBtn, (!message.trim() || sending) && styles.sendBtnDisabled]}
-                onPress={handleSend}
+                onPress={() => handleSend()}
                 disabled={!message.trim() || sending}
               >
                 {sending
@@ -306,6 +394,14 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
                   : <Ionicons name="send" size={18} color="#fff" />
                 }
               </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Unassigned prompt */}
+          {!isClosed && canEditTicket && !ticket.users?.name && (
+            <View style={styles.unassignedBanner}>
+              <Ionicons name="person-add-outline" size={14} color="#6b7280" />
+              <Text style={styles.unassignedText}>Assign this ticket to reply</Text>
             </View>
           )}
         </View>
@@ -322,9 +418,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 8,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
   },
+  infoLeftSection: { flex: 1 },
   infoChipRow: { flexDirection: 'row', gap: 6 },
   infoChip: { backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   infoChipText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
+  assignedUserRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  assignedLabel: { fontSize: 11, color: '#9ca3af' },
+  assignedValue: { fontSize: 11, fontWeight: '600', color: '#374151' },
+  unassignedContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 10 },
+  claimBtn: { backgroundColor: C.primary, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+  claimBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
   statusBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   statusBtnText: { fontSize: 12, fontWeight: '700' },
   dropdown: {
@@ -353,6 +456,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#e5e7eb',
   },
   closedText: { fontSize: 12, color: '#6b7280' },
+  unassignedBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center',
+    backgroundColor: '#fef3c7', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#fde68a',
+  },
+  unassignedText: { fontSize: 12, color: '#d97706' },
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8,
     paddingHorizontal: 12, paddingVertical: 8,

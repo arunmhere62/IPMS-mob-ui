@@ -29,6 +29,7 @@ import { ReceiptViewModal } from './components';
 import AdvancePaymentForm from '@/features/owner/screens/tenants/AdvancePaymentForm';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import type { RootState } from '@/features/owner/store';
 import { useGetPGLocationDetailsQuery } from '@/features/owner/api/pgLocationsApi';
 import type { ReceiptData } from '@/services/receipt/receiptTypes';
@@ -130,14 +131,13 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
     try {
       setLoading(true);
       await voidAdvancePayment({ id: voidTargetPayment.s_no, voided_reason: reason }).unwrap();
-      Alert.alert('Success', 'Advance payment deleted successfully');
+      showSuccessAlert('Advance payment deleted successfully');
       setVoidModalVisible(false);
       setVoidTargetPayment(null);
       setVoidReason('');
       refreshTenantDetails();
     } catch (error: unknown) {
-      const err = error as { data?: { message?: string }; message?: string };
-      Alert.alert('Delete Error', err?.data?.message || err?.message || 'Failed to delete payment');
+      showErrorAlert(error, 'Delete Error');
     } finally {
       setLoading(false);
     }
