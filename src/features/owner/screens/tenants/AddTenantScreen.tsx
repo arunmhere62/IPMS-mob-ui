@@ -73,11 +73,37 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
 
   // Phone verification state
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneVerifiedSkipped, setPhoneVerifiedSkipped] = useState(false);
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [otpValue, setOtpValue] = useState("");
   const [otpError, setOtpError] = useState("");
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  const handleSkipVerification = () => {
+    const phone = getFullPhoneNumber();
+    const displayPhone = formData.phone_no
+      ? `+${selectedPhoneCountry.phoneCode.replace('+', '')} ${formData.phone_no}`
+      : phone;
+    Alert.alert(
+      "Skip Phone Verification?",
+      `Are you sure the number ${displayPhone} is correct?\n\nThe tenant will NOT be able to login to the tenant portal unless this number matches their registered phone.`,
+      [
+        { text: "Go Back", style: "cancel" },
+        {
+          text: "Yes, Skip Verification",
+          style: "destructive",
+          onPress: () => {
+            setPhoneVerified(true);
+            setPhoneVerifiedSkipped(true);
+            setShowOtpInput(false);
+            setOtpValue("");
+            setOtpError("");
+          },
+        },
+      ]
+    );
+  };
 
   // Get full phone number with country code
   const getFullPhoneNumber = () => {
@@ -674,6 +700,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     onPhoneChange={(phone) => {
                       updateField("phone_no", phone);
                       setPhoneVerified(false);
+                      setPhoneVerifiedSkipped(false);
                       setShowOtpInput(false);
                       setOtpValue("");
                       setOtpError("");
@@ -683,106 +710,220 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
 
                   {/* Phone Verification UI */}
                   {!isEditMode && formData.phone_no.length >= 10 && (
-                    <View style={{ marginTop: 4 }}>
-                      {!phoneVerified ? (
-                        <>
-                          <TouchableOpacity
-                            onPress={async () => {
-                              const phone = getFullPhoneNumber();
-                              if (!phone) {
-                                Alert.alert("Error", "Please enter a valid phone number");
-                                return;
-                              }
-                              try {
-                                setSendingOtp(true);
-                                await sendPhoneOtp({ phone }).unwrap();
-                                setShowOtpInput(true);
-                                setOtpError("");
-                                Alert.alert("Success", `OTP sent to number ending in ${phone.slice(-4)}`);
-                              } catch (error: any) {
-                                const msg = error?.data?.message || "Failed to send OTP";
-                                Alert.alert("Error", msg);
-                              } finally {
-                                setSendingOtp(false);
-                              }
-                            }}
-                            disabled={sendingOtp}
-                            style={{
-                              backgroundColor: sendingOtp ? "#9CA3AF" : Theme.colors.primary,
-                              paddingHorizontal: 12,
-                              paddingVertical: 8,
-                              borderRadius: 6,
-                              alignSelf: "flex-start",
-                            }}
-                          >
-                            <Text style={{ color: "#fff", fontSize: 12 }}>
-                              {sendingOtp ? "Sending..." : showOtpInput ? "Resend OTP" : "Verify Phone"}
+                    <View style={{ marginTop: 10 }}>
+                      {phoneVerified ? (
+                        /* ── Verified / Skipped state ── */
+                        phoneVerifiedSkipped ? (
+                          <View style={{
+                            backgroundColor: "#FFFBEB",
+                            borderWidth: 1,
+                            borderColor: "#FCD34D",
+                            borderRadius: 10,
+                            padding: 12,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 10,
+                          }}>
+                            <View style={{
+                              width: 32, height: 32, borderRadius: 16,
+                              backgroundColor: "#FEF3C7",
+                              alignItems: "center", justifyContent: "center",
+                            }}>
+                              <Text style={{ fontSize: 16 }}>⚠️</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 13, fontWeight: "700", color: "#92400E" }}>
+                                Verification Skipped
+                              </Text>
+                              <Text style={{ fontSize: 11, color: "#B45309", marginTop: 2 }}>
+                                Tenant won't be able to login if number is wrong
+                              </Text>
+                            </View>
+                            <TouchableOpacity
+                              onPress={() => { setPhoneVerified(false); setPhoneVerifiedSkipped(false); }}
+                              style={{
+                                borderWidth: 1, borderColor: "#F59E0B",
+                                borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5,
+                              }}
+                            >
+                              <Text style={{ fontSize: 11, color: "#D97706", fontWeight: "600" }}>Verify</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <View style={{
+                            backgroundColor: "#F0FDF4",
+                            borderWidth: 1,
+                            borderColor: "#86EFAC",
+                            borderRadius: 10,
+                            padding: 12,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 10,
+                          }}>
+                            <View style={{
+                              width: 32, height: 32, borderRadius: 16,
+                              backgroundColor: "#DCFCE7",
+                              alignItems: "center", justifyContent: "center",
+                            }}>
+                              <Text style={{ fontSize: 16 }}>✅</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 13, fontWeight: "700", color: "#166534" }}>
+                                Phone Verified
+                              </Text>
+                              <Text style={{ fontSize: 11, color: "#15803D", marginTop: 2 }}>
+                                Tenant can login with this number
+                              </Text>
+                            </View>
+                          </View>
+                        )
+                      ) : (
+                        /* ── Unverified state ── */
+                        <View style={{
+                          backgroundColor: "#F8FAFF",
+                          borderWidth: 1,
+                          borderColor: "#BFDBFE",
+                          borderRadius: 10,
+                          padding: 12,
+                          gap: 10,
+                        }}>
+                          {/* Header row */}
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <View style={{
+                              width: 28, height: 28, borderRadius: 14,
+                              backgroundColor: "#DBEAFE",
+                              alignItems: "center", justifyContent: "center",
+                            }}>
+                              <Text style={{ fontSize: 14 }}>📱</Text>
+                            </View>
+                            <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E3A8A", flex: 1 }}>
+                              Verify Phone Number
                             </Text>
-                          </TouchableOpacity>
+                          </View>
 
+                          {/* OTP input row (shown after send) */}
                           {showOtpInput && (
-                            <View style={{ flexDirection: "row", marginTop: 8, gap: 8 }}>
-                              <TextInput
-                                value={otpValue}
-                                onChangeText={setOtpValue}
-                                placeholder="Enter 4-digit OTP"
-                                keyboardType="numeric"
-                                maxLength={4}
-                                style={{
-                                  flex: 1,
-                                  borderWidth: 1,
-                                  borderColor: otpError ? "#EF4444" : Theme.colors.border,
-                                  borderRadius: 6,
-                                  paddingHorizontal: 10,
-                                  paddingVertical: 8,
-                                  fontSize: 14,
-                                }}
-                              />
-                              <TouchableOpacity
-                                onPress={async () => {
-                                  const phone = getFullPhoneNumber();
-                                  if (otpValue.length !== 4) {
-                                    setOtpError("Please enter 4-digit OTP");
-                                    return;
-                                  }
-                                  try {
-                                    setVerifyingOtp(true);
-                                    await verifyPhoneOtp({ phone, otp: otpValue }).unwrap();
-                                    setPhoneVerified(true);
-                                    setShowOtpInput(false);
-                                    setOtpError("");
-                                    Alert.alert("Success", "Phone verified successfully!");
-                                  } catch (error: any) {
-                                    const msg = error?.data?.message || "Invalid OTP";
-                                    setOtpError(msg);
-                                  } finally {
-                                    setVerifyingOtp(false);
-                                  }
-                                }}
-                                disabled={verifyingOtp || otpValue.length !== 4}
-                                style={{
-                                  backgroundColor: verifyingOtp || otpValue.length !== 4 ? "#9CA3AF" : "#10B981",
-                                  paddingHorizontal: 16,
-                                  paddingVertical: 8,
-                                  borderRadius: 6,
-                                  justifyContent: "center",
-                                }}
-                              >
-                                <Text style={{ color: "#fff", fontSize: 12 }}>
-                                  {verifyingOtp ? "Verifying..." : "Verify"}
-                                </Text>
-                              </TouchableOpacity>
+                            <View style={{ gap: 4 }}>
+                              <Text style={{ fontSize: 11, color: "#3B82F6" }}>
+                                OTP sent · Enter the 4-digit code
+                              </Text>
+                              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                                <TextInput
+                                  value={otpValue}
+                                  onChangeText={setOtpValue}
+                                  placeholder="_ _ _ _"
+                                  keyboardType="numeric"
+                                  maxLength={4}
+                                  style={{
+                                    flex: 1,
+                                    borderWidth: 1.5,
+                                    borderColor: otpError ? "#EF4444" : "#93C5FD",
+                                    borderRadius: 8,
+                                    paddingHorizontal: 10,
+                                    paddingVertical: 7,
+                                    fontSize: 16,
+                                    fontWeight: "700",
+                                    letterSpacing: 6,
+                                    textAlign: "center",
+                                    backgroundColor: "#fff",
+                                    color: "#1E3A8A",
+                                  }}
+                                />
+                                <TouchableOpacity
+                                  onPress={async () => {
+                                    const phone = getFullPhoneNumber();
+                                    if (otpValue.length !== 4) {
+                                      setOtpError("Please enter 4-digit OTP");
+                                      return;
+                                    }
+                                    try {
+                                      setVerifyingOtp(true);
+                                      await verifyPhoneOtp({ phone, otp: otpValue }).unwrap();
+                                      setPhoneVerified(true);
+                                      setShowOtpInput(false);
+                                      setOtpError("");
+                                    } catch (error: any) {
+                                      const msg = error?.data?.message || "Invalid OTP";
+                                      setOtpError(msg);
+                                    } finally {
+                                      setVerifyingOtp(false);
+                                    }
+                                  }}
+                                  disabled={verifyingOtp || otpValue.length !== 4}
+                                  style={{
+                                    backgroundColor: verifyingOtp || otpValue.length !== 4 ? "#9CA3AF" : "#10B981",
+                                    paddingHorizontal: 14,
+                                    paddingVertical: 8,
+                                    borderRadius: 8,
+                                  }}
+                                >
+                                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
+                                    {verifyingOtp ? "..." : "Confirm"}
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
+                              {otpError ? (
+                                <Text style={{ fontSize: 11, color: "#EF4444" }}>{otpError}</Text>
+                              ) : null}
                             </View>
                           )}
-                          {otpError && (
-                            <Text style={{ fontSize: 11, color: "#EF4444", marginTop: 4 }}>
-                              {otpError}
-                            </Text>
-                          )}
-                        </>
-                      ) : (
-                        <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          <Text style={{ color: "#10B981", fontSize: 14 }}>✓ Phone Verified</Text>
+
+                          {/* Action buttons row */}
+                          <View style={{ flexDirection: "row", gap: 8 }}>
+                            <TouchableOpacity
+                              onPress={async () => {
+                                const phone = getFullPhoneNumber();
+                                if (!phone) {
+                                  Alert.alert("Error", "Please enter a valid phone number");
+                                  return;
+                                }
+                                try {
+                                  setSendingOtp(true);
+                                  await sendPhoneOtp({ phone }).unwrap();
+                                  setShowOtpInput(true);
+                                  setOtpError("");
+                                } catch (error: any) {
+                                  const msg = error?.data?.message || "Failed to send OTP";
+                                  Alert.alert("Error", msg);
+                                } finally {
+                                  setSendingOtp(false);
+                                }
+                              }}
+                              disabled={sendingOtp}
+                              style={{
+                                flex: 1,
+                                backgroundColor: sendingOtp ? "#9CA3AF" : Theme.colors.primary,
+                                paddingVertical: 10,
+                                borderRadius: 8,
+                                alignItems: "center",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                gap: 6,
+                              }}
+                            >
+                              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
+                                {sendingOtp ? "Sending OTP..." : showOtpInput ? "Resend OTP" : "Send OTP"}
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={handleSkipVerification}
+                              style={{
+                                borderWidth: 1,
+                                borderColor: "#E5E7EB",
+                                paddingVertical: 10,
+                                paddingHorizontal: 14,
+                                borderRadius: 8,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: "#fff",
+                              }}
+                            >
+                              <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "500" }}>
+                                Skip
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       )}
                     </View>

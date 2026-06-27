@@ -14,11 +14,22 @@ const unwrapCentralData = <T>(response: any): T => {
   return response as T;
 };
 
+export type SubscriptionFlags = {
+  has_active_plan: boolean;
+  is_free_plan: boolean;
+  is_trial: boolean;
+  is_expired: boolean;
+  days_remaining: number;
+  plan_name: string | null;
+};
+
 export type MyPermissionsResponse = {
   user_id: number;
   role_id: number;
   permissions_map: Record<string, boolean>;
   permissions: string[];
+  subscription: SubscriptionFlags;
+  is_onboarding_complete: boolean;
 };
 
 export type PermissionCatalogItem = {

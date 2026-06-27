@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLazyGetMyPermissionsQuery } from '../features/owner/api/rbacApi';
-import { setPermissionsMap, clearPermissions } from '../features/owner/store/slices/rbacSlice';
+import { setPermissionsMap, setSubscription, setIsOnboardingComplete, clearPermissions } from '../features/owner/store/slices/rbacSlice';
 import { RootState } from '@/features/owner/store';
 
 type Options = {
@@ -33,6 +33,8 @@ export const useRefreshMyPermissions = (options?: Options) => {
     try {
       const data = await fetchMyPerms().unwrap();
       dispatch(setPermissionsMap((data as any)?.permissions_map || {}));
+      dispatch(setSubscription((data as any)?.subscription ?? null));
+      dispatch(setIsOnboardingComplete((data as any)?.is_onboarding_complete ?? null));
     } catch {
       dispatch(setPermissionsMap({}));
     } finally {

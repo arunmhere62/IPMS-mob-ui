@@ -7,6 +7,8 @@ import {
   TextInput,
   RefreshControl,
   Alert,
+  Animated,
+  Easing,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
@@ -28,6 +30,8 @@ import { showErrorAlert, showSuccessAlert } from "../../../../utils/errorHandler
 import { CONTENT_COLOR } from "@/constant";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
+import { useOnboardingTour } from "../../../../context/OnboardingTourContext";
+import { Ionicons } from "@expo/vector-icons";
 
 interface RoomsScreenProps {
   navigation: any;
@@ -38,6 +42,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     (state: RootState) => state.pgLocations
   );
   const { can } = usePermissions();
+  const { tourStep, advanceTour } = useOnboardingTour();
 
   const canCreateRoom = can(Permission.CREATE_ROOM);
   const canEditRoom = can(Permission.EDIT_ROOM);
@@ -50,6 +55,20 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const [pagination, setPagination] = useState<any>(null);
 
   const [appliedSearch, setAppliedSearch] = useState("");
+
+  const tourPulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (tourStep === 'tap_room' || tourStep === 'tap_add_room') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(tourPulse, { toValue: 1.25, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+          Animated.timing(tourPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        ])
+      ).start();
+    } else {
+      tourPulse.setValue(1);
+    }
+  }, [tourStep]);
 
   const roomsQueryArgs = useMemo(() => {
     if (!selectedPGLocationId) return undefined as any;
@@ -172,7 +191,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     });
   };
 
-  const renderRoomCard = ({ item }: { item: Room }) =>
+  const renderRoomCard = ({ item, index }: { item: Room; index: number }) =>
     (() => {
       const totalBeds = item.total_beds ?? item.beds?.length ?? 0;
       const hasOccupancyFlag = (item.beds || []).some(
@@ -194,9 +213,10 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
       return (
         <TouchableOpacity
-          onPress={() =>
-            navigation.navigate("RoomDetails", { roomId: item.s_no })
-          }
+          onPress={() => {
+            if (tourStep === 'tap_room') advanceTour();
+            navigation.navigate("RoomDetails", { roomId: item.s_no });
+          }}
           activeOpacity={0.8}
         >
           <Card
@@ -244,21 +264,37 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
                 </View>
               </View>
 
-              <View
-                style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
-              >
-                <ActionButtons
-                  onView={() =>
-                    navigation.navigate("RoomDetails", { roomId: item.s_no })
-                  }
-                  onEdit={() => handleOpenEditModal(item.s_no)}
+              <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                {tourStep === 'tap_room' && index === 0 ? (
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap to open</Text>
+                    </View>
+                    <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
+                    <Animated.View style={{ transform: [{ scale: tourPulse }] }}>
+                      <TouchableOpacity
+                        onPress={() => { advanceTour(); navigation.navigate('RoomDetails', { roomId: item.s_no }); }}
+                        style={{ backgroundColor: '#2563EB', padding: 10, borderRadius: 10, shadowColor: '#2563EB', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
+                      >
+                        <Ionicons name="eye" size={20} color="#fff" />
+                      </TouchableOpacity>
+                    </Animated.View>
+                  </View>
+                ) : (
+                  <ActionButtons
+                    onView={() => {
+                      if (tourStep === 'tap_room') advanceTour();
+                      navigation.navigate("RoomDetails", { roomId: item.s_no });
+                    }}
+                    onEdit={() => handleOpenEditModal(item.s_no)}
                   onDelete={() => handleDeleteRoom(item.s_no, item.room_no)}
-                  disableEdit={!canEditRoom}
-                  disableDelete={!canDeleteRoom}
-                  blockPressWhenDisabled
-                  showView
-                  containerStyle={{ gap: 6 }}
-                />
+                    disableEdit={!canEditRoom}
+                    disableDelete={!canDeleteRoom}
+                    blockPressWhenDisabled
+                    showView
+                    containerStyle={{ gap: 6 }}
+                  />
+                )}
               </View>
             </View>
 
@@ -545,48 +581,57 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         )}
       </View>
 
-      <TouchableOpacity
-        onPress={() => {
-          if (!canCreateRoom) {
-            Alert.alert(
-              "Access Denied",
-              "You don't have permission to create rooms"
-            );
-            return;
-          }
-          setEditingRoomId(null);
-          setEditModalVisible(true);
-        }}
-        disabled={!canCreateRoom}
-        style={{
-          position: "absolute",
-          right: 20,
-          bottom: 80,
-          width: 60,
-          height: 60,
-          borderRadius: 30,
-          backgroundColor: Theme.colors.primary,
-          alignItems: "center",
-          justifyContent: "center",
-          elevation: 8,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          opacity: canCreateRoom ? 1 : 0.45,
-        }}
-      >
-        <Text style={{ color: "#fff", fontSize: 32, fontWeight: "300" }}>
-          +
-        </Text>
-      </TouchableOpacity>
+      {/* FAB: Add Room — pulsing with tooltip when tourStep === 'tap_add_room' */}
+      <View style={{ position: 'absolute', right: 20, bottom: 80, alignItems: 'center' }}>
+        {tourStep === 'tap_add_room' && (
+          <View style={{ alignItems: 'center', marginBottom: 6 }}>
+            <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="add-circle" size={12} color="#fff" />
+              <Text style={{ fontSize: 11, fontWeight: '800', color: '#fff' }}>Tap to add a room!</Text>
+            </View>
+            <View style={{ width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 7, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A' }} />
+          </View>
+        )}
+        <Animated.View style={tourStep === 'tap_add_room' ? { transform: [{ scale: tourPulse }] } : undefined}>
+          <TouchableOpacity
+            onPress={() => {
+              if (!canCreateRoom) {
+                Alert.alert('Access Denied', "You don't have permission to create rooms");
+                return;
+              }
+              setEditingRoomId(null);
+              setEditModalVisible(true);
+            }}
+            disabled={!canCreateRoom}
+            style={{
+              width: 60,
+              height: 60,
+              borderRadius: 30,
+              backgroundColor: tourStep === 'tap_add_room' ? '#1E3A8A' : Theme.colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+              elevation: tourStep === 'tap_add_room' ? 12 : 8,
+              shadowColor: tourStep === 'tap_add_room' ? '#1E3A8A' : '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: tourStep === 'tap_add_room' ? 0.55 : 0.3,
+              shadowRadius: tourStep === 'tap_add_room' ? 10 : 8,
+              opacity: canCreateRoom ? 1 : 0.45,
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
 
       {/* Room Form Modal */}
       <RoomFormModal
         visible={editModalVisible}
         roomId={editingRoomId}
         onClose={handleCloseEditModal}
-        onSuccess={handleEditSuccess}
+        onSuccess={() => {
+          handleEditSuccess();
+          if (tourStep === 'tap_add_room' && editingRoomId === null) advanceTour();
+        }}
       />
     </ScreenLayout>
   );

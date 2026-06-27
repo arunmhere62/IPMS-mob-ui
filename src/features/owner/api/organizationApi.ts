@@ -70,6 +70,27 @@ export interface GetOrganizationStatsResponse {
   data: OrganizationStats;
 }
 
+export interface OnboardingStatus {
+  is_new: boolean;
+  is_recent: boolean;
+  has_pg_locations: boolean;
+  has_rooms: boolean;
+  has_beds: boolean;
+  has_tenants: boolean;
+  has_payments: boolean;
+  pg_locations_count: number;
+  rooms_count: number;
+  beds_count: number;
+  tenants_count: number;
+  payments_count: number;
+  created_at: string;
+}
+
+export interface OnboardingStatusResponse {
+  success: boolean;
+  data: OnboardingStatus;
+}
+
 export type UpdateOrganizationDto = {
   name?: string;
   description?: string;
@@ -124,6 +145,12 @@ export const organizationApi = baseApi.injectEndpoints({
         { type: 'Organization' as const, id: arg.id },
       ],
     }),
+
+    checkOnboardingStatus: build.query<OnboardingStatus, number>({
+      query: (id) => ({ url: `/organizations/${id}/onboarding-status`, method: 'GET' }),
+      transformResponse: (response: ApiEnvelope<OnboardingStatus> | unknown) => unwrapData<OnboardingStatus>(response) as OnboardingStatus,
+      providesTags: (_res, _err, id) => [{ type: 'Organization' as const, id }],
+    }),
   }),
   overrideExisting: false,
 });
@@ -136,4 +163,6 @@ export const {
   useGetOrganizationByIdQuery,
   useLazyGetOrganizationByIdQuery,
   useUpdateOrganizationMutation,
+  useCheckOnboardingStatusQuery,
+  useLazyCheckOnboardingStatusQuery,
 } = organizationApi;

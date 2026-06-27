@@ -7,6 +7,8 @@ import {
   TextInput,
   RefreshControl,
   Alert,
+  Animated,
+  Easing,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
@@ -34,6 +36,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 import { BedsFilterModal } from "./BedsFilterModal";
 import { RootState } from "../../store";
+import { useOnboardingTour } from "../../../../context/OnboardingTourContext";
 
 interface BedsScreenProps {
   navigation: any;
@@ -45,9 +48,24 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
   );
   const { user } = useSelector((state: RootState) => state?.auth);
   const { can } = usePermissions();
+  const { tourStep, endTour } = useOnboardingTour();
   const canEditBed = can(Permission.EDIT_BED);
   const canDeleteBed = can(Permission.DELETE_BED);
   const canCreateTenant = can(Permission.CREATE_TENANT);
+
+  const tenantPulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (tourStep === 'tap_add_tenant') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(tenantPulse, { toValue: 1.18, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+          Animated.timing(tenantPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        ])
+      ).start();
+    } else {
+      tenantPulse.setValue(1);
+    }
+  }, [tourStep]);
 
   const [beds, setBeds] = useState<Bed[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -291,7 +309,9 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
     return count;
   };
 
-  const renderBedCard = ({ item }: { item: Bed }) => (
+  const firstUnoccupiedIndex = beds.findIndex((b) => !b.is_occupied);
+
+  const renderBedCard = ({ item, index }: { item: Bed; index: number }) => (
     <Card
       style={{
         marginHorizontal: 12,
@@ -352,27 +372,31 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
 
         <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
           {!item.is_occupied && (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("AddTenant", {
-                  bed_id: item.s_no,
-                  room_id: item.room_id,
-                })
-              }
-              disabled={!canCreateTenant}
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: "#10B981",
-                justifyContent: "center",
-                opacity: canCreateTenant ? 1 : 0.45,
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
-                Add Tenant
-              </Text>
-            </TouchableOpacity>
+            tourStep === 'tap_add_tenant' && index === firstUnoccupiedIndex ? (
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#065F46', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap here!</Text>
+                </View>
+                <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#065F46', marginBottom: 2 }} />
+                <Animated.View style={{ transform: [{ scale: tenantPulse }] }}>
+                  <TouchableOpacity
+                    onPress={() => { endTour(); navigation.navigate("AddTenant", { bed_id: item.s_no, room_id: item.room_id }); }}
+                    disabled={!canCreateTenant}
+                    style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#065F46', justifyContent: 'center', shadowColor: '#065F46', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Add Tenant</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={() => navigation.navigate("AddTenant", { bed_id: item.s_no, room_id: item.room_id })}
+                disabled={!canCreateTenant}
+                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#10B981", justifyContent: "center", opacity: canCreateTenant ? 1 : 0.45 }}
+              >
+                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Add Tenant</Text>
+              </TouchableOpacity>
+            )
           )}
           <ActionButtons
             onEdit={() => handleEditBed(item)}

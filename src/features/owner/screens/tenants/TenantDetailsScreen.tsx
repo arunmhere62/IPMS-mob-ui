@@ -15,8 +15,9 @@ import { DatePicker } from '../../../../components/DatePicker';
 import { AmountInput } from '../../../../components/AmountInput';
 import { OptionSelector, Option } from '../../../../components/OptionSelector';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/features/owner/store';
+import { setIsOnboardingComplete } from '@/features/owner/store/slices/rbacSlice';
 import { Card } from '../../../../components/Card';
 import { Theme } from '../../../../theme';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
@@ -57,6 +58,7 @@ import type {
   RefundPayment as PaymentsRefundPayment,
 } from '@/features/owner/api/paymentsApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { useOnboardingTour } from '@/context/OnboardingTourContext';
 import AdvancePaymentForm from './AdvancePaymentForm';
 import { useGetAllBedsQuery, useGetAllRoomsQuery } from '@/features/owner/api/roomsApi';
 import type { Bed, GetBedsParams, GetRoomsParams, Room } from '@/features/owner/api/roomsApi';
@@ -630,8 +632,12 @@ const TenantDetailsContent: React.FC<{
     }
   };
 
+  const dispatch = useDispatch();
+  const { tourStep, endTour } = useOnboardingTour();
+
   const handleAddRentPayment = () => {
     if (!canCreateRent) return;
+    if (tourStep === 'tap_add_rent') endTour();
     setRentPaymentFormVisible(true);
   };
 
@@ -1275,6 +1281,7 @@ const TenantDetailsContent: React.FC<{
           canAddPayment={canCreateRent && isTenantActive}
           canAddAdvance={canCreateAdvance && isTenantActive}
           canAddRefund={canCreateRefund && isTenantActive}
+          showRentTourHint={tourStep === 'tap_add_rent'}
         />
 
         {/* Pending Payment Alert */}
@@ -1923,6 +1930,7 @@ const TenantDetailsContent: React.FC<{
           onSuccess={() => {
             refetchTenant();
             refreshTenantList();
+            dispatch(setIsOnboardingComplete(true));
           }}
         />
       )}

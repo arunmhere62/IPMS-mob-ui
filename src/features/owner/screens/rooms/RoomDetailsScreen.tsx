@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,8 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
+import { useOnboardingTour } from '../../../../context/OnboardingTourContext';
+import { Animated, Easing } from 'react-native';
 
 interface RoomDetailsScreenProps {
   navigation: any;
@@ -42,6 +44,20 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   const { roomId } = route.params;
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
+  const { tourStep, endTour } = useOnboardingTour();
+  const addBedPulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (tourStep === 'tap_add_bed') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(addBedPulse, { toValue: 1.15, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+          Animated.timing(addBedPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        ])
+      ).start();
+    } else {
+      addBedPulse.setValue(1);
+    }
+  }, [tourStep]);
 
   const screenWidth = Dimensions.get('window').width;
 
@@ -108,6 +124,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
       Alert.alert('Access Denied', "You don't have permission to create beds");
       return;
     }
+    if (tourStep === 'tap_add_bed') endTour();
     setSelectedBed(null);
     setBedModalVisible(true);
   };
@@ -515,23 +532,33 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
             <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
               🛏️ Beds ({beds.length})
             </Text>
-            <TouchableOpacity
-              onPress={handleAddBed}
-              disabled={!canCreateBed}
-              style={{
-                backgroundColor: Theme.colors.primary,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 8,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                opacity: canCreateBed ? 1 : 0.45,
-              }}
-            >
-              <Ionicons name="add" size={18} color="#fff" />
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Add Bed</Text>
-            </TouchableOpacity>
+            {tourStep === 'tap_add_bed' ? (
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap here!</Text>
+                </View>
+                <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
+                <Animated.View style={{ transform: [{ scale: addBedPulse }] }}>
+                  <TouchableOpacity
+                    onPress={handleAddBed}
+                    disabled={!canCreateBed}
+                    style={{ backgroundColor: '#1E3A8A', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4, shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
+                  >
+                    <Ionicons name="add" size={18} color="#fff" />
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Add Bed</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={handleAddBed}
+                disabled={!canCreateBed}
+                style={{ backgroundColor: Theme.colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4, opacity: canCreateBed ? 1 : 0.45 }}
+              >
+                <Ionicons name="add" size={18} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Add Bed</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {beds && beds.length > 0 ? (

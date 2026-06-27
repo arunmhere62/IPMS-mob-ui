@@ -27,6 +27,7 @@ import { Animated, Easing } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import LottieView from "lottie-react-native";
 import { persistor, store } from "@/features/owner/store";
+import { OnboardingTourProvider } from "./src/context/OnboardingTourContext";
 
 // CRITICAL: Set notification handler at the TOP LEVEL (outside component)
 // This ensures notifications are handled even when app is in background/killed
@@ -171,6 +172,7 @@ export default function App() {
               persistor={persistor}
             >
               <ErrorProvider>
+                <OnboardingTourProvider>
                 <ToastProvider>
                   {appError ? (
                     <View
@@ -230,6 +232,7 @@ export default function App() {
                     <AppContent />
                   )}
                 </ToastProvider>
+                </OnboardingTourProvider>
               </ErrorProvider>
             </PersistGate>
           </Provider>

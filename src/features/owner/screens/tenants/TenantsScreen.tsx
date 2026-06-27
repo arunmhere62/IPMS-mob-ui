@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TextInput,
   Image,
   ActivityIndicator,
+  Animated,
+  Easing,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
@@ -24,6 +26,7 @@ import { useBottomNavScrollHandler } from "../../../../components/BottomNavVisib
 import { TenantsFilterModal } from "./TenantsFilterModal";
 import { Tenant, useLazyGetTenantsQuery } from "../../api";
 import { RootState } from "../../store";
+import { useOnboardingTour } from "../../../../context/OnboardingTourContext";
 
 interface TenantsScreenProps {
   navigation: any;
@@ -400,6 +403,22 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     });
   };
 
+  const { tourStep, advanceTour } = useOnboardingTour();
+
+  const tenantPulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (tourStep === 'tap_tenant') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(tenantPulse, { toValue: 1.15, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+          Animated.timing(tenantPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        ])
+      ).start();
+    } else {
+      tenantPulse.setValue(1);
+    }
+  }, [tourStep]);
+
   const getFilterCount = () => {
     let count = 0;
     if (statusFilter !== "ALL") count++;
@@ -410,7 +429,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     return count;
   };
 
-  const renderTenantCard = ({ item }: any) => {
+  const renderTenantCard = ({ item, index }: any) => {
     // Get tenant image
     const tenantImage =
       item.images && Array.isArray(item.images) && item.images.length > 0
@@ -977,26 +996,34 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
 
           {/* Action Buttons */}
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-            <AnimatedButton
-              onPress={() =>
-                navigation.navigate("TenantDetails", { tenantId: item.s_no })
-              }
-              scaleValue={0.94}
-              duration={120}
-              style={{
-                flex: 1,
-                minWidth: 100,
-                paddingVertical: 10,
-                paddingHorizontal: 16,
-                backgroundColor: Theme.colors.primary,
-                borderRadius: 8,
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
-                View Details
-              </Text>
-            </AnimatedButton>
+            {tourStep === 'tap_tenant' && index === 0 ? (
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="finger-print" size={11} color="#fff" />
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap to open tenant</Text>
+                </View>
+                <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
+                <Animated.View style={{ transform: [{ scale: tenantPulse }], width: '100%' }}>
+                  <AnimatedButton
+                    onPress={() => { advanceTour(); navigation.navigate("TenantDetails", { tenantId: item.s_no }); }}
+                    scaleValue={0.94}
+                    duration={120}
+                    style={{ paddingVertical: 10, paddingHorizontal: 16, backgroundColor: '#1E3A8A', borderRadius: 8, alignItems: 'center', shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>View Details</Text>
+                  </AnimatedButton>
+                </Animated.View>
+              </View>
+            ) : (
+              <AnimatedButton
+                onPress={() => navigation.navigate("TenantDetails", { tenantId: item.s_no })}
+                scaleValue={0.94}
+                duration={120}
+                style={{ flex: 1, minWidth: 100, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: Theme.colors.primary, borderRadius: 8, alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>View Details</Text>
+              </AnimatedButton>
+            )}
           </View>
         </Card>
       </AnimatedPressableCard>

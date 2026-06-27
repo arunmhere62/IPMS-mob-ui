@@ -33,6 +33,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { isSuperAdmin } = usePermissions();
+  const rbacSubscription = useSelector((state: RootState) => (state as any).rbac?.subscription);
   const { data: appStatus } = useGetPublicAppStatusQuery();
   const currentVersion =
     Platform.OS === 'android'
@@ -300,6 +301,70 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                     }} />
                   </View>
                 </View>
+              )}
+
+              {/* Trial upgrade banner */}
+              {rbacSubscription?.is_trial && rbacSubscription?.has_active_plan && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('SubscriptionPlans')}
+                  activeOpacity={0.88}
+                  style={{
+                    marginBottom: 12,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    backgroundColor: rbacSubscription.days_remaining <= 3 ? '#DC2626' : rbacSubscription.days_remaining <= 7 ? '#E11D48' : '#EF4444',
+                  }}
+                >
+                  <View style={{
+                    padding: 14,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}>
+                    <View style={{
+                      width: 40, height: 40, borderRadius: 20,
+                      backgroundColor: 'rgba(255,255,255,0.18)',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Text style={{ fontSize: 20 }}>🚀</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
+                          You're on a Trial Plan
+                        </Text>
+                        {rbacSubscription.days_remaining <= 7 && (
+                          <View style={{ backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 20, paddingHorizontal: 6, paddingVertical: 2 }}>
+                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>
+                              {rbacSubscription.days_remaining === 0 ? 'Expires today' : `${rbacSubscription.days_remaining}d left`}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', lineHeight: 15 }}>
+                        {rbacSubscription.days_remaining <= 3
+                          ? 'Upgrade now to avoid losing access to your data'
+                          : 'Unlock full access — no limits, no interruptions'}
+                      </Text>
+                    </View>
+                    <View style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 7,
+                    }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#EF4444' }}>Upgrade</Text>
+                    </View>
+                  </View>
+                  {/* Progress bar */}
+                  <View style={{ height: 3, backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                    <View style={{
+                      height: '100%',
+                      width: `${Math.min(100, Math.max(5, ((rbacSubscription.days_remaining) / 30) * 100))}%`,
+                      backgroundColor: 'rgba(255,255,255,0.6)',
+                    }} />
+                  </View>
+                </TouchableOpacity>
               )}
 
               <View style={{ flexDirection: 'row', gap: 8 }}>

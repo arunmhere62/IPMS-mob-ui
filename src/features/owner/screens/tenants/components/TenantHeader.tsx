@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View, Text, Image, StyleSheet, Animated, Easing, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressableCard } from "../../../../../components/AnimatedPressableCard";
 import { ActionButtons } from "../../../../../components/ActionButtons";
@@ -24,9 +24,46 @@ interface TenantHeaderProps {
   canAddPayment?: boolean;
   canAddAdvance?: boolean;
   canAddRefund?: boolean;
+  showRentTourHint?: boolean;
 }
 
+const RentTourHintTile: React.FC<{ onPress: () => void; disabled?: boolean }> = ({ onPress, disabled }) => {
+  const pulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.08, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(pulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center' }}>
+      <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <Ionicons name="finger-print" size={11} color="#fff" />
+        <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap here!</Text>
+      </View>
+      <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
+      <Animated.View style={{ transform: [{ scale: pulse }], width: '100%' }}>
+        <TouchableOpacity
+          onPress={onPress}
+          disabled={disabled}
+          activeOpacity={0.8}
+          style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 12, backgroundColor: '#1E3A8A', borderRadius: 10, alignItems: 'center', justifyContent: 'center', minHeight: 52, shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.55, shadowRadius: 8, elevation: 7, opacity: disabled ? 0.45 : 1 }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="wallet" size={16} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginLeft: 8 }}>Add Rent</Text>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
+};
+
 export const TenantHeader: React.FC<TenantHeaderProps> = ({
+  showRentTourHint,
   tenant,
   onEdit,
   showEdit = true,
@@ -152,7 +189,11 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
       {/* Action Buttons */}
       <View style={styles.actionGrid}>
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-          <ActionTile title="Add Rent" icon="wallet" onPress={onAddPayment} disabled={!canAddPayment} />
+          {showRentTourHint ? (
+            <RentTourHintTile onPress={onAddPayment} disabled={!canAddPayment} />
+          ) : (
+            <ActionTile title="Add Rent" icon="wallet" onPress={onAddPayment} disabled={!canAddPayment} />
+          )}
           <ActionTile title="Add Advance" icon="trending-up" onPress={onAddAdvance} disabled={!canAddAdvance} />
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>

@@ -20,6 +20,13 @@ const tenantTabs = [
   { name: 'profile', label: 'Profile', icon: 'person' },
 ];
 
+const CATEGORY_HINTS: Record<TenantTicketCategory, string> = {
+  MAINTENANCE: 'For repairs, electricity, water, or any broken amenity in your room or common area.',
+  COMPLAINT:   'For noise, cleanliness, security, or issues with other tenants/staff.',
+  REQUEST:     'For extra items, room services, key replacement, or housekeeping requests.',
+  OTHER:       'For anything else — general queries, feedback, or concerns not covered above.',
+};
+
 const CATEGORIES: { label: string; value: TenantTicketCategory; icon: string }[] = [
   { label: 'Maintenance', value: 'MAINTENANCE', icon: 'construct-outline' },
   { label: 'Complaint',   value: 'COMPLAINT',   icon: 'alert-circle-outline' },
@@ -100,6 +107,12 @@ export function TenantCreateTicketScreen({ navigation }: Props) {
               </Text>
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* Category hint */}
+        <View style={styles.categoryHint}>
+          <Ionicons name="information-circle-outline" size={14} color="#6b7280" />
+          <Text style={styles.categoryHintText}>{CATEGORY_HINTS[category]}</Text>
         </View>
 
         {/* Priority */}
@@ -195,6 +208,8 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f9fafb',
   },
   priorityChipText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
+  categoryHint: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, backgroundColor: '#f9fafb', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#e5e7eb', marginTop: 4 },
+  categoryHintText: { flex: 1, fontSize: 12, color: '#6b7280', lineHeight: 18 },
   input: {
     backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb',
     paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#111827',
