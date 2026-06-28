@@ -161,6 +161,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
     bed_id: null as number | null,
     check_in_date: "",
     check_out_date: "",
+    expected_vacate_date: "",
     city_id: null as number | null,
     state_id: null as number | null,
     status: "ACTIVE",
@@ -247,6 +248,9 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
         : "",
       check_out_date: tenant.check_out_date
         ? new Date(tenant.check_out_date).toISOString().split("T")[0]
+        : "",
+      expected_vacate_date: tenant.expected_vacate_date
+        ? new Date(tenant.expected_vacate_date).toISOString().split("T")[0]
         : "",
       city_id: toNumberOrNull(tenant.city_id),
       state_id: toNumberOrNull(tenant.state_id),
@@ -549,6 +553,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
         room_id: formData.room_id || undefined,
         bed_id: formData.bed_id || undefined,
         check_in_date: formData.check_in_date,
+        expected_vacate_date: formData.expected_vacate_date || null,
         city_id: formData.city_id || undefined,
         state_id: formData.state_id || undefined,
         images: tenantImages, // Always send array, even if empty, so backend can clear removed images
@@ -1281,6 +1286,33 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     disabled={lockTenancyFacts}
                   />
                 </View>
+
+                {isEditMode && (
+                  <View style={{ marginTop: 16 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <Text style={{ fontSize: 11, fontWeight: "600", color: Theme.colors.text.secondary, marginLeft: 2 }}>
+                        Expected Vacate Date
+                      </Text>
+                      {formData.expected_vacate_date ? (
+                        <TouchableOpacity
+                          onPress={() => updateField("expected_vacate_date", "")}
+                          style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" }}
+                        >
+                          <Text style={{ fontSize: 11, color: "#DC2626", fontWeight: "600" }}>Clear</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                    <DatePicker
+                      label=""
+                      value={formData.expected_vacate_date}
+                      onChange={(date) => updateField("expected_vacate_date", date)}
+                      required={false}
+                    />
+                    <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 4, marginLeft: 2 }}>
+                      Set this if the tenant plans to leave on a specific date
+                    </Text>
+                  </View>
+                )}
               </Card>
 
               {/* Tenant Images */}

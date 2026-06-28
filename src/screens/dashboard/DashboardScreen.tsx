@@ -172,6 +172,12 @@ export const DashboardScreen: React.FC = () => {
         screen: "Expenses",
         color: "#EAB308",
       },
+      {
+        title: "Vacancies",
+        icon: "calendar-outline",
+        screen: "UpcomingVacancies",
+        color: "#8B5CF6",
+      },
     ],
     []
   );

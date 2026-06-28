@@ -58,7 +58,8 @@ export interface Tenant {
   bed_id?: number;
   check_in_date: string;
   check_out_date?: string;
-  status?: 'ACTIVE' | 'INACTIVE';
+  expected_vacate_date?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'CHECKED_OUT';
   occupation?: string;
   tenant_address?: string;
   images?: any;

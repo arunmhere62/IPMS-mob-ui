@@ -66,7 +66,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
             <Text style={styles.celebrationBtnText}>Get Started</Text>
           </TouchableOpacity>
         </View>
-      ) : (
+      ) : expanded && !allDone ? (
         <View style={styles.steps}>
           {steps.map((step, index) => {
             const unlocked = isUnlocked(index);
@@ -134,7 +134,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      ) : null}
     </View>
   );
 };

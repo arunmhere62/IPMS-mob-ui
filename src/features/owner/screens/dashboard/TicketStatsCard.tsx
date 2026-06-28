@@ -82,12 +82,10 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
   };
 
   const StatItem: React.FC<{ label: string; value: number; color: string; icon: string }> = ({ label, value, color, icon }) => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, paddingHorizontal: 12, backgroundColor: Theme.withOpacity(color, 0.08), borderRadius: 8, marginBottom: 6 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Ionicons name={icon as any} size={16} color={color} />
-        <Text style={{ color: Theme.colors.text.primary, fontSize: 12, fontWeight: '900' }}>{label}</Text>
-      </View>
-      <Text style={{ color: color, fontSize: 18, fontWeight: '900' }}>{value}</Text>
+    <View style={{ flex: 1, minWidth: 80, alignItems: 'center', paddingVertical: 8, backgroundColor: Theme.withOpacity(color, 0.08), borderRadius: 8, marginRight: 6, marginBottom: 6 }}>
+      <Ionicons name={icon as any} size={14} color={color} />
+      <Text style={{ color: color, fontSize: 16, fontWeight: '900', marginTop: 2 }}>{value}</Text>
+      <Text style={{ color: Theme.colors.text.secondary, fontSize: 10, fontWeight: '600', marginTop: 1 }}>{label}</Text>
     </View>
   );
 
@@ -99,37 +97,37 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
       <Card
         shadowColor="shadow-none"
         style={{
-          padding: 14,
+          padding: 10,
           borderWidth: 1,
           borderColor: Theme.withOpacity(getStatusColor(ticket.status), 0.18),
           backgroundColor: Theme.withOpacity(getStatusColor(ticket.status), 0.08),
-          marginBottom: 8,
+          marginBottom: 6,
         }}
       >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 4 }} numberOfLines={2}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }} numberOfLines={1}>
               {ticket.title}
             </Text>
             {showTenant && ticket.tenants && (
-              <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+              <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 1 }}>
                 {ticket.tenants.name}
               </Text>
             )}
           </View>
-          <View style={{ alignItems: 'flex-end', marginLeft: 12 }}>
+          <View style={{ alignItems: 'flex-end', marginLeft: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="chatbubble-outline" size={16} color={Theme.colors.text.secondary} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>{ticket._count.tenant_ticket_comments}</Text>
+              <Ionicons name="chatbubble-outline" size={12} color={Theme.colors.text.secondary} />
+              <Text style={{ fontSize: 11, fontWeight: '600', color: Theme.colors.text.primary }}>{ticket._count.tenant_ticket_comments}</Text>
             </View>
-          </View>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: `${getStatusColor(ticket.status)}20` }}>
-            <Text style={{ fontSize: 10, color: getStatusColor(ticket.status), fontWeight: '500' }}>{ticket.status}</Text>
-          </View>
-          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: `${getPriorityColor(ticket.priority)}20` }}>
-            <Text style={{ fontSize: 10, color: getPriorityColor(ticket.priority), fontWeight: '500' }}>{ticket.priority}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+              <View style={{ paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, backgroundColor: `${getStatusColor(ticket.status)}20` }}>
+                <Text style={{ fontSize: 9, color: getStatusColor(ticket.status), fontWeight: '500' }}>{ticket.status}</Text>
+              </View>
+              <View style={{ paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, backgroundColor: `${getPriorityColor(ticket.priority)}20` }}>
+                <Text style={{ fontSize: 9, color: getPriorityColor(ticket.priority), fontWeight: '500' }}>{ticket.priority}</Text>
+              </View>
+            </View>
           </View>
         </View>
       </Card>
@@ -156,20 +154,20 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
       <Card
         shadowColor="shadow-none"
         style={{
-          padding: 14,
+          padding: 12,
           borderWidth: 1,
           borderColor: Theme.colors.border,
           backgroundColor: Theme.colors.background.secondary,
-          marginBottom: 16,
+          marginBottom: 12,
         }}
       >
-        <View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
           <StatItem label="Total" value={overview.total} color={Theme.colors.dark} icon="layers" />
           <StatItem label="Open" value={overview.open} color={Theme.colors.danger} icon="alert-circle" />
           <StatItem label="In Progress" value={overview.inProgress} color={Theme.colors.warning} icon="time" />
           <StatItem label="Resolved" value={overview.resolved} color={Theme.colors.info} icon="checkmark-circle" />
           <StatItem label="Closed" value={overview.closed} color={Theme.colors.secondary} icon="close-circle" />
-          <StatItem label="High Priority" value={overview.highPriority} color={Theme.colors.danger} icon="flag" />
+          <StatItem label="High" value={overview.highPriority} color={Theme.colors.danger} icon="flag" />
         </View>
       </Card>
 
@@ -218,21 +216,21 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
           )}
         </View>
 
-        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
           {activeTab === 'recent' ? (
             recentTickets.length > 0 ? (
               recentTickets.map((ticket) => <TicketItem key={ticket.s_no} ticket={ticket} showTenant />)
             ) : (
-              <View style={{ padding: 24, alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, color: Theme.colors.text.secondary }}>No tickets yet</Text>
+              <View style={{ padding: 16, alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>No tickets yet</Text>
               </View>
             )
           ) : (
             unreadTickets.tickets.length > 0 ? (
               unreadTickets.tickets.map((ticket) => <TicketItem key={ticket.s_no} ticket={ticket} showTenant />)
             ) : (
-              <View style={{ padding: 24, alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, color: Theme.colors.text.secondary }}>No unread tickets</Text>
+              <View style={{ padding: 16, alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>No unread tickets</Text>
               </View>
             )
           )}

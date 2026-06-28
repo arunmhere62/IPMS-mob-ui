@@ -60,16 +60,12 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
     true;
   `;
 
-  const handleNavigationStateChange = (navState: any) => {
-    console.log('📍 Navigation URL:', navState.url);
+  const handleDeepLink = (url: string) => {
+    console.log('� Deep link received:', url);
+    const parsed = new URL(url);
+    const status = parsed.searchParams.get('status');
 
-    // Check if payment is successful or cancelled
-    if (
-      navState.url.includes('/payment/callback') ||
-      navState.url.includes('/api/v1/subscription/payment/callback') ||
-      navState.url.includes('payment/success')
-    ) {
-      // Payment successful
+    if (status === 'Success') {
       Alert.alert(
         'Payment Successful',
         'Your subscription has been activated!',
@@ -85,15 +81,13 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           },
         ]
       );
-    } else if (
-      navState.url.includes('/payment/cancel') ||
-      navState.url.includes('/api/v1/subscription/payment/cancel') ||
-      navState.url.includes('payment/failed')
-    ) {
-      // Payment cancelled or failed
+    } else {
+      const message = status === 'Aborted'
+        ? 'Your payment was cancelled.'
+        : 'Your payment was not completed. Please try again.';
       Alert.alert(
-        'Payment Cancelled',
-        'Your payment was not completed. Please try again.',
+        status === 'Aborted' ? 'Payment Cancelled' : 'Payment Failed',
+        message,
         [
           {
             text: 'OK',
@@ -101,6 +95,14 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           },
         ]
       );
+    }
+  };
+
+  const handleNavigationStateChange = (navState: any) => {
+    console.log('📍 Navigation URL:', navState.url);
+
+    if (navState.url.startsWith('pgapp://payment-result')) {
+      handleDeepLink(navState.url);
     }
   };
 
@@ -164,6 +166,11 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           userAgent="Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
           // Handle external links (UPI apps)
           onShouldStartLoadWithRequest={(request) => {
+            // Handle deep link payment result
+            if (request.url.startsWith('pgapp://payment-result')) {
+              handleDeepLink(request.url);
+              return false;
+            }
             // Allow UPI intent URLs to open in external apps
             if (request.url.startsWith('upi://') || 
                 request.url.startsWith('tez://') || 

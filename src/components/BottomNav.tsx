@@ -132,6 +132,7 @@ const moreMenuItems: MenuItem[] = [
   },
   { name: "Expenses", label: "Expenses", icon: "receipt", route: "Expenses" },
   { name: "TenantTickets", label: "Tenant Tickets", icon: "ticket-outline", route: "PgTenantTickets" },
+  { name: "UpcomingVacancies", label: "Upcoming Vacancies", icon: "calendar-outline", route: "UpcomingVacancies" },
   { name: "Settings", label: "Settings", icon: "settings", route: "Settings" },
 ];
 

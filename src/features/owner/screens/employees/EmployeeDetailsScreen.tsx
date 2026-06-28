@@ -22,7 +22,7 @@ import { AmountInput } from '@/components/AmountInput';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/features/owner/store';
 import { useGetPgUserAssignmentQuery, useUpdatePgUserSalaryMutation } from '@/features/owner/api/pgUsersApi';
-import { useDeleteEmployeeMutation, useGetEmployeeByIdQuery } from '../../api/employeesApi';
+import { useDeleteEmployeeMutation, useGetEmployeeByIdQuery, useToggleUserStatusMutation } from '../../api/employeesApi';
 import { useGetUserPermissionsQuery } from '../../api/rbacApi';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
@@ -132,6 +132,7 @@ const EmployeeDetailsScreen: React.FC = () => {
   const [salaryError, setSalaryError] = useState<string | null>(null);
 
   const [deleteEmployee] = useDeleteEmployeeMutation();
+  const [toggleUserStatus, { isLoading: isTogglingStatus }] = useToggleUserStatusMutation();
 
   const profileImageUri = (() => {
     const raw = employee?.profile_images;
@@ -210,6 +211,34 @@ const EmployeeDetailsScreen: React.FC = () => {
     (navigation as any).navigate('AddEmployee', { employeeId });
   }, [navigation, employeeId, canEditEmployee]);
 
+  const handleToggleStatus = () => {
+    const isActive = employee?.status === 'ACTIVE';
+    Alert.alert(
+      isActive ? 'Deactivate Account' : 'Activate Account',
+      isActive
+        ? `Deactivating ${employee?.name || 'this employee'} will immediately log them out and block access. Continue?`
+        : `Activate ${employee?.name || 'this employee'}'s account to restore their access?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: isActive ? 'Deactivate' : 'Activate',
+          style: isActive ? 'destructive' : 'default',
+          onPress: async () => {
+            try {
+              await toggleUserStatus(employeeId).unwrap();
+              showSuccessAlert(
+                isActive ? 'Account deactivated. User has been logged out.' : 'Account activated successfully.',
+              );
+              refetch();
+            } catch (error: any) {
+              showErrorAlert(error, 'Status Update Error');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleDelete = () => {
     if (!canDeleteEmployee) {
       Alert.alert('Access Denied', "You don't have permission to delete employees");
@@ -280,73 +309,109 @@ const EmployeeDetailsScreen: React.FC = () => {
                 elevation: 2,
               }}
             >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                  {profileImageUri ? (
-                    <Image 
-                      source={{ uri: profileImageUri }} 
-                      style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: 14,
-                      }}
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: 14,
-                        backgroundColor: Theme.colors.primary + '20',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={{ fontSize: 20 }}>👤</Text>
-                    </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1}>
-                      {employee.name || 'N/A'}
-                    </Text>
-                    <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.secondary }}>
-                      {employee.phone || 'N/A'}
-                    </Text>
-                    {employee.roles && (
-                      <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.primary }}>
-                        Role:{employee.roles.role_name}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-                <View style={{ alignItems: 'flex-end', gap: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                {profileImageUri ? (
+                  <Image 
+                    source={{ uri: profileImageUri }} 
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 16,
+                    }}
+                  />
+                ) : (
                   <View
                     style={{
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 6,
-                      backgroundColor: employee.status === 'ACTIVE' ? '#DCFCE7' : '#FEE2E2',
+                      width: 48,
+                      height: 48,
+                      borderRadius: 16,
+                      backgroundColor: Theme.colors.primary + '20',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        fontWeight: '700',
-                        color: employee.status === 'ACTIVE' ? '#166534' : '#991B1B',
-                      }}
-                    >
-                      {employee.status}
-                    </Text>
+                    <Text style={{ fontSize: 22 }}>👤</Text>
                   </View>
-                  <ActionButtons
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    showView={false}
-                    disableEdit={!canEditEmployee}
-                    disableDelete={!canDeleteEmployee}
-                    blockPressWhenDisabled
-                  />
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1}>
+                    {employee.name || 'N/A'}
+                  </Text>
+                  <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.secondary }}>
+                    {employee.phone || 'N/A'}
+                  </Text>
+                  {employee.roles && (
+                    <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.primary }}>
+                      Role: {employee.roles.role_name}
+                    </Text>
+                  )}
                 </View>
+                <View
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 8,
+                    backgroundColor: employee.status === 'ACTIVE' ? '#DCFCE7' : '#FEE2E2',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '700',
+                      color: employee.status === 'ACTIVE' ? '#166534' : '#991B1B',
+                    }}
+                  >
+                    {employee.status}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: 14,
+                  paddingTop: 14,
+                  borderTopWidth: 1,
+                  borderTopColor: Theme.colors.border + '30',
+                }}
+              >
+                <TouchableOpacity
+                  onPress={handleToggleStatus}
+                  disabled={isTogglingStatus}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingHorizontal: 14,
+                    paddingVertical: 9,
+                    borderRadius: 10,
+                    backgroundColor: employee.status === 'ACTIVE' ? '#FEF2F2' : '#F0FDF4',
+                    borderWidth: 1,
+                    borderColor: employee.status === 'ACTIVE' ? '#FECACA' : '#BBF7D0',
+                    opacity: isTogglingStatus ? 0.5 : 1,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '700',
+                      color: employee.status === 'ACTIVE' ? '#DC2626' : '#16A34A',
+                    }}
+                  >
+                    {isTogglingStatus ? 'Updating...' : employee.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                  </Text>
+                </TouchableOpacity>
+
+                <ActionButtons
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  showView={false}
+                  disableEdit={!canEditEmployee}
+                  disableDelete={!canDeleteEmployee}
+                  blockPressWhenDisabled
+                />
               </View>
             </Card>
 

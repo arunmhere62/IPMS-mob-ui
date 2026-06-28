@@ -21,7 +21,6 @@ import notificationService from '@/services/notifications/notificationService';
 import { useGetSubscriptionStatusQuery } from '@/features/owner/api/subscriptionApi';
 import { useLazyGetRequiredLegalDocumentsStatusQuery } from '@/features/owner/api/legalDocumentsApi';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useGetPublicAppStatusQuery } from '@/features/owner/api/appSettingsApi';
 import { Platform } from 'react-native';
 import { showErrorAlert } from '@/utils/errorHandler';
 
@@ -34,7 +33,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const { user } = useSelector((state: RootState) => state.auth);
   const { isSuperAdmin } = usePermissions();
   const rbacSubscription = useSelector((state: RootState) => (state as any).rbac?.subscription);
-  const { data: appStatus } = useGetPublicAppStatusQuery();
+  const appStatus = useSelector((state: RootState) => (state as any).appSettings?.appSettings);
   const currentVersion =
     Platform.OS === 'android'
       ? appStatus?.current_version_android

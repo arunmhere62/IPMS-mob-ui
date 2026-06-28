@@ -1,18 +1,52 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFormatters } from '../hooks/useFormatters';
 import { TenantProfileData, TenantTicketStatsData } from '@/features/tenant/api/tenantPortalApi';
+import { useUpdateExpectedVacateDateMutation } from '@/features/tenant/api/tenantPortalApi';
+import { SlideBottomModal } from '@/components/SlideBottomModal';
+import { DatePicker } from '@/components/DatePicker';
+import Theme from '@/theme';
 
 interface HomeTabProps {
   raw: TenantProfileData;
   isPaid: boolean;
   isPending: boolean;
   ticketStats?: TenantTicketStatsData;
+  refetchProfile?: () => void;
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticketStats }) => {
+export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticketStats, refetchProfile }) => {
   const { formatDate, formatAmount } = useFormatters();
+
+  // Expected vacate date modal state
+  const [vacateDateModalVisible, setVacateDateModalVisible] = useState(false);
+  const [newVacateDate, setNewVacateDate] = useState('');
+  const [vacateLoading, setVacateLoading] = useState(false);
+  const [updateExpectedVacateDate] = useUpdateExpectedVacateDateMutation();
+
+  const handleOpenVacateModal = () => {
+    setNewVacateDate(raw?.expected_vacate_date
+      ? new Date(raw.expected_vacate_date).toISOString().split('T')[0]
+      : '');
+    setVacateDateModalVisible(true);
+  };
+
+  const handleSaveVacateDate = async () => {
+    try {
+      setVacateLoading(true);
+      await updateExpectedVacateDate({
+        expected_vacate_date: newVacateDate || null,
+      }).unwrap();
+      Alert.alert('Success', newVacateDate ? 'Expected vacate date saved' : 'Expected vacate date cleared');
+      setVacateDateModalVisible(false);
+      refetchProfile?.();
+    } catch (error: unknown) {
+      Alert.alert('Error', 'Failed to update expected vacate date');
+    } finally {
+      setVacateLoading(false);
+    }
+  };
 
   return (
     <>
@@ -68,6 +102,47 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
             <Text style={styles.statLabel}>Rent</Text>
             <Text style={styles.statValue} numberOfLines={1} ellipsizeMode="tail">{formatAmount(raw?.beds?.bed_price)}/mo</Text>
           </View>
+        </View>
+      </View>
+
+      {/* Expected Vacate Date */}
+      <View style={styles.sectionCard}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <View style={{
+              width: 36, height: 36, borderRadius: 10, backgroundColor: '#F3E8FF',
+              alignItems: 'center', justifyContent: 'center', marginRight: 12,
+            }}>
+              <Ionicons name="calendar-outline" size={18} color="#8B5CF6" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }}>
+                Expected Vacate Date
+              </Text>
+              <Text style={{ fontSize: 12, color: raw?.expected_vacate_date ? '#8B5CF6' : Theme.colors.text.secondary, marginTop: 2, fontWeight: raw?.expected_vacate_date ? '700' : '400' }}>
+                {raw?.expected_vacate_date
+                  ? new Date(raw.expected_vacate_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                  : 'Not set'}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            onPress={handleOpenVacateModal}
+            style={{
+              paddingHorizontal: 12, paddingVertical: 6,
+              borderRadius: 8, backgroundColor: '#F3E8FF',
+              borderWidth: 1, borderColor: '#DDD6FE',
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#8B5CF6' }}>
+              {raw?.expected_vacate_date ? 'Edit' : 'Set'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>
+          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, lineHeight: 14 }}>
+            <Ionicons name="information-circle-outline" size={12} color="#8B5CF6" /> This helps your PG owner plan for new tenants. The date will be visible to your PG owner.
+          </Text>
         </View>
       </View>
 
@@ -178,6 +253,38 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
           ))
         )}
       </View>
+
+      {/* Expected Vacate Date Modal */}
+      <SlideBottomModal
+        visible={vacateDateModalVisible}
+        title="Expected Vacate Date"
+        subtitle={raw?.name ? `Tenant: ${raw.name}` : 'Tenant'}
+        isLoading={vacateLoading}
+        submitLabel="Save"
+        cancelLabel="Cancel"
+        onClose={() => setVacateDateModalVisible(false)}
+        onSubmit={handleSaveVacateDate}
+      >
+        <View style={{ marginBottom: 10, padding: 10, backgroundColor: Theme.colors.background.blueLight, borderRadius: 10, borderWidth: 1, borderColor: Theme.colors.border }}>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
+            Select the date you plan to leave. This is different from the actual checkout date — it's for planning purposes only.
+          </Text>
+        </View>
+        <DatePicker
+          label="Expected Vacate Date"
+          value={newVacateDate}
+          onChange={setNewVacateDate}
+          required={false}
+        />
+        {newVacateDate && (
+          <TouchableOpacity
+            onPress={() => setNewVacateDate('')}
+            style={{ marginTop: 12, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', alignItems: 'center' }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Clear Date</Text>
+          </TouchableOpacity>
+        )}
+      </SlideBottomModal>
     </>
   );
 };

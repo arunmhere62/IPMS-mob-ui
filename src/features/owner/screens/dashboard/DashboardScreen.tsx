@@ -42,7 +42,6 @@ import {
 import { usePermissions } from "../../../../hooks/usePermissions";
 import { AppDispatch, RootState } from "../../store";
 import { Tenant } from "../../api";
-import { useGetPublicAppStatusQuery } from "../../api/appSettingsApi";
 import { AnnouncementBanner } from "../../../../components/AnnouncementBanner";
 import { TrialBanner } from "../../../../components/TrialBanner";
 import { OnboardingChecklist, OnboardingStep } from "../../../../components/OnboardingChecklist";
@@ -72,6 +71,7 @@ export const DashboardScreen: React.FC = () => {
   );
   const { user } = useSelector((state: RootState) => state.auth);
   const isOnboardingComplete = useSelector((state: RootState) => (state as any).rbac?.isOnboardingComplete ?? null);
+  const appStatus = useSelector((state: RootState) => (state as any).appSettings?.appSettings);
   usePermissions();
   const [refreshing, setRefreshing] = useState(false);
   const [attentionTab, setAttentionTab] = useState<
@@ -212,6 +212,12 @@ export const DashboardScreen: React.FC = () => {
         icon: "receipt",
         screen: "Expenses",
         color: "#EAB308",
+      },
+      {
+        title: "Vacancies",
+        icon: "calendar-outline",
+        screen: "UpcomingVacancies",
+        color: "#8B5CF6",
       },
     ],
     []
@@ -598,7 +604,6 @@ export const DashboardScreen: React.FC = () => {
 
     setRefreshing(false);
   };
-  const { data: appStatus } = useGetPublicAppStatusQuery();
 
   return (
     <ScreenLayout
@@ -783,6 +788,48 @@ export const DashboardScreen: React.FC = () => {
                       fontWeight: "800",
                     }}
                   >
+                    TOTAL BEDS
+                  </Text>
+                  <Text
+                    style={{
+                      color: Theme.colors.text.primary,
+                      fontSize: 18,
+                      fontWeight: "900",
+                      marginTop: 4,
+                    }}
+                  >
+                    {bedMetrics?.total_beds ?? (dashboardFetching ? "—" : 0)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      color: Theme.colors.text.secondary,
+                      fontSize: 11,
+                      fontWeight: "800",
+                    }}
+                  >
+                    OCCUPIED
+                  </Text>
+                  <Text
+                    style={{
+                      color: Theme.colors.text.primary,
+                      fontSize: 18,
+                      fontWeight: "900",
+                      marginTop: 4,
+                    }}
+                  >
+                    {bedMetrics?.occupied_beds ?? (dashboardFetching ? "—" : 0)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      color: Theme.colors.text.secondary,
+                      fontSize: 11,
+                      fontWeight: "800",
+                    }}
+                  >
                     OCCUPANCY
                   </Text>
                   <Text
@@ -798,31 +845,6 @@ export const DashboardScreen: React.FC = () => {
                       : dashboardFetching
                       ? "—"
                       : "0%"}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      color: Theme.colors.text.secondary,
-                      fontSize: 11,
-                      fontWeight: "800",
-                    }}
-                  >
-                    PG VALUE
-                  </Text>
-                  <Text
-                    style={{
-                      color: Theme.colors.text.primary,
-                      fontSize: 16,
-                      fontWeight: "900",
-                      marginTop: 4,
-                    }}
-                  >
-                    {bedMetrics
-                      ? formatCurrency(bedMetrics.total_pg_value)
-                      : dashboardFetching
-                      ? "—"
-                      : formatCurrency(0)}
                   </Text>
                 </View>
               </View>
@@ -893,115 +915,6 @@ export const DashboardScreen: React.FC = () => {
           />
 
           <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
-            {dashboardFetching ? (
-              <DashboardMetricsSkeleton />
-            ) : (
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <Card
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  backgroundColor: Theme.withOpacity(Theme.colors.primary, 0.1),
-                  borderWidth: 1,
-                  borderColor: Theme.withOpacity(Theme.colors.primary, 0.18),
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: Theme.colors.text.primary,
-                      fontSize: 12,
-                      fontWeight: "900",
-                    }}
-                  >
-                    Total Beds
-                  </Text>
-                  <View
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: Theme.colors.primary,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Ionicons name="bed" size={14} color="#fff" />
-                  </View>
-                </View>
-                <Text
-                  style={{
-                    color: Theme.colors.text.primary,
-                    fontSize: 24,
-                    fontWeight: "900",
-                    marginTop: 10,
-                  }}
-                >
-                  {bedMetrics?.total_beds ?? (dashboardFetching ? "—" : 0)}
-                </Text>
-              </Card>
-
-              <Card
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  backgroundColor: Theme.withOpacity(
-                    Theme.colors.secondary,
-                    0.1
-                  ),
-                  borderWidth: 1,
-                  borderColor: Theme.withOpacity(Theme.colors.secondary, 0.18),
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: Theme.colors.text.primary,
-                      fontSize: 12,
-                      fontWeight: "900",
-                    }}
-                  >
-                    Occupied
-                  </Text>
-                  <View
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: Theme.colors.secondary,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Ionicons name="checkmark" size={14} color="#fff" />
-                  </View>
-                </View>
-                <Text
-                  style={{
-                    color: Theme.colors.text.primary,
-                    fontSize: 24,
-                    fontWeight: "900",
-                    marginTop: 10,
-                  }}
-                >
-                  {bedMetrics?.occupied_beds ?? (dashboardFetching ? "—" : 0)}
-                </Text>
-              </Card>
-            </View>
-            )}
-
             {!!dashboardError && (
               <Text style={{ color: "#EF4444", fontSize: 12, marginTop: 10 }}>
                 Failed to load dashboard summary. Pull to refresh.

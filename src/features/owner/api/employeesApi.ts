@@ -167,6 +167,15 @@ export const employeesApi = baseApi.injectEndpoints({
       transformResponse: (response: ApiEnvelope<EmployeeStatsResponse> | any) => (response as any)?.data ?? response,
       providesTags: [{ type: 'EmployeeStats', id: 'SINGLE' }],
     }),
+
+    toggleUserStatus: build.mutation<{ success: boolean; data: Pick<Employee, 's_no' | 'name' | 'email' | 'status'> & { role_name: string } }, number>({
+      query: (userId) => ({ url: `/employees/${userId}/status`, method: 'PATCH' }),
+      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+      invalidatesTags: (_res, _err, id) => [
+        { type: 'Employees', id: 'LIST' },
+        { type: 'Employee', id },
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -181,4 +190,5 @@ export const {
   useDeleteEmployeeMutation,
   useGetEmployeeStatsQuery,
   useLazyGetEmployeeStatsQuery,
+  useToggleUserStatusMutation,
 } = employeesApi;

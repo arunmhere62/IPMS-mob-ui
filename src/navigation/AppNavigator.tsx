@@ -16,6 +16,7 @@ import { Theme } from '@/theme';
 import { RootState } from '@/features/owner/store';
 import { clearPermissions } from '@/features/owner/store/slices/rbacSlice';
 import { usePermissionsPolling } from '@/hooks/usePermissionsPolling';
+import { useAppSettingsPolling } from '@/hooks/useAppSettingsPolling';
 import { navigationRef } from './navigationRef';
 import { AuthRedirectHandler, MainTabs } from './components';
 
@@ -56,6 +57,7 @@ import { TenantRefundPaymentsScreen } from '@/features/owner/screens/tenants/Ten
 import { TenantAdvancePaymentsScreen } from '@/features/owner/screens/tenants/TenantAdvancePaymentsScreen';
 import { TenantDetailsScreen } from '@/features/owner/screens/tenants/TenantDetailsScreen';
 import { AddTenantScreen } from '@/features/owner/screens/tenants/AddTenantScreen';
+import { UpcomingVacanciesScreen } from '@/features/owner/screens/tenants/UpcomingVacanciesScreen';
 import { RoomsScreen } from '@/features/owner/screens/rooms/RoomsScreen';
 import { RoomDetailsScreen } from '@/features/owner/screens/rooms/RoomDetailsScreen';
 import { BedsScreen } from '@/features/owner/screens/beds/BedsScreen';
@@ -114,6 +116,7 @@ export const AppNavigator = () => {
       : 'RoleSelection';
 
   usePermissionsPolling();
+  useAppSettingsPolling();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -169,6 +172,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="Beds" component={BedsScreen} />
             <Stack.Screen name="TenantDetails" component={TenantDetailsScreen} />
             <Stack.Screen name="AddTenant" component={AddTenantScreen} />
+            <Stack.Screen name="UpcomingVacancies" component={UpcomingVacanciesScreen} />
             <Stack.Screen name="UserProfile" component={UserProfileScreen} />
             <Stack.Screen name="Expenses" component={ExpenseScreen} />
             <Stack.Screen name="Employees" component={EmployeesScreen} />

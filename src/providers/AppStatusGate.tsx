@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { useGetPublicAppStatusQuery } from '@/features/owner/api/appSettingsApi';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/features/owner/store';
 import { MaintenanceScreen } from '@/screens/maintenance/MaintenanceScreen';
 import { ForceUpdateScreen } from '@/screens/maintenance/ForceUpdateScreen';
 
@@ -27,19 +28,7 @@ function compareVersions(a: string, b: string): number {
 }
 
 export const AppStatusGate: React.FC<AppStatusGateProps> = ({ children }) => {
-  const { data: status, isLoading } = useGetPublicAppStatusQuery(undefined, {
-    pollingInterval: 5 * 60 * 1000, // re-check every 5 minutes
-  });
-
-  // While loading on first mount, show a minimal spinner so we don't
-  // flash the wrong screen. After that, stale data keeps rendering.
-  if (isLoading && !status) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#2563EB" />
-      </View>
-    );
-  }
+  const status = useSelector((state: RootState) => (state as any).appSettings?.appSettings);
 
   // 1. Maintenance mode — hard block
   if (status?.is_maintenance_mode) {

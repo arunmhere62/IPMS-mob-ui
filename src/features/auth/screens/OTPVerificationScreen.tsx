@@ -95,18 +95,23 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
 
       showSuccessAlert('Login successful!');
 
-      const status = await getRequiredLegalStatus({ context: 'LOGIN' }).unwrap();
-      if (status?.pending?.length) {
-        setTimeout(() => {
-          const nav = navigationRef.current;
-          if (nav && typeof nav.navigate === 'function') {
-            nav.navigate('LegalDocuments' as never, {
-              context: 'LOGIN',
-              pending: status.pending,
-            } as never);
-          }
-        }, 0);
-        return;
+      const roleName: string = (result.user as any)?.role_name ?? '';
+      const isSuperAdmin = roleName === 'SUPER_ADMIN' || roleName.toLowerCase() === 'super_admin';
+
+      if (isSuperAdmin) {
+        const status = await getRequiredLegalStatus({ context: 'LOGIN' }).unwrap();
+        if (status?.pending?.length) {
+          setTimeout(() => {
+            const nav = navigationRef.current;
+            if (nav && typeof nav.navigate === 'function') {
+              nav.navigate('LegalDocuments' as never, {
+                context: 'LOGIN',
+                pending: status.pending,
+              } as never);
+            }
+          }, 0);
+          return;
+        }
       }
 
       // Do not manually navigate to MainTabs here.

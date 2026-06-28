@@ -14,6 +14,7 @@ export interface TenantProfileData {
   tenant_address: string | null;
   check_in_date: string | null;
   check_out_date: string | null;
+  expected_vacate_date: string | null;
 
   // IDs
   pg_id: number;
@@ -217,6 +218,16 @@ export interface TenantTicketStatsResponse {
   data: TenantTicketStatsData;
 }
 
+export interface UpdateExpectedVacateDateRequest {
+  expected_vacate_date: string | null;
+}
+
+export interface UpdateExpectedVacateDateResponse {
+  success: boolean;
+  message: string;
+  data: any;
+}
+
 export const tenantPortalApi = tenantBaseApi.injectEndpoints({
   endpoints: (build) => ({
     // Get tenant profile with PG, room, bed details
@@ -250,6 +261,15 @@ export const tenantPortalApi = tenantBaseApi.injectEndpoints({
         method: 'GET',
       }),
     }),
+
+    // Update expected vacate date
+    updateExpectedVacateDate: build.mutation<UpdateExpectedVacateDateResponse, UpdateExpectedVacateDateRequest>({
+      query: (data) => ({
+        url: 'tenant/expected-vacate-date',
+        method: 'PATCH',
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -259,4 +279,5 @@ export const {
   useGetTenantPaymentsQuery,
   useGetTenantDuesQuery,
   useGetTenantTicketStatsQuery,
+  useUpdateExpectedVacateDateMutation,
 } = tenantPortalApi;

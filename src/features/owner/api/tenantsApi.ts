@@ -88,6 +88,7 @@ export interface Tenant {
   bed_id?: number;
   check_in_date: string;
   check_out_date?: string;
+  expected_vacate_date?: string;
   status: 'ACTIVE' | 'INACTIVE' | 'CHECKED_OUT';
   occupation?: string;
   tenant_address?: string;
@@ -175,6 +176,7 @@ export interface CreateTenantDto {
   bed_id?: number;
   check_in_date: string;
   check_out_date?: string;
+  expected_vacate_date?: string | null;
   status?: 'ACTIVE' | 'INACTIVE' | 'CHECKED_OUT';
   occupation?: string;
   tenant_address?: string;
@@ -250,6 +252,16 @@ export type TransferTenantRequest = {
   to_bed_id: number;
   effective_from: string;
 };
+
+export interface UpcomingVacancy {
+  s_no: number;
+  name: string;
+  phone_no?: string;
+  expected_vacate_date: string;
+  check_in_date: string;
+  rooms?: { s_no: number; room_no: string };
+  beds?: { s_no: number; bed_no: string };
+}
 
 type ApiEnvelope<T> = {
   data?: T;
@@ -460,6 +472,20 @@ export const tenantsApi = baseApi.injectEndpoints({
       query: (body) => ({ url: '/tenants/verify-otp', method: 'POST', body }),
       transformResponse: (response: ApiEnvelope<any> | any) => unwrapCentralData<any>(response),
     }),
+
+    getUpcomingVacancies: build.query<{ success: boolean; data: UpcomingVacancy[] }, { days?: number } | void>({
+      query: (params) => ({
+        url: '/tenants/upcoming-vacancies',
+        method: 'GET',
+        params: params?.days ? { days: params.days } : undefined,
+      }),
+      transformResponse: (response: ApiEnvelope<any> | any) => {
+        const unwrapped = unwrapCentralData<any>(response);
+        const data = unwrapped?.data ?? unwrapped ?? [];
+        return { success: true, data: Array.isArray(data) ? data : [] };
+      },
+      providesTags: [{ type: 'Tenants', id: 'UPCOMING_VACANCIES' }],
+    }),
   }),
   overrideExisting: false,
 });
@@ -478,4 +504,6 @@ export const {
   useTransferTenantMutation,
   useSendPhoneOtpMutation,
   useVerifyPhoneOtpMutation,
+  useGetUpcomingVacanciesQuery,
+  useLazyGetUpcomingVacanciesQuery,
 } = tenantsApi;

@@ -21,7 +21,6 @@ import { BottomNav } from '@/components/BottomNav';
 import { useGetTenantProfileQuery, useGetTenantTicketStatsQuery } from '@/features/tenant/api/tenantPortalApi';
 import { useGetTenantTicketsQuery } from '@/features/tenant/api/tenantTicketsApi';
 import { RootState } from '../owner/store';
-import { useGetPublicAppStatusQuery } from '@/features/owner/api/appSettingsApi';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 
 interface TenantDashboardScreenProps {
@@ -40,9 +39,9 @@ const tenantTabs = [
 export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch();
   const { tenant, accessToken } = useSelector((state: RootState) => state.tenantAuth);
+  const appStatus = useSelector((state: RootState) => (state as any).appSettings?.appSettings);
   const [activeTab, setActiveTab] = useState('home');
   const [refreshing, setRefreshing] = useState(false);
-  const { data: appStatus } = useGetPublicAppStatusQuery();
 
   // Profile query
   const { data: profileData, isLoading: profileLoading, error, refetch: refetchProfile } = useGetTenantProfileQuery(undefined, {
@@ -130,7 +129,7 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
 
     switch (activeTab) {
       case 'home':
-        return raw ? <HomeTab raw={raw} isPaid={isPaid} isPending={isPending} ticketStats={ticketStats} /> : null;
+        return raw ? <HomeTab raw={raw} isPaid={isPaid} isPending={isPending} ticketStats={ticketStats} refetchProfile={refetchProfile} /> : null;
       case 'payments':
         return raw ? <PaymentsTab raw={raw} /> : null;
       case 'tickets':

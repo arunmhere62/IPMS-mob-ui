@@ -6,6 +6,7 @@ import tenantAuthReducer from '../../tenant/store/tenantAuthSlice';
 import pgLocationReducer from './slices/pgLocationSlice';
 import organizationReducer from './slices/organizationSlice';
 import rbacReducer from './slices/rbacSlice';
+import appSettingsReducer from './slices/appSettingsSlice';
 import { baseApi } from '../api/baseApi';
 import { tenantBaseApi } from '../../tenant/api/tenantBaseApi';
 
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
   pgLocations: pgLocationReducer,
   organizations: organizationReducer,
   rbac: rbacReducer,
+  appSettings: appSettingsReducer,
   [baseApi.reducerPath]: baseApi.reducer,
   [tenantBaseApi.reducerPath]: tenantBaseApi.reducer,
 });

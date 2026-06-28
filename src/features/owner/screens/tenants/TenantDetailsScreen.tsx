@@ -71,6 +71,7 @@ import {
   useLazyGetTenantsQuery,
   useTransferTenantMutation,
   useUpdateTenantCheckoutDateMutation,
+  useUpdateTenantMutation,
 } from '@/features/owner/api/tenantsApi';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
@@ -188,6 +189,11 @@ const TenantDetailsContent: React.FC<{
   const [newCheckoutDate, setNewCheckoutDate] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
+  // Expected vacate date modal state
+  const [vacateDateModalVisible, setVacateDateModalVisible] = useState(false);
+  const [newVacateDate, setNewVacateDate] = useState('');
+  const [vacateLoading, setVacateLoading] = useState(false);
+
   // Transfer tenant modal state
   const [transferModalVisible, setTransferModalVisible] = useState(false);
   const [transferPgId, setTransferPgId] = useState<number | null>(null);
@@ -219,6 +225,7 @@ const TenantDetailsContent: React.FC<{
   const [checkoutTenantWithDate] = useCheckoutTenantWithDateMutation();
   const [updateTenantCheckoutDate] = useUpdateTenantCheckoutDateMutation();
   const [transferTenantMutation] = useTransferTenantMutation();
+  const [updateTenantMutation] = useUpdateTenantMutation();
 
   const [createAdvancePayment] = useCreateAdvancePaymentMutation();
   const [updateAdvancePayment] = useUpdateAdvancePaymentMutation();
@@ -230,6 +237,7 @@ const TenantDetailsContent: React.FC<{
   const [createTenantPayment] = useCreateTenantPaymentMutation();
   const [triggerDetectPaymentGaps] = useLazyDetectPaymentGapsQuery();
   const rentStatusHydratedRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
   
   // Clone tenant data to avoid frozen state issues
   const currentTenant = tenantResponse?.data ? JSON.parse(JSON.stringify(tenantResponse.data)) : null;
@@ -283,6 +291,13 @@ const TenantDetailsContent: React.FC<{
     setTransferBedId(null);
     setTransferEffectiveFrom(currentTenant.check_in_date ? String(currentTenant.check_in_date).split('T')[0] : '');
   }, [transferModalVisible]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!transferModalVisible) return;
@@ -481,13 +496,17 @@ const TenantDetailsContent: React.FC<{
         // ignore - this is just for hydration
       } finally {
         rentStatusHydratedRef.current = tenantId;
-        refetchTenant();
-
-        // The API may compute & persist tenant rent status fields asynchronously.
-        // Do a short delayed re-fetch to avoid UI showing 0 due until the modal is opened.
-        setTimeout(() => {
+        if (isMountedRef.current) {
           refetchTenant();
-        }, 600);
+
+          // The API may compute & persist tenant rent status fields asynchronously.
+          // Do a short delayed re-fetch to avoid UI showing 0 due until the modal is opened.
+          setTimeout(() => {
+            if (isMountedRef.current) {
+              refetchTenant();
+            }
+          }, 600);
+        }
       }
     };
 
@@ -922,6 +941,32 @@ const TenantDetailsContent: React.FC<{
   const handleCloseCheckoutModal = () => {
     setCheckoutDateModalVisible(false);
     setNewCheckoutDate('');
+  };
+
+  const handleOpenVacateModal = () => {
+    console.log('handleOpenVacateModal called', currentTenant?.expected_vacate_date);
+    setNewVacateDate(currentTenant?.expected_vacate_date
+      ? new Date(currentTenant.expected_vacate_date).toISOString().split('T')[0]
+      : '');
+    setVacateDateModalVisible(true);
+    console.log('vacateDateModalVisible set to true');
+  };
+
+  const handleSaveVacateDate = async () => {
+    try {
+      setVacateLoading(true);
+      await updateTenantMutation({
+        id: currentTenant.s_no,
+        data: { expected_vacate_date: newVacateDate || null } as any,
+      }).unwrap();
+      showSuccessAlert(newVacateDate ? 'Expected vacate date saved' : 'Expected vacate date cleared');
+      setVacateDateModalVisible(false);
+      refetchTenant();
+    } catch (error: unknown) {
+      showErrorAlert(error, 'Update Error');
+    } finally {
+      setVacateLoading(false);
+    }
   };
 
   const _handleDeleteRefundPayment = (payment: PaymentsRefundPayment) => {
@@ -1405,6 +1450,48 @@ const TenantDetailsContent: React.FC<{
         <AccommodationDetails
           tenant={tenant}
         />
+
+        {/* Expected Vacate Date */}
+        {canEditTenant && (
+          <Card style={{ marginHorizontal: 16, marginBottom: 12, padding: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <View style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  backgroundColor: '#F3E8FF',
+                  alignItems: 'center', justifyContent: 'center', marginRight: 10,
+                }}>
+                  <Ionicons name="calendar-outline" size={18} color="#8B5CF6" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }}>
+                    Expected Vacate Date
+                  </Text>
+                  <Text style={{ fontSize: 12, color: tenant?.expected_vacate_date ? '#8B5CF6' : Theme.colors.text.secondary, marginTop: 2, fontWeight: tenant?.expected_vacate_date ? '700' : '400' }}>
+                    {tenant?.expected_vacate_date
+                      ? new Date(tenant.expected_vacate_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                      : 'Not set'}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('Set/Edit button pressed');
+                  handleOpenVacateModal();
+                }}
+                style={{
+                  paddingHorizontal: 12, paddingVertical: 6,
+                  borderRadius: 8, backgroundColor: '#F3E8FF',
+                  borderWidth: 1, borderColor: '#DDD6FE',
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#8B5CF6' }}>
+                  {tenant?.expected_vacate_date ? 'Edit' : 'Set'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        )}
 
         {/* Personal Information */}
         <PersonalInformation tenant={tenant} onOpenMedia={openImageViewer} />
@@ -1899,6 +1986,40 @@ const TenantDetailsContent: React.FC<{
             required={true}
             minimumDate={toLocalDateOnly(tenant?.check_in_date)}
           />
+        </SlideBottomModal>
+      )}
+
+      {/* Expected Vacate Date Modal */}
+      {tenant && (
+        <SlideBottomModal
+          visible={vacateDateModalVisible}
+          title="Expected Vacate Date"
+          subtitle={tenant?.name ? `Tenant: ${tenant.name}` : 'Tenant'}
+          isLoading={vacateLoading}
+          submitLabel="Save"
+          cancelLabel="Cancel"
+          onClose={() => setVacateDateModalVisible(false)}
+          onSubmit={handleSaveVacateDate}
+        >
+          <View style={{ marginBottom: 10, padding: 10, backgroundColor: Theme.colors.background.blueLight, borderRadius: 10, borderWidth: 1, borderColor: Theme.colors.border }}>
+            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
+              Set this if the tenant plans to leave on a specific date. This is different from the actual checkout date — it's for planning purposes only.
+            </Text>
+          </View>
+          <DatePicker
+            label="Expected Vacate Date"
+            value={newVacateDate}
+            onChange={setNewVacateDate}
+            required={false}
+          />
+          {newVacateDate && (
+            <TouchableOpacity
+              onPress={() => setNewVacateDate('')}
+              style={{ marginTop: 12, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', alignItems: 'center' }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Clear Date</Text>
+            </TouchableOpacity>
+          )}
         </SlideBottomModal>
       )}
 
