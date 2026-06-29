@@ -35,6 +35,7 @@ import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 import { useCreateTenantMutation, useGetTenantByIdQuery, useUpdateTenantMutation, useSendPhoneOtpMutation, useVerifyPhoneOtpMutation } from "../../api";
+import { useOnboardingTour } from '../../../../context/OnboardingTourContext';
 
 interface AddTenantScreenProps {
   navigation: any;
@@ -70,6 +71,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
   const [verifyPhoneOtp] = useVerifyPhoneOtpMutation();
   const [loading, setLoading] = useState(false);
   const { can } = usePermissions();
+  const { tourStep, advanceTour } = useOnboardingTour();
 
   // Phone verification state
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -577,8 +579,14 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
         const res = await createTenantMutation(tenantData as any).unwrap();
 
         showSuccessAlert(res);
-        // Always navigate to Tenants screen with refresh to ensure list is updated
-        navigation.navigate("Tenants", { refresh: Date.now() });
+        // If onboarding tour is active, navigate to tenant details for rent step
+        if (tourStep === 'tap_add_tenant' && (res as any)?.data?.s_no) {
+          advanceTour(); // advances to null (tour ends after tenant creation)
+          navigation.navigate('TenantDetails', { tenantId: (res as any).data.s_no });
+        } else {
+          // Always navigate to Tenants screen with refresh to ensure list is updated
+          navigation.navigate("Tenants", { refresh: Date.now() });
+        }
       }
     } catch (error: any) {
       showErrorAlert(error, "Error");

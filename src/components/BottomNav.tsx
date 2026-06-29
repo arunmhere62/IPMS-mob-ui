@@ -103,13 +103,6 @@ const moreMenuItems: MenuItem[] = [
     permission: Permission.VIEW_ROOM,
   },
   {
-    name: "Beds",
-    label: "Beds",
-    icon: "bed",
-    route: "Beds",
-    permission: Permission.VIEW_BED,
-  },
-  {
     name: "Rent",
     label: "Rent",
     icon: "cash",

@@ -15,6 +15,7 @@ import {
   useGetRoomByIdQuery,
   useDeleteRoomMutation,
   useGetBedsByRoomIdQuery,
+  useDeleteBedMutation,
   Room,
   Bed,
 } from '../../api/roomsApi';
@@ -44,8 +45,9 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   const { roomId } = route.params;
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
-  const { tourStep, endTour } = useOnboardingTour();
+  const { tourStep, advanceTour, endTour } = useOnboardingTour();
   const addBedPulse = useRef(new Animated.Value(1)).current;
+  const tenantPulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     if (tourStep === 'tap_add_bed') {
       Animated.loop(
@@ -59,12 +61,27 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
     }
   }, [tourStep]);
 
+  useEffect(() => {
+    if (tourStep === 'tap_add_tenant') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(tenantPulse, { toValue: 1.18, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+          Animated.timing(tenantPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        ])
+      ).start();
+    } else {
+      tenantPulse.setValue(1);
+    }
+  }, [tourStep]);
+
   const screenWidth = Dimensions.get('window').width;
 
   const canEditRoom = can(Permission.EDIT_ROOM);
   const canDeleteRoom = can(Permission.DELETE_ROOM);
   const canCreateBed = can(Permission.CREATE_BED);
   const canEditBed = can(Permission.EDIT_BED);
+  const canDeleteBed = can(Permission.DELETE_BED);
+  const canCreateTenant = can(Permission.CREATE_TENANT);
 
   const [room, setRoom] = useState<Room | null>(null);
   const [beds, setBeds] = useState<Bed[]>([]);
@@ -88,6 +105,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   } = useGetBedsByRoomIdQuery(roomId, { skip: !selectedPGLocationId });
 
   const [deleteRoomMutation] = useDeleteRoomMutation();
+  const [deleteBedMutation] = useDeleteBedMutation();
 
   useEffect(() => {
     setRoom(((roomResponse as any)?.data || null) as Room | null);
@@ -124,7 +142,6 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
       Alert.alert('Access Denied', "You don't have permission to create beds");
       return;
     }
-    if (tourStep === 'tap_add_bed') endTour();
     setSelectedBed(null);
     setBedModalVisible(true);
   };
@@ -138,10 +155,32 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
     setBedModalVisible(true);
   };
 
+  const handleDeleteBed = (bedId: number, bedNo: string) => {
+    if (!canDeleteBed) {
+      Alert.alert('Access Denied', "You don't have permission to delete beds");
+      return;
+    }
+    showDeleteConfirmation({
+      title: 'Delete Bed',
+      message: 'Are you sure you want to delete',
+      itemName: bedNo,
+      onConfirm: async () => {
+        try {
+          await deleteBedMutation(bedId).unwrap();
+          showSuccessAlert('Bed deleted successfully');
+          setBeds((prev) => prev.filter((bed) => bed.s_no !== bedId));
+        } catch (error: any) {
+          showErrorAlert(error, 'Delete Error');
+        }
+      },
+    });
+  };
+
 
   const handleBedFormSuccess = async () => {
     await refetchBeds();
     await refetchRoom();
+    if (tourStep === 'tap_add_bed') advanceTour();
   };
 
   const handleEdit = () => {
@@ -562,77 +601,125 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
           </View>
 
           {beds && beds.length > 0 ? (
-            <View style={{ gap: 8 }}>
-              {beds.map((bed, index) => (
-                <View
-                  key={bed.s_no}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: 12,
-                    backgroundColor: '#F9FAFB',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: Theme.colors.border,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                    <View
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        backgroundColor: bed.is_occupied ? '#FEE2E2' : '#D1FAE5',
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {beds.map((bed, index) => {
+                const occupied = bed.is_occupied;
+                const tenant = bed.tenants?.[0];
+                return (
+                  <View
+                    key={bed.s_no}
+                    style={{
+                      width: '47%',
+                      backgroundColor: occupied ? '#FEE2E2' : '#D1FAE5',
+                      borderRadius: 14,
+                      padding: 14,
+                    }}
+                  >
+                    {/* Bed icon box + number + status */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <View style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 12,
+                        backgroundColor: '#fff',
                         alignItems: 'center',
                         justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={{ fontSize: 16 }}>🛏️</Text>
+                      }}>
+                        <Ionicons name="bed" size={20} color={occupied ? '#DC2626' : '#16A34A'} />
+                      </View>
+                      <View>
+                        <Text style={{ fontSize: 15, fontWeight: '700', color: Theme.colors.text.primary }}>
+                          {bed.bed_no}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: occupied ? '#DC2626' : '#16A34A', marginTop: 1 }}>
+                          {occupied ? 'Occupied' : 'Available'}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
-                        {bed.bed_no}
-                      </Text>
-                      {bed.bed_price ? (
-                        <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '600', marginTop: 2 }}>
-                          ₹{bed.bed_price.toLocaleString('en-IN')}
-                        </Text>
-                      ) : (
-                        <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 2 }}>
-                          No price set
-                        </Text>
-                      )}
-                      {bed.is_occupied && bed.tenants && bed.tenants.length > 0 ? (
-                        <View>
-                          <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: '600', marginTop: 2 }}>
-                            🔴 Occupied
-                          </Text>
-                          <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, marginTop: 2 }}>
-                            {bed.tenants[0].name}
+
+                    {/* Tenant name or price */}
+                    <View style={{ marginBottom: 12 }}>
+                      {occupied && tenant ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="person" size={12} color="#F59E0B" />
+                          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontWeight: '500' }} numberOfLines={1}>
+                            {tenant.name}
                           </Text>
                         </View>
                       ) : (
-                        <Text style={{ fontSize: 11, color: '#059669', fontWeight: '600', marginTop: 2 }}>
-                          🟢 Available
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: Theme.colors.primary }}>
+                          {bed.bed_price ? `₹${Number(bed.bed_price).toLocaleString('en-IN')}/mo` : '—'}
                         </Text>
                       )}
                     </View>
+
+                    {/* Add / View button */}
+                    {!occupied ? (
+                      tourStep === 'tap_add_tenant' && index === beds.findIndex(b => !b.is_occupied) ? (
+                        <View style={{ alignItems: 'center' }}>
+                          <View style={{ backgroundColor: '#065F46', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4 }}>
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap here!</Text>
+                          </View>
+                          <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#065F46', marginBottom: 2 }} />
+                          <Animated.View style={{ transform: [{ scale: tenantPulse }] }}>
+                            <TouchableOpacity
+                              onPress={() => { navigation.navigate('AddTenant', { bed_id: bed.s_no, room_id: room.s_no }); }}
+                              disabled={!canCreateTenant}
+                              style={{ backgroundColor: '#065F46', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, shadowColor: '#065F46', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
+                            >
+                              <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>+ Add Tenant</Text>
+                            </TouchableOpacity>
+                          </Animated.View>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => navigation.navigate('AddTenant', { bed_id: bed.s_no, room_id: room.s_no })}
+                          disabled={!canCreateTenant}
+                          style={{ backgroundColor: '#16A34A', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, opacity: canCreateTenant ? 1 : 0.45 }}
+                        >
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>+ Add Tenant</Text>
+                        </TouchableOpacity>
+                      )
+                    ) : tenant?.s_no ? (
+                      <TouchableOpacity
+                        onPress={() => navigation.navigate('TenantDetails', { tenantId: tenant.s_no })}
+                        style={{ backgroundColor: '#DC2626', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8 }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>View Tenant</Text>
+                      </TouchableOpacity>
+                    ) : <View style={{ marginBottom: 8 }} />}
+
+                    {/* Edit + Delete buttons */}
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {canEditBed && (
+                        <TouchableOpacity
+                          onPress={() => handleEditBed(bed)}
+                          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: '#F3F4F6', borderRadius: 6, paddingVertical: 6, borderWidth: 1, borderColor: '#D1D5DB' }}
+                        >
+                          <Ionicons name="pencil" size={11} color="#374151" />
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#374151' }}>Edit</Text>
+                        </TouchableOpacity>
+                      )}
+                      {canDeleteBed && (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteBed(bed.s_no, bed.bed_no)}
+                          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: '#FEE2E2', borderRadius: 6, paddingVertical: 6, borderWidth: 1, borderColor: '#FECACA' }}
+                        >
+                          <Ionicons name="trash" size={11} color="#DC2626" />
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#DC2626' }}>Delete</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
-                  <ActionButtons
-                    onEdit={() => handleEditBed(bed)}
-                    showEdit={canEditBed}
-                    showDelete={false}
-                    showView={false}
-                  />
-                </View>
-              ))}
+                );
+              })}
             </View>
           ) : (
-            <View style={{ padding: 20, alignItems: 'center' }}>
-              <Text style={{ fontSize: 40, marginBottom: 8 }}>🛏️</Text>
-              <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, textAlign: 'center' }}>
-                No beds added yet. Tap "Add Bed" to create one.
+            <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+              <Ionicons name="bed-outline" size={40} color="#D1D5DB" />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary, marginTop: 12, marginBottom: 4 }}>No Beds Yet</Text>
+              <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, textAlign: 'center' }}>
+                Tap "Add Bed" to get started.
               </Text>
             </View>
           )}

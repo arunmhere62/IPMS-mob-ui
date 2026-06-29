@@ -58,7 +58,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
   const tourPulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    if (tourStep === 'tap_room' || tourStep === 'tap_add_room') {
+    if (tourStep === 'tap_room' || tourStep === 'tap_room_for_tenant' || tourStep === 'tap_add_room') {
       Animated.loop(
         Animated.sequence([
           Animated.timing(tourPulse, { toValue: 1.25, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
@@ -214,7 +214,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
       return (
         <TouchableOpacity
           onPress={() => {
-            if (tourStep === 'tap_room') advanceTour();
+            if (tourStep === 'tap_room' || tourStep === 'tap_room_for_tenant') advanceTour();
             navigation.navigate("RoomDetails", { roomId: item.s_no });
           }}
           activeOpacity={0.8}
@@ -265,7 +265,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
               </View>
 
               <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-                {tourStep === 'tap_room' && index === 0 ? (
+                {(tourStep === 'tap_room' || tourStep === 'tap_room_for_tenant') && index === 0 ? (
                   <View style={{ alignItems: 'center' }}>
                     <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap to open</Text>
@@ -283,7 +283,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
                 ) : (
                   <ActionButtons
                     onView={() => {
-                      if (tourStep === 'tap_room') advanceTour();
+                      if (tourStep === 'tap_room' || tourStep === 'tap_room_for_tenant') advanceTour();
                       navigation.navigate("RoomDetails", { roomId: item.s_no });
                     }}
                     onEdit={() => handleOpenEditModal(item.s_no)}
@@ -298,111 +298,18 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
               </View>
             </View>
 
-            <View
-              style={{
-                marginTop: 8,
-                padding: 12,
-                borderRadius: 12,
-                backgroundColor: "#F8FAFC",
-                borderWidth: 1,
-                borderColor: "#D0D5DD",
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginBottom: 8,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 12, color: Theme.colors.text.secondary }}
-                >
-                  Total Beds:{" "}
-                  <Text
-                    style={{
-                      fontWeight: "700",
-                      color: Theme.colors.text.primary,
-                    }}
-                  >
-                    {totalBeds}
-                  </Text>
-                </Text>
-                <Text
-                  style={{ fontSize: 12, color: Theme.colors.text.secondary }}
-                >
-                  Available:{" "}
-                  <Text style={{ fontWeight: "700", color: "#22C55E" }}>
-                    {typeof availableBeds === "number" ? availableBeds : "—"}
-                  </Text>
-                </Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3F4F6', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Ionicons name="bed-outline" size={13} color="#6B7280" />
+                <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600' }}>{totalBeds} Total</Text>
               </View>
-
-              {/* Single Progress Bar */}
-              <View
-                style={{
-                  height: 8,
-                  backgroundColor: "#E5E7EB",
-                  borderRadius: 4,
-                  overflow: "hidden",
-                  flexDirection: "row",
-                }}
-              >
-                <View
-                  style={{
-                    height: "100%",
-                    width:
-                      typeof occupiedBeds === "number" && totalBeds
-                        ? `${(occupiedBeds / totalBeds) * 100}%`
-                        : "0%",
-                    backgroundColor: "#EF4444",
-                  }}
-                />
-                <View
-                  style={{
-                    height: "100%",
-                    width:
-                      typeof availableBeds === "number" && totalBeds
-                        ? `${(availableBeds / totalBeds) * 100}%`
-                        : "0%",
-                    backgroundColor: "#22C55E",
-                  }}
-                />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#DCFCE7', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Ionicons name="bed-outline" size={13} color="#16A34A" />
+                <Text style={{ fontSize: 12, color: '#16A34A', fontWeight: '600' }}>{typeof availableBeds === 'number' ? availableBeds : '—'} Free</Text>
               </View>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginTop: 6,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 11, color: Theme.colors.text.tertiary }}
-                >
-                  Occupied:{" "}
-                  <Text
-                    style={{
-                      fontWeight: "600",
-                      color: Theme.colors.text.primary,
-                    }}
-                  >
-                    {typeof occupiedBeds === "number" ? occupiedBeds : "—"}
-                  </Text>
-                </Text>
-                <Text
-                  style={{ fontSize: 11, color: Theme.colors.text.tertiary }}
-                >
-                  Available:{" "}
-                  <Text
-                    style={{
-                      fontWeight: "600",
-                      color: Theme.colors.text.primary,
-                    }}
-                  >
-                    {typeof availableBeds === "number" ? availableBeds : "—"}
-                  </Text>
-                </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEE2E2', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Ionicons name="bed-outline" size={13} color="#DC2626" />
+                <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }}>{typeof occupiedBeds === 'number' ? occupiedBeds : '—'} Taken</Text>
               </View>
             </View>
 
@@ -572,7 +479,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
                 onRefresh={handleRefresh}
               />
             }
-            contentContainerStyle={{ paddingBottom: 80 }}
+            contentContainerStyle={{ paddingBottom: 80, paddingTop: 8 }}
             onScroll={(event) => {
               scrollPositionRef.current = event.nativeEvent.contentOffset.y;
             }}

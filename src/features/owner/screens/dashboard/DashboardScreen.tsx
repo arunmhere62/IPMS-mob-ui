@@ -193,7 +193,6 @@ export const DashboardScreen: React.FC = () => {
         color: "#A855F7",
       },
       { title: "Rooms", icon: "home", screen: "Rooms", color: "#22C55E" },
-      { title: "Beds", icon: "bed", screen: "Beds", color: "#3B82F6" },
       { title: "Rent", icon: "cash", screen: "RentPayments", color: "#0EA5E9" },
       {
         title: "Advance",
@@ -658,7 +657,7 @@ export const DashboardScreen: React.FC = () => {
             actionLabel: 'Add Tenant',
             onAction: () => {
               startTenantTour();
-              navigation.navigate('Beds' as never);
+              navigation.navigate('Rooms' as never);
             },
           },
           {
