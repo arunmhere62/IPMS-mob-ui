@@ -63,7 +63,7 @@ export const UpcomingVacanciesScreen: React.FC<UpcomingVacanciesScreenProps> = (
       <ScreenHeader
         title="Upcoming Vacancies"
         subtitle={`Beds going vacant in next ${days} days`}
-        showBackButton
+        showBackButton={navigation.canGoBack()}
         onBackPress={() => navigation.goBack()}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg

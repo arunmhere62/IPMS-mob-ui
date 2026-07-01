@@ -55,7 +55,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
       if (!isSuperAdmin) return;
       console.log('🔄 Settings screen focused, fetching subscription...');
       refetchSubscriptionStatus();
-    }, [dispatch, isSuperAdmin, refetchSubscriptionStatus])
+    }, [isSuperAdmin, refetchSubscriptionStatus])
   );
 
   // Debug log subscription status

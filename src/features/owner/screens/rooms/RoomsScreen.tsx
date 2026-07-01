@@ -191,8 +191,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     });
   };
 
-  const renderRoomCard = ({ item, index }: { item: Room; index: number }) =>
-    (() => {
+  const renderRoomCard = ({ item, index }: { item: Room; index: number }) => {
       const totalBeds = item.total_beds ?? item.beds?.length ?? 0;
       const hasOccupancyFlag = (item.beds || []).some(
         (b) => typeof (b as any)?.is_occupied === "boolean"
@@ -332,13 +331,13 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           </Card>
         </TouchableOpacity>
       );
-    })();
+  };
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
       <ScreenHeader
         onBackPress={() => navigation.goBack()}
-        showBackButton
+        showBackButton={navigation.canGoBack()}
         title="Rooms"
         subtitle={`${pagination?.total || 0} total`}
         backgroundColor={Theme.colors.background.blue}

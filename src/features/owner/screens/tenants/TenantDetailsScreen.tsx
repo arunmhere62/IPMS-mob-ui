@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -239,8 +239,11 @@ const TenantDetailsContent: React.FC<{
   const rentStatusHydratedRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
   
-  // Clone tenant data to avoid frozen state issues
-  const currentTenant = tenantResponse?.data ? JSON.parse(JSON.stringify(tenantResponse.data)) : null;
+  // Clone tenant data only when it changes to avoid frozen state issues and expensive re-cloning
+  const currentTenant = useMemo(
+    () => (tenantResponse?.data ? JSON.parse(JSON.stringify(tenantResponse.data)) : null),
+    [tenantResponse?.data]
+  );
 
   const activeTransferDiffCycle =
     (currentTenant as { transfer_difference_due_cycle?: TransferDifferenceCycle } | null | undefined)

@@ -66,16 +66,21 @@ const userTabs: TabConfig[] = [
     permission: Permission.VIEW_DASHBOARD,
   },
   {
+    name: "Rooms",
+    label: "Rooms",
+    icon: "bed-outline",
+    permission: Permission.VIEW_ROOM,
+  },
+  {
     name: "Tenants",
     label: "Tenants",
     icon: "people",
     permission: Permission.VIEW_TENANTS,
   },
   {
-    name: "Payments",
-    label: "Payments",
-    icon: "card",
-    permission: Permission.VIEW_PAYMENT,
+    name: "UpcomingVacancies",
+    label: "Vacancies",
+    icon: "log-out-outline",
   },
   { name: "More", label: "More", icon: "grid" },
 ];
@@ -87,21 +92,7 @@ const moreMenuItems: MenuItem[] = [
     icon: "business",
     route: "PGLocations",
   },
-  {
-    name: "Tenants",
-    label: "Tenants",
-    icon: "people",
-    route: "Tenants",
-    permission: Permission.VIEW_TENANTS,
-  },
   { name: "Employees", label: "Employees", icon: "people", route: "Employees" },
-  {
-    name: "Rooms",
-    label: "Rooms",
-    icon: "home",
-    route: "Rooms",
-    permission: Permission.VIEW_ROOM,
-  },
   {
     name: "Rent",
     label: "Rent",
@@ -125,7 +116,6 @@ const moreMenuItems: MenuItem[] = [
   },
   { name: "Expenses", label: "Expenses", icon: "receipt", route: "Expenses" },
   { name: "TenantTickets", label: "Tenant Tickets", icon: "ticket-outline", route: "PgTenantTickets" },
-  { name: "UpcomingVacancies", label: "Upcoming Vacancies", icon: "calendar-outline", route: "UpcomingVacancies" },
   { name: "Settings", label: "Settings", icon: "settings", route: "Settings" },
 ];
 
@@ -241,14 +231,13 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
     const { can } = usePermissions();
 
     const handleTabPress = (tab: TabConfig) => {
-      // If onTabPress is provided, use it (configurable mode)
-      if (onTabPress) {
-        onTabPress(tab.name);
-        return;
-      }
-      // Otherwise use navigation (admin mode)
       if (tab.name === "More") {
         setMoreModalVisible(true);
+        return;
+      }
+      // If onTabPress is provided, use it for tab navigation
+      if (onTabPress) {
+        onTabPress(tab.name);
       } else if (navigation) {
         navigation.navigate(tab.name);
       }

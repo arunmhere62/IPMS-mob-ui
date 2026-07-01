@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View } from 'react-native';
 import {
   type ParamListBase,
@@ -16,9 +16,10 @@ import { Permission } from '@/config/rbac.config';
 
 // Tab Screens
 import { DashboardScreen } from '@/features/owner/screens/dashboard/DashboardScreen';
+import { RoomsScreen } from '@/features/owner/screens/rooms/RoomsScreen';
 import { TenantsScreen } from '@/features/owner/screens/tenants/TenantsScreen';
-import { PaymentsScreen } from '@/features/owner/screens/payments/PaymentsScreen';
 import { SettingsScreen } from '@/features/owner/screens/settings/SettingsScreen';
+import { UpcomingVacanciesScreen } from '@/features/owner/screens/tenants/UpcomingVacanciesScreen';
 
 const Tab = createBottomTabNavigator<ParamListBase>();
 
@@ -37,14 +38,18 @@ const SCREENS: ScreenConfig[] = [
     permission: Permission.VIEW_DASHBOARD,
   },
   {
+    name: 'Rooms',
+    component: RoomsScreen,
+    permission: Permission.VIEW_ROOM,
+  },
+  {
     name: 'Tenants',
     component: TenantsScreen,
     permission: Permission.VIEW_TENANTS,
   },
   {
-    name: 'Payments',
-    component: PaymentsScreen,
-    permission: Permission.VIEW_PAYMENT,
+    name: 'UpcomingVacancies',
+    component: UpcomingVacanciesScreen,
   },
   {
     name: 'Settings',
@@ -95,6 +100,19 @@ export const MainTabs: React.FC = () => {
     return route?.name || 'Dashboard';
   });
 
+  // Tab screen names that should navigate within the tab navigator
+  const tabScreenNames = SCREENS.map(s => s.name);
+
+  const handleTabPress = useCallback((tabName: string) => {
+    if (tabScreenNames.includes(tabName)) {
+      // Navigate within the tab navigator (keeps bottom nav visible)
+      navigation.navigate('MainTabs', { screen: tabName });
+    } else {
+      // For non-tab screens, push onto the stack
+      navigation.navigate(tabName as never);
+    }
+  }, [navigation, tabScreenNames]);
+
   return (
     <BottomNavVisibilityProvider>
       <View style={{ flex: 1, position: 'relative' }}>
@@ -117,7 +135,7 @@ export const MainTabs: React.FC = () => {
             ))}
           </Tab.Navigator>
         </View>
-        <BottomNav navigation={navigation} currentRoute={currentRoute} />
+        <BottomNav navigation={navigation} currentRoute={currentRoute} onTabPress={handleTabPress} />
       </View>
     </BottomNavVisibilityProvider>
   );
