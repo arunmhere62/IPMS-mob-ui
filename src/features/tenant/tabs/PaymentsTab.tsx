@@ -4,6 +4,7 @@ import { StatusBadge, SectionCard, CardHeader, EmptyState } from '../components'
 import { useFormatters } from '../hooks/useFormatters';
 import Theme from '@/theme';
 import { TenantProfileData } from '@/features/tenant/api/tenantPortalApi';
+import { useGetPendingElectricityBillItemsByTenantQuery } from '@/features/owner/api/electricityBillApi';
 
 const C = Theme.colors;
 
@@ -13,6 +14,12 @@ interface PaymentsTabProps {
 
 export const PaymentsTab: React.FC<PaymentsTabProps> = ({ raw }) => {
   const { formatDate, formatAmount } = useFormatters();
+  const tenantId = raw?.s_no;
+  const { data: pendingItemsResponse } = useGetPendingElectricityBillItemsByTenantQuery(tenantId ?? 0, {
+    skip: !tenantId,
+  });
+  const pendingItems = (pendingItemsResponse as any)?.data ?? [];
+  const electricityTotal = pendingItems.reduce((sum: number, it: any) => sum + (Number(it.share_amount) - Number(it.paid_amount || 0)), 0);
 
   return (
     <>
@@ -94,6 +101,40 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ raw }) => {
               </View>
             </View>
           ))}
+      </SectionCard>
+
+      <SectionCard>
+        <CardHeader icon="flash-outline" title="Electricity Bills" color="#F59E0B" />
+        {!pendingItems?.length ? <EmptyState icon="flash-outline" message="No pending electricity bills" /> : (
+          <>
+            {pendingItems.map((it: any) => (
+              <View key={it.s_no} style={styles.payRow}>
+                <View style={[styles.payMethodIcon, { backgroundColor: '#FEF3C7' }]}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#B45309' }}>⚡</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.payTitle}>
+                    {it.electricity_bills?.rooms?.room_no ? `Room ${it.electricity_bills.rooms.room_no}` : 'Room'} · {formatDate(it.electricity_bills?.bill_period_end)}
+                  </Text>
+                  <Text style={styles.payMeta}>
+                    Share {formatAmount(it.share_amount)} · {it.billing_days ? `${it.billing_days} days` : it.allocation_basis}
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <Text style={[styles.payAmount, { color: '#B45309' }]}>
+                    {formatAmount(Number(it.share_amount) - Number(it.paid_amount || 0))}
+                  </Text>
+                  <StatusBadge status={it.status} />
+                </View>
+              </View>
+            ))}
+            <View style={{ marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.dark }}>
+                Total Pending: {formatAmount(electricityTotal)}
+              </Text>
+            </View>
+          </>
+        )}
       </SectionCard>
 
       {/* Dues Section */}

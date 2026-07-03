@@ -315,6 +315,9 @@ export const baseApi = createApi({
     'PgTenantTickets',
     'PgTenantTicket',
     'AppSettings',
+    'ElectricityBills',
+    'ElectricityBill',
+    'ElectricityBillItems',
   ],
   endpoints: () => ({}),
 });

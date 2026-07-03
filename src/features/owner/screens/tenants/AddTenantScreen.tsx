@@ -464,37 +464,67 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
+    // Name validation
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
       newErrors.name = "Name is required";
+    } else if (trimmedName.length < 2) {
+      newErrors.name = "Name must be at least 2 characters";
+    } else if (trimmedName.length > 100) {
+      newErrors.name = "Name must not exceed 100 characters";
+    } else if (!/^[a-zA-Z\s\-']+$/.test(trimmedName)) {
+      newErrors.name = "Name can only contain letters, spaces, hyphens, and apostrophes";
     }
 
-    if (!toDigits(formData.phone_no).trim()) {
+    // Phone validation - use country-specific length
+    const phoneDigits = toDigits(formData.phone_no);
+    if (!phoneDigits) {
       newErrors.phone_no = "Phone number is required";
-    } else if (!/^\d{10}$/.test(toDigits(formData.phone_no))) {
-      newErrors.phone_no = "Phone number must be 10 digits";
+    } else if (phoneDigits.length !== selectedPhoneCountry.phoneLength) {
+      newErrors.phone_no = `Phone number must be ${selectedPhoneCountry.phoneLength} digits`;
     }
 
-    if (
-      formData.whatsapp_number &&
-      !/^\d{10}$/.test(toDigits(formData.whatsapp_number))
-    ) {
-      newErrors.whatsapp_number = "WhatsApp number must be 10 digits";
+    // WhatsApp validation - use country-specific length
+    if (formData.whatsapp_number) {
+      const whatsappDigits = toDigits(formData.whatsapp_number);
+      if (whatsappDigits.length !== selectedWhatsappCountry.phoneLength) {
+        newErrors.whatsapp_number = `WhatsApp number must be ${selectedWhatsappCountry.phoneLength} digits`;
+      }
     }
 
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
+    // Email validation with improved regex
+    if (formData.email) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        newErrors.email = "Invalid email format";
+      }
     }
 
+    // Room validation
     if (!formData.room_id) {
       newErrors.room_id = "Room is required";
     }
 
+    // Bed validation
     if (!formData.bed_id) {
       newErrors.bed_id = "Bed is required";
     }
 
+    // Check-in date validation
     if (!formData.check_in_date) {
       newErrors.check_in_date = "Check-in date is required";
+    }
+
+    // Expected vacate date validation (if provided)
+    if (formData.expected_vacate_date && formData.check_in_date) {
+      const checkInDate = new Date(formData.check_in_date);
+      const vacateDate = new Date(formData.expected_vacate_date);
+      checkInDate.setHours(0, 0, 0, 0);
+      vacateDate.setHours(0, 0, 0, 0);
+      
+      if (vacateDate <= checkInDate) {
+        newErrors.expected_vacate_date = "Expected vacate date must be after check-in date";
+      }
     }
 
     setErrors(newErrors);
@@ -502,6 +532,11 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
   };
 
   const handleSubmit = async () => {
+    // Prevent duplicate submission
+    if (loading) {
+      return;
+    }
+
     if (isEditMode && !can(Permission.EDIT_TENANT)) {
       Alert.alert("Access Denied", "You don't have permission to edit tenants");
       return;
@@ -522,17 +557,33 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
       return;
     }
 
-    if (!selectedPGLocationId) {
-      Alert.alert("Error", "Please select a PG location first");
-      return;
-    }
-
     // Phone verification check for new tenants
     if (!isEditMode && !phoneVerified) {
       Alert.alert("Phone Not Verified", "Please verify the phone number before creating the tenant.");
       return;
     }
 
+    // Confirmation for edit mode
+    if (isEditMode) {
+      Alert.alert(
+        "Confirm Update",
+        "Are you sure you want to update this tenant's information?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Update",
+            style: "default",
+            onPress: () => proceedWithSubmission(),
+          },
+        ]
+      );
+      return;
+    }
+
+    proceedWithSubmission();
+  };
+
+  const proceedWithSubmission = async () => {
     try {
       setLoading(true);
 
@@ -558,14 +609,12 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
         expected_vacate_date: formData.expected_vacate_date || null,
         city_id: formData.city_id || undefined,
         state_id: formData.state_id || undefined,
-        images: tenantImages, // Always send array, even if empty, so backend can clear removed images
-        proof_documents: proofDocuments, // Always send array, even if empty, so backend can clear removed documents
+        images: tenantImages,
+        proof_documents: proofDocuments,
         status: formData.status as "ACTIVE" | "INACTIVE",
       };
 
       if (isEditMode) {
-        // Update existing tenant
-        // Backend will handle S3 deletion for removed images
         const res = await updateTenantMutation({
           id: Number(tenantId),
           data: tenantData as any,
@@ -573,26 +622,51 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
         showSuccessAlert(res);
         navigation.navigate("Tenants", { refresh: Date.now() });
       } else {
-        // Create new tenant
-        // tenantsApi.createTenant does not currently accept custom headers here.
-        // Base API headers (auth, pg context) are expected to be applied globally.
         const res = await createTenantMutation(tenantData as any).unwrap();
 
         showSuccessAlert(res);
-        // If onboarding tour is active, navigate to tenant details for rent step
         if (tourStep === 'tap_add_tenant' && (res as any)?.data?.s_no) {
-          advanceTour(); // advances to null (tour ends after tenant creation)
+          advanceTour();
           navigation.navigate('TenantDetails', { tenantId: (res as any).data.s_no });
         } else {
-          // Always navigate to Tenants screen with refresh to ensure list is updated
           navigation.navigate("Tenants", { refresh: Date.now() });
         }
+        
+        // Reset form after successful creation
+        resetForm();
       }
     } catch (error: any) {
       showErrorAlert(error, "Error");
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      phone_no: "",
+      whatsapp_number: "",
+      email: "",
+      occupation: "",
+      tenant_address: "",
+      room_id: null,
+      bed_id: null,
+      check_in_date: "",
+      check_out_date: "",
+      expected_vacate_date: "",
+      city_id: null,
+      state_id: null,
+      status: "ACTIVE",
+    });
+    setTenantImages([]);
+    setProofDocuments([]);
+    setErrors({});
+    setPhoneVerified(false);
+    setPhoneVerifiedSkipped(false);
+    setShowOtpInput(false);
+    setOtpValue("");
+    setOtpError("");
   };
 
   if (tenantByIdFetching) {
@@ -674,6 +748,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     value={formData.name}
                     onChangeText={(value) => updateField("name", value)}
                     placeholder="Enter full name"
+                    maxLength={100}
                     style={{
                       borderWidth: 1,
                       borderColor: errors.name
@@ -684,6 +759,8 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       fontSize: 14,
                       backgroundColor: "#fff",
                     }}
+                    accessibilityLabel="Full name input"
+                    accessibilityHint="Enter tenant's full name"
                   />
                   {errors.name && (
                     <Text
@@ -827,6 +904,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                                   placeholder="_ _ _ _"
                                   keyboardType="numeric"
                                   maxLength={4}
+                                  contextMenuHidden={false}
                                   style={{
                                     flex: 1,
                                     borderWidth: 1.5,
@@ -841,6 +919,8 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                                     backgroundColor: "#fff",
                                     color: "#1E3A8A",
                                   }}
+                                  accessibilityLabel="OTP input"
+                                  accessibilityHint="Enter the 4-digit OTP sent to your phone"
                                 />
                                 <TouchableOpacity
                                   onPress={async () => {
@@ -1009,6 +1089,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     placeholder="Enter email address (optional)"
                     keyboardType="email-address"
                     autoCapitalize="none"
+                    maxLength={255}
                     style={{
                       borderWidth: 1,
                       borderColor: errors.email
@@ -1019,6 +1100,8 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       fontSize: 14,
                       backgroundColor: "#fff",
                     }}
+                    accessibilityLabel="Email address input"
+                    accessibilityHint="Enter tenant's email address (optional)"
                   />
                   {errors.email && (
                     <Text
@@ -1045,6 +1128,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     value={formData.occupation}
                     onChangeText={(value) => updateField("occupation", value)}
                     placeholder="Enter occupation (optional)"
+                    maxLength={100}
                     style={{
                       borderWidth: 1,
                       borderColor: Theme.colors.border,
@@ -1053,6 +1137,8 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       fontSize: 14,
                       backgroundColor: "#fff",
                     }}
+                    accessibilityLabel="Occupation input"
+                    accessibilityHint="Enter tenant's occupation (optional)"
                   />
                 </View>
               </Card>
@@ -1125,6 +1211,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     placeholder="Enter full address (optional)"
                     multiline
                     numberOfLines={3}
+                    maxLength={500}
                     style={{
                       borderWidth: 1,
                       borderColor: Theme.colors.border,
@@ -1134,6 +1221,8 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       backgroundColor: "#fff",
                       textAlignVertical: "top",
                     }}
+                    accessibilityLabel="Address input"
+                    accessibilityHint="Enter tenant's full address (optional)"
                   />
                 </View>
               </Card>

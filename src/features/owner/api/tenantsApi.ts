@@ -159,6 +159,14 @@ export interface Tenant {
   // Status fields calculated by TenantStatusService on API side
   is_rent_paid?: boolean;
   is_rent_partial?: boolean;
+  // Advance/Refund summary fields
+  advance_payment_summary?: {
+    total_advance_paid?: number;
+  };
+  refund_payment_summary?: {
+    total_refund_given?: number;
+  };
+  net_advance_remaining?: number;
   rent_due_amount?: number;
   partial_due_amount?: number;
   pending_due_amount?: number;

@@ -60,6 +60,7 @@ import { AddTenantScreen } from '@/features/owner/screens/tenants/AddTenantScree
 import { UpcomingVacanciesScreen } from '@/features/owner/screens/tenants/UpcomingVacanciesScreen';
 import { RoomsScreen } from '@/features/owner/screens/rooms/RoomsScreen';
 import { RoomDetailsScreen } from '@/features/owner/screens/rooms/RoomDetailsScreen';
+import { RoomElectricityBillsScreen } from '@/features/owner/screens/rooms/electricity-bill/RoomElectricityBillsScreen';
 import { BedsScreen } from '@/features/owner/screens/beds/BedsScreen';
 import { TicketsScreen } from '@/features/owner/screens/tickets/TicketsScreen';
 import { CreateTicketScreen } from '@/features/owner/screens/tickets/CreateTicketScreen';
@@ -169,6 +170,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="Organizations" component={OrganizationsScreen} />
             <Stack.Screen name="Rooms" component={RoomsScreen} />
             <Stack.Screen name="RoomDetails" component={RoomDetailsScreen} />
+            <Stack.Screen name="RoomElectricityBills" component={RoomElectricityBillsScreen} />
             <Stack.Screen name="Beds" component={BedsScreen} />
             <Stack.Screen name="TenantDetails" component={TenantDetailsScreen} />
             <Stack.Screen name="AddTenant" component={AddTenantScreen} />

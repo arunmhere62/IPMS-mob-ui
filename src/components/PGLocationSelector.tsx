@@ -9,7 +9,7 @@ import type { PGLocation } from '../types';
 
 export const PGLocationSelector: React.FC = () => {
   const dispatch = useDispatch();
-  const { selectedPGLocationId, isRehydrated } = useSelector((state: RootState) => state.pgLocations);
+  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { user, accessToken } = useSelector((state: RootState) => state.auth);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -48,11 +48,13 @@ export const PGLocationSelector: React.FC = () => {
   }, [accessToken, error, isError, isFetching, isLoading, isUninitialized, safeLocations.length, selectedPGLocationId, user?.organization_id, user?.s_no, pgLocationsResponse]);
 
   useEffect(() => {
-    // Only auto-select after persist rehydration is complete
-    if (isRehydrated && !selectedPGLocationId && safeLocations.length > 0) {
+    // Auto-select the first location as soon as locations are available.
+    // Persisted selection is restored by redux-persist before this runs, so we
+    // only fall back when the user has no saved selection yet.
+    if (!selectedPGLocationId && safeLocations.length > 0) {
       dispatch(setSelectedPGLocation(safeLocations[0].s_no));
     }
-  }, [dispatch, safeLocations, selectedPGLocationId, isRehydrated]);
+  }, [dispatch, safeLocations, selectedPGLocationId]);
 
   const handleLocationChange = (locationId: number) => {
     dispatch(setSelectedPGLocation(locationId));

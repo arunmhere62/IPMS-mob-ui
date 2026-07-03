@@ -44,7 +44,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
 
   // Calculate number of beds (tenants) in the room
   const numberOfBeds = room.beds?.length || 0;
-  const billPerBed = billAmount && numberOfBeds > 0 ? parseFloat(billAmount) / numberOfBeds : 0;
+  const billPerBed = billAmount && numberOfBeds > 0 ? Math.round((parseFloat(billAmount) / numberOfBeds) * 100) / 100 : 0;
 
   // Get month display from selected date
   const getMonthDisplay = () => {
@@ -62,8 +62,17 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
 
     if (!billAmount.trim()) {
       newErrors.billAmount = 'Bill amount is required';
-    } else if (isNaN(Number(billAmount)) || Number(billAmount) <= 0) {
-      newErrors.billAmount = 'Bill amount must be a valid positive number';
+    } else {
+      // Check for multiple decimal points (invalid format)
+      const decimalPoints = (billAmount.match(/\./g) || []).length;
+      if (decimalPoints > 1) {
+        newErrors.billAmount = 'Please enter a valid amount (invalid format)';
+      } else if (billAmount.startsWith('.') || billAmount.endsWith('.')) {
+        // Reject amounts with leading or trailing decimal points
+        newErrors.billAmount = 'Please enter a valid amount (invalid format)';
+      } else if (isNaN(Number(billAmount)) || Number(billAmount) <= 0) {
+        newErrors.billAmount = 'Bill amount must be a valid positive number';
+      }
     }
 
     if (!billDate.trim()) {
@@ -80,7 +89,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
       return;
     }
 
-    if (!selectedPGLocationId) {
+    if (selectedPGLocationId === null || selectedPGLocationId === undefined) {
       showErrorAlert(null, 'Invalid PG Location');
       return;
     }
@@ -89,7 +98,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
       setLoading(true);
 
       const billData = {
-        room_id: room.s_no,
+        room_id: room.s_no, // Note: Verify if s_no is the correct field for room_id
         bill_amount: parseFloat(billAmount),
         bill_date: billDate,
         split_equally: true, // Split equally among all tenants in the room
@@ -137,7 +146,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
         >
           <TouchableOpacity
             activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
+            onPress={(e) => e?.stopPropagation()}
             style={{
               backgroundColor: 'white',
               borderTopLeftRadius: 24,

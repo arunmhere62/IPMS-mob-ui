@@ -56,8 +56,8 @@ module.exports = ({ config }) => {
       },
       appEnv: (process.env.APP_ENV || process.env.MODE || 'dev').toLowerCase(),
       // Single source of truth for API URL - change in .env file
-      // apiBaseUrl: process.env.API_BASE_URL || "http://192.168.0.115:3001/api/v1",
-      apiBaseUrl: process.env.API_BASE_URL || "https://mobapi.indianpgmanagement.com/api/v1",
+      apiBaseUrl: process.env.API_BASE_URL || "http://172.20.10.3:3001/api/v1",
+      // apiBaseUrl: process.env.API_BASE_URL || "https://mobapi.indianpgmanagement.com/api/v1",
       // Subscription Configuration
       subscriptionMode: process.env.SUBSCRIPTION_MODE === 'true',
       showDevBanner: process.env.SHOW_DEV_BANNER === 'true'

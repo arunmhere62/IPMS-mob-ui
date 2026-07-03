@@ -37,6 +37,7 @@ export const OWNER_ROUTES = {
   // Rooms & Beds
   ROOMS: 'Rooms',
   ROOM_DETAILS: 'RoomDetails',
+  ROOM_ELECTRICITY_BILLS: 'RoomElectricityBills',
   BEDS: 'Beds',
 
   // Payments

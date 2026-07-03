@@ -177,6 +177,11 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     }>,
     softReset: boolean = false
   ) => {
+    if (!selectedPGLocationId) {
+      console.log("Skipping tenant load: no PG location selected");
+      return;
+    }
+
     try {
       if (tenantsQuery.isFetching && !reset) return;
       if (!hasMore && !reset) return;

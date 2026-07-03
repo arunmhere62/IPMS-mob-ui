@@ -100,7 +100,7 @@ export const transformApiResponse = <T>(response: ApiResponse<T>): T | null => {
   
   if (!isApiResponseSuccess(response)) {
     const errorMessage = getApiErrorMessage(response);
-    throw new Error(errorMessage);
+    throw new Error(errorMessage || 'An error occurred');
   }
   
   return extractResponseData(response);

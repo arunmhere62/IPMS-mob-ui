@@ -19,6 +19,10 @@ import {
   Room,
   Bed,
 } from '../../api/roomsApi';
+import {
+  useGetElectricityBillsQuery,
+  ElectricityBill,
+} from '../../api/electricityBillApi';
 import { Card } from '../../../../components/Card';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
@@ -103,6 +107,23 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
     refetch: refetchBeds,
     isFetching: isBedsFetching,
   } = useGetBedsByRoomIdQuery(roomId, { skip: !selectedPGLocationId });
+
+  // Calculate last month for electricity bill check
+  const lastMonth = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const lastMonthYear = lastMonth.getFullYear();
+  const lastMonthMonth = lastMonth.getMonth() + 1; // Months are 0-indexed
+
+  const {
+    data: electricityBillsResponse,
+  } = useGetElectricityBillsQuery({
+    room_id: roomId,
+    year: lastMonthYear,
+    month: lastMonthMonth,
+  }, { skip: !selectedPGLocationId || !room });
+
+  const electricityBills = (electricityBillsResponse?.data || []) as ElectricityBill[];
+  const hasLastMonthBill = electricityBills.length > 0;
 
   const [deleteRoomMutation] = useDeleteRoomMutation();
   const [deleteBedMutation] = useDeleteBedMutation();
@@ -555,6 +576,64 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
             <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginTop: 4 }}>
               Location ID: {room.pg_locations.s_no}
             </Text>
+          </Card>
+        )}
+
+        {/* Electricity Bills */}
+        <Card style={{ margin: 16, marginTop: 0, padding: 16 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('RoomElectricityBills', { roomId: room.s_no, roomNo: room.room_no })}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 12,
+                  backgroundColor: '#F59E0B' + '20',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 20 }}>⚡</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
+                  Electricity Bills
+                </Text>
+                <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 2 }}>
+                  View & manage room bills
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={Theme.colors.text.tertiary} />
+          </TouchableOpacity>
+        </Card>
+
+        {/* Missing Last Month Bill Warning */}
+        {!hasLastMonthBill && beds.some(b => b.is_occupied) && (
+          <Card
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 12,
+              padding: 14,
+              backgroundColor: '#FEE2E2',
+              borderWidth: 1,
+              borderColor: '#FECACA',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Ionicons name="warning" size={20} color="#DC2626" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#DC2626', marginBottom: 2 }}>
+                  Missing Electricity Bill
+                </Text>
+                <Text style={{ fontSize: 12, color: '#991B1B' }}>
+                  No electricity bill added for {lastMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+                </Text>
+              </View>
+            </View>
           </Card>
         )}
 

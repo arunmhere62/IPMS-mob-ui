@@ -1094,17 +1094,13 @@ export const DashboardScreen: React.FC = () => {
                 </Text>
               </View>
             ) : (
-              <FlatList
+              <ScrollView
                 nestedScrollEnabled
                 showsVerticalScrollIndicator={false}
                 style={{ height: 340 }}
                 contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
-                data={selectedAttention.tenants}
-                keyExtractor={(t: Tenant) => String(t.s_no)}
-                initialNumToRender={6}
-                maxToRenderPerBatch={10}
-                windowSize={5}
-                renderItem={({ item: t }) => {
+              >
+                {selectedAttention.tenants.map((t) => {
                   const phone = t.phone_no;
                   const whatsapp = t.whatsapp_number ?? t.phone_no;
                   const roomNo = t.rooms?.room_no;
@@ -1153,6 +1149,7 @@ export const DashboardScreen: React.FC = () => {
 
                   return (
                     <AnimatedPressable
+                      key={t.s_no}
                       onPress={openTenantDetails}
                       style={{
                         flexDirection: "row",
@@ -1255,8 +1252,8 @@ export const DashboardScreen: React.FC = () => {
                       </View>
                     </AnimatedPressable>
                   );
-                }}
-              />
+                })}
+              </ScrollView>
             )}
           </View>
           </View>

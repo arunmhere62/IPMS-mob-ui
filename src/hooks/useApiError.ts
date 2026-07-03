@@ -49,10 +49,22 @@ export const useApiError = (): UseApiErrorReturn => {
     }
     // Handle generic error
     else {
+      // Validate and sanitize status code
+      let statusCode = error?.response?.status ?? 500;
+      if (typeof statusCode !== 'number' || statusCode < 100 || statusCode > 599 || isNaN(statusCode)) {
+        statusCode = 500;
+      }
+
+      // Validate and sanitize message
+      let message = error?.message ?? 'An unexpected error occurred';
+      if (typeof message !== 'string') {
+        message = String(message);
+      }
+
       setError({
         success: false,
-        statusCode: error?.response?.status || 500,
-        message: error?.message || 'An unexpected error occurred',
+        statusCode,
+        message,
         error: {
           code: 'UNKNOWN_ERROR',
         },

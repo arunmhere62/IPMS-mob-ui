@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   ScrollView,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Theme } from "../../../../theme";
 import { DatePicker } from "../../../../components/DatePicker";
@@ -24,6 +25,8 @@ interface AdvancePaymentFormProps {
   pgId: number;
   roomId: number;
   bedId: number;
+  roomNo?: string;
+  bedNo?: string;
   paymentId?: number;
   existingPayment?: unknown;
   onClose: () => void;
@@ -38,6 +41,17 @@ const PAYMENT_METHODS: Option[] = [
   { label: "Bank Transfer", value: "BANK_TRANSFER", icon: "🏦" },
 ];
 
+// Helper to add BED/RM prefix if not present
+const formatBedNo = (bedNo?: string): string => {
+  if (!bedNo) return '';
+  return bedNo.toUpperCase().startsWith('BED') ? bedNo : `BED${bedNo}`;
+};
+
+const formatRoomNo = (roomNo?: string): string => {
+  if (!roomNo) return '';
+  return roomNo.toUpperCase().startsWith('RM') ? roomNo : `RM${roomNo}`;
+};
+
 const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
   visible,
   mode,
@@ -47,6 +61,8 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
   pgId,
   roomId,
   bedId,
+  roomNo,
+  bedNo,
   paymentId,
   existingPayment,
   onClose,
@@ -77,11 +93,28 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
         payment_method?: unknown;
         remarks?: unknown;
       };
+      
+      // Safely parse payment date
+      let parsedDate = "";
+      if (payment.payment_date) {
+        try {
+          const dateObj = new Date(String(payment.payment_date));
+          if (!isNaN(dateObj.getTime())) {
+            // Use local date formatting to avoid timezone issues
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            parsedDate = `${year}-${month}-${day}`;
+          }
+        } catch {
+          // If date parsing fails, leave empty
+          parsedDate = "";
+        }
+      }
+
       setFormData({
         amount_paid: payment.amount_paid?.toString() || "",
-        payment_date: payment.payment_date
-          ? new Date(String(payment.payment_date)).toISOString().split("T")[0]
-          : "",
+        payment_date: parsedDate,
         payment_method: String(payment.payment_method || ""),
         status: "PAID",
         remarks: String(payment.remarks || ""),
@@ -109,18 +142,24 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
           // Fetch bed price
           const bedResponse = await triggerGetBedById(bedId).unwrap();
 
-          const priceValue =
-            typeof bedResponse === 'object' && bedResponse && 'data' in (bedResponse as object)
-              ? (bedResponse as { data?: { bed_price?: unknown } }).data?.bed_price
-              : undefined;
+          // Safely extract bed price from response
+          let priceValue: unknown = undefined;
+          if (bedResponse && typeof bedResponse === 'object') {
+            if ('data' in bedResponse && bedResponse.data && typeof bedResponse.data === 'object') {
+              priceValue = (bedResponse.data as { bed_price?: unknown }).bed_price;
+            }
+          }
+
           if (priceValue !== undefined && priceValue !== null) {
-            const bedPriceNum = typeof priceValue === 'number' ? priceValue : Number(priceValue);
-            if (Number.isFinite(bedPriceNum)) {
+            const bedPriceNum = typeof priceValue === 'number' ? priceValue : parseFloat(String(priceValue));
+            if (!isNaN(bedPriceNum) && Number.isFinite(bedPriceNum) && bedPriceNum >= 0) {
               setBedRentAmount(bedPriceNum);
             }
           }
         } catch (error) {
-          console.error("Error fetching bed details:", error);
+          // Show user-friendly error instead of console.error
+          Alert.alert('Error', 'Failed to fetch bed rent information. Please try again.');
+          setBedRentAmount(0);
         } finally {
           setFetchingBedPrice(false);
         }
@@ -128,32 +167,122 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
     };
 
     fetchDetails();
-  }, [visible, bedId, pgId]);
+  }, [visible, bedId, triggerGetBedById]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.amount_paid || parseFloat(formData.amount_paid) <= 0) {
+    const trimmedAmount = formData.amount_paid.trim();
+    if (!trimmedAmount) {
       newErrors.amount_paid = "Amount paid is required";
+    } else {
+      // Check for multiple decimal points (invalid format)
+      const decimalPoints = (trimmedAmount.match(/\./g) || []).length;
+      if (decimalPoints > 1) {
+        newErrors.amount_paid = "Please enter a valid amount (invalid format)";
+      } else {
+        const amountPaid = parseFloat(trimmedAmount);
+        if (isNaN(amountPaid) || amountPaid <= 0) {
+          newErrors.amount_paid = "Amount paid is required";
+        } else if (amountPaid < 10) {
+          newErrors.amount_paid = "Minimum amount is ₹10";
+        } else if (amountPaid > 100000) {
+          newErrors.amount_paid = "Maximum amount is ₹1,00,000";
+        } else {
+          // Check decimal precision
+          const decimalPart = trimmedAmount.split('.')[1];
+          if (decimalPart && decimalPart.length > 2) {
+            newErrors.amount_paid = "Amount can have maximum 2 decimal places";
+          }
+        }
+      }
     }
 
     if (!formData.payment_date) {
       newErrors.payment_date = "Payment date is required";
+    } else {
+      // Date validation - cannot be in future
+      const selectedDate = new Date(formData.payment_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Normalize selectedDate to midnight for comparison
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (selectedDate > today) {
+        newErrors.payment_date = "Payment date cannot be in the future";
+      }
+
+      // Date validation - not too far in past (e.g., max 1 year)
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      
+      if (selectedDate < oneYearAgo) {
+        newErrors.payment_date = "Payment date cannot be more than 1 year in the past";
+      }
     }
 
     if (!formData.payment_method) {
       newErrors.payment_method = "Payment method is required";
+    } else {
+      // Validate payment method is valid
+      const validMethods = PAYMENT_METHODS.map(m => m.value);
+      if (!validMethods.includes(formData.payment_method)) {
+        newErrors.payment_method = "Please select a valid payment method";
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const resetForm = useCallback(() => {
+    setFormData({
+      amount_paid: "",
+      payment_date: "",
+      payment_method: "",
+      status: "PAID",
+      remarks: "",
+    });
+    setErrors({});
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    // Prevent duplicate submission
+    if (loading) {
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
 
+    // Validate required IDs
+    if (!pgId || !roomId || !bedId) {
+      Alert.alert("Error", "Required information is missing. Please try again.");
+      return;
+    }
+
+    // Sanitize remarks
+    const sanitizedRemarks = formData.remarks.trim().replace(/[<>]/g, '');
+
+    // Confirmation dialog
+    const amount = parseFloat(formData.amount_paid);
+    Alert.alert(
+      "Confirm Payment",
+      `Are you sure you want to process an advance payment of ₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Confirm",
+          style: "default",
+          onPress: () => proceedWithSubmission(sanitizedRemarks),
+        },
+      ]
+    );
+  }, [loading, formData, pgId, roomId, bedId, validateForm]);
+
+  const proceedWithSubmission = useCallback(async (sanitizedRemarks: string) => {
     try {
       setLoading(true);
 
@@ -171,7 +300,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
             | "CASH"
             | "BANK_TRANSFER",
           status: "PAID" as const,
-          remarks: formData.remarks || undefined,
+          remarks: sanitizedRemarks || undefined,
         };
 
         const res = await createAdvancePayment(paymentData).unwrap();
@@ -182,7 +311,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
           payment_date: formData.payment_date,
           payment_method: formData.payment_method,
           status: "PAID" as const,
-          remarks: formData.remarks || undefined,
+          remarks: sanitizedRemarks || undefined,
         };
 
         const res = await onSave(paymentId, updateData);
@@ -190,32 +319,28 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
       }
 
       onSuccess();
-      handleClose();
+      resetForm();
+      onClose();
     } catch (error: unknown) {
       showErrorAlert(error, "Error saving advance payment");
     } finally {
       setLoading(false);
     }
-  };
+  }, [mode, paymentId, onSave, tenantId, pgId, roomId, bedId, formData, createAdvancePayment, onSuccess, resetForm, onClose]);
 
-  const handleClose = () => {
-    setFormData({
-      amount_paid: "",
-      payment_date: "",
-      payment_method: "",
-      status: "PAID",
-      remarks: "",
-    });
-    setErrors({});
-    onClose();
-  };
+  const handleClose = useCallback(() => {
+    if (!loading) {
+      resetForm();
+      onClose();
+    }
+  }, [loading, resetForm, onClose]);
 
   return (
     <SlideBottomModal
       visible={visible}
       onClose={handleClose}
       title={mode === "add" ? "Add Advance Payment" : "Edit Advance Payment"}
-      subtitle={tenantName}
+      subtitle={`${tenantName} • ${formatRoomNo(roomNo)} • ${formatBedNo(bedNo)}`}
       onSubmit={handleSubmit}
       submitLabel={mode === "add" ? "Add Payment" : "Update Payment"}
       cancelLabel="Cancel"
@@ -369,6 +494,9 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
             numberOfLines={3}
             value={formData.remarks}
             onChangeText={(text) => setFormData({ ...formData, remarks: text })}
+            maxLength={500}
+            accessibilityLabel="Remarks input"
+            accessibilityHint="Enter any notes about this payment (optional)"
           />
         </View>
       </ScrollView>

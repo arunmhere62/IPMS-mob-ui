@@ -35,6 +35,8 @@ interface RentPaymentFormProps {
   roomId: number;
   bedId: number;
   pgId: number;
+  roomNo?: string;
+  bedNo?: string;
   rentAmount?: number;
   joiningDate?: string;
   lastPaymentStartDate?: string;
@@ -57,6 +59,17 @@ const PAYMENT_METHODS: Option[] = [
   { label: "Cash", value: "CASH", icon: "💵" },
   { label: "Bank Transfer", value: "BANK_TRANSFER", icon: "🏦" },
 ];
+
+// Helper to add BED/RM prefix if not present
+const formatBedNo = (bedNo?: string): string => {
+  if (!bedNo) return '';
+  return bedNo.toUpperCase().startsWith('BED') ? bedNo : `BED${bedNo}`;
+};
+
+const formatRoomNo = (roomNo?: string): string => {
+  if (!roomNo) return '';
+  return roomNo.toUpperCase().startsWith('RM') ? roomNo : `RM${roomNo}`;
+};
 
 // Helper function to parse date string safely (handles multiple formats)
 const parseDate = (dateString: string): Date => {
@@ -98,6 +111,8 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   roomId,
   bedId,
   pgId,
+  roomNo,
+  bedNo,
   rentAmount = 0,
   joiningDate,
   lastPaymentStartDate,
@@ -518,8 +533,19 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.amount_paid || parseFloat(formData.amount_paid) <= 0) {
+    if (!formData.amount_paid || !formData.amount_paid.trim()) {
       newErrors.amount_paid = "Amount paid is required";
+    } else {
+      // Check for multiple decimal points (invalid format)
+      const decimalPoints = (formData.amount_paid.match(/\./g) || []).length;
+      if (decimalPoints > 1) {
+        newErrors.amount_paid = "Please enter a valid amount (invalid format)";
+      } else {
+        const amountPaid = parseFloat(formData.amount_paid);
+        if (isNaN(amountPaid) || amountPaid <= 0) {
+          newErrors.amount_paid = "Amount paid is required";
+        }
+      }
     }
 
     // Check if amount paid exceeds actual rent amount
@@ -654,7 +680,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
       visible={visible}
       onClose={handleClose}
       title="Add Payment"
-      subtitle={tenantName}
+      subtitle={`${tenantName} • ${formatRoomNo(roomNo)} • ${formatBedNo(bedNo)}`}
       onSubmit={handleSubmit}
       submitLabel="Add Payment"
       cancelLabel="Cancel"

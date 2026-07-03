@@ -27,6 +27,80 @@ export const CheckoutTenantForm: React.FC<CheckoutTenantFormProps> = ({
 
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
+      {/* Payment Status */}
+      <View style={{
+        marginHorizontal: 0,
+        marginBottom: 16,
+        padding: 12,
+        backgroundColor: (!tenant.pending_payment && 
+                          (tenant.rent_due_amount || 0) <= 0 && 
+                          (tenant.partial_due_amount || 0) <= 0 && 
+                          (tenant.pending_due_amount || 0) <= 0) 
+                          ? '#10B98120' 
+                          : '#F59E0B20',
+        borderRadius: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: (!tenant.pending_payment && 
+                          (tenant.rent_due_amount || 0) <= 0 && 
+                          (tenant.partial_due_amount || 0) <= 0 && 
+                          (tenant.pending_due_amount || 0) <= 0) 
+                          ? '#10B981' 
+                          : '#F59E0B',
+      }}>
+        <Text style={{
+          fontSize: 12,
+          fontWeight: '600',
+          color: (!tenant.pending_payment && 
+                  (tenant.rent_due_amount || 0) <= 0 && 
+                  (tenant.partial_due_amount || 0) <= 0 && 
+                  (tenant.pending_due_amount || 0) <= 0) 
+                  ? '#10B981' 
+                  : '#B45309',
+          marginBottom: 8,
+        }}>
+          {(!tenant.pending_payment && 
+            (tenant.rent_due_amount || 0) <= 0 && 
+            (tenant.partial_due_amount || 0) <= 0 && 
+            (tenant.pending_due_amount || 0) <= 0) 
+            ? '✅ All Payments Cleared' 
+            : '⚠️ Payment Status'}
+        </Text>
+        {(!tenant.pending_payment && 
+          (tenant.rent_due_amount || 0) <= 0 && 
+          (tenant.partial_due_amount || 0) <= 0 && 
+          (tenant.pending_due_amount || 0) <= 0) ? (
+          <Text style={{
+            fontSize: 12,
+            color: '#10B981',
+          }}>
+            This tenant has no pending payments. All dues are cleared.
+          </Text>
+        ) : (
+          <View style={{ gap: 4 }}>
+            {tenant.pending_payment && (
+              <Text style={{ fontSize: 12, color: '#B45309' }}>
+                • Pending payment: ₹{(tenant.pending_payment.due || 0).toLocaleString('en-IN')}
+              </Text>
+            )}
+            {(tenant.rent_due_amount ?? 0) > 0 && (
+              <Text style={{ fontSize: 12, color: '#B45309' }}>
+                • Rent due: ₹{(tenant.rent_due_amount ?? 0).toLocaleString('en-IN')}
+              </Text>
+            )}
+            {(tenant.partial_due_amount ?? 0) > 0 && (
+              <Text style={{ fontSize: 12, color: '#B45309' }}>
+                • Partial due: ₹{(tenant.partial_due_amount ?? 0).toLocaleString('en-IN')}
+              </Text>
+            )}
+            {(tenant.pending_due_amount ?? 0) > 0 && (
+              <Text style={{ fontSize: 12, color: '#B45309' }}>
+                • Pending due: ₹{(tenant.pending_due_amount ?? 0).toLocaleString('en-IN')}
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+
       {/* Tenant Information */}
       {tenant && (
         <View style={{

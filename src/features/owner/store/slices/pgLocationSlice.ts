@@ -20,7 +20,11 @@ const pgLocationSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(REHYDRATE, (state) => {
+    builder.addCase(REHYDRATE, (state, action: any) => {
+      const persisted = action.payload?.pgLocations;
+      if (persisted && typeof persisted.selectedPGLocationId === 'number') {
+        state.selectedPGLocationId = persisted.selectedPGLocationId;
+      }
       state.isRehydrated = true;
     });
   },

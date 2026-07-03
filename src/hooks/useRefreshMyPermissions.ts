@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLazyGetMyPermissionsQuery } from '../features/owner/api/rbacApi';
-import { setPermissionsMap, setSubscription, setIsOnboardingComplete, clearPermissions } from '../features/owner/store/slices/rbacSlice';
+import { useLazyGetMyPermissionsQuery } from '@/features/owner/api/rbacApi';
+import { setPermissionsMap, setSubscription, setIsOnboardingComplete, clearPermissions } from '@/features/owner/store/slices/rbacSlice';
 import { RootState } from '@/features/owner/store';
 
 type Options = {
@@ -16,7 +16,7 @@ export const useRefreshMyPermissions = (options?: Options) => {
 
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const loadedAt = useSelector((state: RootState) => (state as any).rbac?.loadedAt || null);
+  const loadedAt = useSelector((state: RootState) => (state as any).rbac?.loadedAt ?? null);
 
   const [fetchMyPerms] = useLazyGetMyPermissionsQuery();
 
@@ -45,13 +45,14 @@ export const useRefreshMyPermissions = (options?: Options) => {
   const maybeRefresh = useCallback(async () => {
     if (!isAuthenticated) return;
 
-    if (!loadedAt) {
+    if (loadedAt == null) {
       await refresh();
       return;
     }
 
     const age = Date.now() - Number(loadedAt);
-    if (age >= ttlMs) {
+    // Validate ttlMs is a valid number before comparison
+    if (typeof ttlMs === 'number' && !isNaN(ttlMs) && age >= ttlMs) {
       await refresh();
     }
   }, [isAuthenticated, loadedAt, refresh, ttlMs]);

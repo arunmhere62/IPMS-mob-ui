@@ -109,21 +109,87 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
     }
   };
 
+  const handleImagesChange = (images: string[]) => {
+    setFormData((prev) => ({ ...prev, images }));
+    if (errors.images) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.images;
+        return newErrors;
+      });
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.bed_no.trim() || formData.bed_no.trim() === "BED") {
-      newErrors.bed_no = "Bed number is required (e.g., BED1, BED2)";
+    // Validate required IDs
+    if (!roomId) {
+      newErrors.room_id = "Room ID is required";
+    }
+    if (!pgId) {
+      newErrors.pg_id = "PG ID is required";
+    }
+    if (!organizationId) {
+      newErrors.organization_id = "Organization ID is required";
     }
 
-    if (!formData.bed_price || !formData.bed_price.trim()) {
+    // Validate bed number
+    const trimmedBedNo = formData.bed_no.trim();
+    if (!trimmedBedNo || trimmedBedNo === "BED") {
+      newErrors.bed_no = "Bed number is required (e.g., BED1, BED2)";
+    } else {
+      // Check format: must start with BED followed by numbers
+      if (!/^BED\d+$/.test(trimmedBedNo)) {
+        newErrors.bed_no = "Bed number must be in format BED1, BED2, etc.";
+      } else {
+        // Check maximum length for numeric suffix (max 3 digits)
+        const numericSuffix = trimmedBedNo.substring(3);
+        if (numericSuffix.length > 3) {
+          newErrors.bed_no = "Bed number suffix cannot exceed 3 digits";
+        }
+        // Check minimum suffix length (at least 1 digit)
+        if (numericSuffix.length === 0) {
+          newErrors.bed_no = "Bed number must have at least 1 digit after BED";
+        }
+      }
+    }
+
+    // Validate bed price
+    const trimmedPrice = formData.bed_price.trim();
+    if (!trimmedPrice) {
       newErrors.bed_price = "Bed price is required";
     } else {
-      const price = parseFloat(formData.bed_price);
-      if (isNaN(price) || price <= 0) {
-        newErrors.bed_price =
-          "Please enter a valid price (must be greater than 0)";
+      // Check for multiple decimal points (invalid format)
+      const decimalPoints = (trimmedPrice.match(/\./g) || []).length;
+      if (decimalPoints > 1) {
+        newErrors.bed_price = "Please enter a valid price (invalid format)";
+      } else {
+        const price = parseFloat(trimmedPrice);
+        if (isNaN(price)) {
+          newErrors.bed_price = "Please enter a valid price";
+        } else if (price <= 0) {
+          newErrors.bed_price = "Price must be greater than 0";
+        } else if (price < 100) {
+          newErrors.bed_price = "Minimum bed price is ₹100";
+        } else if (price > 100000) {
+          newErrors.bed_price = "Maximum bed price is ₹100,000";
+        } else {
+          // Check decimal precision (max 2 decimal places)
+          const decimalPart = trimmedPrice.split('.')[1];
+          if (decimalPart && decimalPart.length > 2) {
+            newErrors.bed_price = "Price can have maximum 2 decimal places";
+          }
+        }
       }
+    }
+
+    // Validate images (optional but recommended to have at least 1)
+    if (formData.images.length === 0) {
+      // Optional: Uncomment to make images required
+      // newErrors.images = "At least 1 bed image is required";
+    } else if (formData.images.length > 3) {
+      newErrors.images = "Maximum 3 images allowed";
     }
 
     setErrors(newErrors);
@@ -373,9 +439,7 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
       <View style={{ marginBottom: 20 }}>
         <ImageUploadS3
           images={formData.images}
-          onImagesChange={(images: string[]) =>
-            setFormData((prev) => ({ ...prev, images }))
-          }
+          onImagesChange={handleImagesChange}
           maxImages={3}
           label="Bed Images (Optional)"
           disabled={loading}
@@ -383,6 +447,13 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
           useS3={true}
           entityId={isEditMode ? bed?.s_no?.toString() : undefined}
         />
+        {errors.images && (
+          <Text
+            style={{ fontSize: 11, color: Theme.colors.danger, marginTop: 4 }}
+          >
+            {errors.images}
+          </Text>
+        )}
       </View>
     </SlideBottomModal>
   );

@@ -119,6 +119,21 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
       {/* Name */}
       <Text style={styles.name}>{tenant.name}</Text>
 
+      {/* Check-in Date - Eye-catching */}
+      <View style={styles.checkInDateBadge}>
+        <Ionicons name="calendar" size={14} color={Theme.colors.primary} />
+        <Text style={styles.checkInDateLabel}>Check-in:</Text>
+        <Text style={styles.checkInDateValue}>
+          {tenant.check_in_date
+            ? new Date(tenant.check_in_date).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })
+            : 'N/A'}
+        </Text>
+      </View>
+
       {/* Status Badge */}
       <View
         style={[
@@ -260,6 +275,32 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Theme.colors.text.primary,
     marginBottom: 6,
+  },
+
+  checkInDateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Theme.colors.background.blueLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Theme.colors.primary,
+  },
+
+  checkInDateLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Theme.colors.primary,
+    marginLeft: 6,
+  },
+
+  checkInDateValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Theme.colors.primaryDark,
+    marginLeft: 4,
   },
 
   statusBadge: {

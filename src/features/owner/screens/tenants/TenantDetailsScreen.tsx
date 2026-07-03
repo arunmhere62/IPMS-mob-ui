@@ -180,7 +180,6 @@ const TenantDetailsContent: React.FC<{
   ];
 
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
-  const { user: _user } = useSelector((state: RootState) => state.auth);
 
   const [shouldRefreshTenantsOnBack, setShouldRefreshTenantsOnBack] = useState(false);
 
@@ -956,13 +955,43 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleSaveVacateDate = async () => {
+    if (!newVacateDate) {
+      // Clearing the date is allowed
+      try {
+        setVacateLoading(true);
+        await updateTenantMutation({
+          id: currentTenant.s_no,
+          data: { expected_vacate_date: null } as any,
+        }).unwrap();
+        showSuccessAlert('Expected vacate date cleared');
+        setVacateDateModalVisible(false);
+        refetchTenant();
+      } catch (error: unknown) {
+        showErrorAlert(error, 'Update Error');
+      } finally {
+        setVacateLoading(false);
+      }
+      return;
+    }
+
+    // Validate that expected vacate date is in the future
+    const selectedDate = new Date(newVacateDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate <= today) {
+      Alert.alert('Invalid Date', 'Expected vacate date must be in the future. Please select a date after today.');
+      return;
+    }
+
     try {
       setVacateLoading(true);
       await updateTenantMutation({
         id: currentTenant.s_no,
-        data: { expected_vacate_date: newVacateDate || null } as any,
+        data: { expected_vacate_date: newVacateDate } as any,
       }).unwrap();
-      showSuccessAlert(newVacateDate ? 'Expected vacate date saved' : 'Expected vacate date cleared');
+      showSuccessAlert('Expected vacate date saved');
       setVacateDateModalVisible(false);
       refetchTenant();
     } catch (error: unknown) {
@@ -1337,29 +1366,98 @@ const TenantDetailsContent: React.FC<{
           <PendingPaymentAlert pendingPayment={tenant.pending_payment} />
         )}
 
-        {!tenant.pending_payment && derivedRentStatus.rentDue <= 0 && derivedRentStatus.partialDue <= 0 && derivedRentStatus.pendingDue <= 0 && (
+        {/* Advance/Refund Summary */}
+        {((tenant.advance_payments?.length || 0) > 0 || (tenant.refund_payments?.length || 0) > 0) ? (
           <Card
             style={{
               marginHorizontal: 16,
               marginBottom: 12,
               padding: 14,
-              backgroundColor: '#10B98120',
+              backgroundColor: '#F59E0B20',
               borderWidth: 0.5,
-              borderColor: '#10B981',
+              borderColor: '#F59E0B',
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 }}>
-                <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                <Text style={{ fontSize: 14, fontWeight: '800', color: '#10B981', marginLeft: 8 }}>
-                  No pending payments
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#B45309', marginBottom: 8 }}>
+              💰 Advance & Refund Summary
+            </Text>
+            <View style={{ gap: 6 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 12, color: '#92400E' }}>Total Advance Paid:</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>
+                  ₹{(tenant.advance_payment_summary?.total_advance_paid || 
+                     tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </Text>
               </View>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.secondary }}>
-                All clear
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 12, color: '#92400E' }}>Total Refund Given:</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>
+                  ₹{(tenant.refund_payment_summary?.total_refund_given || 
+                     tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </Text>
+              </View>
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: '#F59E0B',
+                  marginVertical: 4,
+                }}
+              />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#B45309' }}>Net Advance Remaining:</Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#B45309' }}>
+                  ₹{(tenant.net_advance_remaining !== undefined ? tenant.net_advance_remaining : 
+                     (tenant.advance_payment_summary?.total_advance_paid || tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0) - 
+                     (tenant.refund_payment_summary?.total_refund_given || tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0)).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </Text>
+              </View>
             </View>
           </Card>
+        ) : (
+          <Card
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 12,
+              padding: 14,
+              backgroundColor: '#F59E0B20',
+              borderWidth: 0.5,
+              borderColor: '#F59E0B',
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#B45309', marginBottom: 4 }}>
+              💰 Advance & Refund
+            </Text>
+            <Text style={{ fontSize: 12, color: '#92400E' }}>
+              No advance or refund payments recorded
+            </Text>
+          </Card>
+        )}
+
+        {!tenant.pending_payment && derivedRentStatus.rentDue <= 0 && derivedRentStatus.partialDue <= 0 && derivedRentStatus.pendingDue <= 0 && (
+          <>
+            <Card
+              style={{
+                marginHorizontal: 16,
+                marginBottom: 12,
+                padding: 14,
+                backgroundColor: '#10B98120',
+                borderWidth: 0.5,
+                borderColor: '#10B981',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 }}>
+                  <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#10B981', marginLeft: 8 }}>
+                    No pending payments
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.secondary }}>
+                  All clear
+                </Text>
+              </View>
+            </Card>
+          </>
         )}
 
         {!tenant.pending_payment && (derivedRentStatus.rentDue > 0 || derivedRentStatus.partialDue > 0 || derivedRentStatus.pendingDue > 0) && (
@@ -1449,10 +1547,7 @@ const TenantDetailsContent: React.FC<{
 
 
 
-        {/* Accommodation Details */}
-        <AccommodationDetails
-          tenant={tenant}
-        />
+
 
         {/* Expected Vacate Date */}
         {canEditTenant && (
@@ -1496,10 +1591,6 @@ const TenantDetailsContent: React.FC<{
           </Card>
         )}
 
-        {/* Personal Information */}
-        <PersonalInformation tenant={tenant} onOpenMedia={openImageViewer} />
-
-
         {/* Rent Payments Button - Always Show */}
         <TouchableOpacity
           onPress={() => navigation.navigate('TenantRentPaymentsScreen', {
@@ -1515,6 +1606,13 @@ const TenantDetailsContent: React.FC<{
             bedId: tenant.bed_id,
             pgId: tenant.pg_id || selectedPGLocationId || 0,
             joiningDate: tenant.check_in_date,
+            totalAdvancePaid: tenant.advance_payment_summary?.total_advance_paid || 
+                           tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0,
+            totalRefundGiven: tenant.refund_payment_summary?.total_refund_given || 
+                            tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0,
+            netAdvanceRemaining: tenant.net_advance_remaining !== undefined ? tenant.net_advance_remaining : 
+                                (tenant.advance_payment_summary?.total_advance_paid || tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0) - 
+                                (tenant.refund_payment_summary?.total_refund_given || tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0),
           })}
           style={{
             marginHorizontal: 16,
@@ -1801,7 +1899,15 @@ const TenantDetailsContent: React.FC<{
             )}
           </View>
         )}
-        
+                {/* Accommodation Details */}
+        <AccommodationDetails
+          tenant={tenant}
+        />
+
+                {/* Personal Information */}
+        <PersonalInformation tenant={tenant} onOpenMedia={openImageViewer} />
+
+
         {/* Checkout Actions - Only show if there's a checkout date */}
         {(() => {
           const isCheckedOut = !!currentTenant?.check_out_date;
@@ -2035,6 +2141,8 @@ const TenantDetailsContent: React.FC<{
           roomId={tenant.room_id || 0}
           bedId={tenant.bed_id || 0}
           pgId={tenant.pg_id || selectedPGLocationId || 0}
+          roomNo={tenant.rooms?.room_no}
+          bedNo={tenant.beds?.bed_no}
           rentAmount={tenant.rooms?.rent_price || 0}
           joiningDate={tenant.check_in_date}
           lastPaymentStartDate={
@@ -2135,6 +2243,8 @@ const TenantDetailsContent: React.FC<{
           pgId={tenant.pg_id || selectedPGLocationId || 0}
           roomId={tenant.room_id || 0}
           bedId={tenant.bed_id || 0}
+          roomNo={tenant.rooms?.room_no}
+          bedNo={tenant.beds?.bed_no}
           paymentId={editingAdvancePayment?.s_no}
           existingPayment={editingAdvancePayment}
           onClose={() => {
@@ -2155,6 +2265,7 @@ const TenantDetailsContent: React.FC<{
         <AddRefundPaymentModal
           visible={refundPaymentModalVisible}
           tenant={tenant}
+          totalAdvancePaid={tenant.advance_payment_summary?.total_advance_paid || 0}
           onClose={() => setRefundPaymentModalVisible(false)}
           onSave={handleSaveRefundPayment}
         />

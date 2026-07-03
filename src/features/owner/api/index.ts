@@ -12,3 +12,4 @@ export * from './roomsApi';
 export * from './ticketsApi';
 export * from './visitorsApi';
 export * from './userApi';
+export * from './electricityBillApi';

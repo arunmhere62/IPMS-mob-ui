@@ -28,6 +28,24 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   prefix = '₹',
   maxLength = 10,
 }) => {
+  const handleChange = (text: string) => {
+    // Prevent negative numbers
+    if (text.startsWith('-')) {
+      return;
+    }
+    
+    // Prevent multiple decimal points
+    const decimalPoints = (text.match(/\./g) || []).length;
+    if (decimalPoints > 1) {
+      // Remove all but the first decimal point
+      const parts = text.split('.');
+      const newText = parts[0] + '.' + parts.slice(1).join('');
+      onChangeText(newText);
+    } else {
+      onChangeText(text);
+    }
+  };
+
   return (
     <View style={containerStyle}>
       <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
@@ -61,7 +79,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
           placeholderTextColor={Theme.colors.text.tertiary}
           keyboardType="numeric"
           value={value}
-          onChangeText={onChangeText}
+          onChangeText={handleChange}
           maxLength={maxLength}
           editable={!disabled}
         />

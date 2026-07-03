@@ -83,6 +83,11 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const roomNumber = route.params?.roomNumber || '';
   const bedNumber = route.params?.bedNumber || '';
   const accommodationLabel = `${pgName}${roomNumber ? ` | Room ${roomNumber}` : ''}${bedNumber ? ` | Bed ${bedNumber}` : ''}`;
+  
+  // Advance/Refund summary data
+  const totalAdvancePaid = route.params?.totalAdvancePaid || 0;
+  const totalRefundGiven = route.params?.totalRefundGiven || 0;
+  const netAdvanceRemaining = route.params?.netAdvanceRemaining !== undefined ? route.params?.netAdvanceRemaining : (totalAdvancePaid - totalRefundGiven);
 
   const canVoidRentPayment = canDeleteRent && !isCheckedOutTenant;
 
@@ -349,6 +354,53 @@ export const TenantRentPaymentsScreen: React.FC = () => {
             {accommodationLabel}
           </Text>
         </View>
+
+        {/* Advance/Refund Summary */}
+        {(totalAdvancePaid > 0 || totalRefundGiven > 0) && (
+          <View
+            style={{
+              marginHorizontal: s(16),
+              marginTop: s(12),
+              marginBottom: s(12),
+              padding: s(14),
+              backgroundColor: '#F59E0B20',
+              borderWidth: 0.5,
+              borderColor: '#F59E0B',
+              borderRadius: s(8),
+            }}
+          >
+            <Text style={{ fontSize: s(12), fontWeight: '600', color: '#B45309', marginBottom: s(8) }}>
+              💰 Advance & Refund Summary
+            </Text>
+            <View style={{ gap: s(6) }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: s(12), color: '#92400E' }}>Total Advance Paid:</Text>
+                <Text style={{ fontSize: s(13), fontWeight: '700', color: '#92400E' }}>
+                  ₹{totalAdvancePaid.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: s(12), color: '#92400E' }}>Total Refund Given:</Text>
+                <Text style={{ fontSize: s(13), fontWeight: '700', color: '#92400E' }}>
+                  ₹{totalRefundGiven.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </Text>
+              </View>
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: '#F59E0B',
+                  marginVertical: s(4),
+                }}
+              />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: s(13), fontWeight: '600', color: '#B45309' }}>Net Advance Remaining:</Text>
+                <Text style={{ fontSize: s(14), fontWeight: '800', color: '#B45309' }}>
+                  ₹{netAdvanceRemaining.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {loading && (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
