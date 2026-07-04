@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Theme } from '@/theme';
+import { usePreparePaymentMutation } from '@/features/owner/api/subscriptionApi';
+import { showErrorAlert } from '@/utils/errorHandler';
 
 interface PaymentOptionsScreenProps {
   navigation: any;
@@ -22,6 +24,7 @@ interface PaymentMethod {
 export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navigation, route }) => {
   const { plan, paymentUrl, orderId, subscriptionId } = route.params;
   const [selectedMethod, setSelectedMethod] = useState<string>('upi');
+  const [preparePayment, { isLoading: isPreparing }] = usePreparePaymentMutation();
 
   const paymentMethods: PaymentMethod[] = [
     {
@@ -47,13 +50,31 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navi
       description: 'Paytm, PhonePe, Amazon Pay' },
   ];
 
-  const handleProceedToPay = () => {
-    // Navigate to WebView with payment URL
-    navigation.navigate('PaymentWebView', {
-      paymentUrl,
-      orderId,
-      subscriptionId,
-      paymentMethod: selectedMethod });
+  const handleProceedToPay = async () => {
+    try {
+      const result = await preparePayment({
+        orderId,
+        paymentMethod: selectedMethod,
+      }).unwrap();
+
+      const payload: any = (result as any)?.data ?? result;
+      const preparedPaymentUrl =
+        payload?.payment_url ??
+        payload?.data?.payment_url;
+
+      if (!preparedPaymentUrl) {
+        throw new Error('Failed to prepare payment URL');
+      }
+
+      navigation.navigate('PaymentWebView', {
+        paymentUrl: preparedPaymentUrl,
+        orderId,
+        subscriptionId,
+        paymentMethod: selectedMethod });
+    } catch (error: unknown) {
+      console.error('❌ Prepare payment error:', error);
+      showErrorAlert(error, 'Payment Preparation Error');
+    }
   };
 
   const formatPrice = (price: string | number) => {
@@ -209,9 +230,16 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navi
         <AnimatedPressableCard
           style={styles.proceedButton}
           onPress={handleProceedToPay}
+          disabled={isPreparing}
         >
-          <Text style={styles.proceedButtonText}>Proceed to Pay</Text>
-          <Ionicons name="arrow-forward" size={20} color="#fff" />
+          {isPreparing ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Text style={styles.proceedButtonText}>Proceed to Pay</Text>
+              <Ionicons name="arrow-forward" size={20} color="#fff" />
+            </>
+          )}
         </AnimatedPressableCard>
       </View>
     </ScreenLayout>

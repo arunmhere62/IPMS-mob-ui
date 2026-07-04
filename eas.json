@@ -98,10 +98,10 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "YOUR_ASC_APP_ID",
-        "ascApiKeyPath": "./path/to/AuthKey_KEYID.p8",
-        "ascApiKeyIssuerId": "YOUR_ISSUER_ID",
-        "ascApiKeyId": "YOUR_KEY_ID"
+        "ascAppId": "6787488713",
+        "ascApiKeyPath": "./AuthKey_K7AJ92MPPM.p8",
+        "ascApiKeyIssuerId": "503743cc-4811-409c-bb55-975ddf0b3468",
+        "ascApiKeyId": "K7AJ92MPPM"
       }
     }
   }

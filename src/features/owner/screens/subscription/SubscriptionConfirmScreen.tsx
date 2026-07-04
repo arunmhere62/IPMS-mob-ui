@@ -141,11 +141,11 @@ export const SubscriptionConfirmScreen: React.FC<SubscriptionConfirmScreenProps>
 
         <AnimatedPressableCard
           onPress={() => {
-            navigation.navigate('PaymentWebView', {
+            navigation.navigate('PaymentOptions', {
+              plan,
               paymentUrl,
               orderId,
-              subscriptionId,
-              paymentMethod: 'ccavenue' });
+              subscriptionId });
           }}
           disabled={!paymentUrl}
           style={{

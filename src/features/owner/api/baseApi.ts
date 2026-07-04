@@ -29,7 +29,7 @@ const toPlainHeaders = (headers: any): Record<string, any> => {
 const needsPgHeader = (url?: string) => {
   if (!url) return false;
   const path = (url.split('?')[0] || '').toString();
-  return /^\/(tenants|rooms|beds|advance-payments|refund-payments|payments|pending-payments|payroll|dashboard)(\/|$)/.test(path);
+  return /^\/(tenants|rooms|beds|rent-payments|advance-payments|refund-payments|payments|pending-payments|payroll|dashboard)(\/|$)/.test(path);
 };
 
 const applyAuthAndContextHeaders = (headers: Headers, state: RootState) => {

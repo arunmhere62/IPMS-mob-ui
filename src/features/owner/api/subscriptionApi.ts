@@ -158,6 +158,16 @@ export type SubscribeToPlanResponse = {
 
 export type UpgradePlanResponse = SubscribeToPlanResponse;
 
+export type PreparePaymentResponse = {
+  success: boolean;
+  data: {
+    payment_url: string;
+    order_id: string;
+    payment_method: string;
+    payment_option: string;
+  };
+};
+
 export type RenewSubscriptionResponse = {
   success: boolean;
   data: {
@@ -248,6 +258,23 @@ export const subscriptionApi = baseApi.injectEndpoints({
       ],
     }),
 
+    preparePayment: build.mutation<PreparePaymentResponse, { orderId: string; paymentMethod: string }>({
+      query: ({ orderId, paymentMethod }) => ({
+        url: '/subscription/payment/prepare',
+        method: 'POST',
+        body: { order_id: orderId, payment_method: paymentMethod },
+      }),
+      transformResponse: (response: ApiEnvelope<PreparePaymentResponse> | any) => {
+        const unwrapped = unwrapCentralData<any>(response);
+        const nested = unwrapNestedData(unwrapped);
+        return nested as any;
+      },
+      invalidatesTags: [
+        { type: 'CurrentSubscription', id: 'SINGLE' },
+        { type: 'SubscriptionStatus', id: 'SINGLE' },
+      ],
+    }),
+
     renewSubscription: build.mutation<RenewSubscriptionResponse, { subscriptionId: number }>({
       query: ({ subscriptionId }) => ({
         url: `/subscription/${subscriptionId}/renew`,
@@ -280,4 +307,5 @@ export const {
   useUpgradePlanMutation,
   useCancelSubscriptionMutation,
   useRenewSubscriptionMutation,
+  usePreparePaymentMutation,
 } = subscriptionApi;
