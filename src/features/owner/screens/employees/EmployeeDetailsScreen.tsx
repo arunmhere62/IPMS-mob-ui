@@ -1,14 +1,13 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
   RefreshControl,
   ActivityIndicator,
-  TouchableOpacity,
   Alert,
-  Image,
-} from 'react-native';
+  Image } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Theme } from '../../../../theme';
 import { ActionButtons } from '../../../../components/ActionButtons';
@@ -30,8 +29,7 @@ import { Permission } from '@/config/rbac.config';
 const DetailRow = ({
   label,
   value,
-  isLast,
-}: {
+  isLast }: {
   label: string;
   value?: string | number | null;
   isLast?: boolean;
@@ -44,8 +42,7 @@ const DetailRow = ({
       paddingVertical: 10,
       borderBottomWidth: isLast ? 0 : 1,
       borderBottomColor: Theme.colors.border + '40',
-      gap: 12,
-    }}
+      gap: 12 }}
   >
     <Text style={{ flex: 1, fontSize: 13, color: Theme.colors.text.secondary }}>
       {label}
@@ -56,8 +53,7 @@ const DetailRow = ({
         fontSize: 13,
         fontWeight: '600',
         color: Theme.colors.text.primary,
-        textAlign: 'right',
-      }}
+        textAlign: 'right' }}
     >
       {value === null || value === undefined || value === '' ? 'N/A' : String(value)}
     </Text>
@@ -115,8 +111,7 @@ const EmployeeDetailsScreen: React.FC = () => {
     isLoading: loading,
     isFetching: refreshing,
     refetch,
-    error: _error,
-  } = useGetEmployeeByIdQuery(employeeId);
+    error: _error } = useGetEmployeeByIdQuery(employeeId);
 
   const { data: employeePerms } = useGetUserPermissionsQuery(employeeId);
 
@@ -233,8 +228,7 @@ const EmployeeDetailsScreen: React.FC = () => {
             } catch (error: any) {
               showErrorAlert(error, 'Status Update Error');
             }
-          },
-        },
+          } },
       ]
     );
   };
@@ -261,8 +255,7 @@ const EmployeeDetailsScreen: React.FC = () => {
               console.error('Error deleting employee:', error);
               showErrorAlert(error, 'Delete Error');
             }
-          },
-        },
+          } },
       ]
     );
   };
@@ -306,8 +299,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.08,
                 shadowRadius: 10,
-                elevation: 2,
-              }}
+                elevation: 2 }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 {profileImageUri ? (
@@ -316,8 +308,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                     style={{
                       width: 48,
                       height: 48,
-                      borderRadius: 16,
-                    }}
+                      borderRadius: 16 }}
                   />
                 ) : (
                   <View
@@ -327,8 +318,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                       borderRadius: 16,
                       backgroundColor: Theme.colors.primary + '20',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                      justifyContent: 'center' }}
                   >
                     <Text style={{ fontSize: 22 }}>👤</Text>
                   </View>
@@ -351,15 +341,13 @@ const EmployeeDetailsScreen: React.FC = () => {
                     paddingHorizontal: 10,
                     paddingVertical: 5,
                     borderRadius: 8,
-                    backgroundColor: employee.status === 'ACTIVE' ? '#DCFCE7' : '#FEE2E2',
-                  }}
+                    backgroundColor: employee.status === 'ACTIVE' ? '#DCFCE7' : '#FEE2E2' }}
                 >
                   <Text
                     style={{
                       fontSize: 11,
                       fontWeight: '700',
-                      color: employee.status === 'ACTIVE' ? '#166534' : '#991B1B',
-                    }}
+                      color: employee.status === 'ACTIVE' ? '#166534' : '#991B1B' }}
                   >
                     {employee.status}
                   </Text>
@@ -374,10 +362,9 @@ const EmployeeDetailsScreen: React.FC = () => {
                   marginTop: 14,
                   paddingTop: 14,
                   borderTopWidth: 1,
-                  borderTopColor: Theme.colors.border + '30',
-                }}
+                  borderTopColor: Theme.colors.border + '30' }}
               >
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={handleToggleStatus}
                   disabled={isTogglingStatus}
                   style={{
@@ -390,19 +377,17 @@ const EmployeeDetailsScreen: React.FC = () => {
                     backgroundColor: employee.status === 'ACTIVE' ? '#FEF2F2' : '#F0FDF4',
                     borderWidth: 1,
                     borderColor: employee.status === 'ACTIVE' ? '#FECACA' : '#BBF7D0',
-                    opacity: isTogglingStatus ? 0.5 : 1,
-                  }}
+                    opacity: isTogglingStatus ? 0.5 : 1 }}
                 >
                   <Text
                     style={{
                       fontSize: 13,
                       fontWeight: '700',
-                      color: employee.status === 'ACTIVE' ? '#DC2626' : '#16A34A',
-                    }}
+                      color: employee.status === 'ACTIVE' ? '#DC2626' : '#16A34A' }}
                   >
                     {isTogglingStatus ? 'Updating...' : employee.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
 
                 <ActionButtons
                   onEdit={handleEdit}
@@ -425,8 +410,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.08,
                 shadowRadius: 10,
-                elevation: 2,
-              }}
+                elevation: 2 }}
             >
               <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
                 Operations
@@ -459,8 +443,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.06,
                   shadowRadius: 6,
-                  elevation: 1,
-                }}
+                  elevation: 1 }}
               >
                 <Text style={{ fontSize: 14, fontWeight: '800', color: Theme.colors.text.primary }}>
                   Access Settings
@@ -472,7 +455,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                   Use Allow / Deny to override role defaults, or Clear to go back to role-based access.
                 </Text>
 
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={() => (navigation as any).navigate('EmployeePermissionOverrides', { employeeId })}
                   style={{
                     marginTop: 12,
@@ -480,13 +463,12 @@ const EmployeeDetailsScreen: React.FC = () => {
                     paddingHorizontal: 14,
                     borderRadius: 14,
                     backgroundColor: Theme.colors.primary,
-                    alignSelf: 'flex-end',
-                  }}
+                    alignSelf: 'flex-end' }}
                 >
                   <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
                     Manage Access
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               </Card>
             )}
 
@@ -501,8 +483,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.06,
                   shadowRadius: 6,
-                  elevation: 1,
-                }}
+                  elevation: 1 }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View style={{ flex: 1, marginRight: 12 }}>
@@ -515,17 +496,16 @@ const EmployeeDetailsScreen: React.FC = () => {
                         : 'Not set'}
                     </Text>
                   </View>
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     onPress={openSalaryModal}
                     style={{
                       paddingVertical: 10,
                       paddingHorizontal: 12,
                       borderRadius: 10,
-                      backgroundColor: Theme.colors.primary,
-                    }}
+                      backgroundColor: Theme.colors.primary }}
                   >
                     <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>Update Salary</Text>
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 </View>
               </Card>
             )}
@@ -539,8 +519,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.06,
                 shadowRadius: 6,
-                elevation: 1,
-              }}
+                elevation: 1 }}
             >
               <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
                 Address Information
@@ -562,8 +541,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.06,
                 shadowRadius: 6,
-                elevation: 1,
-              }}
+                elevation: 1 }}
             >
               <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
                 Additional Information

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { Image, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../../../../components/Card';
 import { Theme } from '../../../../../theme';
@@ -26,8 +27,7 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
           fontSize: 16,
           fontWeight: '700',
           color: Theme.colors.text.primary,
-          marginBottom: 12,
-        }}
+          marginBottom: 12 }}
       >
         👤 Personal Information
       </Text>
@@ -81,8 +81,7 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
             paddingTop: 14,
             borderTopWidth: 1,
             borderTopColor: Theme.colors.border,
-            gap: 12,
-          }}
+            gap: 12 }}
         >
           <View
             style={{
@@ -90,13 +89,12 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
               borderRadius: 12,
               backgroundColor: Theme.colors.background.secondary,
               borderWidth: 1,
-              borderColor: Theme.colors.border,
-            }}
+              borderColor: Theme.colors.border }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="images-outline" size={16} color={Theme.colors.text.secondary} />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit>
                   Tenant Image & Proof Documents
                 </Text>
               </View>
@@ -112,7 +110,7 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
                 contentContainerStyle={{ gap: 10, paddingTop: 10 }}
               >
                 {tenantImage ? (
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     onPress={() => onOpenMedia(tenantImage)}
                     style={{
                       width: 92,
@@ -121,15 +119,14 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
                       borderRadius: 10,
                       borderWidth: 1,
                       borderColor: Theme.colors.border,
-                      overflow: 'hidden',
-                    }}
+                      overflow: 'hidden' }}
                   >
                     <Image source={{ uri: tenantImage }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 ) : null}
 
                 {proofDocs.map((doc: string, index: number) => (
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     key={index}
                     onPress={() => onOpenMedia(doc)}
                     style={{
@@ -139,11 +136,10 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
                       borderRadius: 10,
                       borderWidth: 1,
                       borderColor: Theme.colors.border,
-                      overflow: 'hidden',
-                    }}
+                      overflow: 'hidden' }}
                   >
                     <Image source={{ uri: doc }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 ))}
               </ScrollView>
             ) : (

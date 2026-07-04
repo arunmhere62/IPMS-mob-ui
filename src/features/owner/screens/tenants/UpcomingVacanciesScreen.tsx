@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { Theme } from '../../../../theme';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
@@ -72,7 +73,7 @@ export const UpcomingVacanciesScreen: React.FC<UpcomingVacanciesScreenProps> = (
         {/* Filter chips */}
         <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
           {FILTER_OPTIONS.map((opt) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={opt.value}
               onPress={() => setDays(opt.value)}
               style={{
@@ -81,13 +82,12 @@ export const UpcomingVacanciesScreen: React.FC<UpcomingVacanciesScreenProps> = (
                 borderRadius: 20,
                 backgroundColor: days === opt.value ? Theme.colors.primary : '#F1F5F9',
                 borderWidth: 1,
-                borderColor: days === opt.value ? Theme.colors.primary : '#E2E8F0',
-              }}
+                borderColor: days === opt.value ? Theme.colors.primary : '#E2E8F0' }}
             >
               <Text style={{ fontSize: 13, fontWeight: '600', color: days === opt.value ? '#fff' : Theme.colors.text.secondary }}>
                 {opt.label}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </View>
 
@@ -119,10 +119,9 @@ export const UpcomingVacanciesScreen: React.FC<UpcomingVacanciesScreenProps> = (
               {vacancies.map((v) => {
                 const d = daysUntil(v.expected_vacate_date);
                 return (
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     key={v.s_no}
                     onPress={() => navigation.navigate('TenantDetails', { tenantId: v.s_no })}
-                    activeOpacity={0.85}
                   >
                     <Card style={{ padding: 14, marginBottom: 10 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -160,7 +159,7 @@ export const UpcomingVacanciesScreen: React.FC<UpcomingVacanciesScreenProps> = (
                         </View>
                       </View>
                     </Card>
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 );
               })}
             </>

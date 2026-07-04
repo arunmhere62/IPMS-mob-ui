@@ -1,5 +1,6 @@
 import React, { memo, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { View, Text, ScrollView, Modal } from 'react-native';
 import { Card } from './Card';
 import { Theme } from '../theme';
 import { SkeletonLoader, CardSkeleton } from './SkeletonLoader';
@@ -73,7 +74,7 @@ export const FinancialAnalytics = memo<FinancialAnalyticsProps>(({
         {/* Month Dropdown Selector */}
         {data && selectedMonth && (
           <View style={{ position: 'relative' }}>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => setShowDropdown(!showDropdown)}
               style={{
                 flexDirection: 'row',
@@ -84,8 +85,7 @@ export const FinancialAnalytics = memo<FinancialAnalyticsProps>(({
                 backgroundColor: 'white',
                 borderWidth: 1,
                 borderColor: '#E5E7EB',
-                minWidth: 120,
-              }}
+                minWidth: 120 }}
             >
               <Text style={{ fontSize: 12, fontWeight: '600', color: '#1F2937', flex: 1 }}>
                 {selectedMonth.month}
@@ -93,7 +93,7 @@ export const FinancialAnalytics = memo<FinancialAnalyticsProps>(({
               <Text style={{ fontSize: 10, color: '#6B7280', marginLeft: 4 }}>
                 {showDropdown ? '▲' : '▼'}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
             
             {/* Dropdown Menu */}
             {showDropdown && (
@@ -111,19 +111,17 @@ export const FinancialAnalytics = memo<FinancialAnalyticsProps>(({
                 shadowOpacity: 0.1,
                 shadowRadius: 8,
                 elevation: 5,
-                zIndex: 1000,
-              }}>
+                zIndex: 1000 }}>
                 <ScrollView style={{ maxHeight: 200 }}>
                   {data && data.monthlyData && Array.isArray(data.monthlyData) && data.monthlyData.map((monthData, index) => (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       key={index}
                       onPress={() => handleMonthSelect(monthData)}
                       style={{
                         padding: 12,
                         borderBottomWidth: index < (data.monthlyData?.length || 0) - 1 ? 1 : 0,
                         borderBottomColor: '#F3F4F6',
-                        backgroundColor: selectedMonth?.month === monthData.month ? '#F0F9FF' : 'white',
-                      }}
+                        backgroundColor: selectedMonth?.month === monthData.month ? '#F0F9FF' : 'white' }}
                     >
                       <Text style={{ 
                         fontSize: 12, 
@@ -132,7 +130,7 @@ export const FinancialAnalytics = memo<FinancialAnalyticsProps>(({
                       }}>
                         {monthData.month}
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   )) || null}
                 </ScrollView>
               </View>

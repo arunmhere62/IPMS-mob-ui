@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView, Alert } from 'react-native';
 import { Theme } from '../../../theme';
 import { useSendOtpMutation } from '../api/authApi';
 import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../owner/api/legalDocumentsApi';
@@ -30,8 +31,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     name: 'India',
     flag: '🇮🇳',
     phoneCode: '+91',
-    phoneLength: 10,
-  });
+    phoneLength: 10 });
   const [sendOtp, { isLoading: sendingOtp }] = useSendOtpMutation();
   const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
 
@@ -99,8 +99,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            padding: Theme.spacing.lg,
-          }}
+            padding: Theme.spacing.lg }}
         >
           <View style={{ alignItems: 'center', marginBottom: keyboardVisible ? Theme.spacing.md : Theme.spacing.xl }}>
             <Image
@@ -116,14 +115,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 fontSize: 20,
                 fontWeight: '700',
                 color: Theme.colors.primary,
-                marginBottom: Theme.spacing.xs,
-              }}>
+                marginBottom: Theme.spacing.xs }}>
                 🛡️ PG Owner Login
               </Text>
               <Text style={{
                 fontSize: Theme.typography.fontSize.sm,
-                color: Theme.colors.text.secondary,
-              }}>
+                color: Theme.colors.text.secondary }}>
                 Manage your PG properties
               </Text>
             </View>
@@ -160,8 +157,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               color: Theme.colors.text.secondary,
               textAlign: 'center',
               marginTop: Theme.spacing.md,
-              marginBottom: Theme.spacing.md,
-            }}>
+              marginBottom: Theme.spacing.md }}>
               You will receive an OTP on your registered phone number
             </Text>
 
@@ -181,37 +177,35 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               By continuing, you agree to our
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity onPress={() => handleOpenLegal(['TERMS_OF_SERVICE', 'TERMS_AND_CONDITIONS'], 'Terms & Conditions')}>
+              <AnimatedPressableCard onPress={() => handleOpenLegal(['TERMS_OF_SERVICE', 'TERMS_AND_CONDITIONS'], 'Terms & Conditions')}>
                 <Text style={{ fontSize: 12, color: Theme.colors.primary, textDecorationLine: 'underline' }}>
                   Terms & Conditions
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
               <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>and</Text>
-              <TouchableOpacity onPress={() => handleOpenLegal(['PRIVACY_POLICY'], 'Privacy Policy')}>
+              <AnimatedPressableCard onPress={() => handleOpenLegal(['PRIVACY_POLICY'], 'Privacy Policy')}>
                 <Text style={{ fontSize: 12, color: Theme.colors.primary, textDecorationLine: 'underline' }}>
                   Privacy Policy
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </View>
 
           {/* Back to Role Selection */}
           <View style={{ marginTop: Theme.spacing.lg, alignItems: 'center' }}>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => navigation.navigate('RoleSelection')}
               style={{
                 paddingVertical: Theme.spacing.sm,
-                paddingHorizontal: Theme.spacing.md,
-              }}
+                paddingHorizontal: Theme.spacing.md }}
             >
               <Text style={{
                 fontSize: Theme.typography.fontSize.sm,
                 color: Theme.colors.text.secondary,
-                fontWeight: '500',
-              }}>
+                fontWeight: '500' }}>
                 ← Back to Welcome
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>

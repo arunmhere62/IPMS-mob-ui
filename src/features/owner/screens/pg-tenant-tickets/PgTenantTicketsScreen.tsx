@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl,
-} from 'react-native';
+  View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../../theme';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
@@ -13,8 +12,7 @@ import { Permission } from '@/config/rbac.config';
 import {
   useGetPgTenantTicketsQuery,
   PgTenantTicket,
-  PgTicketStatus,
-} from '../../api/pgTicketsApi';
+  PgTicketStatus } from '../../api/pgTicketsApi';
 
 const C = Theme.colors;
 
@@ -30,19 +28,16 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> =
   OPEN:        { bg: '#eff6ff', text: '#1d4ed8', dot: '#3b82f6' },
   IN_PROGRESS: { bg: '#fff7ed', text: '#c2410c', dot: '#f97316' },
   RESOLVED:    { bg: '#f0fdf4', text: '#166534', dot: '#22c55e' },
-  CLOSED:      { bg: '#f3f4f6', text: '#6b7280', dot: '#9ca3af' },
-};
+  CLOSED:      { bg: '#f3f4f6', text: '#6b7280', dot: '#9ca3af' } };
 
 const CATEGORY_ICONS: Record<string, string> = {
   MAINTENANCE: 'construct-outline',
   COMPLAINT:   'alert-circle-outline',
   REQUEST:     'hand-left-outline',
-  OTHER:       'help-circle-outline',
-};
+  OTHER:       'help-circle-outline' };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  LOW: '#22c55e', MEDIUM: '#f59e0b', HIGH: '#ef4444', CRITICAL: '#7c3aed',
-};
+  LOW: '#22c55e', MEDIUM: '#f59e0b', HIGH: '#ef4444', CRITICAL: '#7c3aed' };
 
 interface Props { navigation: any }
 
@@ -83,10 +78,9 @@ export function PgTenantTicketsScreen({ navigation }: Props) {
     const priorityColor = PRIORITY_COLORS[item.priority] ?? '#6b7280';
 
     return (
-      <TouchableOpacity
+      <AnimatedPressableCard
         style={styles.card}
         onPress={() => navigation.navigate('PgTenantTicketDetail', { ticketId: item.s_no, pgId: item.pg_id })}
-        activeOpacity={0.85}
       >
         <View style={styles.cardTop}>
           <View style={[styles.iconBox, { backgroundColor: sc.bg }]}>
@@ -125,7 +119,7 @@ export function PgTenantTicketsScreen({ navigation }: Props) {
             {new Date(item.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
           </Text>
         </View>
-      </TouchableOpacity>
+      </AnimatedPressableCard>
     );
   };
 
@@ -143,7 +137,7 @@ export function PgTenantTicketsScreen({ navigation }: Props) {
         {/* Filter chips */}
         <View style={styles.filters}>
           {STATUS_FILTERS.map((f) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={f.label}
               style={[styles.chip, activeFilter === f.value && styles.chipActive]}
               onPress={() => setActiveFilter(f.value)}
@@ -151,7 +145,7 @@ export function PgTenantTicketsScreen({ navigation }: Props) {
               <Text style={[styles.chipText, activeFilter === f.value && styles.chipTextActive]}>
                 {f.label}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </View>
 
@@ -184,12 +178,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: CONTENT_COLOR },
   filters: {
     flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, paddingVertical: 10,
-    gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
-  },
+    gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   chip: {
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-    backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#e5e7eb',
-  },
+    backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#e5e7eb' },
   chipActive: { backgroundColor: C.primary, borderColor: C.primary },
   chipText: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
   chipTextActive: { color: '#fff' },
@@ -198,8 +190,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff', borderRadius: 14, padding: 14,
     shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 }, elevation: 2,
-  },
+    shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   iconBox: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cardMeta: { flex: 1 },
@@ -215,5 +206,4 @@ const styles = StyleSheet.create({
   footerDate: { marginLeft: 'auto', fontSize: 11, color: '#9ca3af' },
   empty: { alignItems: 'center', paddingTop: 80, gap: 8 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#374151', marginTop: 8 },
-  emptySubtitle: { fontSize: 13, color: '#9ca3af' },
-});
+  emptySubtitle: { fontSize: 13, color: '#9ca3af' } });

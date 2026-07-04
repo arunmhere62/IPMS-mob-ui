@@ -1,17 +1,16 @@
 import React, { useEffect, useRef } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Animated,
   Easing,
   SafeAreaView,
   StatusBar,
   Linking,
   Platform,
-  Alert,
-} from 'react-native';
+  Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface ForceUpdateScreenProps {
@@ -23,8 +22,7 @@ interface ForceUpdateScreenProps {
 export const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({
   currentVersion,
   minimumVersion,
-  storeUrl,
-}) => {
+  storeUrl }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
 
@@ -34,14 +32,12 @@ export const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({
         toValue: 1,
         duration: 500,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true }),
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 500,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true }),
     ]).start();
   }, [fadeAnim, slideAnim]);
 
@@ -103,10 +99,10 @@ export const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({
           </View>
         </View>
 
-        <TouchableOpacity style={styles.updateButton} onPress={handleUpdate} activeOpacity={0.85}>
+        <AnimatedPressableCard style={styles.updateButton} onPress={handleUpdate}>
           <Ionicons name="cloud-download-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
           <Text style={styles.updateButtonText}>Update Now</Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
 
         <Text style={styles.note}>
           This update is mandatory to ensure security and compatibility.
@@ -121,14 +117,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center' },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
+    paddingHorizontal: 32 },
   iconWrapper: {
     width: 128,
     height: 128,
@@ -136,28 +130,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 28,
-  },
+    marginBottom: 28 },
   title: {
     fontSize: 28,
     fontWeight: '800',
     color: '#1F2937',
     textAlign: 'center',
     marginBottom: 14,
-    letterSpacing: 0.2,
-  },
+    letterSpacing: 0.2 },
   subtitle: {
     fontSize: 15,
     color: '#4B5563',
     textAlign: 'center',
     lineHeight: 23,
-    marginBottom: 28,
-  },
+    marginBottom: 28 },
   versionBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
-  },
+    marginBottom: 32 },
   versionBadge: {
     alignItems: 'center',
     paddingVertical: 10,
@@ -165,25 +155,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
+    borderColor: '#E5E7EB' },
   versionBadgeRequired: {
     backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-  },
+    borderColor: '#BFDBFE' },
   versionLabel: {
     fontSize: 11,
     color: '#6B7280',
     fontWeight: '600',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    marginBottom: 2,
-  },
+    marginBottom: 2 },
   versionValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
-  },
+    color: '#1F2937' },
   updateButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -198,18 +184,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
-  },
+    elevation: 6 },
   updateButtonText: {
     fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
+    letterSpacing: 0.3 },
   note: {
     fontSize: 12,
     color: '#9CA3AF',
     textAlign: 'center',
-    lineHeight: 18,
-  },
-});
+    lineHeight: 18 } });

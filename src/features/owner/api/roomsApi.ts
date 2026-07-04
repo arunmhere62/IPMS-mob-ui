@@ -38,6 +38,24 @@ export interface CreateBedDto {
   images?: any;
 }
 
+export interface BulkBedItem {
+  bed_no: string;
+  bed_price: number;
+  images?: any;
+}
+
+export interface BulkCreateBedDto {
+  room_id: number;
+  pg_id?: number;
+  beds: BulkBedItem[];
+}
+
+export interface BulkBedResponse {
+  success: boolean;
+  data: Bed[];
+  message?: string;
+}
+
 export interface GetBedsParams {
   page?: number;
   limit?: number;
@@ -278,6 +296,18 @@ export const roomsApi = baseApi.injectEndpoints({
       ],
     }),
 
+    bulkCreateBed: build.mutation<BulkBedResponse, BulkCreateBedDto>({
+      query: (body) => ({ url: '/beds/bulk', method: 'POST', body }),
+      transformResponse: (response: ApiEnvelope<BulkBedResponse> | any) => normalizeEntityResponse<Bed[]>(response),
+      invalidatesTags: (_res, _err, arg) => [
+        { type: 'Beds' as const, id: 'LIST' },
+        { type: 'Beds' as const, id: arg.room_id },
+        { type: 'Rooms' as const, id: 'LIST' },
+        { type: 'Room' as const, id: arg.room_id },
+        { type: 'Dashboard' as const, id: 'SUMMARY' },
+      ],
+    }),
+
     updateBed: build.mutation<BedResponse, { id: number; data: Partial<CreateBedDto> }>({
       query: ({ id, data }) => ({ url: `/beds/${id}`, method: 'PATCH', body: data }),
       transformResponse: (response: ApiEnvelope<BedResponse> | any) => normalizeEntityResponse<Bed>(response),
@@ -320,6 +350,7 @@ export const {
   useGetBedByIdQuery,
   useLazyGetBedByIdQuery,
   useCreateBedMutation,
+  useBulkCreateBedMutation,
   useUpdateBedMutation,
   useDeleteBedMutation,
 } = roomsApi;

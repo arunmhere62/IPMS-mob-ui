@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "../../../../theme";
 import { Card } from "../../../../components/Card";
+import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 import type { DashboardMonthlyMetricsResponse } from "../../api/dashboardApi";
 import { SlideBottomModal } from "../../../../components/SlideBottomModal";
 
@@ -160,15 +161,16 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   fontSize: 11,
                   marginTop: 2,
                 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 {isFetching ? "Loading…" : selectedMonth.label}
               </Text>
             </View>
           </View>
 
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => setShowInfo(true)}
-            activeOpacity={0.9}
             style={{
               width: 34,
               height: 34,
@@ -186,12 +188,11 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
               size={18}
               color={Theme.colors.text.secondary}
             />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
           <View style={{ position: "relative" }}>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => setShowDropdown(!showDropdown)}
-              activeOpacity={0.9}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -215,6 +216,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   fontSize: 12,
                   fontWeight: "800",
                 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 {selectedMonth.label}
               </Text>
@@ -223,7 +226,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                 size={12}
                 color={Theme.colors.text.secondary}
               />
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
             {showDropdown && (
               <View
@@ -249,7 +252,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                 {months.map((month, index) => {
                   const active = selectedMonth.label === month.label;
                   return (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       key={index}
                       style={{
                         flexDirection: "row",
@@ -264,7 +267,6 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                         borderTopColor: Theme.colors.border,
                       }}
                       onPress={() => handleSelectMonth(month)}
-                      activeOpacity={0.9}
                     >
                       <View
                         style={{
@@ -304,6 +306,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                               fontSize: 12,
                               fontWeight: "800",
                             }}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
                           >
                             {month.label}
                           </Text>
@@ -314,6 +318,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                                 fontSize: 10,
                                 marginTop: 1,
                               }}
+                              numberOfLines={1}
+                              adjustsFontSizeToFit
                             >
                               Current
                             </Text>
@@ -327,7 +333,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                           color={Theme.colors.primary}
                         />
                       )}
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   );
                 })}
               </View>
@@ -360,6 +366,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     fontSize: 11,
                     fontWeight: "900",
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   Collected
                 </Text>
@@ -415,6 +423,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     fontSize: 11,
                     fontWeight: "900",
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   Refunds Paid
                 </Text>
@@ -472,6 +482,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     fontSize: 11,
                     fontWeight: "900",
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   Advance Paid
                 </Text>
@@ -527,6 +539,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     fontSize: 11,
                     fontWeight: "900",
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   Expenses
                 </Text>
@@ -608,6 +622,8 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     fontSize: 10,
                     marginTop: 2,
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   Collected ÷ Rent due
                 </Text>

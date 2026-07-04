@@ -26,6 +26,9 @@ export const OWNER_ROUTES = {
   // Dashboard
   DASHBOARD: 'Dashboard',
 
+  // Quick Setup
+  QUICK_SETUP: 'QuickSetup',
+
   // Tenants
   TENANTS: 'Tenants',
   TENANT_DETAILS: 'TenantDetails',

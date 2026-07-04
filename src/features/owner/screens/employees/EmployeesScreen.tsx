@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
+  ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
@@ -61,8 +60,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
       const response = await fetchEmployees({
         page: pageNum,
         limit: 20,
-        pg_id: selectedPGLocationId || undefined,
-      }).unwrap();
+        pg_id: selectedPGLocationId || undefined }).unwrap();
 
       if (response.success) {
         if (append) {
@@ -128,8 +126,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
 
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 50,
-    minimumViewTime: 100,
-  }).current;
+    minimumViewTime: 100 }).current;
 
   const handleDelete = (employee: Employee) => {
     showDeleteConfirmation({
@@ -144,8 +141,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
         } catch (error: any) {
           showErrorAlert(error, 'Delete Error');
         }
-      },
-    });
+      } });
   };
 
   const renderEmployeeCard = (employee: Employee) => (
@@ -162,15 +158,13 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
                 paddingHorizontal: 8,
                 paddingVertical: 6,
                 borderRadius: 6,
-                marginRight: 8,
-              }}
+                marginRight: 8 }}
             >
               <Text
                 style={{
                   fontSize: 11,
                   fontWeight: '600',
-                  color: employee.status === 'ACTIVE' ? '#16A34A' : '#DC2626',
-                }}
+                  color: employee.status === 'ACTIVE' ? '#16A34A' : '#DC2626' }}
               >
                 {employee.status}
               </Text>
@@ -247,14 +241,12 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.25,
             shadowRadius: 4,
-            elevation: 5,
-          }}>
+            elevation: 5 }}>
             <Text style={{
               fontSize: 12,
               fontWeight: '700',
               color: '#fff',
-              textAlign: 'center',
-            }}>
+              textAlign: 'center' }}>
               {visibleItemsCount} of {pagination?.total || employees.length}
             </Text>
             <Text style={{
@@ -262,8 +254,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
               color: '#fff',
               opacity: 0.8,
               textAlign: 'center',
-              marginTop: 2,
-            }}>
+              marginTop: 2 }}>
               {(pagination?.total || employees.length) - visibleItemsCount} remaining
             </Text>
           </View>
@@ -335,7 +326,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
 
         {/* Add Button - only show if user has CREATE_EMPLOYEE permission */}
         {canCreateEmployee && (
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => navigation.navigate('AddEmployee')}
             style={{
               position: 'absolute',
@@ -351,11 +342,10 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.25,
               shadowRadius: 3.84,
-              elevation: 5,
-            }}
+              elevation: 5 }}
           >
             <Ionicons name="add" size={28} color="#fff" />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         )}
       </View>
     </ScreenLayout>

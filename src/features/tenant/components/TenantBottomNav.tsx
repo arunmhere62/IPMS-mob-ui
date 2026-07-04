@@ -1,10 +1,9 @@
 import React from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
-  TouchableOpacity,
   Text,
-  StyleSheet,
-} from 'react-native';
+  StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../../../theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,8 +27,7 @@ const tenantTabs: TabConfig[] = [
 
 export const TenantBottomNav: React.FC<TenantBottomNavProps> = ({
   navigation,
-  currentRoute,
-}) => {
+  currentRoute }) => {
   const insets = useSafeAreaInsets();
 
   const isActive = (route: string) => currentRoute === route;
@@ -37,11 +35,10 @@ export const TenantBottomNav: React.FC<TenantBottomNavProps> = ({
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {tenantTabs.map((tab) => (
-        <TouchableOpacity
+        <AnimatedPressableCard
           key={tab.name}
           style={styles.tab}
           onPress={() => navigation.navigate(tab.name)}
-          activeOpacity={0.7}
         >
           <View
             style={[
@@ -64,10 +61,12 @@ export const TenantBottomNav: React.FC<TenantBottomNavProps> = ({
               styles.label,
               isActive(tab.name) && styles.activeLabel,
             ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
           >
             {tab.label}
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       ))}
     </View>
   );
@@ -89,33 +88,26 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
+    shadowRadius: 8 },
   tab: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
+    paddingHorizontal: 4 },
   iconContainer: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
-    marginBottom: 2,
-  },
+    marginBottom: 2 },
   activeIconContainer: {
-    backgroundColor: '#EFF6FF',
-  },
+    backgroundColor: '#EFF6FF' },
   label: {
     fontSize: 10,
     fontWeight: '500',
     color: Theme.colors.text.secondary,
-    marginTop: 2,
-  },
+    marginTop: 2 },
   activeLabel: {
     color: Theme.colors.primary,
-    fontWeight: '600',
-  },
-});
+    fontWeight: '600' } });

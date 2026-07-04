@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
@@ -87,8 +88,7 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
           tenant: actualData?.tenant,
           pg: actualData?.pg,
           accessToken: actualData?.accessToken,
-          refreshToken: actualData?.refreshToken,
-        })
+          refreshToken: actualData?.refreshToken })
       );
 
       console.log('OTP Verify - Credentials dispatched to Redux');
@@ -166,8 +166,7 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
               padding: Theme.spacing.lg,
               marginBottom: Theme.spacing.lg,
               borderWidth: 1,
-              borderColor: Theme.withOpacity(Theme.colors.border, 0.25),
-            }}
+              borderColor: Theme.withOpacity(Theme.colors.border, 0.25) }}
           >
             <Text
               style={{
@@ -175,8 +174,7 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
                 fontWeight: Theme.typography.fontWeight.bold,
                 color: Theme.colors.text.primary,
                 marginBottom: Theme.spacing.sm,
-                textAlign: 'center',
-              }}
+                textAlign: 'center' }}
             >
               Enter verification code
             </Text>
@@ -186,8 +184,7 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
                 fontSize: Theme.typography.fontSize.sm,
                 color: Theme.colors.text.secondary,
                 textAlign: 'center',
-                marginBottom: Theme.spacing.sm,
-              }}
+                marginBottom: Theme.spacing.sm }}
             >
               We sent a 4-digit code to
             </Text>
@@ -201,15 +198,13 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
                 backgroundColor: Theme.withOpacity(Theme.colors.text.primary, 0.06),
                 borderWidth: 1,
                 borderColor: Theme.withOpacity(Theme.colors.border, 0.25),
-                marginBottom: Theme.spacing.lg,
-              }}
+                marginBottom: Theme.spacing.lg }}
             >
               <Text
                 style={{
                   color: Theme.colors.text.primary,
                   fontWeight: Theme.typography.fontWeight.semibold,
-                  textAlign: 'center',
-                }}
+                  textAlign: 'center' }}
               >
                 {phone}
               </Text>
@@ -231,8 +226,7 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
                 color: Theme.colors.danger,
                 fontSize: Theme.typography.fontSize.sm,
                 marginTop: Theme.spacing.sm,
-                textAlign: 'center',
-              }}>
+                textAlign: 'center' }}>
                 {otpError}
               </Text>
             ) : null}
@@ -249,14 +243,14 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
 
             <View style={{ marginTop: Theme.spacing.lg, alignItems: 'center' }}>
               {canResend ? (
-                <TouchableOpacity onPress={handleResendOtp}>
+                <AnimatedPressableCard onPress={handleResendOtp}>
                   <Text style={{
                     color: Theme.colors.primary,
                     fontWeight: Theme.typography.fontWeight.semibold
                   }}>
                     {resendingOtp ? 'Resending...' : 'Resend OTP'}
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               ) : (
                 <Text style={{ color: Theme.colors.text.secondary }}>
                   Resend available in {resendTimer}s
@@ -264,14 +258,14 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
               )}
             </View>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => navigation.goBack()}
               style={{ marginTop: Theme.spacing.md }}
             >
               <Text style={{ color: Theme.colors.text.secondary, textAlign: 'center' }}>
                 Change Phone Number
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </Card>
         </ScrollView>
       </KeyboardAvoidingView>

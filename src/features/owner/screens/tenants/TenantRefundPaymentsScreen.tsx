@@ -3,10 +3,8 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   Alert,
-  ActivityIndicator,
-} from 'react-native';
+  ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { Theme } from '../../../../theme';
@@ -53,6 +51,11 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
   const tenantName = route.params?.tenantName || 'Tenant';
   const tenantId = route.params?.tenantId || 0;
   const tenantPhone = route.params?.tenantPhone || '';
+  const tenantEmail = route.params?.tenantEmail || '';
+  const tenantWhatsapp = route.params?.tenantWhatsapp || '';
+  const tenantAddress = route.params?.tenantAddress || '';
+  const tenantCity = route.params?.tenantCity || '';
+  const tenantState = route.params?.tenantState || '';
   const pgName = route.params?.pgName || 'PG';
   const roomNumber = route.params?.roomNumber || '';
   const bedNumber = route.params?.bedNumber || '';
@@ -68,8 +71,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
         : undefined;
 
   const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(effectivePgId as number, {
-    skip: !effectivePgId,
-  });
+    skip: !effectivePgId });
 
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
@@ -97,8 +99,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
       [
         {
           text: 'Cancel',
-          style: 'cancel',
-        },
+          style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
@@ -114,8 +115,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
             } finally {
               setLoading(false);
             }
-          },
-        },
+          } },
       ]
     );
   };
@@ -149,6 +149,11 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
       paymentDate: new Date(payment.payment_date),
       tenantName: tenantName,
       tenantPhone: tenantPhone,
+      tenantEmail: tenantEmail,
+      tenantWhatsapp: tenantWhatsapp,
+      tenantAddress: tenantAddress,
+      tenantCity: tenantCity,
+      tenantState: tenantState,
       pgName: pgName,
       pgDetails: pgDetails
         ? {
@@ -157,21 +162,18 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
             address: pgDetails.address,
             pincode: pgDetails.pincode ?? undefined,
             city: pgDetails.city ?? undefined,
-            state: pgDetails.state ?? undefined,
-          }
+            state: pgDetails.state ?? undefined }
         : undefined,
       roomNumber: route.params?.roomNumber || '',
       bedNumber: route.params?.bedNumber || '',
       rentPeriod: {
         startDate: new Date(payment.payment_date),
-        endDate: new Date(payment.payment_date),
-      },
+        endDate: new Date(payment.payment_date) },
       actualRent: Number(payment.amount_paid || 0),
       amountPaid: Number(payment.amount_paid || 0),
       paymentMethod: payment.payment_method || 'CASH',
       remarks: payment.remarks,
-      receiptType: 'REFUND' as const,
-    };
+      receiptType: 'REFUND' as const };
   };
 
   const handleViewReceipt = (payment: RefundPayment) => {
@@ -246,8 +248,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
           paddingVertical: 12,
           backgroundColor: Theme.colors.background.blueLight,
           borderBottomWidth: 1,
-          borderBottomColor: '#E5E7EB',
-        }}>
+          borderBottomColor: '#E5E7EB' }}>
           <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
             {tenantName}
           </Text>
@@ -291,8 +292,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                   <Card style={{
                     padding: 12,
                     borderLeftWidth: 3,
-                    borderLeftColor: '#F59E0B',
-                  }}>
+                    borderLeftColor: '#F59E0B' }}>
                     {/* Header Row */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                       <View style={{ flex: 1, flexShrink: 1, paddingRight: 10 }}>
@@ -300,8 +300,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                           {new Date(payment.payment_date).toLocaleDateString('en-IN', {
                             day: '2-digit',
                             month: 'short',
-                            year: 'numeric',
-                          })}
+                            year: 'numeric' })}
                         </Text>
                         <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 4 }}>
                           {paymentAccommodationLabel}
@@ -317,8 +316,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                         paddingVertical: 4,
                         borderRadius: 6,
                         backgroundColor: statusColor.bg,
-                        alignItems: 'center',
-                      }}>
+                        alignItems: 'center' }}>
                         <Text style={{ fontSize: 10, fontWeight: '700', color: statusColor.text }}>
                           {statusColor.icon} {payment.status}
                         </Text>
@@ -345,8 +343,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                       paddingTop: 10,
                       borderTopWidth: 1,
                       borderTopColor: '#E5E7EB',
-                      marginBottom: 10,
-                    }}>
+                      marginBottom: 10 }}>
                       <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
                         {payment.payment_method || 'N/A'}
                       </Text>
@@ -367,7 +364,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                         disableDelete={!canDeleteRefund}
                         blockPressWhenDisabled
                       />
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         onPress={() => handleViewReceipt(payment)}
                         style={{
                           paddingVertical: 8,
@@ -375,14 +372,13 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                           backgroundColor: '#DBEAFE',
                           borderRadius: 8,
                           alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
+                          justifyContent: 'center' }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: '600', color: '#1D4ED8' }}>
                           View Invoice
                         </Text>
-                      </TouchableOpacity>
-                      {/* <TouchableOpacity
+                      </AnimatedPressableCard>
+                      {/* <AnimatedPressableCard
                         onPress={() => handleWhatsAppReceipt(payment)}
                         style={{
                           paddingVertical: 8,
@@ -390,14 +386,13 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                           backgroundColor: '#DCFCE7',
                           borderRadius: 8,
                           alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
+                          justifyContent: 'center' }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: '600', color: '#16A34A' }}>
                           💬 WhatsApp
                         </Text>
-                      </TouchableOpacity> */}
-                      <TouchableOpacity
+                      </AnimatedPressableCard> */}
+                      <AnimatedPressableCard
                         onPress={() => handleShareReceipt(payment)}
                         style={{
                           paddingVertical: 8,
@@ -405,13 +400,12 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                           backgroundColor: '#FEF3C7',
                           borderRadius: 8,
                           alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
+                          justifyContent: 'center' }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>
                           Share Invoice
                         </Text>
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
                     </View>
                   </Card>
                 </AnimatedPressableCard>
@@ -429,8 +423,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
                 backgroundColor: '#FEF3C7',
                 justifyContent: 'center',
                 alignItems: 'center',
-                marginBottom: 16,
-              }}>
+                marginBottom: 16 }}>
                 <Ionicons name="cash-outline" size={48} color="#D97706" />
               </View>
               <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 8 }}>
@@ -472,15 +465,13 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
           bed_id: route.params?.bedId,
           pg_id: route.params?.pgId,
           rooms: { room_no: route.params?.roomNumber || '' },
-          beds: { bed_no: route.params?.bedNumber || '' },
-        }}
+          beds: { bed_no: route.params?.bedNumber || '' } }}
         existingPayment={editingRefundPayment ? {
           amount_paid: editingRefundPayment.amount_paid,
           payment_date: editingRefundPayment.payment_date,
           payment_method: editingRefundPayment.payment_method,
           status: editingRefundPayment.status,
-          remarks: editingRefundPayment.remarks,
-        } : null}
+          remarks: editingRefundPayment.remarks } : null}
         onClose={() => {
           setRefundFormVisible(false);
           setEditingRefundPayment(null);

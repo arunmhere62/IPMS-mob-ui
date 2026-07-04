@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { useGetAllOrganizationsQuery } from '../../api/organizationApi';
 import { Theme } from '../../../../theme';
 import { Card } from '../../../../components/Card';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 
 interface OrganizationsScreenProps {
   navigation: any;
@@ -105,7 +106,7 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
       {/* PG Locations Details - Collapsible */}
       {item.pg_locations && item.pg_locations.length > 0 && (
         <View style={{ marginBottom: 12 }}>
-          <TouchableOpacity 
+          <AnimatedPressableCard 
             onPress={() => togglePGLocations(item.s_no)}
             style={{
               flexDirection: 'row',
@@ -132,7 +133,7 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
             }}>
               ▼
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
           {/* Expanded PG Locations List */}
           {expandedPGLocations[item.s_no] && item.pg_locations.map((pg: any, index: number) => (
@@ -312,7 +313,7 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
         gap: 8,
       }}>
         {/* Previous Button */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => goToPage(current - 1)}
           disabled={current === 1}
           style={{
@@ -329,12 +330,12 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
           }}>
             ← Prev
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
 
         {/* First Page */}
         {startPage > 1 && (
           <>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => goToPage(1)}
               style={{
                 width: 36,
@@ -346,14 +347,14 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
               }}
             >
               <Text style={{ color: Theme.colors.text.primary, fontWeight: '600' }}>1</Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
             {startPage > 2 && <Text style={{ color: Theme.colors.text.tertiary }}>...</Text>}
           </>
         )}
 
         {/* Page Numbers */}
         {pages.map((page) => (
-          <TouchableOpacity
+          <AnimatedPressableCard
             key={page}
             onPress={() => goToPage(page)}
             style={{
@@ -371,14 +372,14 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
             }}>
               {page}
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         ))}
 
         {/* Last Page */}
         {endPage < totalPages && (
           <>
             {endPage < totalPages - 1 && <Text style={{ color: Theme.colors.text.tertiary }}>...</Text>}
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => goToPage(totalPages)}
               style={{
                 width: 36,
@@ -390,12 +391,12 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
               }}
             >
               <Text style={{ color: Theme.colors.text.primary, fontWeight: '600' }}>{totalPages}</Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </>
         )}
 
         {/* Next Button */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => goToPage(current + 1)}
           disabled={current === totalPages}
           style={{
@@ -412,7 +413,7 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
           }}>
             Next →
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
     );
   };

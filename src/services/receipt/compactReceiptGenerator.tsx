@@ -28,7 +28,7 @@ export class CompactReceiptGenerator {
       }
     });
 
-    const exportScale = 3;
+    const exportScale = 2;
     const pxScale = PixelRatio.get() * exportScale;
     const targetWidth = Math.max(1, Math.round(width * pxScale));
     const targetHeight = Math.max(1, Math.round(height * pxScale));

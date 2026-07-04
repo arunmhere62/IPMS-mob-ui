@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Image,
-} from 'react-native';
+  Image } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { useAddTicketCommentMutation, useGetTicketByIdQuery } from '@/features/owner/api/ticketsApi';
@@ -64,8 +63,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
   const {
     data: ticketResponse,
     isLoading: loading,
-    refetch: refetchTicket,
-  } = useGetTicketByIdQuery(ticketId, { skip: !ticketId });
+    refetch: refetchTicket } = useGetTicketByIdQuery(ticketId, { skip: !ticketId });
   const [addTicketComment] = useAddTicketCommentMutation();
 
   const currentTicket = (ticketResponse as any)?.data;
@@ -91,9 +89,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
         ticketId,
         data: {
           comment: commentText.trim(),
-          attachments: commentImages,
-        },
-      }).unwrap();
+          attachments: commentImages } }).unwrap();
       setCommentText('');
       setCommentImages([]);
       showSuccessAlert(res);
@@ -185,8 +181,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                     paddingHorizontal: 10,
                     paddingVertical: 6,
                     borderRadius: 12,
-                    backgroundColor: priorityColor.bg,
-                  }}>
+                    backgroundColor: priorityColor.bg }}>
                     <Text style={{ fontSize: 11, fontWeight: '700', color: priorityColor.text }}>
                       {priorityColor.icon} {currentTicket.priority}
                     </Text>
@@ -223,8 +218,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                       paddingHorizontal: 10,
                       paddingVertical: 4,
                       borderRadius: 12,
-                      backgroundColor: statusColor.bg,
-                    }}>
+                      backgroundColor: statusColor.bg }}>
                       <Text style={{ fontSize: 11, fontWeight: '600', color: statusColor.text }}>
                         {statusColor.icon} {currentTicket.status.replace('_', ' ')}
                       </Text>
@@ -260,8 +254,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                         backgroundColor: '#F9FAFB',
                         borderRadius: 12,
                         padding: 12,
-                        marginBottom: 12,
-                      }}
+                        marginBottom: 12 }}
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                         <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
@@ -303,8 +296,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                       borderRadius: 12,
                       padding: 16,
                       flexDirection: 'row',
-                      alignItems: 'center',
-                    }}>
+                      alignItems: 'center' }}>
                       <Ionicons name="lock-closed" size={20} color="#D97706" style={{ marginRight: 12 }} />
                       <Text style={{ fontSize: 14, color: '#92400E', flex: 1, lineHeight: 20 }}>
                         This ticket is closed. Comments cannot be added to closed tickets.
@@ -326,8 +318,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                         backgroundColor: '#fff',
                         minHeight: 80,
                         textAlignVertical: 'top',
-                        marginBottom: 12,
-                      }}
+                        marginBottom: 12 }}
                       placeholder="Write your comment..."
                       value={commentText}
                       onChangeText={setCommentText}
@@ -341,7 +332,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                       maxImages={3}
                       folder="tickets/images"
                     />
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       onPress={handleAddComment}
                       disabled={submittingComment || !commentText.trim()}
                       style={{
@@ -349,8 +340,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                         borderRadius: 12,
                         paddingVertical: 12,
                         alignItems: 'center',
-                        marginTop: 12,
-                      }}
+                        marginTop: 12 }}
                     >
                       {submittingComment ? (
                         <ActivityIndicator color="#fff" />
@@ -359,7 +349,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                           Post Comment
                         </Text>
                       )}
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   </View>
                 )}
               </Card>

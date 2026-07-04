@@ -3,12 +3,10 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   Alert,
   ActivityIndicator,
   TextInput,
-  useWindowDimensions,
-} from 'react-native';
+  useWindowDimensions } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { Theme } from '../../../../theme';
@@ -77,6 +75,11 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const tenantName = route.params?.tenantName || 'Tenant';
   const tenantId = route.params?.tenantId || 0;
   const tenantPhone = route.params?.tenantPhone || '';
+  const tenantEmail = route.params?.tenantEmail || '';
+  const tenantWhatsapp = route.params?.tenantWhatsapp || '';
+  const tenantAddress = route.params?.tenantAddress || '';
+  const tenantCity = route.params?.tenantCity || '';
+  const tenantState = route.params?.tenantState || '';
   const tenantStatus = String(route.params?.tenantStatus || '').toUpperCase();
   const isCheckedOutTenant = tenantStatus === 'CHECKED_OUT';
   const pgName = route.params?.pgName || 'PG';
@@ -101,8 +104,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
         : undefined;
 
   const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(effectivePgId as number, {
-    skip: !effectivePgId,
-  });
+    skip: !effectivePgId });
 
   const [loading, setLoading] = useState(false);
   const [voidModalVisible, setVoidModalVisible] = useState(false);
@@ -140,8 +142,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
             setVoidTargetPayment(payment);
             setVoidReason('');
             setVoidModalVisible(true);
-          },
-        },
+          } },
       ],
     );
   };
@@ -157,6 +158,11 @@ export const TenantRentPaymentsScreen: React.FC = () => {
       paymentDate: new Date(payment.payment_date),
       tenantName: tenantName,
       tenantPhone: tenantPhone,
+      tenantEmail: tenantEmail,
+      tenantWhatsapp: tenantWhatsapp,
+      tenantAddress: tenantAddress,
+      tenantCity: tenantCity,
+      tenantState: tenantState,
       pgName: pgName,
       pgDetails: pgDetails
         ? {
@@ -165,21 +171,18 @@ export const TenantRentPaymentsScreen: React.FC = () => {
             address: pgDetails.address,
             pincode: pgDetails.pincode ?? undefined,
             city: pgDetails.city ?? undefined,
-            state: pgDetails.state ?? undefined,
-          }
+            state: pgDetails.state ?? undefined }
         : undefined,
       roomNumber: route.params?.roomNumber || '',
       bedNumber: route.params?.bedNumber || '',
       rentPeriod: {
         startDate: periodStart ? new Date(periodStart) : new Date(payment.payment_date),
-        endDate: periodEnd ? new Date(periodEnd) : new Date(payment.payment_date),
-      },
+        endDate: periodEnd ? new Date(periodEnd) : new Date(payment.payment_date) },
       actualRent: Number(payment.actual_rent_amount || 0),
       amountPaid: Number(payment.amount_paid || 0),
       paymentMethod: payment.payment_method || 'CASH',
       remarks: payment.remarks,
-      receiptType: 'RENT' as const,
-    };
+      receiptType: 'RENT' as const };
   };
 
   const handleViewReceipt = (payment: RentPayment) => {
@@ -295,8 +298,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
           due,
           remainingDue,
           status,
-          payments: paymentsSorted,
-        };
+          payments: paymentsSorted };
       })
       .sort((a, b) => {
         const aT = a.periodStart ? new Date(a.periodStart).getTime() : 0;
@@ -307,7 +309,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
 
   const renderPaymentActions = (payment: RentPayment) => (
     <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-      <TouchableOpacity
+      <AnimatedPressableCard
         onPress={() => handleViewReceipt(payment)}
         style={{
           paddingVertical: s(8),
@@ -315,13 +317,12 @@ export const TenantRentPaymentsScreen: React.FC = () => {
           backgroundColor: '#3B82F6',
           borderRadius: s(8),
           alignItems: 'center',
-          justifyContent: 'center',
-        }}
+          justifyContent: 'center' }}
       >
         <Text style={{ fontSize: s(12), fontWeight: '600', color: '#FFF' }}>
           View/Share
         </Text>
-      </TouchableOpacity>
+      </AnimatedPressableCard>
     </View>
   );
 
@@ -342,8 +343,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
           paddingVertical: s(12),
           backgroundColor: Theme.colors.background.blueLight,
           borderBottomWidth: 1,
-          borderBottomColor: '#E5E7EB',
-        }}>
+          borderBottomColor: '#E5E7EB' }}>
           <Text style={{ fontSize: s(14), fontWeight: '600', color: Theme.colors.text.primary }}>
             {tenantName}
           </Text>
@@ -366,8 +366,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
               backgroundColor: '#F59E0B20',
               borderWidth: 0.5,
               borderColor: '#F59E0B',
-              borderRadius: s(8),
-            }}
+              borderRadius: s(8) }}
           >
             <Text style={{ fontSize: s(12), fontWeight: '600', color: '#B45309', marginBottom: s(8) }}>
               💰 Advance & Refund Summary
@@ -389,8 +388,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                 style={{
                   height: 1,
                   backgroundColor: '#F59E0B',
-                  marginVertical: s(4),
-                }}
+                  marginVertical: s(4) }}
               />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: s(13), fontWeight: '600', color: '#B45309' }}>Net Advance Remaining:</Text>
@@ -464,8 +462,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                         paddingVertical: s(6),
                         borderRadius: s(10),
                         backgroundColor: statusColor.bg,
-                        alignSelf: 'flex-start',
-                      }}>
+                        alignSelf: 'flex-start' }}>
                         <Text style={{ fontSize: s(10), fontWeight: '800', color: statusColor.text }}>
                           {statusColor.icon} {group.status}
                         </Text>
@@ -497,8 +494,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                             borderRadius: s(10),
                             marginBottom: s(10),
                             borderWidth: 1,
-                            borderColor: '#E5E7EB',
-                          }}
+                            borderColor: '#E5E7EB' }}
                         >
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <View style={{ flex: 1, paddingRight: s(10) }}>
@@ -506,8 +502,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                                 {new Date(payment.payment_date).toLocaleDateString('en-IN', {
                                   day: '2-digit',
                                   month: 'short',
-                                  year: 'numeric',
-                                })}
+                                  year: 'numeric' })}
                               </Text>
                               <Text style={{ fontSize: s(11), color: Theme.colors.text.secondary, marginTop: s(4) }}>
                                 {paymentAccommodationLabel}
@@ -527,8 +522,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                                     fontSize: s(10),
                                     fontWeight: '800',
                                     color: installmentSettled ? '#10B981' : '#F97316',
-                                    marginTop: s(2),
-                                  }}
+                                    marginTop: s(2) }}
                                 >
                                   {installmentSettled ? 'Cleared' : 'Not cleared'}
                                 </Text>
@@ -577,8 +571,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
                 backgroundColor: '#F3F4F6',
                 justifyContent: 'center',
                 alignItems: 'center',
-                marginBottom: s(16),
-              }}>
+                marginBottom: s(16) }}>
                 <Ionicons name="document-outline" size={s(48)} color={Theme.colors.text.tertiary} />
               </View>
               <Text style={{ fontSize: s(16), fontWeight: '600', color: Theme.colors.text.primary, marginBottom: s(8) }}>
@@ -647,8 +640,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
               minHeight: s(90),
               textAlignVertical: 'top',
               backgroundColor: '#FFFFFF',
-              color: Theme.colors.text.primary,
-            }}
+              color: Theme.colors.text.primary }}
           />
         </View>
       </SlideBottomModal>

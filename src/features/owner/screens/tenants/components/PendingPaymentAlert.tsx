@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text } from 'react-native';
 import { Card } from '../../../../../components/Card';
 import { Theme } from '../../../../../theme';
 import { PendingPayment, PendingPaymentMonth } from '@/features/owner/api/tenantsApi';
@@ -33,16 +34,14 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({ pendin
             ? '#EF4444'
             : pendingPayment.payment_status === 'PARTIAL'
             ? '#EF4444'
-            : '#F59E0B',
-      }}
+            : '#F59E0B' }}
     >
       <View
         style={{
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 12,
-        }}
+          marginBottom: 12 }}
       >
         <Text
           style={{
@@ -53,8 +52,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({ pendin
                 ? '#DC2626'
                 : pendingPayment.payment_status === 'PARTIAL'
                 ? '#DC2626'
-                : '#D97706',
-          }}
+                : '#D97706' }}
         >
           {pendingPayment.payment_status === 'OVERDUE'
             ? '⚠️ OVERDUE PAYMENT'
@@ -71,8 +69,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({ pendin
                 ? '#DC2626'
                 : pendingPayment.payment_status === 'PARTIAL'
                 ? '#DC2626'
-                : '#D97706',
-          }}
+                : '#D97706' }}
         >
           ₹{pendingPayment.total_pending}
         </Text>
@@ -93,7 +90,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({ pendin
       {/* Pending Months Breakdown */}
       {pendingPayment.pending_months && pendingPayment.pending_months.length > 0 && (
         <View>
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => setExpandedMonths(!expandedMonths)}
             style={{
               flexDirection: 'row',
@@ -101,16 +98,15 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({ pendin
               alignItems: 'center',
               paddingVertical: 8,
               borderTopWidth: 1,
-              borderTopColor: '#00000020',
-            }}
+              borderTopColor: '#00000020' }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit>
               Monthly Breakdown
             </Text>
             <Text style={{ fontSize: 14, color: Theme.colors.text.secondary }}>
               {expandedMonths ? '▼' : '▶'}
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
           {expandedMonths && (
             <View style={{ marginTop: 8 }}>
@@ -122,8 +118,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({ pendin
                     justifyContent: 'space-between',
                     paddingVertical: 6,
                     borderBottomWidth: 1,
-                    borderBottomColor: '#00000010',
-                  }}
+                    borderBottomColor: '#00000010' }}
                 >
                   <View>
                     <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
@@ -138,13 +133,12 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({ pendin
                       style={{
                         fontSize: 14,
                         fontWeight: '700',
-                        color: month.is_overdue ? '#DC2626' : '#D97706',
-                      }}
+                        color: month.is_overdue ? '#DC2626' : '#D97706' }}
                     >
                       ₹{month.balance}
                     </Text>
                     {month.is_overdue && (
-                      <Text style={{ fontSize: 10, color: '#DC2626' }}>Overdue</Text>
+                      <Text style={{ fontSize: 10, color: '#DC2626' }} numberOfLines={1} adjustsFontSizeToFit>Overdue</Text>
                     )}
                   </View>
                 </View>

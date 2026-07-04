@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+  Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
 import { Card } from '../../../../components/Card';
@@ -42,8 +41,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
     Alert.alert('Access Denied', 'Only Admin/Super Admin can manage Visitors.', [
       {
         text: 'OK',
-        onPress: () => navigation.goBack(),
-      },
+        onPress: () => navigation.goBack() },
     ]);
   }, [canManageVisitors, navigation]);
 
@@ -98,8 +96,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
   const {
     data: roomsResponse,
     isFetching: isRoomsFetching,
-    refetch: refetchRooms,
-  } = useGetAllRoomsQuery(
+    refetch: refetchRooms } = useGetAllRoomsQuery(
     selectedPGLocationId ? { page: 1, limit: 100, pg_id: selectedPGLocationId } : (undefined as any),
     { skip: !selectedPGLocationId }
   );
@@ -107,8 +104,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
   const {
     data: bedsResponse,
     isFetching: isBedsFetching,
-    refetch: refetchBeds,
-  } = useGetAllBedsQuery(
+    refetch: refetchBeds } = useGetAllBedsQuery(
     selectedRoomId && selectedPGLocationId
       ? { room_id: selectedRoomId, page: 1, limit: 100, pg_id: selectedPGLocationId }
       : (undefined as any),
@@ -241,8 +237,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
         city_id: selectedCityId || undefined,
         state_id: selectedStateId || undefined,
         remarks: remarks || undefined,
-        convertedTo_tenant: convertedToTenant,
-      };
+        convertedTo_tenant: convertedToTenant };
 
       if (isEditMode) {
         const res = await updateVisitor({ id: visitorId, data }).unwrap();
@@ -316,8 +311,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                   borderRadius: 8,
                   padding: 12,
                   fontSize: 14,
-                  backgroundColor: '#fff',
-                }}
+                  backgroundColor: '#fff' }}
                 placeholder="Enter visitor name"
                 value={visitorName}
                 onChangeText={setVisitorName}
@@ -335,8 +329,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                   borderRadius: 8,
                   padding: 12,
                   fontSize: 14,
-                  backgroundColor: '#fff',
-                }}
+                  backgroundColor: '#fff' }}
                 placeholder="Enter phone number"
                 value={phoneNo}
                 onChangeText={setPhoneNo}
@@ -374,8 +367,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                     borderRadius: 8,
                     padding: 12,
                     fontSize: 14,
-                    backgroundColor: '#fff',
-                  }}
+                    backgroundColor: '#fff' }}
                   placeholder="Enter custom purpose"
                   value={customPurpose}
                   onChangeText={setCustomPurpose}
@@ -405,8 +397,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
               items={rooms.map(room => ({
                 id: room.s_no,
                 label: `Room ${room.room_no}`,
-                value: room.s_no,
-              }))}
+                value: room.s_no }))}
               selectedValue={selectedRoomId}
               onSelect={(item) => setSelectedRoomId(item.id)}
               loading={loadingRooms}
@@ -420,8 +411,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                 items={beds.map(bed => ({
                   id: bed.s_no,
                   label: `Bed ${bed.bed_no}`,
-                  value: bed.s_no,
-                }))}
+                  value: bed.s_no }))}
                 selectedValue={selectedBedId}
                 onSelect={(item) => setSelectedBedId(item.id)}
                 loading={loadingBeds}
@@ -443,8 +433,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
               items={states.map(state => ({
                 id: state.s_no,
                 label: state.name,
-                value: state.iso_code,
-              }))}
+                value: state.iso_code }))}
               selectedValue={selectedStateId}
               onSelect={(item) => setSelectedStateId(item.id)}
               loading={loadingStates}
@@ -458,8 +447,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                 items={cities.map(city => ({
                   id: city.s_no,
                   label: city.name,
-                  value: city.s_no,
-                }))}
+                  value: city.s_no }))}
                 selectedValue={selectedCityId}
                 onSelect={(item) => setSelectedCityId(item.id)}
                 loading={loadingCities}
@@ -488,8 +476,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                   fontSize: 14,
                   backgroundColor: '#fff',
                   minHeight: 80,
-                  textAlignVertical: 'top',
-                }}
+                  textAlignVertical: 'top' }}
                 placeholder="Enter any additional notes"
                 value={remarks}
                 onChangeText={setRemarks}
@@ -499,15 +486,14 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
             </View>
 
             <View style={{ marginBottom: 0 }}>
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={() => setConvertedToTenant(!convertedToTenant)}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   padding: 12,
                   backgroundColor: Theme.colors.background.secondary,
-                  borderRadius: 8,
-                }}
+                  borderRadius: 8 }}
               >
               <View style={{
                 width: 20,
@@ -518,8 +504,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                 backgroundColor: convertedToTenant ? Theme.colors.primary : 'transparent',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginRight: 12,
-              }}>
+                marginRight: 12 }}>
                 {convertedToTenant && (
                   <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>
                 )}
@@ -527,12 +512,12 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                 <Text style={{ fontSize: 14, color: Theme.colors.text.primary }}>
                   Converted to Tenant
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </Card>
 
           {/* Submit Button */}
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={handleSubmit}
             disabled={loading}
             style={{
@@ -540,8 +525,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
               borderRadius: 12,
               paddingVertical: 16,
               alignItems: 'center',
-              marginBottom: 20,
-            }}
+              marginBottom: 20 }}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -550,7 +534,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                 {isEditMode ? 'Update Visitor' : 'Add Visitor'}
               </Text>
             )}
-          </TouchableOpacity>
+          </AnimatedPressableCard>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

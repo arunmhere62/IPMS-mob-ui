@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
+  View, Text, StyleSheet, FlatList, TextInput,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image, Modal, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { RootState } from '@/features/owner/store';
 import { Theme } from '../../../../theme';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { CONTENT_COLOR } from '@/constant';
 import {
   useGetPgTenantTicketByIdQuery,
@@ -207,13 +208,12 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
         {attachments.length > 0 && (
           <View style={styles.attachmentGrid}>
             {attachments.map((url, i) => (
-              <TouchableOpacity
+              <AnimatedPressableCard
                 key={i}
                 onPress={() => { setViewerImages(attachments); setViewerIndex(i); }}
-                activeOpacity={0.85}
               >
                 <Image source={{ uri: url }} style={styles.attachmentThumb} resizeMode="cover" />
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             ))}
           </View>
         )}
@@ -232,9 +232,9 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
       {/* Full-screen image viewer */}
       <Modal visible={viewerImages.length > 0} transparent animationType="fade" onRequestClose={() => setViewerImages([])}>
         <View style={styles.viewerOverlay}>
-          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewerImages([])}>
+          <AnimatedPressableCard style={styles.viewerClose} onPress={() => setViewerImages([])}>
             <Ionicons name="close" size={28} color="#fff" />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
           <ScrollView
             horizontal
             pagingEnabled
@@ -283,7 +283,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
                   <View style={styles.unassignedContainer}>
                     <Text style={styles.assignedValue}>Unassigned</Text>
                     {canEditTicket && (
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         style={styles.claimBtn}
                         onPress={() => {
                           Alert.alert(
@@ -302,7 +302,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
                         }}
                       >
                         <Text style={styles.claimBtnText}>Assign to me</Text>
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
                     )}
                   </View>
                 )}
@@ -311,7 +311,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
 
             {/* Status selector */}
             {canEditTicket && (
-              <TouchableOpacity
+              <AnimatedPressableCard
                 style={[styles.statusBtn, { backgroundColor: sc.bg }]}
                 onPress={() => setShowStatusPicker(v => !v)}
                 disabled={updatingStatus}
@@ -325,7 +325,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
                     <Ionicons name="chevron-down" size={13} color={sc.text} />
                   </>
               }
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             )}
           </View>
 
@@ -333,7 +333,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
           {showStatusPicker && (
             <View style={styles.dropdown}>
               {STATUS_OPTIONS.map((opt) => (
-                <TouchableOpacity
+                <AnimatedPressableCard
                   key={opt.value}
                   style={[styles.dropdownItem, currentStatus === opt.value && styles.dropdownItemActive]}
                   onPress={() => handleStatusChange(opt.value)}
@@ -343,7 +343,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
                     {opt.label}
                   </Text>
                   {currentStatus === opt.value && <Ionicons name="checkmark" size={14} color={C.primary} />}
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               ))}
             </View>
           )}
@@ -384,7 +384,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
                 multiline
                 maxLength={1000}
               />
-              <TouchableOpacity
+              <AnimatedPressableCard
                 style={[styles.sendBtn, (!message.trim() || sending) && styles.sendBtnDisabled]}
                 onPress={() => handleSend()}
                 disabled={!message.trim() || sending}
@@ -393,7 +393,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
                   ? <ActivityIndicator size="small" color="#fff" />
                   : <Ionicons name="send" size={18} color="#fff" />
                 }
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           )}
 

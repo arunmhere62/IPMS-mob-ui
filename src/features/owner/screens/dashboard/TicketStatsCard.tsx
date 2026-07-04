@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../../theme';
 import { Card } from '../../../../components/Card';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { useNavigation } from '@react-navigation/native';
 import type { TicketOverview, DashboardTicket, UnreadTickets } from '../../api/dashboardApi';
 
@@ -85,14 +86,13 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
     <View style={{ flex: 1, minWidth: 80, alignItems: 'center', paddingVertical: 8, backgroundColor: Theme.withOpacity(color, 0.08), borderRadius: 8, marginRight: 6, marginBottom: 6 }}>
       <Ionicons name={icon as any} size={14} color={color} />
       <Text style={{ color: color, fontSize: 16, fontWeight: '900', marginTop: 2 }}>{value}</Text>
-      <Text style={{ color: Theme.colors.text.secondary, fontSize: 10, fontWeight: '600', marginTop: 1 }}>{label}</Text>
+      <Text style={{ color: Theme.colors.text.secondary, fontSize: 10, fontWeight: '600', marginTop: 1 }} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
     </View>
   );
 
   const TicketItem: React.FC<{ ticket: DashboardTicket; showTenant?: boolean }> = ({ ticket, showTenant = false }) => (
-    <TouchableOpacity
+    <AnimatedPressableCard
       onPress={() => (navigation as any).navigate('PgTenantTicketDetail', { ticketId: ticket.s_no })}
-      activeOpacity={0.85}
     >
       <Card
         shadowColor="shadow-none"
@@ -122,16 +122,16 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
               <View style={{ paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, backgroundColor: `${getStatusColor(ticket.status)}20` }}>
-                <Text style={{ fontSize: 9, color: getStatusColor(ticket.status), fontWeight: '500' }}>{ticket.status}</Text>
+                <Text style={{ fontSize: 9, color: getStatusColor(ticket.status), fontWeight: '500' }} numberOfLines={1} adjustsFontSizeToFit>{ticket.status}</Text>
               </View>
               <View style={{ paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, backgroundColor: `${getPriorityColor(ticket.priority)}20` }}>
-                <Text style={{ fontSize: 9, color: getPriorityColor(ticket.priority), fontWeight: '500' }}>{ticket.priority}</Text>
+                <Text style={{ fontSize: 9, color: getPriorityColor(ticket.priority), fontWeight: '500' }} numberOfLines={1} adjustsFontSizeToFit>{ticket.priority}</Text>
               </View>
             </View>
           </View>
         </View>
       </Card>
-    </TouchableOpacity>
+    </AnimatedPressableCard>
   );
 
   return (
@@ -145,9 +145,9 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
             Track and manage support tickets
           </Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('PgTenantTickets' as never)}>
-          <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '900' }}>View All</Text>
-        </TouchableOpacity>
+        <AnimatedPressableCard onPress={() => navigation.navigate('PgTenantTickets' as never)}>
+          <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '900' }} numberOfLines={1} adjustsFontSizeToFit>View All</Text>
+        </AnimatedPressableCard>
       </View>
 
       {/* Overview Stats */}
@@ -182,7 +182,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
         }}
       >
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => setActiveTab('recent')}
             style={{
               flex: 1,
@@ -193,12 +193,12 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
               alignItems: 'center',
             }}
           >
-            <Text style={{ fontSize: 12, fontWeight: '900', color: activeTab === 'recent' ? '#fff' : Theme.colors.text.primary }}>
+            <Text style={{ fontSize: 12, fontWeight: '900', color: activeTab === 'recent' ? '#fff' : Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit>
               Recent
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
           {unreadTickets.count > 0 && (
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => setActiveTab('unread')}
               style={{
                 flex: 1,
@@ -209,10 +209,10 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '900', color: activeTab === 'unread' ? '#fff' : Theme.colors.text.primary }}>
+              <Text style={{ fontSize: 12, fontWeight: '900', color: activeTab === 'unread' ? '#fff' : Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit>
                 Unread ({unreadTickets.count})
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           )}
         </View>
 

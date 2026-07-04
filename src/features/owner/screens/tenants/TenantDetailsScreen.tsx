@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   TextInput,
-  TouchableOpacity,
   Alert,
   Linking,
   RefreshControl,
@@ -24,6 +23,7 @@ import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
 import { ActionTile } from '../../../../components/ActionButtons';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { CONTENT_COLOR } from '@/constant';
 import RentPaymentForm from './RentPaymentForm';
 import { AddRefundPaymentModal } from './AddRefundPaymentModal';
@@ -1531,7 +1531,7 @@ const TenantDetailsContent: React.FC<{
               </Text>
             </View>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={openCollectTransferDifference}
               style={{
                 backgroundColor: Theme.colors.primary,
@@ -1541,7 +1541,7 @@ const TenantDetailsContent: React.FC<{
               }}
             >
               <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Collect Transfer Difference</Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </Card>
         )}
 
@@ -1572,7 +1572,7 @@ const TenantDetailsContent: React.FC<{
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={() => {
                   console.log('Set/Edit button pressed');
                   handleOpenVacateModal();
@@ -1586,18 +1586,23 @@ const TenantDetailsContent: React.FC<{
                 <Text style={{ fontSize: 12, fontWeight: '700', color: '#8B5CF6' }}>
                   {tenant?.expected_vacate_date ? 'Edit' : 'Set'}
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </Card>
         )}
 
         {/* Rent Payments Button - Always Show */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => navigation.navigate('TenantRentPaymentsScreen', {
             payments: tenant?.rent_payments || [],
             tenantName: tenant.name,
             tenantId: tenant.s_no,
             tenantPhone: tenant.phone_no,
+            tenantEmail: tenant.email,
+            tenantWhatsapp: tenant.whatsapp_number,
+            tenantAddress: tenant.tenant_address,
+            tenantCity: tenant.city?.name,
+            tenantState: tenant.state?.name,
             tenantStatus: tenant.status,
             pgName: tenant.pg_locations?.location_name || 'PG',
             roomNumber: tenant.rooms?.room_no || '',
@@ -1652,10 +1657,10 @@ const TenantDetailsContent: React.FC<{
             </View>
             <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
           </View>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
 
         {/* Advance Payments Button - Always Show */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => navigation.navigate('TenantAdvancePaymentsScreen', {
             payments: tenant?.advance_payments || [],
             tenantName: tenant.name,
@@ -1663,6 +1668,11 @@ const TenantDetailsContent: React.FC<{
             pgId: tenant.pg_id || selectedPGLocationId || 0,
             tenantJoinedDate: tenant.check_in_date,
             tenantPhone: tenant.phone_no,
+            tenantEmail: tenant.email,
+            tenantWhatsapp: tenant.whatsapp_number,
+            tenantAddress: tenant.tenant_address,
+            tenantCity: tenant.city?.name,
+            tenantState: tenant.state?.name,
             pgName: tenant.pg_locations?.location_name || 'PG',
             roomNumber: tenant.rooms?.room_no || '',
             bedNumber: tenant.beds?.bed_no || '',
@@ -1705,15 +1715,20 @@ const TenantDetailsContent: React.FC<{
             </View>
             <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
           </View>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
 
         {/* Refund Payments Button - Always Show */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => navigation.navigate('TenantRefundPaymentsScreen', {
             payments: tenant?.refund_payments || [],
             tenantName: tenant.name,
             tenantId: tenant.s_no,
             tenantPhone: tenant.phone_no,
+            tenantEmail: tenant.email,
+            tenantWhatsapp: tenant.whatsapp_number,
+            tenantAddress: tenant.tenant_address,
+            tenantCity: tenant.city?.name,
+            tenantState: tenant.state?.name,
             pgName: tenant.pg_locations?.location_name || 'PG',
             roomNumber: tenant.rooms?.room_no || '',
             bedNumber: tenant.beds?.bed_no || '',
@@ -1759,11 +1774,11 @@ const TenantDetailsContent: React.FC<{
             </View>
             <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
           </View>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
 
         {transferHistory.length > 0 && (
           <View style={{ marginBottom: 12 }}>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() =>
                 setExpandedSections((prev) => ({
                   ...prev,
@@ -1811,7 +1826,7 @@ const TenantDetailsContent: React.FC<{
                   color={Theme.colors.text.tertiary}
                 />
               </View>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
             {expandedSections.transferHistory && (
               <View style={{ marginTop: 10 }}>
@@ -2122,12 +2137,12 @@ const TenantDetailsContent: React.FC<{
             required={false}
           />
           {newVacateDate && (
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => setNewVacateDate('')}
               style={{ marginTop: 12, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', alignItems: 'center' }}
             >
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Clear Date</Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           )}
         </SlideBottomModal>
       )}

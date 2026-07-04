@@ -14,7 +14,7 @@ export const StatusBadge = ({ status }: { status: string | null | undefined }) =
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
       <View style={[styles.badgeDot, { backgroundColor: dot }]} />
-      <Text style={[styles.badgeText, { color }]}>{status || 'N/A'}</Text>
+      <Text style={[styles.badgeText, { color }]} numberOfLines={1} adjustsFontSizeToFit>{status || 'N/A'}</Text>
     </View>
   );
 };
@@ -22,8 +22,8 @@ export const StatusBadge = ({ status }: { status: string | null | undefined }) =
 export const InfoRow = ({ label, value, valueColor, icon }: { label: string; value: string; valueColor?: string; icon?: string }) => (
   <View style={styles.infoRow}>
     {icon ? <Ionicons name={icon as any} size={14} color={C.darkTertiary} style={{ marginRight: 6 }} /> : null}
-    <Text style={styles.infoLabel}>{label}</Text>
-    <Text style={[styles.infoValue, valueColor ? { color: valueColor } : {}]}>{value}</Text>
+    <Text style={styles.infoLabel} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
+    <Text style={[styles.infoValue, valueColor ? { color: valueColor } : {}]} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
   </View>
 );
 
@@ -36,7 +36,7 @@ export const CardHeader = ({ icon, title, color, right }: { icon: string; title:
     <View style={[styles.cardIconWrap, { backgroundColor: (color || C.primary) + '18' }]}>
       <Ionicons name={icon as any} size={18} color={color || C.primary} />
     </View>
-    <Text style={styles.cardTitle}>{title}</Text>
+    <Text style={styles.cardTitle} numberOfLines={1} adjustsFontSizeToFit>{title}</Text>
     {right ? <View style={{ marginLeft: 'auto' }}>{right}</View> : null}
   </View>
 );
@@ -46,7 +46,7 @@ export const EmptyState = ({ icon, message }: { icon: string; message: string })
     <View style={styles.emptyIconWrap}>
       <Ionicons name={icon as any} size={32} color={C.darkTertiary} />
     </View>
-    <Text style={styles.emptyText}>{message}</Text>
+    <Text style={styles.emptyText} numberOfLines={1} adjustsFontSizeToFit>{message}</Text>
   </View>
 );
 

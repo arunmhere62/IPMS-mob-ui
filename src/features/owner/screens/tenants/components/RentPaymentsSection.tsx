@@ -1,9 +1,7 @@
 import React from 'react';
 import {
   View,
-  Text,
-  TouchableOpacity,
-} from 'react-native';
+  Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedPressableCard } from '../../../../../components/AnimatedPressableCard';
 import { CollapsibleSection } from '../../../../../components/CollapsibleSection';
@@ -26,8 +24,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
   onToggle,
   onViewReceipt,
   onWhatsAppReceipt,
-  onShareReceipt,
-}) => {
+  onShareReceipt }) => {
   const getPeriod = (payment: any): { start?: string; end?: string } => {
     const start = payment?.tenant_rent_cycles?.cycle_start || payment?.start_date;
     const end = payment?.tenant_rent_cycles?.cycle_end || payment?.end_date;
@@ -62,8 +59,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                   shadowOffset: { width: 0, height: 1 },
                   shadowOpacity: 0.06,
                   shadowRadius: 2,
-                  elevation: 1,
-                }}
+                  elevation: 1 }}
               >
                 {/* Header Row */}
                 <View
@@ -71,8 +67,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                     flexDirection: 'row',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: 6,
-                  }}
+                    marginBottom: 6 }}
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: Theme.colors.text.primary }}>
@@ -82,8 +77,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                       {new Date(payment.payment_date).toLocaleDateString('en-IN', {
                         day: 'numeric',
                         month: 'short',
-                        year: 'numeric',
-                      })}
+                        year: 'numeric' })}
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -95,16 +89,14 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                         backgroundColor: 
                           payment.status === 'PAID' ? '#10B98120' :
                           payment.status === 'PENDING' ? '#F59E0B20' :
-                          payment.status === 'PARTIAL' ? '#3B82F620' : '#9CA3AF20',
-                      }}>
+                          payment.status === 'PARTIAL' ? '#3B82F620' : '#9CA3AF20' }}>
                         <Text style={{
                           fontSize: 11,
                           fontWeight: '700',
                           color: 
                             payment.status === 'PAID' ? '#10B981' :
                             payment.status === 'PENDING' ? '#F59E0B' :
-                            payment.status === 'PARTIAL' ? '#3B82F6' : '#6B7280',
-                        }}>
+                            payment.status === 'PARTIAL' ? '#3B82F6' : '#6B7280' }}>
                           {payment.status}
                         </Text>
                       </View>
@@ -119,8 +111,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                   paddingVertical: 6,
                   borderTopWidth: 0.5,
                   borderTopColor: '#E5E7EB',
-                  marginBottom: 6,
-                }}>
+                  marginBottom: 6 }}>
                   <View>
                     <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, marginBottom: 1 }}>
                       Amount Paid
@@ -193,8 +184,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                       backgroundColor: '#FFF', 
                       borderRadius: 6,
                       borderWidth: 1,
-                      borderColor: '#E5E7EB',
-                    }}>
+                      borderColor: '#E5E7EB' }}>
                       <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, marginBottom: 2, fontWeight: '600' }}>
                         REMARKS
                       </Text>
@@ -208,7 +198,7 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                 {/* Receipt Buttons */}
                 {payment.status === 'PAID' && (
                   <View style={{ flexDirection: 'row', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       onPress={() => onViewReceipt(payment)}
                       style={{
                         flex: 1,
@@ -219,16 +209,15 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                         paddingHorizontal: 8,
                         backgroundColor: '#FEF3C7',
                         borderRadius: 8,
-                        marginRight: 4,
-                      }}
+                        marginRight: 4 }}
                     >
                       <Ionicons name="eye-outline" size={16} color="#F59E0B" />
                       <Text style={{ color: '#F59E0B', fontSize: 11, fontWeight: '600', marginLeft: 4 }}>
                         View
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
 
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       onPress={() => onWhatsAppReceipt(payment)}
                       style={{
                         flex: 1,
@@ -239,16 +228,15 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                         paddingHorizontal: 8,
                         backgroundColor: '#F0FDF4',
                         borderRadius: 8,
-                        marginHorizontal: 4,
-                      }}
+                        marginHorizontal: 4 }}
                     >
                       <Ionicons name="logo-whatsapp" size={16} color="#10B981" />
                       <Text style={{ color: '#10B981', fontSize: 11, fontWeight: '600', marginLeft: 4 }}>
                         WhatsApp
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
 
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       onPress={() => onShareReceipt(payment)}
                       style={{
                         flex: 1,
@@ -259,14 +247,13 @@ export const RentPaymentsSection: React.FC<RentPaymentsSectionProps> = ({
                         paddingHorizontal: 8,
                         backgroundColor: '#EFF6FF',
                         borderRadius: 8,
-                        marginLeft: 4,
-                      }}
+                        marginLeft: 4 }}
                     >
                       <Ionicons name="share-social-outline" size={16} color="#3B82F6" />
                       <Text style={{ color: '#3B82F6', fontSize: 11, fontWeight: '600', marginLeft: 4 }}>
                         Share
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   </View>
                 )}
               </AnimatedPressableCard>

@@ -1,12 +1,11 @@
 import React, { useEffect, useRef } from 'react';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Animated,
-  Easing,
-} from 'react-native';
+  Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
@@ -32,8 +31,7 @@ export const TrialBanner: React.FC = () => {
         toValue: 0,
         duration: 350,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
+        useNativeDriver: true }).start();
     }
   }, [show, slideAnim]);
 
@@ -56,8 +54,7 @@ export const TrialBanner: React.FC = () => {
       titleColor: '#7F1D1D',
       subtitleColor: '#991B1B',
       btnBg: '#DC2626',
-      btnText: '#FFFFFF',
-    },
+      btnText: '#FFFFFF' },
     warning: {
       bg: '#FFF1F2',
       border: '#FECDD3',
@@ -69,8 +66,7 @@ export const TrialBanner: React.FC = () => {
       titleColor: '#881337',
       subtitleColor: '#BE123C',
       btnBg: '#E11D48',
-      btnText: '#FFFFFF',
-    },
+      btnText: '#FFFFFF' },
     info: {
       bg: '#FFF5F5',
       border: '#FECACA',
@@ -82,9 +78,7 @@ export const TrialBanner: React.FC = () => {
       titleColor: '#7F1D1D',
       subtitleColor: '#B91C1C',
       btnBg: '#EF4444',
-      btnText: '#FFFFFF',
-    },
-  }[urgency];
+      btnText: '#FFFFFF' } }[urgency];
 
   const daysLabel = days === 0 ? 'Expires today' : days === 1 ? '1 day left' : `${days} days left`;
 
@@ -95,8 +89,7 @@ export const TrialBanner: React.FC = () => {
         {
           backgroundColor: config.bg,
           borderColor: config.border,
-          transform: [{ translateY: slideAnim }],
-        },
+          transform: [{ translateY: slideAnim }] },
       ]}
     >
       <View style={styles.inner}>
@@ -123,14 +116,13 @@ export const TrialBanner: React.FC = () => {
           </Text>
         </View>
 
-        <TouchableOpacity
+        <AnimatedPressableCard
           style={[styles.btn, { backgroundColor: config.btnBg }]}
           onPress={() => navigation.navigate('SubscriptionPlans')}
-          activeOpacity={0.85}
         >
           <Text style={[styles.btnText, { color: config.btnText }]}>Upgrade</Text>
           <Ionicons name="arrow-forward" size={12} color={config.btnText} />
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
     </Animated.View>
   );
@@ -144,56 +136,47 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
+    shadowRadius: 3 },
   inner: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 14,
-    gap: 10,
-  },
+    gap: 10 },
   iconWrap: {
     width: 34,
     height: 34,
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
-  },
+    flexShrink: 0 },
   textBlock: {
     flex: 1,
-    gap: 2,
-  },
+    gap: 2 },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    flexWrap: 'wrap',
-  },
+    flexWrap: 'wrap' },
   title: {
     fontSize: 13,
     fontWeight: '700',
-    letterSpacing: 0.1,
-  },
+    letterSpacing: 0.1 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 20,
-  },
+    borderRadius: 20 },
   badgeText: {
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.2,
-  },
+    letterSpacing: 0.2 },
   subtitle: {
     fontSize: 11,
     fontWeight: '500',
-    lineHeight: 15,
-  },
+    lineHeight: 15 },
   btn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -201,11 +184,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
-    flexShrink: 0,
-  },
+    flexShrink: 0 },
   btnText: {
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-});
+    letterSpacing: 0.2 } });

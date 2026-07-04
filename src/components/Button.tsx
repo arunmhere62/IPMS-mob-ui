@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { Text, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 import { Theme } from '../theme';
 
 interface ButtonProps {
@@ -27,29 +28,24 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
   icon,
-  iconPosition = 'left',
-}) => {
+  iconPosition = 'left' }) => {
   // Size configurations
   const sizeStyles = {
     sm: {
       paddingVertical: 8,
       paddingHorizontal: 16,
       fontSize: 14,
-      borderRadius: 6,
-    },
+      borderRadius: 6 },
     md: {
       paddingVertical: 12,
       paddingHorizontal: 24,
       fontSize: 16,
-      borderRadius: 8,
-    },
+      borderRadius: 8 },
     lg: {
       paddingVertical: 16,
       paddingHorizontal: 32,
       fontSize: 18,
-      borderRadius: 10,
-    },
-  };
+      borderRadius: 10 } };
 
  const getVariantStyles = (): { container: ViewStyle; text: TextStyle; loader: string } => {
   const isDisabled = disabled && !loading;
@@ -60,76 +56,58 @@ export const Button: React.FC<ButtonProps> = ({
         container: {
           backgroundColor: isDisabled ? Theme.colors.button.disabled : Theme.colors.button.primary,
           borderWidth: 1,
-          borderColor: isDisabled ? '#D1D5DB' : Theme.colors.primaryDark,
-        },
+          borderColor: isDisabled ? '#D1D5DB' : Theme.colors.primaryDark },
         text: {
-          color: isDisabled ? Theme.colors.button.disabledText : Theme.colors.button.primaryText,
-        },
-        loader: Theme.colors.button.primaryText,
-      };
+          color: isDisabled ? Theme.colors.button.disabledText : Theme.colors.button.primaryText },
+        loader: Theme.colors.button.primaryText };
 
     case 'secondary':
       return {
         container: {
           backgroundColor: isDisabled ? Theme.colors.button.disabled : Theme.colors.button.secondary,
           borderWidth: 1,
-          borderColor: isDisabled ? '#D1D5DB' : '#D1D5DB',
-        },
+          borderColor: isDisabled ? '#D1D5DB' : '#D1D5DB' },
         text: {
-          color: isDisabled ? Theme.colors.button.disabledText : Theme.colors.button.secondaryText,
-        },
-        loader: Theme.colors.button.secondaryText,
-      };
+          color: isDisabled ? Theme.colors.button.disabledText : Theme.colors.button.secondaryText },
+        loader: Theme.colors.button.secondaryText };
 
     case 'danger':
       return {
         container: {
           backgroundColor: isDisabled ? Theme.colors.button.disabled : Theme.colors.danger,
           borderWidth: 1,
-          borderColor: isDisabled ? '#D1D5DB' : '#DC2626',
-        },
+          borderColor: isDisabled ? '#D1D5DB' : '#DC2626' },
         text: {
-          color: isDisabled ? Theme.colors.button.disabledText : '#FFFFFF',
-        },
-        loader: '#FFFFFF',
-      };
+          color: isDisabled ? Theme.colors.button.disabledText : '#FFFFFF' },
+        loader: '#FFFFFF' };
 
     case 'outline':
       return {
         container: {
           backgroundColor: 'transparent',
           borderWidth: 2,
-          borderColor: isDisabled ? Theme.colors.border : Theme.colors.primary,
-        },
+          borderColor: isDisabled ? Theme.colors.border : Theme.colors.primary },
         text: {
-          color: isDisabled ? Theme.colors.button.disabledText : Theme.colors.primary,
-        },
-        loader: Theme.colors.primary,
-      };
+          color: isDisabled ? Theme.colors.button.disabledText : Theme.colors.primary },
+        loader: Theme.colors.primary };
 
     case 'ghost':
       return {
         container: {
-          backgroundColor: 'transparent',
-        },
+          backgroundColor: 'transparent' },
         text: {
-          color: isDisabled ? Theme.colors.button.disabledText : Theme.colors.primary,
-        },
-        loader: Theme.colors.primary,
-      };
+          color: isDisabled ? Theme.colors.button.disabledText : Theme.colors.primary },
+        loader: Theme.colors.primary };
 
     default:
       return {
         container: {
           backgroundColor: Theme.colors.button.primary,
           borderWidth: 1,
-          borderColor: Theme.colors.primaryDark,
-        },
+          borderColor: Theme.colors.primaryDark },
         text: {
-          color: Theme.colors.button.primaryText,
-        },
-        loader: Theme.colors.button.primaryText,
-      };
+          color: Theme.colors.button.primaryText },
+        loader: Theme.colors.button.primaryText };
   }
 };
 
@@ -138,7 +116,7 @@ export const Button: React.FC<ButtonProps> = ({
   const currentSize = sizeStyles[size];
 
   return (
-    <TouchableOpacity
+    <AnimatedPressableCard
       onPress={onPress}
       disabled={disabled || loading}
       style={[
@@ -149,8 +127,7 @@ export const Button: React.FC<ButtonProps> = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: disabled && !loading ? 0.5 : 1,
-        },
+          opacity: disabled && !loading ? 0.5 : 1 },
         variantStyles.container,
         style,
       ]}
@@ -167,17 +144,18 @@ export const Button: React.FC<ButtonProps> = ({
                 fontWeight: '600',
                 textAlign: 'center',
                 marginLeft: icon && iconPosition === 'left' ? 8 : 0,
-                marginRight: icon && iconPosition === 'right' ? 8 : 0,
-              },
+                marginRight: icon && iconPosition === 'right' ? 8 : 0 },
               variantStyles.text,
               textStyle,
             ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
           >
             {title}
           </Text>
           {icon && iconPosition === 'right' && <>{icon}</>}
         </>
       )}
-    </TouchableOpacity>
+    </AnimatedPressableCard>
   );
 };

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
@@ -36,6 +35,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 import { useCreateTenantMutation, useGetTenantByIdQuery, useUpdateTenantMutation, useSendPhoneOtpMutation, useVerifyPhoneOtpMutation } from "../../api";
 import { useOnboardingTour } from '../../../../context/OnboardingTourContext';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 
 interface AddTenantScreenProps {
   navigation: any;
@@ -829,7 +829,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                                 Tenant won't be able to login if number is wrong
                               </Text>
                             </View>
-                            <TouchableOpacity
+                            <AnimatedPressableCard
                               onPress={() => { setPhoneVerified(false); setPhoneVerifiedSkipped(false); }}
                               style={{
                                 borderWidth: 1, borderColor: "#F59E0B",
@@ -837,7 +837,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                               }}
                             >
                               <Text style={{ fontSize: 11, color: "#D97706", fontWeight: "600" }}>Verify</Text>
-                            </TouchableOpacity>
+                            </AnimatedPressableCard>
                           </View>
                         ) : (
                           <View style={{
@@ -922,7 +922,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                                   accessibilityLabel="OTP input"
                                   accessibilityHint="Enter the 4-digit OTP sent to your phone"
                                 />
-                                <TouchableOpacity
+                                <AnimatedPressableCard
                                   onPress={async () => {
                                     const phone = getFullPhoneNumber();
                                     if (otpValue.length !== 4) {
@@ -953,7 +953,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                                   <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
                                     {verifyingOtp ? "..." : "Confirm"}
                                   </Text>
-                                </TouchableOpacity>
+                                </AnimatedPressableCard>
                               </View>
                               {otpError ? (
                                 <Text style={{ fontSize: 11, color: "#EF4444" }}>{otpError}</Text>
@@ -963,7 +963,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
 
                           {/* Action buttons row */}
                           <View style={{ flexDirection: "row", gap: 8 }}>
-                            <TouchableOpacity
+                            <AnimatedPressableCard
                               onPress={async () => {
                                 const phone = getFullPhoneNumber();
                                 if (!phone) {
@@ -997,9 +997,9 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                               <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
                                 {sendingOtp ? "Sending OTP..." : showOtpInput ? "Resend OTP" : "Send OTP"}
                               </Text>
-                            </TouchableOpacity>
+                            </AnimatedPressableCard>
 
-                            <TouchableOpacity
+                            <AnimatedPressableCard
                               onPress={handleSkipVerification}
                               style={{
                                 borderWidth: 1,
@@ -1015,7 +1015,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                               <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "500" }}>
                                 Skip
                               </Text>
-                            </TouchableOpacity>
+                            </AnimatedPressableCard>
                           </View>
                         </View>
                       )}
@@ -1326,7 +1326,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                         Check-in Date{" "}
                         <Text style={{ color: "#EF4444" }}>*</Text>
                       </Text>
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         onPress={() =>
                           updateField(
                             "check_in_date",
@@ -1349,7 +1349,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                         >
                           Today
                         </Text>
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
                     </View>
                   )}
                   {isEditMode && (
@@ -1391,12 +1391,12 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                         Expected Vacate Date
                       </Text>
                       {formData.expected_vacate_date ? (
-                        <TouchableOpacity
+                        <AnimatedPressableCard
                           onPress={() => updateField("expected_vacate_date", "")}
                           style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" }}
                         >
                           <Text style={{ fontSize: 11, color: "#DC2626", fontWeight: "600" }}>Clear</Text>
-                        </TouchableOpacity>
+                        </AnimatedPressableCard>
                       ) : null}
                     </View>
                     <DatePicker
@@ -1470,7 +1470,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
               </Card>
 
               {/* Submit Button */}
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={handleSubmit}
                 disabled={loading}
                 style={{
@@ -1490,7 +1490,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     {isEditMode ? "Update Tenant" : "Create Tenant"}
                   </Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

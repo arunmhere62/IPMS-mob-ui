@@ -3,12 +3,9 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   TextInput,
   RefreshControl,
   Alert,
-  Animated,
-  Easing,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
@@ -21,6 +18,7 @@ import {
 import { Card } from "../../../../components/Card";
 import { ActionButtons } from "../../../../components/ActionButtons";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
+import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 import { Theme } from "../../../../theme";
 import { ScreenHeader } from "../../../../components/ScreenHeader";
 import { ScreenLayout } from "../../../../components/ScreenLayout";
@@ -30,7 +28,6 @@ import { showErrorAlert, showSuccessAlert } from "../../../../utils/errorHandler
 import { CONTENT_COLOR } from "@/constant";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
-import { useOnboardingTour } from "../../../../context/OnboardingTourContext";
 import { Ionicons } from "@expo/vector-icons";
 
 interface RoomsScreenProps {
@@ -42,7 +39,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     (state: RootState) => state.pgLocations
   );
   const { can } = usePermissions();
-  const { tourStep, advanceTour } = useOnboardingTour();
 
   const canCreateRoom = can(Permission.CREATE_ROOM);
   const canEditRoom = can(Permission.EDIT_ROOM);
@@ -55,20 +51,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const [pagination, setPagination] = useState<any>(null);
 
   const [appliedSearch, setAppliedSearch] = useState("");
-
-  const tourPulse = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (tourStep === 'tap_room' || tourStep === 'tap_room_for_tenant' || tourStep === 'tap_add_room') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(tourPulse, { toValue: 1.25, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-          Animated.timing(tourPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        ])
-      ).start();
-    } else {
-      tourPulse.setValue(1);
-    }
-  }, [tourStep]);
 
   const roomsQueryArgs = useMemo(() => {
     if (!selectedPGLocationId) return undefined as any;
@@ -211,12 +193,10 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           : undefined;
 
       return (
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => {
-            if (tourStep === 'tap_room' || tourStep === 'tap_room_for_tenant') advanceTour();
             navigation.navigate("RoomDetails", { roomId: item.s_no });
           }}
-          activeOpacity={0.8}
         >
           <Card
             className=""
@@ -264,51 +244,33 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
               </View>
 
               <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-                {(tourStep === 'tap_room' || tourStep === 'tap_room_for_tenant') && index === 0 ? (
-                  <View style={{ alignItems: 'center' }}>
-                    <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap to open</Text>
-                    </View>
-                    <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
-                    <Animated.View style={{ transform: [{ scale: tourPulse }] }}>
-                      <TouchableOpacity
-                        onPress={() => { advanceTour(); navigation.navigate('RoomDetails', { roomId: item.s_no }); }}
-                        style={{ backgroundColor: '#2563EB', padding: 10, borderRadius: 10, shadowColor: '#2563EB', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
-                      >
-                        <Ionicons name="eye" size={20} color="#fff" />
-                      </TouchableOpacity>
-                    </Animated.View>
-                  </View>
-                ) : (
-                  <ActionButtons
-                    onView={() => {
-                      if (tourStep === 'tap_room' || tourStep === 'tap_room_for_tenant') advanceTour();
-                      navigation.navigate("RoomDetails", { roomId: item.s_no });
-                    }}
-                    onEdit={() => handleOpenEditModal(item.s_no)}
+                <ActionButtons
+                  onView={() => {
+                    navigation.navigate("RoomDetails", { roomId: item.s_no });
+                  }}
+                  onEdit={() => handleOpenEditModal(item.s_no)}
                   onDelete={() => handleDeleteRoom(item.s_no, item.room_no)}
-                    disableEdit={!canEditRoom}
-                    disableDelete={!canDeleteRoom}
-                    blockPressWhenDisabled
-                    showView
-                    containerStyle={{ gap: 6 }}
-                  />
-                )}
+                  disableEdit={!canEditRoom}
+                  disableDelete={!canDeleteRoom}
+                  blockPressWhenDisabled
+                  showView
+                  containerStyle={{ gap: 6 }}
+                />
               </View>
             </View>
 
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3F4F6', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
                 <Ionicons name="bed-outline" size={13} color="#6B7280" />
-                <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600' }}>{totalBeds} Total</Text>
+                <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>{totalBeds} Total</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#DCFCE7', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
                 <Ionicons name="bed-outline" size={13} color="#16A34A" />
-                <Text style={{ fontSize: 12, color: '#16A34A', fontWeight: '600' }}>{typeof availableBeds === 'number' ? availableBeds : '—'} Free</Text>
+                <Text style={{ fontSize: 12, color: '#16A34A', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>{typeof availableBeds === 'number' ? availableBeds : '—'} Free</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEE2E2', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
                 <Ionicons name="bed-outline" size={13} color="#DC2626" />
-                <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }}>{typeof occupiedBeds === 'number' ? occupiedBeds : '—'} Taken</Text>
+                <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>{typeof occupiedBeds === 'number' ? occupiedBeds : '—'} Taken</Text>
               </View>
             </View>
 
@@ -329,7 +291,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
               </View>
             )}
           </Card>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       );
   };
 
@@ -365,7 +327,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
             onChangeText={setSearchQuery}
             onSubmitEditing={handleSearch}
           />
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={handleSearch}
             style={{
               backgroundColor: Theme.colors.primary,
@@ -377,7 +339,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
             <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
               🔍
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
       </View>
 
@@ -487,46 +449,35 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         )}
       </View>
 
-      {/* FAB: Add Room — pulsing with tooltip when tourStep === 'tap_add_room' */}
-      <View style={{ position: 'absolute', right: 20, bottom: 80, alignItems: 'center' }}>
-        {tourStep === 'tap_add_room' && (
-          <View style={{ alignItems: 'center', marginBottom: 6 }}>
-            <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="add-circle" size={12} color="#fff" />
-              <Text style={{ fontSize: 11, fontWeight: '800', color: '#fff' }}>Tap to add a room!</Text>
-            </View>
-            <View style={{ width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 7, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A' }} />
-          </View>
-        )}
-        <Animated.View style={tourStep === 'tap_add_room' ? { transform: [{ scale: tourPulse }] } : undefined}>
-          <TouchableOpacity
-            onPress={() => {
-              if (!canCreateRoom) {
-                Alert.alert('Access Denied', "You don't have permission to create rooms");
-                return;
-              }
-              setEditingRoomId(null);
-              setEditModalVisible(true);
-            }}
-            disabled={!canCreateRoom}
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              backgroundColor: tourStep === 'tap_add_room' ? '#1E3A8A' : Theme.colors.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-              elevation: tourStep === 'tap_add_room' ? 12 : 8,
-              shadowColor: tourStep === 'tap_add_room' ? '#1E3A8A' : '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: tourStep === 'tap_add_room' ? 0.55 : 0.3,
-              shadowRadius: tourStep === 'tap_add_room' ? 10 : 8,
-              opacity: canCreateRoom ? 1 : 0.45,
-            }}
-          >
-            <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>
-          </TouchableOpacity>
-        </Animated.View>
+      {/* FAB: Add Room */}
+      <View style={{ position: 'absolute', right: 20, bottom: 80 }}>
+        <AnimatedPressableCard
+          onPress={() => {
+            if (!canCreateRoom) {
+              Alert.alert('Access Denied', "You don't have permission to create rooms");
+              return;
+            }
+            setEditingRoomId(null);
+            setEditModalVisible(true);
+          }}
+          disabled={!canCreateRoom}
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            backgroundColor: Theme.colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            opacity: canCreateRoom ? 1 : 0.45,
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>
+        </AnimatedPressableCard>
       </View>
 
       {/* Room Form Modal */}
@@ -536,7 +487,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         onClose={handleCloseEditModal}
         onSuccess={() => {
           handleEditSuccess();
-          if (tourStep === 'tap_add_room' && editingRoomId === null) advanceTour();
+          handleCloseEditModal();
         }}
       />
     </ScreenLayout>

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   View,
   Text,
-  TouchableOpacity,
   Image,
   ScrollView,
   Alert,
   ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
+  StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Theme } from '../theme';
@@ -37,8 +36,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
   useS3 = true,
   entityId,
   autoSave = false,
-  onAutoSave,
-}) => {
+  onAutoSave }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
   const [uploadToS3Mutation] = useUploadToS3Mutation();
@@ -94,8 +92,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
         {
           compress: quality,
           format: ImageManipulator.SaveFormat.JPEG,
-          base64: true,
-        }
+          base64: true }
       );
 
       if (!manipulated.base64) {
@@ -123,8 +120,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
       {
         compress: 0.2,
         format: ImageManipulator.SaveFormat.JPEG,
-        base64: true,
-      }
+        base64: true }
     );
 
     if (!manipulated.base64) {
@@ -173,9 +169,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
         options: {
           folder,
           fileName,
-          isPublic: true,
-        },
-      }).unwrap();
+          isPublic: true } }).unwrap();
 
       setUploadProgress(prev => ({ ...prev, [index]: 100 }));
 
@@ -217,8 +211,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
         mediaTypes: ['images'],
         allowsMultipleSelection: remainingSlots > 1,
         quality: 1,
-        base64: false,
-      });
+        base64: false });
 
       if (!result.canceled && result.assets) {
         const assetsToProcess = result.assets.slice(0, remainingSlots);
@@ -289,8 +282,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
       setUploading(true);
       const result = await ImagePicker.launchCameraAsync({
         quality: 1,
-        base64: false,
-      });
+        base64: false });
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
@@ -370,8 +362,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
                 Alert.alert('Save Error', 'Failed to update room in database. Please save manually.');
               }
             }
-          },
-        },
+          } },
       ]
     );
   };
@@ -383,16 +374,13 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
       [
         {
           text: 'Take Photo',
-          onPress: takePhoto,
-        },
+          onPress: takePhoto },
         {
           text: 'Choose from Gallery',
-          onPress: pickImage,
-        },
+          onPress: pickImage },
         {
           text: 'Cancel',
-          style: 'cancel',
-        },
+          style: 'cancel' },
       ]
     );
   };
@@ -443,12 +431,12 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
               
               {/* Remove Button */}
               {!disabled && (
-                <TouchableOpacity
+                <AnimatedPressableCard
                   style={styles.removeButton}
                   onPress={() => removeImage(index)}
                 >
                   <Text style={styles.removeButtonText}>✕</Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               )}
 
               {/* Image Number Badge */}
@@ -468,7 +456,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
 
         {/* Add Image Button */}
         {images.filter(uri => uri && uri.trim() !== '').length < maxImages && !disabled && (
-          <TouchableOpacity
+          <AnimatedPressableCard
             style={styles.addButton}
             onPress={showImageOptions}
             disabled={uploading}
@@ -486,7 +474,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
                 )}
               </>
             )}
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         )}
       </ScrollView>
 
@@ -509,49 +497,40 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 16,
-  },
+    marginVertical: 16 },
   label: {
     fontSize: 16,
     fontWeight: '600',
     color: Theme.colors.text.primary,
-    marginBottom: 8,
-  },
+    marginBottom: 8 },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-  },
+    marginBottom: 12 },
   subtitle: {
     fontSize: 14,
-    color: Theme.colors.textSecondary,
-  },
+    color: Theme.colors.textSecondary },
   s3Badge: {
     backgroundColor: Theme.colors.primary,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-  },
+    borderRadius: 12 },
   s3BadgeText: {
     fontSize: 12,
     color: '#fff',
-    fontWeight: '600',
-  },
+    fontWeight: '600' },
   scrollContent: {
     paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
+    paddingHorizontal: 4 },
   imageContainer: {
     position: 'relative',
-    marginRight: 12,
-  },
+    marginRight: 12 },
   image: {
     width: 100,
     height: 100,
     borderRadius: 8,
-    backgroundColor: Theme.colors.border,
-  } as const,
+    backgroundColor: Theme.colors.border } as const,
   progressOverlay: {
     position: 'absolute',
     top: 12,
@@ -561,13 +540,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 8,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   progressText: {
     color: '#fff',
     fontSize: 12,
-    marginTop: 4,
-  },
+    marginTop: 4 },
   removeButton: {
     position: 'absolute',
     top: 8,
@@ -584,13 +561,11 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 8,
     borderWidth: 2,
-    borderColor: '#fff',
-  },
+    borderColor: '#fff' },
   removeButtonText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: 'bold',
-  },
+    fontWeight: 'bold' },
   imageBadge: {
     position: 'absolute',
     bottom: 8,
@@ -607,13 +582,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 6,
     borderWidth: 2,
-    borderColor: '#fff',
-  },
+    borderColor: '#fff' },
   imageBadgeText: {
     color: '#fff',
     fontSize: 10,
-    fontWeight: 'bold',
-  },
+    fontWeight: 'bold' },
   s3Indicator: {
     position: 'absolute',
     top: 8,
@@ -623,11 +596,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
+    borderColor: 'rgba(255, 255, 255, 0.3)' },
   s3IndicatorText: {
-    fontSize: 10,
-  },
+    fontSize: 10 },
   addButton: {
     width: 100,
     height: 100,
@@ -637,43 +608,34 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Theme.colors.background.primary,
-  },
+    backgroundColor: Theme.colors.background.primary },
   addIconContainer: {
-    marginBottom: 4,
-  },
+    marginBottom: 4 },
   addIcon: {
-    fontSize: 24,
-  },
+    fontSize: 24 },
   addButtonText: {
     fontSize: 12,
     color: Theme.colors.textSecondary,
-    textAlign: 'center',
-  },
+    textAlign: 'center' },
   addButtonSubtext: {
     fontSize: 10,
     color: Theme.colors.textSecondary,
     textAlign: 'center',
-    marginTop: 2,
-  },
+    marginTop: 2 },
   helpContainer: {
     marginTop: 16,
     padding: 16,
     backgroundColor: Theme.colors.background.secondary,
     borderRadius: 8,
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   helpText: {
     fontSize: 14,
     color: Theme.colors.textSecondary,
-    textAlign: 'center',
-  },
+    textAlign: 'center' },
   helpSubtext: {
     fontSize: 12,
     color: Theme.colors.textSecondary,
     textAlign: 'center',
-    marginTop: 4,
-  },
-});
+    marginTop: 4 } });
 
 export default ImageUploadS3;

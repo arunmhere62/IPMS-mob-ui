@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Modal,
-  TouchableOpacity,
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -13,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 
 interface ChangePasswordModalProps {
   visible: boolean;
@@ -127,9 +127,9 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   Update your account password
                 </Text>
               </View>
-              <TouchableOpacity onPress={handleClose} disabled={loading}>
+              <AnimatedPressableCard onPress={handleClose} disabled={loading}>
                 <Ionicons name="close" size={24} color={Theme.colors.text.primary} />
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
 
             {/* Form */}
@@ -172,13 +172,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
                   />
-                  <TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
+                  <AnimatedPressableCard onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
                     <Ionicons
                       name={showCurrentPassword ? 'eye-outline' : 'eye-off-outline'}
                       size={20}
                       color={Theme.colors.text.tertiary}
                     />
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 </View>
                 {errors.currentPassword && (
                   <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
@@ -225,13 +225,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                     value={newPassword}
                     onChangeText={setNewPassword}
                   />
-                  <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                  <AnimatedPressableCard onPress={() => setShowNewPassword(!showNewPassword)}>
                     <Ionicons
                       name={showNewPassword ? 'eye-outline' : 'eye-off-outline'}
                       size={20}
                       color={Theme.colors.text.tertiary}
                     />
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 </View>
                 {errors.newPassword && (
                   <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
@@ -278,13 +278,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                   />
-                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <AnimatedPressableCard onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                     <Ionicons
                       name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
                       size={20}
                       color={Theme.colors.text.tertiary}
                     />
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 </View>
                 {errors.confirmPassword && (
                   <Text style={{ color: Theme.colors.danger, fontSize: 12, marginTop: 4 }}>
@@ -305,7 +305,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 backgroundColor: Theme.colors.canvas,
               }}
             >
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={handleClose}
                 disabled={loading}
                 style={{
@@ -319,8 +319,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
                   Cancel
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </AnimatedPressableCard>
+              <AnimatedPressableCard
                 onPress={handleSave}
                 disabled={loading}
                 style={{
@@ -339,7 +339,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                     Change Password
                   </Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </View>
         </View>

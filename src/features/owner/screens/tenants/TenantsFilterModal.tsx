@@ -1,9 +1,10 @@
 import React from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "../../../../theme";
 import { Room } from "../../api/roomsApi";
 import { SlideBottomModal } from "../../../../components/SlideBottomModal";
+import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 
 interface TenantsFilterModalProps {
   visible: boolean;
@@ -97,7 +98,7 @@ export const TenantsFilterModal: React.FC<TenantsFilterModalProps> = ({
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {["ALL", "ACTIVE", "INACTIVE", "CHECKED_OUT"].map((status) => (
-              <TouchableOpacity
+              <AnimatedPressableCard
                 key={status}
                 onPress={() => onStatusChange(status as any)}
                 style={{
@@ -126,7 +127,7 @@ export const TenantsFilterModal: React.FC<TenantsFilterModalProps> = ({
                 >
                   {status}
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             ))}
           </View>
         </View>
@@ -145,7 +146,7 @@ export const TenantsFilterModal: React.FC<TenantsFilterModalProps> = ({
               Filter by Room
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={() => onRoomChange(null)}
                 style={{
                   paddingHorizontal: 16,
@@ -172,9 +173,9 @@ export const TenantsFilterModal: React.FC<TenantsFilterModalProps> = ({
                 >
                   All Rooms
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
               {rooms.map((room: any) => (
-                <TouchableOpacity
+                <AnimatedPressableCard
                   key={room.s_no}
                   onPress={() => onRoomChange(room.s_no)}
                   style={{
@@ -204,7 +205,7 @@ export const TenantsFilterModal: React.FC<TenantsFilterModalProps> = ({
                   >
                     {room.room_no}
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               ))}
             </View>
           </View>
@@ -232,13 +233,11 @@ export const TenantsFilterModal: React.FC<TenantsFilterModalProps> = ({
             Select one payment filter (mutually exclusive)
           </Text>
           <View style={{ gap: 8 }}>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => {
                 if (pendingRentFilter) {
-                  // If already selected, deselect it
                   onPendingRentChange(false);
                 } else {
-                  // Select this one and deselect others
                   onPendingRentChange(true);
                   onPendingAdvanceChange(false);
                   onPartialRentChange(false);
@@ -276,15 +275,13 @@ export const TenantsFilterModal: React.FC<TenantsFilterModalProps> = ({
               >
                 ⚠️ Pending Rent
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => {
                 if (pendingAdvanceFilter) {
-                  // If already selected, deselect it
                   onPendingAdvanceChange(false);
                 } else {
-                  // Select this one and deselect others
                   onPendingAdvanceChange(true);
                   onPendingRentChange(false);
                   onPartialRentChange(false);
@@ -324,15 +321,13 @@ export const TenantsFilterModal: React.FC<TenantsFilterModalProps> = ({
               >
                 💰 No Advance
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => {
                 if (partialRentFilter) {
-                  // If already selected, deselect it
                   onPartialRentChange(false);
                 } else {
-                  // Select this one and deselect others
                   onPartialRentChange(true);
                   onPendingRentChange(false);
                   onPendingAdvanceChange(false);
@@ -370,7 +365,7 @@ export const TenantsFilterModal: React.FC<TenantsFilterModalProps> = ({
               >
                 ⏳ Partial Rent
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
         </View>
       </ScrollView>

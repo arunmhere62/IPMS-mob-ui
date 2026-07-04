@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Animated,
-  Easing,
-} from 'react-native';
+  Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -27,8 +26,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ title, m
       toValue: 0,
       duration: 380,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
+      useNativeDriver: true }).start();
   }, [slideAnim]);
 
   const handleDismiss = () => {
@@ -36,8 +34,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ title, m
       toValue: -120,
       duration: 280,
       easing: Easing.in(Easing.cubic),
-      useNativeDriver: true,
-    }).start(() => setDismissed(true));
+      useNativeDriver: true }).start(() => setDismissed(true));
   };
 
   const handleToggleExpand = () => {
@@ -47,23 +44,20 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ title, m
       toValue,
       duration: 220,
       easing: Easing.inOut(Easing.ease),
-      useNativeDriver: false,
-    }).start();
+      useNativeDriver: false }).start();
   };
 
   if (dismissed) return null;
 
   const messageHeight = expandAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 60],
-  });
+    outputRange: [0, 60] });
 
   return (
     <Animated.View style={[styles.container, { transform: [{ translateY: slideAnim }] }]}>
-      <TouchableOpacity
+      <AnimatedPressableCard
         style={[styles.header, { paddingTop: 10 }]}
         onPress={message ? handleToggleExpand : undefined}
-        activeOpacity={message ? 0.7 : 1}
       >
         <View style={styles.iconBadge}>
           <Ionicons name="megaphone" size={12} color="#F59E0B" />
@@ -75,19 +69,19 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ title, m
 
         <View style={styles.actions}>
           {message ? (
-            <TouchableOpacity onPress={handleToggleExpand} style={styles.actionBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}>
+            <AnimatedPressableCard onPress={handleToggleExpand} style={styles.actionBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}>
               <Ionicons
                 name={expanded ? 'chevron-up' : 'chevron-down'}
                 size={16}
                 color="rgba(255,255,255,0.7)"
               />
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ) : null}
-          <TouchableOpacity onPress={handleDismiss} style={styles.actionBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
+          <AnimatedPressableCard onPress={handleDismiss} style={styles.actionBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
             <Ionicons name="close" size={16} color="rgba(255,255,255,0.7)" />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
-      </TouchableOpacity>
+      </AnimatedPressableCard>
 
       {message ? (
         <Animated.View style={[styles.messageWrapper, { maxHeight: messageHeight, overflow: 'hidden' }]}>
@@ -108,15 +102,13 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
+    shadowRadius: 4 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 5,
     paddingHorizontal: 12,
-    gap: 8,
-  },
+    gap: 8 },
   iconBadge: {
     width: 22,
     height: 22,
@@ -124,30 +116,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245, 158, 11, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
-  },
+    flexShrink: 0 },
   title: {
     flex: 1,
     fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.1,
-  },
+    letterSpacing: 0.1 },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
-  },
+    gap: 2 },
   actionBtn: {
-    padding: 3,
-  },
+    padding: 3 },
   messageWrapper: {
     paddingHorizontal: 42,
-    paddingBottom: 6,
-  },
+    paddingBottom: 6 },
   message: {
     fontSize: 12,
     color: '#BFDBFE',
-    lineHeight: 17,
-  },
-});
+    lineHeight: 17 } });

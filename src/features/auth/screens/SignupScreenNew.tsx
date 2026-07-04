@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   Alert,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
-  Image,
-} from "react-native";
+  Image } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Theme } from "../../../theme";
 import { CountryPhoneSelector } from "../../../components/CountryPhoneSelector";
@@ -24,14 +23,12 @@ import { useGetCountriesQuery } from "../../owner/api/locationApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 import {
   useSendSignupOtpMutation,
-  useSignupMutation,
-} from "../api/authApi";
+  useSignupMutation } from "../api/authApi";
 import { Ionicons } from "@expo/vector-icons";
 import {
   type RequiredLegalDocument,
   useAcceptLegalDocumentMutation,
-  useLazyGetRequiredLegalDocumentsStatusQuery,
-} from "../../owner/api/legalDocumentsApi";
+  useLazyGetRequiredLegalDocumentsStatusQuery } from "../../owner/api/legalDocumentsApi";
 
 interface FormData {
   organizationName: string;
@@ -68,8 +65,7 @@ export const SignupScreenNew: React.FC = () => {
     countryCode: "IN",
     rentCycleType: "CALENDAR",
     rentCycleStart: 1,
-    rentCycleEnd: 30,
-  });
+    rentCycleEnd: 30 });
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [selectedCountry, setSelectedCountry] = useState({
@@ -77,8 +73,7 @@ export const SignupScreenNew: React.FC = () => {
     name: "India",
     flag: "🇮🇳",
     phoneCode: "+91",
-    phoneLength: 10,
-  });
+    phoneLength: 10 });
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [fullPhone, setFullPhone] = useState("");
 
@@ -132,8 +127,7 @@ export const SignupScreenNew: React.FC = () => {
     (async () => {
       try {
         const status = await getRequiredLegalStatus({
-          context: "SIGNUP",
-        }).unwrap();
+          context: "SIGNUP" }).unwrap();
         const pending = (status?.pending ?? []) as RequiredLegalDocument[];
         setRequiredLegalDocs(Array.isArray(pending) ? pending : []);
       } catch {
@@ -224,8 +218,7 @@ export const SignupScreenNew: React.FC = () => {
     }
     (navigation as any).navigate("LegalWebView", {
       title: fallbackTitle,
-      url: addEmbedParam(url),
-    });
+      url: addEmbedParam(url) });
   };
 
   const handleSendOtp = async () => {
@@ -260,8 +253,7 @@ export const SignupScreenNew: React.FC = () => {
         pgName,
         rentCycleType: formData.rentCycleType,
         rentCycleStart: formData.rentCycleStart,
-        rentCycleEnd: formData.rentCycleEnd,
-      };
+        rentCycleEnd: formData.rentCycleEnd };
 
       if (formData.phone.trim()) {
         signupData.phone = selectedCountry.phoneCode + formData.phone.trim();
@@ -269,8 +261,7 @@ export const SignupScreenNew: React.FC = () => {
       console.log("📤 Sending signup data:", signupData);
 
       const status = await getRequiredLegalStatus({
-        context: "SIGNUP",
-      }).unwrap();
+        context: "SIGNUP" }).unwrap();
       const docsToAccept = ((status as any)?.required ??
         status?.pending ??
         []) as RequiredLegalDocument[];
@@ -291,16 +282,14 @@ export const SignupScreenNew: React.FC = () => {
           await acceptLegalDocument({
             s_no,
             acceptance_context: "SIGNUP",
-            user_id: userId,
-          }).unwrap();
+            user_id: userId }).unwrap();
         }
       }
 
       showSuccessAlert(signupResult, {
         onOk: () => {
           (navigation as any).navigate("Login");
-        },
-      });
+        } });
     } catch (error: any) {
       showErrorAlert(error, "Signup failed");
     } finally {
@@ -329,8 +318,7 @@ export const SignupScreenNew: React.FC = () => {
               fontSize: 12,
               color: "#EF4444",
               marginBottom: 12,
-              marginLeft: 4,
-            }}
+              marginLeft: 4 }}
           >
             {phoneError}
           </Text>
@@ -350,8 +338,7 @@ export const SignupScreenNew: React.FC = () => {
             fontSize: Theme.typography.fontSize.sm,
             color: Theme.colors.text.secondary,
             textAlign: "center",
-            marginBottom: Theme.spacing.md,
-          }}
+            marginBottom: Theme.spacing.md }}
         >
           You will receive a 4-digit OTP on your phone number
         </Text>
@@ -380,8 +367,7 @@ export const SignupScreenNew: React.FC = () => {
             borderColor: "#BFDBFE",
             marginBottom: 16,
             flexDirection: "row",
-            alignItems: "center",
-          }}
+            alignItems: "center" }}
         >
           <View
             style={{
@@ -391,8 +377,7 @@ export const SignupScreenNew: React.FC = () => {
               backgroundColor: "#3B82F6",
               alignItems: "center",
               justifyContent: "center",
-              marginRight: 10,
-            }}
+              marginRight: 10 }}
           >
             <Ionicons name="sparkles" size={18} color="#ffffff" />
           </View>
@@ -412,8 +397,7 @@ export const SignupScreenNew: React.FC = () => {
               fontSize: 13,
               fontWeight: "600",
               color: Theme.colors.text.primary,
-              marginBottom: 6,
-            }}
+              marginBottom: 6 }}
           >
             1. PG Name <Text style={{ color: "#EF4444" }}>*</Text>
           </Text>
@@ -421,8 +405,7 @@ export const SignupScreenNew: React.FC = () => {
             style={{
               fontSize: 11,
               color: Theme.colors.text.secondary,
-              marginBottom: 8,
-            }}
+              marginBottom: 8 }}
           >
             This will also be used as your organization name for now. You can
             rename it later.
@@ -435,8 +418,7 @@ export const SignupScreenNew: React.FC = () => {
               borderRadius: 8,
               borderWidth: 1,
               borderColor: "#CBD5E1",
-              paddingHorizontal: 12,
-            }}
+              paddingHorizontal: 12 }}
           >
             <View
               style={{
@@ -446,8 +428,7 @@ export const SignupScreenNew: React.FC = () => {
                 backgroundColor: "#F1F5F9",
                 alignItems: "center",
                 justifyContent: "center",
-                marginRight: 10,
-              }}
+                marginRight: 10 }}
             >
               <Ionicons
                 name="business"
@@ -460,8 +441,7 @@ export const SignupScreenNew: React.FC = () => {
                 flex: 1,
                 paddingVertical: 12,
                 fontSize: 14,
-                color: Theme.colors.text.primary,
-              }}
+                color: Theme.colors.text.primary }}
               placeholder="e.g., Green Valley PG"
               placeholderTextColor="#9CA3AF"
               value={formData.pgName}
@@ -476,8 +456,7 @@ export const SignupScreenNew: React.FC = () => {
               fontSize: 13,
               fontWeight: "600",
               color: Theme.colors.text.primary,
-              marginBottom: 6,
-            }}
+              marginBottom: 6 }}
           >
             2. Your Full Name <Text style={{ color: "#EF4444" }}>*</Text>
           </Text>
@@ -489,8 +468,7 @@ export const SignupScreenNew: React.FC = () => {
               borderRadius: 8,
               borderWidth: 1,
               borderColor: "#CBD5E1",
-              paddingHorizontal: 12,
-            }}
+              paddingHorizontal: 12 }}
           >
             <View
               style={{
@@ -500,8 +478,7 @@ export const SignupScreenNew: React.FC = () => {
                 backgroundColor: "#F1F5F9",
                 alignItems: "center",
                 justifyContent: "center",
-                marginRight: 10,
-              }}
+                marginRight: 10 }}
             >
               <Ionicons
                 name="person"
@@ -514,8 +491,7 @@ export const SignupScreenNew: React.FC = () => {
                 flex: 1,
                 paddingVertical: 12,
                 fontSize: 14,
-                color: Theme.colors.text.primary,
-              }}
+                color: Theme.colors.text.primary }}
               placeholder="e.g., John Doe"
               placeholderTextColor="#9CA3AF"
               value={formData.name}
@@ -530,8 +506,7 @@ export const SignupScreenNew: React.FC = () => {
               fontSize: 13,
               fontWeight: "600",
               color: Theme.colors.text.primary,
-              marginBottom: 6,
-            }}
+              marginBottom: 6 }}
           >
             <Ionicons
               name="calendar"
@@ -544,15 +519,13 @@ export const SignupScreenNew: React.FC = () => {
             style={{
               fontSize: 11,
               color: Theme.colors.text.secondary,
-              marginBottom: 10,
-            }}
+              marginBottom: 10 }}
           >
             Rent cycle = from which date to which date you count “1 month rent”.
             Pick the style your PG follows.
           </Text>
 
-          <TouchableOpacity
-            activeOpacity={0.7}
+          <AnimatedPressableCard
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{
               backgroundColor:
@@ -564,23 +537,20 @@ export const SignupScreenNew: React.FC = () => {
               borderColor:
                 formData.rentCycleType === "CALENDAR"
                   ? Theme.colors.primary
-                  : "#CBD5E1",
-            }}
+                  : "#CBD5E1" }}
             onPress={() => {
               setFormData((prev) => ({
                 ...prev,
                 rentCycleType: "CALENDAR",
                 rentCycleStart: 1,
-                rentCycleEnd: 30,
-              }));
+                rentCycleEnd: 30 }));
             }}
           >
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "flex-start",
-                gap: 10,
-              }}
+                gap: 10 }}
             >
               <View
                 style={{
@@ -595,8 +565,7 @@ export const SignupScreenNew: React.FC = () => {
                   alignItems: "center",
                   justifyContent: "center",
                   marginTop: 2,
-                  backgroundColor: "transparent",
-                }}
+                  backgroundColor: "transparent" }}
               >
                 {formData.rentCycleType === "CALENDAR" ? (
                   <View
@@ -604,8 +573,7 @@ export const SignupScreenNew: React.FC = () => {
                       width: 8,
                       height: 8,
                       borderRadius: 4,
-                      backgroundColor: Theme.colors.primary,
-                    }}
+                      backgroundColor: Theme.colors.primary }}
                   />
                 ) : null}
               </View>
@@ -616,8 +584,7 @@ export const SignupScreenNew: React.FC = () => {
                     fontSize: 14,
                     fontWeight: "600",
                     color: Theme.colors.text.primary,
-                    marginBottom: 4,
-                  }}
+                    marginBottom: 4 }}
                 >
                   Calendar Month
                 </Text>
@@ -630,17 +597,15 @@ export const SignupScreenNew: React.FC = () => {
                   style={{
                     fontSize: 11,
                     color: Theme.colors.text.secondary,
-                    marginTop: 6,
-                  }}
+                    marginTop: 6 }}
                 >
                   Choose this if you collect rent for “full calendar month”.
                 </Text>
               </View>
             </View>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
-          <TouchableOpacity
-            activeOpacity={0.7}
+          <AnimatedPressableCard
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{
               backgroundColor:
@@ -651,23 +616,20 @@ export const SignupScreenNew: React.FC = () => {
               borderColor:
                 formData.rentCycleType === "MIDMONTH"
                   ? Theme.colors.primary
-                  : "#CBD5E1",
-            }}
+                  : "#CBD5E1" }}
             onPress={() => {
               setFormData((prev) => ({
                 ...prev,
                 rentCycleType: "MIDMONTH",
                 rentCycleStart: 1,
-                rentCycleEnd: 30,
-              }));
+                rentCycleEnd: 30 }));
             }}
           >
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "flex-start",
-                gap: 10,
-              }}
+                gap: 10 }}
             >
               <View
                 style={{
@@ -682,8 +644,7 @@ export const SignupScreenNew: React.FC = () => {
                   alignItems: "center",
                   justifyContent: "center",
                   marginTop: 2,
-                  backgroundColor: "transparent",
-                }}
+                  backgroundColor: "transparent" }}
               >
                 {formData.rentCycleType === "MIDMONTH" ? (
                   <View
@@ -691,8 +652,7 @@ export const SignupScreenNew: React.FC = () => {
                       width: 8,
                       height: 8,
                       borderRadius: 4,
-                      backgroundColor: Theme.colors.primary,
-                    }}
+                      backgroundColor: Theme.colors.primary }}
                   />
                 ) : null}
               </View>
@@ -703,8 +663,7 @@ export const SignupScreenNew: React.FC = () => {
                     fontSize: 14,
                     fontWeight: "600",
                     color: Theme.colors.text.primary,
-                    marginBottom: 4,
-                  }}
+                    marginBottom: 4 }}
                 >
                   Mid‑Month / Check‑in based
                 </Text>
@@ -717,8 +676,7 @@ export const SignupScreenNew: React.FC = () => {
                   style={{
                     fontSize: 11,
                     color: Theme.colors.text.secondary,
-                    marginTop: 6,
-                  }}
+                    marginTop: 6 }}
                 >
                   Example: If tenant checks in on 10th: Rent cycle = 10th → 9th
                   next month
@@ -727,8 +685,7 @@ export const SignupScreenNew: React.FC = () => {
                   style={{
                     fontSize: 11,
                     color: Theme.colors.text.secondary,
-                    marginTop: 6,
-                  }}
+                    marginTop: 6 }}
                 >
                   Another example: check‑in on 23rd means cycle is 23rd → 22nd.
                 </Text>
@@ -736,19 +693,17 @@ export const SignupScreenNew: React.FC = () => {
                   style={{
                     fontSize: 11,
                     color: Theme.colors.text.secondary,
-                    marginTop: 6,
-                  }}
+                    marginTop: 6 }}
                 >
                   Choose this if you charge rent based on the day they join.
                 </Text>
               </View>
             </View>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
 
         <View style={{ marginTop: 14 }}>
-          <TouchableOpacity
-            activeOpacity={0.8}
+          <AnimatedPressableCard
             style={{ flexDirection: "row", alignItems: "flex-start" }}
             onPress={() => setHasAgreedToLegal((v) => !v)}
           >
@@ -766,8 +721,7 @@ export const SignupScreenNew: React.FC = () => {
                   : "white",
                 alignItems: "center",
                 justifyContent: "center",
-                marginTop: 2,
-              }}
+                marginTop: 2 }}
             >
               {hasAgreedToLegal ? (
                 <Text
@@ -784,8 +738,7 @@ export const SignupScreenNew: React.FC = () => {
                 marginLeft: 10,
                 fontSize: 12,
                 color: Theme.colors.text.secondary,
-                lineHeight: 18,
-              }}
+                lineHeight: 18 }}
             >
               I agree to the{" "}
               <Text
@@ -810,7 +763,7 @@ export const SignupScreenNew: React.FC = () => {
               </Text>
               .
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
 
         <View style={{ marginTop: 24 }}>
@@ -844,8 +797,7 @@ export const SignupScreenNew: React.FC = () => {
           flex: 1,
           backgroundColor: phoneVerified
             ? CONTENT_COLOR
-            : Theme.colors.background.primary,
-        }}
+            : Theme.colors.background.primary }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -854,8 +806,7 @@ export const SignupScreenNew: React.FC = () => {
             contentContainerStyle={{
               flexGrow: 1,
               justifyContent: phoneVerified ? "flex-start" : "center",
-              padding: Theme.spacing.lg,
-            }}
+              padding: Theme.spacing.lg }}
           >
             {!phoneVerified ? (
               <View
@@ -863,8 +814,7 @@ export const SignupScreenNew: React.FC = () => {
                   alignItems: "center",
                   marginBottom: keyboardVisible
                     ? Theme.spacing.md
-                    : Theme.spacing.xl,
-                }}
+                    : Theme.spacing.xl }}
               >
                 <Image
                   source={require("../../../../assets/splash-logo.png")}
@@ -877,8 +827,7 @@ export const SignupScreenNew: React.FC = () => {
                     fontSize: 22,
                     fontWeight: "800",
                     color: Theme.colors.text.primary,
-                    textAlign: "center",
-                  }}
+                    textAlign: "center" }}
                 >
                   Sign up easily
                 </Text>
@@ -888,8 +837,7 @@ export const SignupScreenNew: React.FC = () => {
                     fontSize: 13,
                     color: Theme.colors.text.secondary,
                     textAlign: "center",
-                    lineHeight: 18,
-                  }}
+                    lineHeight: 18 }}
                 >
                   Get started in minutes and manage your PG from one place.
                 </Text>

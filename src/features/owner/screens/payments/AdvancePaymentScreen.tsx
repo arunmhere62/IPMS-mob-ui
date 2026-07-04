@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, FlatList, RefreshControl, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '@/features/owner/store';
 import { Card } from '../../../../components/Card';
 import { ErrorBanner } from '../../../../components/ErrorBanner';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { Theme } from '../../../../theme';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
@@ -432,7 +433,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
 
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
         {item.tenants && !item.tenant_unavailable_reason ? (
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => navigation.navigate('TenantDetails', { tenantId: item.tenant_id })}
             style={{
               flex: 1,
@@ -451,7 +452,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
             <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.primary, marginLeft: 6 }}>
               View Details
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         ) : (
           <View
             style={{
@@ -552,7 +553,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
             <View>
               <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     onPress={() => setShowFilters(true)}
                     style={{
                       flexDirection: 'row',
@@ -569,7 +570,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                     <Text style={{ marginLeft: 8, fontSize: 13, color: Theme.colors.text.primary, fontWeight: '600' }}>
                       Filters
                     </Text>
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
 
                   {getFilterCount() > 0 ? (
                     <View style={{ alignItems: 'flex-end' }}>
@@ -656,7 +657,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                   Quick Filters
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     onPress={() => applyQuickFilter('LAST_WEEK')}
                     style={{
                       flex: 1,
@@ -678,8 +679,8 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                     >
                       📅 Last 1 Week
                     </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </AnimatedPressableCard>
+                  <AnimatedPressableCard
                     onPress={() => applyQuickFilter('LAST_MONTH')}
                     style={{
                       flex: 1,
@@ -701,7 +702,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                     >
                       📅 Last 1 Month
                     </Text>
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 </View>
               </View>
 
@@ -711,7 +712,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {['ALL', 'PAID', 'PARTIAL', 'PENDING', 'FAILED'].map((status) => (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       key={status}
                       onPress={() => setStatusFilter(status as any)}
                       style={{
@@ -732,7 +733,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                       >
                         {status}
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   ))}
                 </View>
               </View>
@@ -743,7 +744,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       onPress={() => setSelectedMonth(null)}
                       style={{
                         paddingHorizontal: 12,
@@ -757,9 +758,9 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                       <Text style={{ fontSize: 12, fontWeight: '600', color: selectedMonth === null ? '#fff' : Theme.colors.text.secondary }}>
                         All
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                     {MONTHS.map((month) => (
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         key={month}
                         onPress={() => setSelectedMonth(month)}
                         style={{
@@ -774,12 +775,12 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                         <Text style={{ fontSize: 12, fontWeight: '600', color: selectedMonth === month ? '#fff' : Theme.colors.text.secondary }}>
                           {month.substring(0, 3)}
                         </Text>
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
                     ))}
                   </View>
                 </ScrollView>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     onPress={() => setSelectedYear(null)}
                     style={{
                       paddingHorizontal: 16,
@@ -793,9 +794,9 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                     <Text style={{ fontSize: 13, fontWeight: '600', color: selectedYear === null ? '#fff' : Theme.colors.text.secondary }}>
                       All
                     </Text>
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                   {years.map((year) => (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       key={year}
                       onPress={() => setSelectedYear(year)}
                       style={{
@@ -810,7 +811,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
                       <Text style={{ fontSize: 13, fontWeight: '600', color: selectedYear === year ? '#fff' : Theme.colors.text.secondary }}>
                         {year}
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   ))}
                 </View>
               </View>

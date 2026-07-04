@@ -1,13 +1,12 @@
 import React from 'react';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   Modal,
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+  SafeAreaView } from 'react-native';
 import { networkLogger, type NetworkLog } from '../utils/networkLogger';
 
 interface SimpleNetworkLogsViewerProps {
@@ -17,8 +16,7 @@ interface SimpleNetworkLogsViewerProps {
 
 export const SimpleNetworkLogsViewer: React.FC<SimpleNetworkLogsViewerProps> = ({
   visible,
-  onClose,
-}) => {
+  onClose }) => {
   const logs: NetworkLog[] = networkLogger.getLogs();
 
   return (
@@ -31,9 +29,9 @@ export const SimpleNetworkLogsViewer: React.FC<SimpleNetworkLogsViewerProps> = (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Network Logs</Text>
-          <TouchableOpacity onPress={onClose}>
+          <AnimatedPressableCard onPress={onClose}>
             <Text style={styles.closeButton}>✕</Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
 
         {logs.length === 0 ? (
@@ -144,8 +142,7 @@ const getStatusColor = (status?: number): string => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1F2937',
-  },
+    backgroundColor: '#1F2937' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -154,100 +151,80 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#374151',
-    backgroundColor: '#111827',
-  },
+    backgroundColor: '#111827' },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
-  },
+    color: '#fff' },
   closeButton: {
     fontSize: 24,
     color: '#fff',
-    fontWeight: 'bold',
-  },
+    fontWeight: 'bold' },
   logsList: {
     flex: 1,
-    padding: 12,
-  },
+    padding: 12 },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   emptyText: {
     fontSize: 16,
-    color: '#9CA3AF',
-  },
+    color: '#9CA3AF' },
   statsContainer: {
     backgroundColor: '#374151',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 12,
-  },
+    marginBottom: 12 },
   statsText: {
     fontSize: 12,
     color: '#D1D5DB',
-    marginBottom: 4,
-  },
+    marginBottom: 4 },
   logItem: {
     backgroundColor: '#374151',
     padding: 12,
     marginBottom: 8,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
-  },
+    borderLeftColor: '#3B82F6' },
   logHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    gap: 8,
-  },
+    gap: 8 },
   method: {
     fontSize: 12,
     fontWeight: 'bold',
-    minWidth: 40,
-  },
+    minWidth: 40 },
   status: {
     fontSize: 12,
     fontWeight: '600',
-    minWidth: 50,
-  },
+    minWidth: 50 },
   duration: {
     fontSize: 11,
-    color: '#9CA3AF',
-  },
+    color: '#9CA3AF' },
   url: {
     fontSize: 12,
     color: '#D1D5DB',
-    marginBottom: 4,
-  },
+    marginBottom: 4 },
   timestamp: {
     fontSize: 10,
     color: '#9CA3AF',
-    marginBottom: 4,
-  },
+    marginBottom: 4 },
   error: {
     fontSize: 11,
     color: '#FCA5A5',
-    marginTop: 4,
-  },
+    marginTop: 4 },
   dataSection: {
     marginTop: 8,
     backgroundColor: '#1F2937',
     padding: 8,
-    borderRadius: 4,
-  },
+    borderRadius: 4 },
   dataLabel: {
     fontSize: 10,
     color: '#9CA3AF',
     fontWeight: '600',
-    marginBottom: 4,
-  },
+    marginBottom: 4 },
   dataText: {
     fontSize: 10,
     color: '#D1D5DB',
-    fontFamily: 'monospace',
-  },
-});
+    fontFamily: 'monospace' } });

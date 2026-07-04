@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Theme } from '../../../../theme';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { Card } from '../../../../components/Card';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
@@ -168,7 +169,7 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
             </Card>
 
            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 12 }}>
-             <TouchableOpacity
+             <AnimatedPressableCard
               disabled={saving || removing || Object.keys(pending).length === 0}
               onPress={onSaveBulk}
               style={{
@@ -183,9 +184,9 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
               <Text style={{ color: '#fff', fontWeight: '700' }}>
                 {saving ? 'Saving...' : `Save Changes (${Object.keys(pending).length})`}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => {
                 refetchCatalog();
                 refetchOverrides();
@@ -200,7 +201,7 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
               }}
             >
               <Text style={{ color: '#fff', fontWeight: '700' }}>Refresh</Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
            </View>
 
             {groups.map(([groupName, perms]) => (
@@ -325,7 +326,7 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
                         {EFFECTS.map((e) => {
                           const selected = current === e;
                           return (
-                            <TouchableOpacity
+                            <AnimatedPressableCard
                               key={e}
                               disabled={saving || removing}
                               onPress={() => onSet(p, e)}
@@ -339,11 +340,11 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
                               <Text style={{ color: selected ? '#fff' : Theme.colors.text.primary, fontWeight: '700', fontSize: 12 }}>
                                 {e}
                               </Text>
-                            </TouchableOpacity>
+                            </AnimatedPressableCard>
                           );
                         })}
 
-                        <TouchableOpacity
+                        <AnimatedPressableCard
                           disabled={saving || removing || !current}
                           onPress={() => onClear(p)}
                           style={{
@@ -357,7 +358,7 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
                           <Text style={{ color: current ? '#991B1B' : Theme.colors.text.tertiary, fontWeight: '700', fontSize: 12 }}>
                             Clear
                           </Text>
-                        </TouchableOpacity>
+                        </AnimatedPressableCard>
                       </View>
                     </View>
                   );

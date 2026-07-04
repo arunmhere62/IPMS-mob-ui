@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
   ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+  Alert } from 'react-native';
 import { Theme } from '@/theme';
 import { User } from '@/types';
 import { SearchableDropdown } from '@/components/SearchableDropdown';
@@ -37,8 +36,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   visible,
   user,
   onClose,
-  onProfileUpdated,
-}) => {
+  onProfileUpdated }) => {
   const [updateUserProfileMutation] = useUpdateUserProfileMutation();
   const [sendSignupOtp] = useSendSignupOtpMutation();
   const [verifySignupOtp] = useVerifySignupOtpMutation();
@@ -46,10 +44,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const {
     data: profileResponse,
     refetch: refetchProfile,
-    isFetching: isProfileFetching,
-  } = useGetUserProfileQuery(user?.s_no as number, {
-    skip: !user?.s_no || !visible,
-  });
+    isFetching: isProfileFetching } = useGetUserProfileQuery(user?.s_no as number, {
+    skip: !user?.s_no || !visible });
 
   const profileUser: User | null =
     ((profileResponse as any)?.data?.data as User) ||
@@ -223,8 +219,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         gender: gender || undefined,
         state_id: stateId,
         city_id: cityId,
-        profile_images: profileImages.length > 0 ? profileImages[0] : null,
-      };
+        profile_images: profileImages.length > 0 ? profileImages[0] : null };
       
       console.log('=== FRONTEND DEBUG ===');
       console.log('Sending payload to backend:', payload);
@@ -324,8 +319,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               fontSize: 14,
               fontWeight: '500',
               color: Theme.colors.text.primary,
-              marginBottom: 8,
-            }}
+              marginBottom: 8 }}
           >
             Phone Number
           </Text>
@@ -345,7 +339,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   </Text>
                 </View>
               ) : (
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={handleSendPhoneOtp}
                   disabled={otpLoading || loading}
                   style={{
@@ -354,13 +348,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     paddingVertical: 8,
                     borderRadius: 8,
                     backgroundColor: Theme.colors.primary,
-                    opacity: otpLoading || loading ? 0.6 : 1,
-                  }}
+                    opacity: otpLoading || loading ? 0.6 : 1 }}
                 >
                   <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>
                     {otpLoading ? 'Sending...' : 'Verify New Number'}
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               )}
             </View>
           ) : null}
@@ -402,8 +395,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               id: state.s_no,
               label: state.state_name || state.name,
               value: state.s_no,
-              isoCode: state.iso_code,
-            }))}
+              isoCode: state.iso_code }))}
             selectedValue={stateId}
             onSelect={(item) => setStateId(item.value)}
             placeholder="Select state"
@@ -419,8 +411,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             items={citiesList.map((city) => ({
               id: city.s_no,
               label: city.city_name || city.name,
-              value: city.s_no,
-            }))}
+              value: city.s_no }))}
             selectedValue={cityId}
             onSelect={(item) => setCityId(item.value)}
             placeholder="Select city"
@@ -437,8 +428,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               fontSize: 14,
               fontWeight: '500',
               color: Theme.colors.text.primary,
-              marginBottom: 8,
-            }}
+              marginBottom: 8 }}
           >
             Profile Image
           </Text>

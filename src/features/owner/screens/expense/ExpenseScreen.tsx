@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
   Alert,
@@ -27,6 +26,7 @@ import { AddEditExpenseModal } from "./AddEditExpenseModal";
 import { ActionButtons } from "../../../../components/ActionButtons";
 import { SlideBottomModal } from "../../../../components/SlideBottomModal";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
+import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 import { RootState } from "../../store";
@@ -457,7 +457,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
               alignItems: "center",
             }}
           >
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={openFilters}
               style={{
                 flexDirection: "row",
@@ -482,15 +482,19 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                   color: Theme.colors.text.primary,
                   fontWeight: "600",
                 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 Filters
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
             {appliedMonth || appliedYear ? (
               <View style={{ alignItems: "flex-end" }}>
                 <Text
                   style={{ fontSize: 12, color: Theme.colors.text.secondary }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   {appliedMonth
                     ? getSelectedMonthLabel(appliedMonth)
@@ -499,7 +503,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 </Text>
               </View>
             ) : (
-              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }} numberOfLines={1} adjustsFontSizeToFit>
                 No filters
               </Text>
             )}
@@ -532,6 +536,8 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 color: "#fff",
                 textAlign: "center",
               }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {visibleItemsCount} of {pagination?.total || expenses.length}
             </Text>
@@ -543,6 +549,8 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 textAlign: "center",
                 marginTop: 2,
               }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {(pagination?.total || expenses.length) - visibleItemsCount}{" "}
               remaining
@@ -610,11 +618,15 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                       color: Theme.colors.text.primary,
                       marginBottom: 2,
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     {expense.expense_type}
                   </Text>
                   <Text
                     style={{ fontSize: 12, color: Theme.colors.text.secondary }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     Paid to: {expense.paid_to}
                   </Text>
@@ -648,6 +660,8 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                     color: Theme.colors.text.secondary,
                     marginLeft: 6,
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   {expense.payment_method}
                 </Text>
@@ -657,6 +671,8 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                     color: Theme.colors.text.tertiary,
                     marginLeft: 10,
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   • {formatDate(expense.paid_date)}
                 </Text>
@@ -669,6 +685,8 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                     color: Theme.colors.text.tertiary,
                     fontStyle: "italic",
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   {expense.remarks}
                 </Text>
@@ -700,6 +718,8 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                     fontSize: 12,
                     color: Theme.colors.text.secondary,
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   Loading more...
                 </Text>
@@ -717,12 +737,12 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
         />
 
         {/* Floating Add Button */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={handleAddExpense}
           disabled={!canCreateExpense}
           style={{
             position: "absolute",
-            bottom: 20,
+            bottom: 80,
             right: 20,
             width: 60,
             height: 60,
@@ -739,7 +759,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
           }}
         >
           <Ionicons name="add" size={32} color="#fff" />
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
 
       {/* Add Modal */}
@@ -782,7 +802,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
             marginBottom: 16,
           }}
         >
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => setDraftMonth(null)}
             style={{
               paddingHorizontal: 12,
@@ -798,13 +818,15 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 fontWeight: "700",
                 color: draftMonth === null ? "#fff" : Theme.colors.text.primary,
               }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               All
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
           {MONTHS.map((m) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={m.value}
               onPress={() => setDraftMonth(m.value)}
               style={{
@@ -822,10 +844,12 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                   color:
                     draftMonth === m.value ? "#fff" : Theme.colors.text.primary,
                 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 {m.label}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </View>
 
@@ -840,7 +864,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
           Year
         </Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => setDraftYear(null)}
             style={{
               paddingHorizontal: 12,
@@ -856,13 +880,15 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 fontWeight: "700",
                 color: draftYear === null ? "#fff" : Theme.colors.text.primary,
               }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               All
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
           {years.map((y: number) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={y}
               onPress={() => setDraftYear(y)}
               style={{
@@ -879,10 +905,12 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                   fontWeight: "700",
                   color: draftYear === y ? "#fff" : Theme.colors.text.primary,
                 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 {y}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </View>
       </SlideBottomModal>

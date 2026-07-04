@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   RefreshControl,
   Platform,
   StatusBar,
-  ActivityIndicator,
-} from 'react-native';
+  ActivityIndicator } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,15 +45,13 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
   // Profile query
   const { data: profileData, isLoading: profileLoading, error, refetch: refetchProfile } = useGetTenantProfileQuery(undefined, {
     skip: !accessToken,
-    refetchOnMountOrArgChange: true,
-  });
+    refetchOnMountOrArgChange: true });
   const raw = profileData?.data;
 
   // Ticket stats query
   const { data: ticketStatsData, refetch: refetchTicketStats } = useGetTenantTicketStatsQuery(undefined, {
     skip: !accessToken,
-    refetchOnMountOrArgChange: true,
-  });
+    refetchOnMountOrArgChange: true });
   const ticketStats = ticketStatsData?.data;
 
   // Tickets query (only when tab active)
@@ -74,16 +71,14 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
           phone: raw.phone_no,
           email: raw.email,
           status: raw.status,
-          check_in_date: raw.check_in_date,
-        },
+          check_in_date: raw.check_in_date },
         pg: raw.pg_locations ? {
           pg_id: raw.pg_locations.s_no,
           location_name: raw.pg_locations.location_name,
           address: raw.pg_locations.address,
           city: raw.pg_locations.city?.name,
           state: raw.pg_locations.state?.name,
-          rent_cycle_type: raw.pg_locations.rent_cycle_type,
-        } : null,
+          rent_cycle_type: raw.pg_locations.rent_cycle_type } : null,
         room_no: raw.rooms?.room_no,
         bed_no: raw.beds?.bed_no,
         bed_price: raw.beds?.bed_price,
@@ -91,8 +86,7 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
         rent_due_amount: raw.rent_due_amount,
         pending_months: raw.pending_months,
         rentCycles: raw.tenant_rent_cycles,
-        recentPayments: raw.rent_payments,
-      }));
+        recentPayments: raw.rent_payments }));
     }
   }, [raw, dispatch]);
 
@@ -162,9 +156,9 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
             <Text style={styles.headerTitle}>{activeTab === 'home' ? `Hello, ${raw?.name?.split(' ')[0] ?? tenant?.name ?? 'Tenant'}` : tenantTabs.find(t => t.name === activeTab)?.label ?? 'Tenant'}</Text>
             {activeTab === 'home' && <Text style={styles.headerSub}>Welcome to your dashboard</Text>}
           </View>
-          <TouchableOpacity style={styles.headerAvatar}>
+          <AnimatedPressableCard style={styles.headerAvatar}>
             <Text style={styles.headerAvatarText}>{(raw?.name?.[0] ?? 'T').toUpperCase()}</Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
       </LinearGradient>
 
@@ -200,5 +194,4 @@ const styles = StyleSheet.create({
 
   // Error
   errorBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef2f2', borderRadius: 12, padding: 12, marginBottom: 12, gap: 8, borderWidth: 1, borderColor: '#fecaca' },
-  errorText: { fontSize: 13, color: '#dc2626', flex: 1, fontWeight: '500' },
-});
+  errorText: { fontSize: 13, color: '#dc2626', flex: 1, fontWeight: '500' } });

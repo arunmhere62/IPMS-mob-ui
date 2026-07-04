@@ -3,47 +3,63 @@ import {
   Animated, 
   TouchableWithoutFeedback, 
   ViewStyle, 
-  StyleProp 
+  StyleProp, 
+  Insets,
 } from 'react-native';
+import type { AccessibilityRole } from 'react-native';
 
 interface AnimatedPressableCardProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onPress?: () => void;
+  onPressIn?: () => void;
+  onPressOut?: () => void;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
   scaleValue?: number; // How much to scale down (default: 0.95)
   duration?: number; // Animation duration (default: 150ms)
+  hitSlop?: Insets | number;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: AccessibilityRole;
 }
 
 export const AnimatedPressableCard: React.FC<AnimatedPressableCardProps> = ({
   children,
   onPress,
+  onPressIn,
+  onPressOut,
   style,
   disabled = false,
   scaleValue = 0.95,
   duration = 150,
+  hitSlop,
+  accessibilityLabel,
+  accessibilityHint,
+  accessibilityRole = onPress ? "button" : "none",
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
     if (disabled) return;
-    
+
     Animated.timing(scaleAnim, {
       toValue: scaleValue,
       duration: duration,
       useNativeDriver: true,
     }).start();
+    onPressIn?.();
   };
 
   const handlePressOut = () => {
     if (disabled) return;
-    
+
     Animated.spring(scaleAnim, {
       toValue: 1,
       tension: 300,
       friction: 10,
       useNativeDriver: true,
     }).start();
+    onPressOut?.();
   };
 
   const handlePress = () => {
@@ -57,6 +73,10 @@ export const AnimatedPressableCard: React.FC<AnimatedPressableCardProps> = ({
       onPressOut={handlePressOut}
       onPress={handlePress}
       disabled={disabled}
+      hitSlop={hitSlop}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole={accessibilityRole}
     >
       <Animated.View
         style={[

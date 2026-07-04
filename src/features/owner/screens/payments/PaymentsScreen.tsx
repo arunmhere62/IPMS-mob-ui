@@ -1,8 +1,9 @@
 import React from 'react'
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { ScreenLayout } from '../../../../components/ScreenLayout'
 import { ScreenHeader } from '../../../../components/ScreenHeader'
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard'
 import { Theme } from '../../../../theme'
 
 interface PaymentsScreenProps {
@@ -15,20 +16,17 @@ export const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ navigation }) =>
       title: 'Rent Payments',
       subtitle: 'Track monthly rent payments and statuses',
       icon: 'card',
-      screen: 'RentPayments',
-    },
+      screen: 'RentPayments' },
     {
       title: 'Advance Payments',
       subtitle: 'Manage advances paid by tenants',
       icon: 'arrow-up',
-      screen: 'AdvancePayments',
-    },
+      screen: 'AdvancePayments' },
     {
       title: 'Refund Payments',
       subtitle: 'Manage refunds and settlement entries',
       icon: 'arrow-down',
-      screen: 'RefundPayments',
-    },
+      screen: 'RefundPayments' },
   ]
 
   return (
@@ -37,9 +35,8 @@ export const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ navigation }) =>
 
       <View style={{ flex: 1, padding: 16, gap: 12 }}>
         {items.map((it) => (
-          <TouchableOpacity
+          <AnimatedPressableCard
             key={it.screen}
-            activeOpacity={0.85}
             onPress={() => navigation.navigate(it.screen)}
             style={{
               borderWidth: 1,
@@ -50,8 +47,7 @@ export const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ navigation }) =>
               flexDirection: 'row',
               alignItems: 'center',
               borderLeftWidth: 4,
-              borderLeftColor: Theme.colors.primary,
-            }}
+              borderLeftColor: Theme.colors.primary }}
           >
             <View
               style={{
@@ -61,8 +57,7 @@ export const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ navigation }) =>
                 backgroundColor: Theme.withOpacity(Theme.colors.primary, 0.1),
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginRight: 12,
-              }}
+                marginRight: 12 }}
             >
               <Ionicons name={it.icon as any} size={20} color={Theme.colors.primary} />
             </View>
@@ -77,7 +72,7 @@ export const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ navigation }) =>
             </View>
 
             <Ionicons name='chevron-forward' size={18} color={Theme.colors.text.tertiary} />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         ))}
       </View>
     </ScreenLayout>

@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
   Alert,
-  ActivityIndicator,
-} from 'react-native';
+  ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -19,8 +18,7 @@ import {
   useGetElectricityBillsQuery,
   useDeleteElectricityBillMutation,
   type ElectricityBill,
-  type ElectricityBillItem,
-} from '@/features/owner/api/electricityBillApi';
+  type ElectricityBillItem } from '@/features/owner/api/electricityBillApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { CreateElectricityBillModal } from './CreateElectricityBillModal';
@@ -40,8 +38,7 @@ const formatDate = (dateStr: string) => {
 
 export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProps> = ({
   navigation,
-  route,
-}) => {
+  route }) => {
   const { roomId, roomNo } = route.params || {};
   const [bills, setBills] = useState<ElectricityBill[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,8 +49,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
   const {
     data: billsResponse,
     refetch: refetchBills,
-    isFetching,
-  } = useGetElectricityBillsQuery({ room_id: roomId }, { skip: !roomId });
+    isFetching } = useGetElectricityBillsQuery({ room_id: roomId }, { skip: !roomId });
 
   const [deleteBillMutation] = useDeleteElectricityBillMutation();
 
@@ -103,8 +99,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
             }
-          },
-        },
+          } },
       ]);
     },
     [deleteBillMutation, refetchBills]
@@ -135,14 +130,13 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
                 backgroundColor: statusColor + '15',
                 paddingHorizontal: 10,
                 paddingVertical: 4,
-                borderRadius: 8,
-              }}
+                borderRadius: 8 }}
             >
               <Text style={{ fontSize: 12, fontWeight: '700', color: statusColor }}>{bill.status}</Text>
             </View>
-            <TouchableOpacity onPress={() => handleDeleteBill(bill.s_no)}>
+            <AnimatedPressableCard onPress={() => handleDeleteBill(bill.s_no)}>
               <Ionicons name="trash-outline" size={20} color="#DC2626" />
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
         </View>
 
@@ -168,8 +162,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
                   backgroundColor: '#F9FAFB',
                   borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: Theme.colors.border,
-                }}
+                  borderColor: Theme.colors.border }}
               >
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
@@ -186,7 +179,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
                   )}
                 </View>
                 {!isPaid && (
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     onPress={() => {
                       setSelectedItem(item);
                       setSelectedBillId(bill.s_no);
@@ -195,11 +188,10 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
                       backgroundColor: Theme.colors.primary,
                       paddingHorizontal: 12,
                       paddingVertical: 6,
-                      borderRadius: 8,
-                    }}
+                      borderRadius: 8 }}
                   >
                     <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Pay</Text>
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 )}
                 {isPaid && (
                   <View
@@ -207,8 +199,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
                       backgroundColor: '#DCFCE7',
                       paddingHorizontal: 10,
                       paddingVertical: 6,
-                      borderRadius: 8,
-                    }}
+                      borderRadius: 8 }}
                   >
                     <Text style={{ color: '#059669', fontSize: 12, fontWeight: '600' }}>Paid</Text>
                   </View>
@@ -273,11 +264,11 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
           ListFooterComponent={isFetching ? <ActivityIndicator style={{ margin: 20 }} /> : null}
         />
 
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => setCreateModalVisible(true)}
           style={{
             position: 'absolute',
-            bottom: 24,
+            bottom: 80,
             right: 20,
             backgroundColor: Theme.colors.primary,
             width: 56,
@@ -289,11 +280,10 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.2,
             shadowRadius: 8,
-            elevation: 5,
-          }}
+            elevation: 5 }}
         >
           <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
 
       <CreateElectricityBillModal

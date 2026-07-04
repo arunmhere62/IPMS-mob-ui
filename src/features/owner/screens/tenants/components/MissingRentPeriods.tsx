@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text } from "react-native";
 import { SkeletonLoader } from "../../../../../components/SkeletonLoader";
 import type { RentPaymentGap } from "@/features/owner/api/paymentsApi";
 import { Theme } from "../../../../../theme";
@@ -19,8 +20,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
   selectedGap,
   onSelectGap,
   onSkipAllGaps,
-  formatGapMonthDisplay,
-}) => {
+  formatGapMonthDisplay }) => {
   const formatINR = (n?: unknown) => {
     const num = typeof n === 'number' ? n : typeof n === 'string' ? Number(n) : 0;
     try {
@@ -45,8 +45,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.08,
           shadowRadius: 4,
-          elevation: 3,
-        }}
+          elevation: 3 }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 }}>
           <View
@@ -59,8 +58,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
               justifyContent: 'center',
               marginRight: 10,
               borderWidth: 1,
-              borderColor: Theme.colors.dangerLight,
-            }}
+              borderColor: Theme.colors.dangerLight }}
           >
             <Text style={{ fontSize: 18 }}>📅</Text>
           </View>
@@ -123,8 +121,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 4,
-        elevation: 3,
-      }}
+        elevation: 3 }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 }}>
         <View
@@ -137,8 +134,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
             justifyContent: 'center',
             marginRight: 10,
             borderWidth: 1,
-            borderColor: Theme.colors.dangerLight,
-          }}
+            borderColor: Theme.colors.dangerLight }}
         >
           <Text style={{ fontSize: 18 }}>📅</Text>
         </View>
@@ -148,8 +144,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
               fontSize: 13,
               fontWeight: '700',
               color: Theme.colors.text.primary,
-              marginBottom: 2,
-            }}
+              marginBottom: 2 }}
           >
             Missing Rent Period{gaps.length > 1 ? 's' : ''}
           </Text>
@@ -157,8 +152,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
             style={{
               fontSize: 12,
               color: Theme.colors.text.tertiary,
-              lineHeight: 16,
-            }}
+              lineHeight: 16 }}
           >
             We found {gaps.length} unpaid period{gaps.length > 1 ? 's' : ''} where rent hasn't been paid.
             Tap a period to auto-fill the dates and expected amount.
@@ -168,8 +162,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
               fontSize: 12,
               color: Theme.colors.danger,
               fontWeight: '700',
-              marginTop: 6,
-            }}
+              marginTop: 6 }}
           >
             Total remaining due: {formatINR(totalRemaining)}
           </Text>
@@ -188,7 +181,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
                 : 0;
             const recommended = gap.gapId === recommendedGapId;
             return (
-              <TouchableOpacity
+              <AnimatedPressableCard
                 key={gap.gapId}
                 onPress={() => onSelectGap(gap)}
                 style={{
@@ -199,8 +192,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
                   borderWidth: 1,
                   borderColor: isSelected ? Theme.colors.dangerDark : Theme.colors.background.blueMedium,
                   flexDirection: 'row',
-                  alignItems: 'center',
-                }}
+                  alignItems: 'center' }}
               >
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -221,14 +213,13 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
                     borderWidth: 2,
                     borderColor: isSelected ? Theme.colors.dangerDark : Theme.colors.background.blueMedium,
                     alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                    justifyContent: 'center' }}
                 >
                   {isSelected ? (
                     <View style={{ width: 10, height: 10, borderRadius: 6, backgroundColor: Theme.colors.dangerDark }} />
                   ) : null}
                 </View>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             );
           })}
         </View>
@@ -243,8 +234,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
             backgroundColor: Theme.withOpacity(Theme.colors.danger, 0.06),
             borderRadius: 10,
             borderWidth: 1,
-            borderColor: Theme.colors.dangerLight,
-          }}
+            borderColor: Theme.colors.dangerLight }}
         >
           <Text
             style={{
@@ -253,8 +243,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
               color: Theme.colors.text.tertiary,
               marginBottom: 4,
               textTransform: 'uppercase',
-              letterSpacing: 0.3,
-            }}
+              letterSpacing: 0.3 }}
           >
             Selected
           </Text>
@@ -263,8 +252,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
               style={{
                 fontSize: 12,
                 fontWeight: '700',
-                color: Theme.colors.text.primary,
-              }}
+                color: Theme.colors.text.primary }}
             >
               {selectedGap.gapStart}
             </Text>
@@ -272,8 +260,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
               style={{
                 fontSize: 11,
                 color: Theme.colors.text.tertiary,
-                marginHorizontal: 6,
-              }}
+                marginHorizontal: 6 }}
             >
               →
             </Text>
@@ -281,8 +268,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
               style={{
                 fontSize: 12,
                 fontWeight: '700',
-                color: Theme.colors.text.primary,
-              }}
+                color: Theme.colors.text.primary }}
             >
               {selectedGap.gapEnd}
             </Text>
@@ -290,8 +276,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
               style={{
                 fontSize: 10,
                 color: Theme.colors.text.tertiary,
-                marginLeft: 8,
-              }}
+                marginLeft: 8 }}
             >
               ({selectedGap.daysMissing}d)
             </Text>
@@ -301,8 +286,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
               marginTop: 6,
               fontSize: 11,
               fontWeight: '700',
-              color: Theme.colors.danger,
-            }}
+              color: Theme.colors.danger }}
           >
             Remaining due: {formatINR(
               typeof selectedGap?.remainingDue === 'number'
@@ -316,7 +300,7 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
       ) : null}
 
       <View style={{ gap: 8 }}>
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={onSkipAllGaps}
           style={{
             paddingVertical: 11,
@@ -326,19 +310,17 @@ export const MissingRentPeriods: React.FC<MissingRentPeriodsProps> = ({
             borderWidth: 1,
             borderColor: Theme.colors.border,
             alignItems: 'center',
-            justifyContent: 'center',
-          }}
+            justifyContent: 'center' }}
         >
           <Text
             style={{
               fontSize: 13,
               fontWeight: '700',
-              color: Theme.colors.primary,
-            }}
+              color: Theme.colors.primary }}
           >
             Skip All Gaps
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
     </View>
   );

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 
 export interface OnboardingStep {
   id: string;
@@ -37,7 +38,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
   return (
     <View style={styles.container}>
       {/* Header */}
-      <TouchableOpacity style={styles.header} onPress={() => setExpanded((v) => !v)} activeOpacity={0.8}>
+      <AnimatedPressableCard style={styles.header} onPress={() => setExpanded((v) => !v)}>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>🚀 Getting Started</Text>
           <Text style={styles.subtitle}>
@@ -45,7 +46,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
           </Text>
         </View>
         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color="#6366F1" />
-      </TouchableOpacity>
+      </AnimatedPressableCard>
 
       {/* Progress bar */}
       <View style={styles.progressTrack}>
@@ -62,9 +63,9 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
           <Text style={styles.celebrationText}>
             You've completed all the onboarding steps. Your PG is ready to go!
           </Text>
-          <TouchableOpacity onPress={onDismiss} style={styles.celebrationBtn}>
+          <AnimatedPressableCard onPress={onDismiss} style={styles.celebrationBtn}>
             <Text style={styles.celebrationBtnText}>Get Started</Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
       ) : expanded && !allDone ? (
         <View style={styles.steps}>
@@ -105,17 +106,16 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
                 </View>
 
                 {!step.completed && step.onAction && step.actionLabel && (
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     style={[styles.actionBtn, locked && styles.actionBtnLocked]}
                     onPress={unlocked ? step.onAction : undefined}
-                    activeOpacity={unlocked ? 0.8 : 1}
                     disabled={locked}
                   >
                     {locked && <Ionicons name="lock-closed" size={10} color="#94A3B8" style={{ marginRight: 3 }} />}
                     <Text style={[styles.actionBtnText, locked && styles.actionBtnTextLocked]}>
                       {step.actionLabel}
                     </Text>
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 )}
               </View>
             );
@@ -125,13 +125,13 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
           <View style={styles.footer}>
             <Text style={styles.footerText}>Need help getting started?</Text>
             {onContactUs && (
-              <TouchableOpacity onPress={onContactUs}>
+              <AnimatedPressableCard onPress={onContactUs}>
                 <Text style={styles.contactLink}>Contact Us</Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             )}
-            <TouchableOpacity onPress={onDismiss} style={styles.dismissBtn}>
+            <AnimatedPressableCard onPress={onDismiss} style={styles.dismissBtn}>
               <Text style={styles.dismissBtnText}>Close</Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
         </View>
       ) : null}

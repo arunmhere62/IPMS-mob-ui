@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, ScrollView, Alert, Linking } from 'react-native';
 import { Theme } from '../../../../theme';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
@@ -8,8 +9,7 @@ import { Button } from '../../../../components/Button';
 import {
   type LegalAcceptanceContext,
   type RequiredLegalDocument,
-  useAcceptLegalDocumentMutation,
-} from '../../api/legalDocumentsApi';
+  useAcceptLegalDocumentMutation } from '../../api/legalDocumentsApi';
 import { useSignupMutation } from '../../../auth/api/authApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { navigationRef } from '../../../../navigation/navigationRef';
@@ -99,8 +99,7 @@ export const LegalDocumentsScreen: React.FC<LegalDocumentsScreenProps> = ({ navi
               text: 'OK',
               onPress: () => {
                 navigation.goBack();
-              },
-            },
+              } },
           ]
         );
         return;
@@ -110,13 +109,11 @@ export const LegalDocumentsScreen: React.FC<LegalDocumentsScreenProps> = ({ navi
       if (nav && typeof nav.resetRoot === 'function') {
         nav.resetRoot({
           index: 0,
-          routes: [{ name: 'MainTabs' }],
-        });
+          routes: [{ name: 'MainTabs' }] });
       } else if (nav && typeof nav.reset === 'function') {
         nav.reset({
           index: 0,
-          routes: [{ name: 'MainTabs' }],
-        });
+          routes: [{ name: 'MainTabs' }] });
       } else {
         navigation.navigate('MainTabs');
       }
@@ -158,8 +155,7 @@ export const LegalDocumentsScreen: React.FC<LegalDocumentsScreenProps> = ({ navi
                 style={{
                   paddingVertical: 12,
                   borderBottomWidth: 1,
-                  borderBottomColor: Theme.withOpacity(Theme.colors.border, 0.35),
-                }}
+                  borderBottomColor: Theme.withOpacity(Theme.colors.border, 0.35) }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
                   <View style={{ flex: 1 }}>
@@ -172,9 +168,9 @@ export const LegalDocumentsScreen: React.FC<LegalDocumentsScreenProps> = ({ navi
                       </Text>
                     ) : null}
                     {hasUrl ? (
-                      <TouchableOpacity onPress={() => openDoc(doc)} style={{ marginTop: 6 }}>
+                      <AnimatedPressableCard onPress={() => openDoc(doc)} style={{ marginTop: 6 }}>
                         <Text style={{ color: Theme.colors.primary, fontWeight: '600' }}>View document</Text>
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
                     ) : null}
                   </View>
 
@@ -182,8 +178,7 @@ export const LegalDocumentsScreen: React.FC<LegalDocumentsScreenProps> = ({ navi
                     <Text style={{
                       fontSize: 12,
                       fontWeight: '700',
-                      color: accepted ? '#059669' : Theme.colors.text.secondary,
-                    }}>
+                      color: accepted ? '#059669' : Theme.colors.text.secondary }}>
                       {accepted ? 'Accepted' : 'Pending'}
                     </Text>
                   </View>

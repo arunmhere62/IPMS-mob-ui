@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, Platform,
-} from 'react-native';
+  View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BottomNav } from '@/components/BottomNav';
@@ -32,15 +31,13 @@ const STATUS_COLORS: Record<TenantTicketStatus, { bg: string; text: string; dot:
   OPEN:        { bg: '#eff6ff', text: '#1d4ed8', dot: '#3b82f6' },
   IN_PROGRESS: { bg: '#fff7ed', text: '#c2410c', dot: '#f97316' },
   RESOLVED:    { bg: '#f0fdf4', text: '#166534', dot: '#22c55e' },
-  CLOSED:      { bg: '#f3f4f6', text: '#6b7280', dot: '#9ca3af' },
-};
+  CLOSED:      { bg: '#f3f4f6', text: '#6b7280', dot: '#9ca3af' } };
 
 const CATEGORY_ICONS: Record<string, string> = {
   MAINTENANCE: 'construct-outline',
   COMPLAINT:   'alert-circle-outline',
   REQUEST:     'hand-left-outline',
-  OTHER:       'help-circle-outline',
-};
+  OTHER:       'help-circle-outline' };
 
 interface Props { navigation: any }
 
@@ -72,10 +69,9 @@ export function TenantTicketsScreen({ navigation }: Props) {
     const commentCount = item._count?.tenant_ticket_comments ?? 0;
 
     return (
-      <TouchableOpacity
+      <AnimatedPressableCard
         style={styles.card}
         onPress={() => navigation.navigate('TenantTicketDetail', { ticketId: item.s_no })}
-        activeOpacity={0.85}
       >
         <View style={styles.cardHeader}>
           <View style={[styles.iconBox, { backgroundColor: sc.bg }]}>
@@ -112,7 +108,7 @@ export function TenantTicketsScreen({ navigation }: Props) {
             {new Date(item.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
           </Text>
         </View>
-      </TouchableOpacity>
+      </AnimatedPressableCard>
     );
   };
 
@@ -126,18 +122,18 @@ export function TenantTicketsScreen({ navigation }: Props) {
           <Text style={styles.headerTitle}>Tenant Portal</Text>
           <Text style={styles.headerSub}>My Tickets</Text>
         </View>
-        <TouchableOpacity
+        <AnimatedPressableCard
           style={styles.addBtn}
           onPress={() => navigation.navigate('TenantCreateTicket')}
         >
           <Ionicons name="add" size={22} color="#fff" />
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </LinearGradient>
 
       {/* Filter chips */}
       <View style={styles.filters}>
         {STATUS_FILTERS.map((f) => (
-          <TouchableOpacity
+          <AnimatedPressableCard
             key={f.label}
             style={[styles.chip, activeFilter === f.value && styles.chipActive]}
             onPress={() => setActiveFilter(f.value)}
@@ -145,7 +141,7 @@ export function TenantTicketsScreen({ navigation }: Props) {
             <Text style={[styles.chipText, activeFilter === f.value && styles.chipTextActive]}>
               {f.label}
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         ))}
       </View>
 
@@ -184,13 +180,11 @@ const styles = StyleSheet.create({
   headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   addBtn: {
     width: 38, height: 38, borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center',
-  },
+    backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
   filters: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   chip: {
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-    backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#e5e7eb',
-  },
+    backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#e5e7eb' },
   chipActive: { backgroundColor: C.primary, borderColor: C.primary },
   chipText: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
   chipTextActive: { color: '#fff' },
@@ -199,8 +193,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff', borderRadius: 14, padding: 14,
     shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
+    elevation: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   iconBox: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cardMeta: { flex: 1 },
@@ -208,8 +201,7 @@ const styles = StyleSheet.create({
   cardCategory: { fontSize: 12, color: '#9ca3af', marginTop: 1 },
   statusBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20,
-  },
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 11, fontWeight: '600' },
   cardDesc: { fontSize: 13, color: '#6b7280', marginBottom: 10, lineHeight: 18 },
@@ -219,5 +211,4 @@ const styles = StyleSheet.create({
   footerDate: { marginLeft: 'auto', fontSize: 12, color: '#9ca3af' },
   empty: { alignItems: 'center', paddingTop: 80 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#374151', marginTop: 12 },
-  emptySubtitle: { fontSize: 13, color: '#9ca3af', marginTop: 4 },
-});
+  emptySubtitle: { fontSize: 13, color: '#9ca3af', marginTop: 4 } });

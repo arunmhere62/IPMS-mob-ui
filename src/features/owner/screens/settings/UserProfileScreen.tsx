@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   Image,
   ActivityIndicator,
   RefreshControl,
-  Alert,
-} from 'react-native';
+  Alert } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { Card } from '@/components/Card';
@@ -37,8 +36,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { data: profileResponse, refetch: refetchProfile, isFetching: isProfileFetching } = useGetUserProfileQuery(user?.s_no as number, {
-    skip: !user?.s_no,
-  });
+    skip: !user?.s_no });
   const [changePasswordMutation] = useChangePasswordMutation();
   const [updateOrganizationMutation] = useUpdateOrganizationMutation();
   const [refreshing, setRefreshing] = useState(false);
@@ -76,8 +74,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
           city_id: data.city_id,
           state_id: data.state_id,
           gender: data.gender,
-          profile_images: data.profile_images,
-        })
+          profile_images: data.profile_images })
       );
 
       if (data.state_name) {
@@ -310,8 +307,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.05,
             shadowRadius: 8,
-            elevation: 3,
-          }}
+            elevation: 3 }}
         >
           <View style={{ alignItems: 'center' }}>
             {/* Profile Image */}
@@ -325,8 +321,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                 justifyContent: 'center',
                 marginBottom: 16,
                 borderWidth: 2,
-                borderColor: Theme.colors.border,
-              }}
+                borderColor: Theme.colors.border }}
             >
               {userData?.profile_images ? (
                 <Image
@@ -353,8 +348,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontWeight: '700',
                   color: Theme.colors.text.primary,
                   marginBottom: 6,
-                  textAlign: 'center',
-                }}
+                  textAlign: 'center' }}
               >
                 {userData?.name}
               </Text>
@@ -371,15 +365,13 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                     paddingHorizontal: 12,
                     paddingVertical: 4,
                     borderRadius: 12,
-                    backgroundColor: roleBadge.bg,
-                  }}
+                    backgroundColor: roleBadge.bg }}
                 >
                   <Text
                     style={{
                       fontSize: 12,
                       fontWeight: '600',
-                      color: roleBadge.color,
-                    }}
+                      color: roleBadge.color }}
                   >
                     {userData?.role_name?.replace('_', ' ') || 'User'}
                   </Text>
@@ -390,16 +382,14 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                     width: 6,
                     height: 6,
                     borderRadius: 3,
-                    backgroundColor: userData?.status === 'ACTIVE' ? '#10B981' : '#EF4444',
-                  }}
+                    backgroundColor: userData?.status === 'ACTIVE' ? '#10B981' : '#EF4444' }}
                 />
 
                 <Text
                   style={{
                     fontSize: 12,
                     fontWeight: '500',
-                    color: Theme.colors.text.tertiary,
-                  }}
+                    color: Theme.colors.text.tertiary }}
                 >
                   {userData?.status || 'ACTIVE'}
                 </Text>
@@ -414,8 +404,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   backgroundColor: Theme.colors.background.secondary,
                   borderRadius: 8,
                   padding: 12,
-                  marginBottom: 16,
-                }}
+                  marginBottom: 16 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text style={{
@@ -423,15 +412,14 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                     color: Theme.colors.text.tertiary,
                     marginBottom: 4,
                     textTransform: 'uppercase',
-                    letterSpacing: 0.5,
-                  }}>
+                    letterSpacing: 0.5 }}>
                     Organization
                   </Text>
 
                   {canEditOrganization && (
-                    <TouchableOpacity onPress={handleOpenOrganizationEdit} style={{ paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <AnimatedPressableCard onPress={handleOpenOrganizationEdit} style={{ paddingHorizontal: 6, paddingVertical: 2 }}>
                       <Ionicons name="create-outline" size={16} color={Theme.colors.text.tertiary} />
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   )}
                 </View>
 
@@ -439,16 +427,14 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontSize: 14,
                   fontWeight: '600',
                   color: Theme.colors.text.primary,
-                  marginBottom: 2,
-                }}>
+                  marginBottom: 2 }}>
                   {profileData?.organization_name || userData?.organization_name}
                 </Text>
                 {profileData?.organization_description && (
                   <Text style={{
                     fontSize: 12,
                     color: Theme.colors.text.secondary,
-                    fontStyle: 'italic',
-                  }}>
+                    fontStyle: 'italic' }}>
                     {profileData.organization_description}
                   </Text>
                 )}
@@ -463,16 +449,14 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   backgroundColor: Theme.colors.background.secondary,
                   borderRadius: 8,
                   padding: 12,
-                  marginBottom: 16,
-                }}
+                  marginBottom: 16 }}
               >
                 <Text style={{
                   fontSize: 11,
                   color: Theme.colors.text.tertiary,
                   marginBottom: 4,
                   textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                }}>
+                  letterSpacing: 0.5 }}>
                   Location
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -481,8 +465,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                     fontSize: 13,
                     fontWeight: '500',
                     color: Theme.colors.text.primary,
-                    marginLeft: 4,
-                  }}>
+                    marginLeft: 4 }}>
                     {(profileData?.city_name && profileData?.state_name)
                       ? `${profileData.city_name}, ${profileData.state_name}`
                       : (profileData?.city_name || profileData?.state_name || cityName || stateName || 'Not provided')
@@ -502,8 +485,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   borderRadius: 12,
                   borderWidth: 1,
                   borderColor: Theme.colors.border,
-                  marginBottom: 16,
-                }}
+                  marginBottom: 16 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                   <View
@@ -514,8 +496,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                       backgroundColor: '#DBEAFE',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      marginRight: 12,
-                    }}
+                      marginRight: 12 }}
                   >
                     <Text style={{ fontSize: 16 }}>🏠</Text>
                   </View>
@@ -525,8 +506,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                         fontSize: 14,
                         fontWeight: '600',
                         color: Theme.colors.text.primary,
-                        marginBottom: 2,
-                      }}
+                        marginBottom: 2 }}
                     >
                       {selectedPg?.location_name}
                     </Text>
@@ -535,8 +515,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                         style={{
                           fontSize: 12,
                           color: Theme.colors.text.secondary,
-                          marginBottom: 4,
-                        }}
+                          marginBottom: 4 }}
                       >
                         {selectedPg.address}
                       </Text>
@@ -551,15 +530,13 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                             borderRadius: 8,
                             backgroundColor: '#EFF6FF',
                             marginRight: 6,
-                            marginBottom: 4,
-                          }}
+                            marginBottom: 4 }}
                         >
                           <Text
                             style={{
                               fontSize: 10,
                               color: '#3B82F6',
-                              fontWeight: '500',
-                            }}
+                              fontWeight: '500' }}
                           >
                             {selectedPg.pg_type}
                           </Text>
@@ -574,15 +551,13 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                             borderRadius: 8,
                             backgroundColor: '#DCFCE7',
                             marginRight: 6,
-                            marginBottom: 4,
-                          }}
+                            marginBottom: 4 }}
                         >
                           <Text
                             style={{
                               fontSize: 10,
                               color: '#16A34A',
-                              fontWeight: '500',
-                            }}
+                              fontWeight: '500' }}
                           >
                             {selectedPg.rent_cycle_type}
                           </Text>
@@ -602,8 +577,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                 justifyContent: 'space-around',
                 paddingTop: 16,
                 borderTopWidth: 1,
-                borderTopColor: Theme.colors.border,
-              }}
+                borderTopColor: Theme.colors.border }}
             >
               <View style={{ alignItems: 'center' }}>
                 <Text style={{
@@ -618,8 +592,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontSize: 10,
                   color: Theme.colors.text.tertiary,
                   textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                }}>
+                  letterSpacing: 0.5 }}>
                   ID
                 </Text>
               </View>
@@ -632,8 +605,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                     color: Theme.colors.text.primary,
                     marginBottom: 2,
                     maxWidth: 100,
-                    textAlign: 'center',
-                  }}
+                    textAlign: 'center' }}
                   numberOfLines={2}
                 >
                   {selectedPg?.location_name || '--'}
@@ -642,8 +614,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontSize: 10,
                   color: Theme.colors.text.tertiary,
                   textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                }}>
+                  letterSpacing: 0.5 }}>
                   Selected PG
                 </Text>
               </View>
@@ -661,8 +632,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontSize: 10,
                   color: Theme.colors.text.tertiary,
                   textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                }}>
+                  letterSpacing: 0.5 }}>
                   Role ID
                 </Text>
               </View>
@@ -683,8 +653,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                 fontSize: 16,
                 fontWeight: '700',
                 color: Theme.colors.text.primary,
-                marginLeft: 8,
-              }}
+                marginLeft: 8 }}
             >
               Contact Information
             </Text>
@@ -698,8 +667,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                 style={{
                   fontSize: 12,
                   color: Theme.colors.text.tertiary,
-                  marginLeft: 6,
-                }}
+                  marginLeft: 6 }}
               >
                 Email Address
               </Text>
@@ -709,8 +677,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                 fontSize: 16,
                 fontWeight: '600',
                 color: Theme.colors.text.primary,
-                marginLeft: 22,
-              }}
+                marginLeft: 22 }}
             >
               {userData?.email || 'Not provided'}
             </Text>
@@ -725,8 +692,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   style={{
                     fontSize: 12,
                     color: Theme.colors.text.tertiary,
-                    marginLeft: 6,
-                  }}
+                    marginLeft: 6 }}
                 >
                   Phone Number
                 </Text>
@@ -736,8 +702,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontSize: 16,
                   fontWeight: '600',
                   color: Theme.colors.text.primary,
-                  marginLeft: 22,
-                }}
+                  marginLeft: 22 }}
               >
                 {userData.phone}
               </Text>
@@ -753,8 +718,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   style={{
                     fontSize: 12,
                     color: Theme.colors.text.tertiary,
-                    marginLeft: 6,
-                  }}
+                    marginLeft: 6 }}
                 >
                   Address
                 </Text>
@@ -765,8 +729,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontWeight: '600',
                   color: Theme.colors.text.primary,
                   marginLeft: 22,
-                  lineHeight: 22,
-                }}
+                  lineHeight: 22 }}
               >
                 {userData.address}
               </Text>
@@ -783,8 +746,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                 fontSize: 16,
                 fontWeight: '700',
                 color: Theme.colors.text.primary,
-                marginLeft: 8,
-              }}
+                marginLeft: 8 }}
             >
               Personal Details
             </Text>
@@ -841,23 +803,21 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontSize: 16,
                   fontWeight: '700',
                   color: Theme.colors.text.primary,
-                  marginLeft: 8,
-                }}
+                  marginLeft: 8 }}
               >
                 Account Settings
               </Text>
             </View>
           </View>
 
-          <TouchableOpacity
+          <AnimatedPressableCard
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: 16,
               borderBottomWidth: 1,
-              borderBottomColor: Theme.colors.border,
-            }}
+              borderBottomColor: Theme.colors.border }}
             onPress={() => setShowEditModal(true)}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -867,24 +827,22 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontSize: 15,
                   fontWeight: '500',
                   color: Theme.colors.text.primary,
-                  marginLeft: 12,
-                }}
+                  marginLeft: 12 }}
               >
                 Edit Profile
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
-          {/* <TouchableOpacity
+          {/* <AnimatedPressableCard
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: 16,
               borderBottomWidth: 1,
-              borderBottomColor: Theme.colors.border,
-            }}
+              borderBottomColor: Theme.colors.border }}
             onPress={() => setShowChangePasswordModal(true)}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -894,14 +852,13 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   fontSize: 15,
                   fontWeight: '500',
                   color: Theme.colors.text.primary,
-                  marginLeft: 12,
-                }}
+                  marginLeft: 12 }}
               >
                 Change Password
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={Theme.colors.text.tertiary} />
-          </TouchableOpacity> */}
+          </AnimatedPressableCard> */}
 
         </Card>
 

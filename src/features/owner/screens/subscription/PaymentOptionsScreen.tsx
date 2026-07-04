@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -28,26 +29,22 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navi
       name: 'UPI',
       icon: 'logo-google',
       description: 'Google Pay, PhonePe, Paytm & more',
-      recommended: true,
-    },
+      recommended: true },
     {
       id: 'card',
       name: 'Credit/Debit Card',
       icon: 'card',
-      description: 'Visa, Mastercard, Rupay, Amex',
-    },
+      description: 'Visa, Mastercard, Rupay, Amex' },
     {
       id: 'netbanking',
       name: 'Net Banking',
       icon: 'business',
-      description: 'All major banks supported',
-    },
+      description: 'All major banks supported' },
     {
       id: 'wallet',
       name: 'Wallets',
       icon: 'wallet',
-      description: 'Paytm, PhonePe, Amazon Pay',
-    },
+      description: 'Paytm, PhonePe, Amazon Pay' },
   ];
 
   const handleProceedToPay = () => {
@@ -56,8 +53,7 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navi
       paymentUrl,
       orderId,
       subscriptionId,
-      paymentMethod: selectedMethod,
-    });
+      paymentMethod: selectedMethod });
   };
 
   const formatPrice = (price: string | number) => {
@@ -122,14 +118,13 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navi
           <Text style={styles.sectionTitle}>Choose Payment Method</Text>
           
           {paymentMethods.map((method) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={method.id}
               style={[
                 styles.methodCard,
                 selectedMethod === method.id && styles.methodCardSelected,
               ]}
               onPress={() => setSelectedMethod(method.id)}
-              activeOpacity={0.7}
             >
               <View style={styles.methodLeft}>
                 <View style={[
@@ -169,7 +164,7 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navi
                   <View style={styles.radioButtonInner} />
                 )}
               </View>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </View>
 
@@ -211,14 +206,13 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navi
           <Text style={styles.payAmount}>{formatPrice(plan.price)}</Text>
         </View>
         
-        <TouchableOpacity
+        <AnimatedPressableCard
           style={styles.proceedButton}
           onPress={handleProceedToPay}
-          activeOpacity={0.8}
         >
           <Text style={styles.proceedButtonText}>Proceed to Pay</Text>
           <Ionicons name="arrow-forward" size={20} color="#fff" />
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
     </ScreenLayout>
   );
@@ -227,8 +221,7 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navi
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-  },
+    padding: 16 },
   summaryCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -238,62 +231,50 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
+    shadowRadius: 2 },
   summaryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-  },
+    marginBottom: 16 },
   summaryTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: Theme.colors.text.primary,
-    marginLeft: 10,
-  },
+    marginLeft: 10 },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
-  },
+    marginBottom: 12 },
   summaryLabel: {
     fontSize: 14,
-    color: Theme.colors.text.secondary,
-  },
+    color: Theme.colors.text.secondary },
   summaryValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: Theme.colors.text.primary,
-  },
+    color: Theme.colors.text.primary },
   divider: {
     height: 1,
     backgroundColor: Theme.colors.border,
-    marginVertical: 12,
-  },
+    marginVertical: 12 },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   totalLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: Theme.colors.text.primary,
-  },
+    color: Theme.colors.text.primary },
   totalAmount: {
     fontSize: 20,
     fontWeight: '800',
-    color: Theme.colors.primary,
-  },
+    color: Theme.colors.primary },
   methodsContainer: {
-    marginBottom: 20,
-  },
+    marginBottom: 20 },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: Theme.colors.text.primary,
-    marginBottom: 12,
-  },
+    marginBottom: 12 },
   methodCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -308,18 +289,15 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
+    shadowRadius: 2 },
   methodCardSelected: {
     borderColor: Theme.colors.primary,
     backgroundColor: Theme.colors.background.blueLight,
-    elevation: 3,
-  },
+    elevation: 3 },
   methodLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-  },
+    flex: 1 },
   iconContainer: {
     width: 48,
     height: 48,
@@ -327,43 +305,34 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.background.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
+    marginRight: 12 },
   iconContainerSelected: {
-    backgroundColor: Theme.colors.background.blueLight,
-  },
+    backgroundColor: Theme.colors.background.blueLight },
   methodInfo: {
-    flex: 1,
-  },
+    flex: 1 },
   methodNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
-  },
+    marginBottom: 4 },
   methodName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Theme.colors.text.primary,
-  },
+    color: Theme.colors.text.primary },
   methodNameSelected: {
-    color: Theme.colors.primary,
-  },
+    color: Theme.colors.primary },
   recommendedBadge: {
     backgroundColor: Theme.colors.secondary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
-    marginLeft: 8,
-  },
+    marginLeft: 8 },
   recommendedText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#fff',
-  },
+    color: '#fff' },
   methodDescription: {
     fontSize: 12,
-    color: Theme.colors.text.secondary,
-  },
+    color: Theme.colors.text.secondary },
   radioButton: {
     width: 24,
     height: 24,
@@ -371,31 +340,26 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Theme.colors.border,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   radioButtonSelected: {
-    borderColor: Theme.colors.primary,
-  },
+    borderColor: Theme.colors.primary },
   radioButtonInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: Theme.colors.primary,
-  },
+    backgroundColor: Theme.colors.primary },
   securityInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Theme.colors.background.blueLight,
     padding: 12,
     borderRadius: 8,
-    marginBottom: 20,
-  },
+    marginBottom: 20 },
   securityText: {
     fontSize: 12,
     color: Theme.colors.text.secondary,
     marginLeft: 8,
-    flex: 1,
-  },
+    flex: 1 },
   bottomContainer: {
     backgroundColor: '#fff',
     padding: 16,
@@ -405,89 +369,73 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
+    shadowRadius: 4 },
   amountRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-  },
+    marginBottom: 12 },
   payLabel: {
     fontSize: 14,
-    color: Theme.colors.text.secondary,
-  },
+    color: Theme.colors.text.secondary },
   payAmount: {
     fontSize: 20,
     fontWeight: '800',
-    color: Theme.colors.text.primary,
-  },
+    color: Theme.colors.text.primary },
   proceedButton: {
     backgroundColor: Theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   proceedButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
-    marginRight: 8,
-  },
+    marginRight: 8 },
   featuresContainer: {
     marginTop: 12,
-    marginBottom: 8,
-  },
+    marginBottom: 8 },
   featuresTitle: {
     fontSize: 13,
     fontWeight: '600',
     color: Theme.colors.text.primary,
-    marginBottom: 8,
-  },
+    marginBottom: 8 },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
-  },
+    marginBottom: 6 },
   featureText: {
     fontSize: 12,
     color: Theme.colors.text.secondary,
     marginLeft: 8,
-    flex: 1,
-  },
+    flex: 1 },
   termsContainer: {
     backgroundColor: Theme.colors.background.blueLight,
     padding: 12,
     borderRadius: 8,
-    marginBottom: 20,
-  },
+    marginBottom: 20 },
   termsTitle: {
     fontSize: 13,
     fontWeight: '600',
     color: Theme.colors.text.primary,
-    marginBottom: 8,
-  },
+    marginBottom: 8 },
   termsText: {
     fontSize: 11,
     color: Theme.colors.text.secondary,
     marginBottom: 4,
-    lineHeight: 16,
-  },
+    lineHeight: 16 },
   upiNote: {
     backgroundColor: Theme.withOpacity(Theme.colors.info, 0.1),
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
+    alignItems: 'flex-start' },
   upiNoteText: {
     fontSize: 12,
     color: Theme.colors.info,
     marginLeft: 8,
     flex: 1,
-    lineHeight: 18,
-  },
-});
+    lineHeight: 18 } });

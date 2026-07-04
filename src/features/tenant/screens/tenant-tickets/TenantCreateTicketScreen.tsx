@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, TextInput, TouchableOpacity,
+  View, Text, StyleSheet, TextInput,
   ScrollView, ActivityIndicator, Alert, StatusBar, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import Theme from '@/theme';
 import { TenantTicketCategory, TenantTicketPriority, useAddTenantTicketCommentMutation, useCreateTenantTicketMutation } from '@/features/tenant/api/tenantTicketsApi';
 import ImageUploadS3 from '@/components/ImageUploadS3';
 import { BottomNav } from '@/components/BottomNav';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 
 const C = Theme.colors;
 const ST = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 44;
@@ -81,9 +82,9 @@ export function TenantCreateTicketScreen({ navigation }: Props) {
       <StatusBar barStyle="light-content" backgroundColor={C.primary} />
 
       <LinearGradient colors={[C.primary, C.primaryDark]} style={[styles.header, { paddingTop: ST + 12 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <AnimatedPressableCard onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
+        </AnimatedPressableCard>
         <View style={{ flex: 1, marginLeft: 10 }}>
           <Text style={styles.headerTitle}>Tenant Portal</Text>
           <Text style={styles.headerSub}>Raise a Ticket</Text>
@@ -96,7 +97,7 @@ export function TenantCreateTicketScreen({ navigation }: Props) {
         <Text style={styles.label}>Category</Text>
         <View style={styles.row}>
           {CATEGORIES.map((cat) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={cat.value}
               style={[styles.selectChip, category === cat.value && styles.selectChipActive]}
               onPress={() => setCategory(cat.value)}
@@ -105,7 +106,7 @@ export function TenantCreateTicketScreen({ navigation }: Props) {
               <Text style={[styles.selectChipText, category === cat.value && styles.selectChipTextActive]}>
                 {cat.label}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </View>
 
@@ -119,7 +120,7 @@ export function TenantCreateTicketScreen({ navigation }: Props) {
         <Text style={styles.label}>Priority</Text>
         <View style={styles.row}>
           {PRIORITIES.map((p) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={p.value}
               style={[styles.priorityChip, priority === p.value && { backgroundColor: p.color, borderColor: p.color }]}
               onPress={() => setPriority(p.value)}
@@ -127,7 +128,7 @@ export function TenantCreateTicketScreen({ navigation }: Props) {
               <Text style={[styles.priorityChipText, priority === p.value && { color: '#fff' }]}>
                 {p.label}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </View>
 
@@ -166,7 +167,7 @@ export function TenantCreateTicketScreen({ navigation }: Props) {
           disabled={isLoading}
         />
 
-        <TouchableOpacity
+        <AnimatedPressableCard
           style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
           onPress={handleSubmit}
           disabled={isLoading}
@@ -175,7 +176,7 @@ export function TenantCreateTicketScreen({ navigation }: Props) {
             ? <ActivityIndicator color="#fff" />
             : <Text style={styles.submitBtnText}>Submit Ticket</Text>
           }
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </ScrollView>
 
       <BottomNav tabs={tenantTabs} activeTab="tickets" onTabPress={(tab) => {

@@ -1,4 +1,19 @@
 import { registerRootComponent } from 'expo';
+import { Text, TextInput } from 'react-native';
+
+// Disable system font scaling before any UI is imported or rendered
+Text.defaultProps = {
+  ...Text.defaultProps,
+  allowFontScaling: false,
+  maxFontSizeMultiplier: 1,
+};
+
+TextInput.defaultProps = {
+  ...TextInput.defaultProps,
+  allowFontScaling: false,
+  maxFontSizeMultiplier: 1,
+};
+
 import App from './App';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

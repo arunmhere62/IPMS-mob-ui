@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { View, Text, StyleSheet, FlatList, TouchableWithoutFeedback } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/features/owner/store';
 import { setSelectedPGLocation } from '../features/owner/store/slices/pgLocationSlice';
@@ -19,10 +20,8 @@ export const PGLocationSelector: React.FC = () => {
     isLoading,
     isUninitialized,
     isError,
-    error,
-  } = useGetPGLocationsQuery(undefined, {
-    skip: false,
-  });
+    error } = useGetPGLocationsQuery(undefined, {
+    skip: false });
 
   const safeLocations: PGLocation[] = Array.isArray(pgLocationsResponse)
     ? (pgLocationsResponse as PGLocation[])
@@ -43,8 +42,7 @@ export const PGLocationSelector: React.FC = () => {
       hasAccessToken: !!accessToken,
       hasUserId: !!user?.s_no,
       hasOrganizationId: !!user?.organization_id,
-      rawResponse: pgLocationsResponse,
-    });
+      rawResponse: pgLocationsResponse });
   }, [accessToken, error, isError, isFetching, isLoading, isUninitialized, safeLocations.length, selectedPGLocationId, user?.organization_id, user?.s_no, pgLocationsResponse]);
 
   useEffect(() => {
@@ -94,10 +92,9 @@ export const PGLocationSelector: React.FC = () => {
       <Text style={styles.label}>PG Location</Text>
       
       {/* Selected Item / Dropdown Trigger */}
-      <TouchableOpacity 
+      <AnimatedPressableCard 
         style={styles.selectButton}
         onPress={toggleDropdown}
-        activeOpacity={0.7}
       >
         <View style={styles.selectContent}>
           <Text style={styles.selectText}>
@@ -110,16 +107,14 @@ export const PGLocationSelector: React.FC = () => {
           )}
         </View>
         <Text style={[styles.arrow, isOpen && styles.arrowOpen]}>▼</Text>
-      </TouchableOpacity>
+      </AnimatedPressableCard>
 
       {/* Dropdown Options */}
       {isOpen && (
         <>
-          <TouchableOpacity 
-            style={styles.backdrop}
-            activeOpacity={1}
-            onPress={() => setIsOpen(false)}
-          />
+          <TouchableWithoutFeedback onPress={() => setIsOpen(false)}>
+            <View style={styles.backdrop} />
+          </TouchableWithoutFeedback>
           <View style={styles.dropdownContainer}>
             <FlatList
               data={safeLocations}
@@ -129,7 +124,7 @@ export const PGLocationSelector: React.FC = () => {
               showsVerticalScrollIndicator={true}
               bounces={false}
               renderItem={({ item: location, index }) => (
-                <TouchableOpacity
+                <AnimatedPressableCard
                   style={[
                     styles.option,
                     selectedPGLocationId === location.s_no && styles.selectedOption,
@@ -161,7 +156,7 @@ export const PGLocationSelector: React.FC = () => {
                   {selectedPGLocationId === location.s_no && (
                     <Text style={styles.checkmark}>✓</Text>
                   )}
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               )}
             />
           </View>
@@ -175,16 +170,14 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 8,
     position: 'relative',
-    zIndex: 1000,
-  },
+    zIndex: 1000 },
   label: {
     color: Theme.withOpacity(Theme.colors.text.inverse, 0.95),
     fontSize: 10,
     fontWeight: '700',
     marginBottom: 6,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+    letterSpacing: 0.5 },
   selectButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: 12,
@@ -198,32 +191,26 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
+    borderColor: 'rgba(255, 255, 255, 0.3)' },
   selectContent: {
     flex: 1,
-    paddingRight: 8,
-  },
+    paddingRight: 8 },
   selectText: {
     color: '#1F2937',
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: 1,
-  },
+    marginBottom: 1 },
   selectSubtext: {
     color: '#6B7280',
     fontSize: 11,
-    marginTop: 1,
-  },
+    marginTop: 1 },
   arrow: {
     color: '#6B7280',
     fontSize: 10,
     fontWeight: 'bold',
-    transform: [{ rotate: '0deg' }],
-  },
+    transform: [{ rotate: '0deg' }] },
   arrowOpen: {
-    transform: [{ rotate: '180deg' }],
-  },
+    transform: [{ rotate: '180deg' }] },
   backdrop: {
     position: 'absolute',
     top: 0,
@@ -231,8 +218,7 @@ const styles = StyleSheet.create({
     right: -1000,
     bottom: -1000,
     backgroundColor: 'transparent',
-    zIndex: 999,
-  },
+    zIndex: 999 },
   dropdownContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: 12,
@@ -249,11 +235,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1001,
-    maxHeight: 250,
-  },
+    maxHeight: 250 },
   scrollView: {
-    maxHeight: 250,
-  },
+    maxHeight: 250 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -261,45 +245,36 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.06)',
-    backgroundColor: 'transparent',
-  },
+    backgroundColor: 'transparent' },
   selectedOption: {
     backgroundColor: 'rgba(59, 130, 246, 0.08)',
     borderLeftWidth: 3,
-    borderLeftColor: '#3B82F6',
-  },
+    borderLeftColor: '#3B82F6' },
   lastOption: {
-    borderBottomWidth: 0,
-  },
+    borderBottomWidth: 0 },
   optionContent: {
     flex: 1,
-    paddingRight: 8,
-  },
+    paddingRight: 8 },
   optionText: {
     color: '#1F2937',
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: 1,
-  },
+    marginBottom: 1 },
   selectedOptionText: {
     fontWeight: '700',
-    color: '#1E40AF',
-  },
+    color: '#1E40AF' },
   optionSubtext: {
     color: '#6B7280',
     fontSize: 11,
     marginTop: 1,
-    lineHeight: 15,
-  },
+    lineHeight: 15 },
   selectedOptionSubtext: {
     color: '#3B82F6',
-    fontWeight: '500',
-  },
+    fontWeight: '500' },
   checkmark: {
     color: '#3B82F6',
     fontSize: 16,
-    fontWeight: 'bold',
-  },
+    fontWeight: 'bold' },
   singleLocationContainer: {
     marginTop: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -313,19 +288,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     borderLeftWidth: 4,
-    borderLeftColor: '#10B981',
-  },
+    borderLeftColor: '#10B981' },
   singleLocationLabel: {
     color: '#6B7280',
     fontSize: 10,
     fontWeight: '700',
     marginBottom: 4,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+    letterSpacing: 0.5 },
   singleLocationText: {
     color: '#1F2937',
     fontSize: 13,
-    fontWeight: '600',
-  },
-});
+    fontWeight: '600' } });

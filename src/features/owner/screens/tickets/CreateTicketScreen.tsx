@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+  Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { useCreateTicketMutation } from '@/features/owner/api/ticketsApi';
@@ -78,8 +77,7 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
         category: category as any,
         priority: priority as any,
         attachments: screenshots.length > 0 ? screenshots : undefined,
-        pg_id: selectedPGLocationId || undefined,
-      }).unwrap();
+        pg_id: selectedPGLocationId || undefined }).unwrap();
 
       showSuccessAlert(res);
       navigation.goBack();
@@ -129,8 +127,7 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
-                    }}
+                      backgroundColor: '#fff' }}
                     placeholder="Brief description of the issue"
                     value={title}
                     onChangeText={setTitle}
@@ -151,8 +148,7 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
                       fontSize: 14,
                       backgroundColor: '#fff',
                       minHeight: 120,
-                      textAlignVertical: 'top',
-                    }}
+                      textAlignVertical: 'top' }}
                     placeholder="Detailed description of the issue..."
                     value={description}
                     onChangeText={setDescription}
@@ -210,7 +206,7 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
               </Card>
 
               {/* Submit Button */}
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={handleSubmit}
                 disabled={loading}
                 style={{
@@ -218,8 +214,7 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
                   borderRadius: 12,
                   paddingVertical: 16,
                   alignItems: 'center',
-                  marginBottom: 20,
-                }}
+                  marginBottom: 20 }}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" />
@@ -228,7 +223,7 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
                     Submit Ticket
                   </Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

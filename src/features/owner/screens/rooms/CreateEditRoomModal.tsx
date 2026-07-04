@@ -185,12 +185,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
       }
 
       onSuccess();
-
-      if (roomId) {
-        onClose();
-      } else {
-        resetCreateForm();
-      }
+      onClose();
     } catch (error: any) {
       showErrorAlert(error, 'Room Error');
     } finally {

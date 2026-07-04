@@ -1,12 +1,11 @@
-import React, { memo, useRef } from "react";
+import React, { memo } from "react";
 import type { ComponentProps } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
-  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { AnimatedPressableCard } from "./AnimatedPressableCard";
 
 interface MenuItem {
   title: string;
@@ -35,42 +34,18 @@ const SUBTITLES: Record<string, string> = {
 
 const QuickActionItem = memo<{ item: MenuItem; onNavigate: (screen: string) => void; isLarge?: boolean }>(
   ({ item, onNavigate, isLarge }) => {
-    const scaleValue = useRef(new Animated.Value(1)).current;
-
-    const handlePressIn = () => {
-      Animated.spring(scaleValue, {
-        toValue: 0.95,
-        useNativeDriver: true,
-        tension: 120,
-        friction: 8,
-      }).start();
-    };
-
-    const handlePressOut = () => {
-      Animated.spring(scaleValue, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 120,
-        friction: 6,
-      }).start();
-    };
-
     const bgColor = item.color + "15";
     const subtitle = item.subtitle || SUBTITLES[item.screen] || "";
 
     return (
-      <Animated.View
+      <AnimatedPressableCard
+        onPress={() => onNavigate(item.screen)}
         style={{
-          transform: [{ scale: scaleValue }],
           flex: isLarge ? 1 : undefined,
           width: isLarge ? undefined : '48.5%',
         }}
       >
-        <TouchableOpacity
-          onPress={() => onNavigate(item.screen)}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          activeOpacity={0.85}
+        <View
           style={{
             backgroundColor: bgColor,
             borderRadius: 16,
@@ -102,6 +77,7 @@ const QuickActionItem = memo<{ item: MenuItem; onNavigate: (screen: string) => v
           <View style={{ flex: 1 }}>
             <Text
               numberOfLines={1}
+              adjustsFontSizeToFit
               style={{
                 color: "#111827",
                 fontWeight: "700",
@@ -113,6 +89,7 @@ const QuickActionItem = memo<{ item: MenuItem; onNavigate: (screen: string) => v
             {subtitle ? (
               <Text
                 numberOfLines={1}
+                adjustsFontSizeToFit
                 style={{
                   color: "#6B7280",
                   fontSize: 11,
@@ -126,8 +103,8 @@ const QuickActionItem = memo<{ item: MenuItem; onNavigate: (screen: string) => v
           </View>
 
           <Ionicons name="chevron-forward" size={16} color={item.color} />
-        </TouchableOpacity>
-      </Animated.View>
+        </View>
+      </AnimatedPressableCard>
     );
   }
 );

@@ -1,6 +1,7 @@
 import React, { useEffect, useContext, useMemo } from 'react';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { View, Text, TouchableOpacity, StatusBar, Platform, Animated } from 'react-native';
+import { View, Text, StatusBar, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 import { PGLocationSelector } from './PGLocationSelector';
@@ -56,8 +57,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
       toValue: 0.9,
       useNativeDriver: true,
       tension: 100,
-      friction: 8,
-    }).start();
+      friction: 8 }).start();
   };
 
   const handleBackPressOut = () => {
@@ -65,8 +65,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
       toValue: 1,
       useNativeDriver: true,
       tension: 100,
-      friction: 8,
-    }).start();
+      friction: 8 }).start();
   };
   // Auto-detect status bar style based on background color
   useEffect(() => {
@@ -105,11 +104,10 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
           {/* Back Button */}
           {showBackButton && onBackPress && (
             <Animated.View style={{ transform: [{ scale: backButtonScale }] }}>
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={onBackPress}
                 onPressIn={handleBackPressIn}
                 onPressOut={handleBackPressOut}
-                activeOpacity={0.6}
                 style={{
                   marginRight: 12,
                   width: 36,
@@ -117,28 +115,29 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
                   borderRadius: 8,
                   backgroundColor: Theme.withOpacity('#000000', 0.4),
                   alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                  justifyContent: 'center' }}
               >
                 <Ionicons name="chevron-back" size={18} color={textColor} />
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </Animated.View>
           )}
           
           {/* Title and Subtitle */}
           <View style={{ flex: 1 }}>
-            <Text 
+            <Text
               style={{ color: textColor, fontSize: 20, fontWeight: 'bold' }}
               numberOfLines={2}
               ellipsizeMode="tail"
+              adjustsFontSizeToFit
             >
               {title}
             </Text>
             {subtitle && (
-              <Text 
+              <Text
                 style={{ color: Theme.withOpacity(textColor, 0.8), fontSize: 13, marginTop: 2 }}
                 numberOfLines={1}
                 ellipsizeMode="tail"
+                adjustsFontSizeToFit
               >
                 {subtitle}
               </Text>

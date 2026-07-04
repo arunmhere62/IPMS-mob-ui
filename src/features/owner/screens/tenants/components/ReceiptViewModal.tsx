@@ -1,16 +1,15 @@
 import React, { useCallback } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Modal,
-  TouchableOpacity,
   Text,
   ScrollView,
   Dimensions,
   Share,
   Alert,
   ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
+  StyleSheet } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as FileSystem from 'expo-file-system/legacy';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
@@ -28,13 +27,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: -10000,
     top: -10000,
-    backgroundColor: 'white',
-  },
+    backgroundColor: 'white' },
   receiptContainer: {
     backgroundColor: 'white',
     padding: 16,
-    opacity: 1,
-  },
+    opacity: 1 },
   modalContainer: {
     flex: 1, 
     backgroundColor: 'rgba(0,0,0,0.7)', 
@@ -47,12 +44,11 @@ const styles = StyleSheet.create({
     borderRadius: 12, 
     padding: 20, 
     width: '100%', 
-    maxWidth: 500, 
+    maxWidth: 640, 
     maxHeight: '90%'
   },
   scrollView: {
-    flexGrow: 0,
-  },
+    flexGrow: 0 },
   scrollContent: {
     alignItems: 'center', 
     padding: 5
@@ -63,8 +59,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-  },
+    elevation: 3 },
   buttonContainer: {
     flexDirection: 'row', 
     gap: 10, 
@@ -76,36 +71,29 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
-  },
+    minHeight: 48 },
   closeButton: {
-    backgroundColor: '#F3F4F6',
-  },
+    backgroundColor: '#F3F4F6' },
   shareButton: {
-    backgroundColor: '#3B82F6',
-  },
+    backgroundColor: '#3B82F6' },
   closeButtonText: {
     color: '#6B7280', 
     fontWeight: '600',
-    fontSize: 16,
-  },
+    fontSize: 16 },
   shareButtonText: {
     color: 'white', 
     fontWeight: '600',
-    fontSize: 16,
-  },
-});
+    fontSize: 16 } });
 
 export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
   visible,
   receiptData,
   receiptRef,
-  onClose,
-}) => {
+  onClose }) => {
   const screenWidth = Dimensions.get('window').width;
-  const baseReceiptWidth = 320;
+  const baseReceiptWidth = 600;
   const modalHorizontalPadding = 20;
-  const modalMaxWidth = screenWidth * 0.9;
+  const modalMaxWidth = Math.min(screenWidth * 0.9, 640);
   const availableReceiptWidth = Math.max(0, modalMaxWidth - modalHorizontalPadding * 2);
   const receiptScale = Math.min(1, availableReceiptWidth / baseReceiptWidth);
 
@@ -124,8 +112,8 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
       return new Promise((resolve) => {
         receiptRef.current?.measure((x, y, width, height) => {
           // Use a fixed width that matches the receipt's natural width
-          const receiptWidth = 320; // Match this with your receipt's natural width
-          const scale = 2; // Scale factor for better quality
+          const receiptWidth = 600; // Match this with your receipt's natural width
+          const scale = 3; // Scale factor for better quality
           
           // Calculate height based on aspect ratio
           const receiptHeight = (height / width) * receiptWidth;
@@ -142,8 +130,7 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
             // Share the captured image
             Share.share({
               url: `file://${uri}`,
-              title: 'Rent Receipt',
-            }).then(resolve).catch(resolve);
+              title: 'Rent Receipt' }).then(resolve).catch(resolve);
             
             // Clean up the temporary file after a delay
             setTimeout(async () => {
@@ -174,15 +161,14 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
             style={{
               backgroundColor: '#FFFFFF', // Use hex for consistency
               padding: 0, // Remove padding to prevent content shifting
-              width: 320, // Fixed width to match receipt design
+              width: 600, // Fixed width to match receipt design
               opacity: 1,
               // Add shadow and border for better visual feedback (not captured in the image)
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 4,
-              elevation: 3,
-            }}
+              elevation: 3 }}
             collapsable={false}
             ref={receiptRef}
           >
@@ -209,7 +195,7 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
                 <View style={[
                   styles.receiptWrapper, 
                   { 
-                    width: 320, // Match the hidden view width
+                    width: 600, // Match the hidden view width
                     transform: [{ scale: receiptScale }]
                   }
                 ]}>
@@ -220,14 +206,14 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
 
             {/* Action Buttons */}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={onClose}
                 style={[styles.button, styles.closeButton]}
                 disabled={isSharing}
               >
                 <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </AnimatedPressableCard>
+              <AnimatedPressableCard
                 onPress={handleShare}
                 style={[styles.button, styles.shareButton]}
                 disabled={isSharing}
@@ -237,7 +223,7 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
                 ) : (
                   <Text style={styles.shareButtonText}>Share</Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </View>
         </View>

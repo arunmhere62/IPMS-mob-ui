@@ -1,9 +1,7 @@
 import React from 'react';
 import {
   View,
-  Text,
-  TouchableOpacity,
-} from 'react-native';
+  Text } from 'react-native';
 import { AnimatedPressableCard } from '../../../../../components/AnimatedPressableCard';
 import { CollapsibleSection } from '../../../../../components/CollapsibleSection';
 import { Theme } from '../../../../../theme';
@@ -22,8 +20,7 @@ export const RefundPaymentsSection: React.FC<RefundPaymentsSectionProps> = ({
   expanded,
   onToggle,
   onEdit,
-  onDelete,
-}) => {
+  onDelete }) => {
   const totalRefund = payments?.reduce((sum: number, p: RefundPayment) => sum + parseFloat(p.amount_paid.toString()), 0) || 0;
 
   return (
@@ -52,24 +49,21 @@ export const RefundPaymentsSection: React.FC<RefundPaymentsSectionProps> = ({
                     shadowOffset: { width: 0, height: 1 },
                     shadowOpacity: 0.08,
                     shadowRadius: 4,
-                    elevation: 2,
-                  }}
+                    elevation: 2 }}
                 >
                   <View
                     style={{
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'flex-start',
-                      marginBottom: 8,
-                    }}
+                      marginBottom: 8 }}
                   >
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
                         {new Date(payment.payment_date).toLocaleDateString('en-IN', {
                           day: 'numeric',
                           month: 'short',
-                          year: 'numeric',
-                        })}
+                          year: 'numeric' })}
                       </Text>
                       {payment.status && (
                         <View style={{
@@ -80,15 +74,13 @@ export const RefundPaymentsSection: React.FC<RefundPaymentsSectionProps> = ({
                           alignSelf: 'flex-start',
                           backgroundColor: 
                             payment.status === 'PAID' ? '#10B98120' :
-                            payment.status === 'PENDING' ? '#F59E0B20' : '#9CA3AF20',
-                        }}>
+                            payment.status === 'PENDING' ? '#F59E0B20' : '#9CA3AF20' }}>
                           <Text style={{
                             fontSize: 10,
                             fontWeight: '600',
                             color: 
                               payment.status === 'PAID' ? '#10B981' :
-                              payment.status === 'PENDING' ? '#F59E0B' : '#6B7280',
-                          }}>
+                              payment.status === 'PENDING' ? '#F59E0B' : '#6B7280' }}>
                             {payment.status}
                           </Text>
                         </View>
@@ -99,26 +91,24 @@ export const RefundPaymentsSection: React.FC<RefundPaymentsSectionProps> = ({
                         ₹{payment.amount_paid}
                       </Text>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity
+                        <AnimatedPressableCard
                           onPress={() => onEdit(payment)}
                           style={{
                             padding: 6,
                             borderRadius: 6,
-                            backgroundColor: '#DBEAFE',
-                          }}
+                            backgroundColor: '#DBEAFE' }}
                         >
                           <Text style={{ fontSize: 16 }}>✏️</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </AnimatedPressableCard>
+                        <AnimatedPressableCard
                           onPress={() => onDelete(payment)}
                           style={{
                             padding: 6,
                             borderRadius: 6,
-                            backgroundColor: '#FEE2E2',
-                          }}
+                            backgroundColor: '#FEE2E2' }}
                         >
                           <Text style={{ fontSize: 16 }}>🗑️</Text>
-                        </TouchableOpacity>
+                        </AnimatedPressableCard>
                       </View>
                     </View>
                   </View>

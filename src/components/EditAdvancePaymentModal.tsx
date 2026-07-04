@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Modal,
-  TouchableOpacity,
   ScrollView,
   TextInput,
   ActivityIndicator,
@@ -14,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 import { DatePicker } from './DatePicker';
 import { AdvancePayment } from '@/features/owner/api/paymentsApi';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 
 interface EditAdvancePaymentModalProps {
   visible: boolean;
@@ -114,10 +114,9 @@ export const EditAdvancePaymentModal: React.FC<EditAdvancePaymentModalProps> = (
         style={{ flex: 1 }}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <TouchableOpacity
+          <View
             style={{ flex: 0.1 }}
-            activeOpacity={1}
-            onPress={handleClose}
+            onStartShouldSetResponder={() => { handleClose(); return true; }}
           />
           
           <View
@@ -161,9 +160,9 @@ export const EditAdvancePaymentModal: React.FC<EditAdvancePaymentModalProps> = (
                   {payment.tenants?.name} • {payment.rooms?.room_no || 'N/A'}/{payment.beds?.bed_no || 'N/A'}
                 </Text>
               </View>
-              <TouchableOpacity onPress={handleClose}>
+              <AnimatedPressableCard onPress={handleClose}>
                 <Ionicons name="close" size={24} color={Theme.colors.text.primary} />
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
 
             {/* Form */}
@@ -231,7 +230,7 @@ export const EditAdvancePaymentModal: React.FC<EditAdvancePaymentModalProps> = (
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {PAYMENT_METHODS.map((method) => (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       key={method.value}
                       onPress={() => setPaymentMethod(method.value)}
                       style={{
@@ -273,7 +272,7 @@ export const EditAdvancePaymentModal: React.FC<EditAdvancePaymentModalProps> = (
                       >
                         {method.label}
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   ))}
                 </View>
               </View>
@@ -292,7 +291,7 @@ export const EditAdvancePaymentModal: React.FC<EditAdvancePaymentModalProps> = (
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {ADVANCE_PAYMENT_STATUSES.map((statusOption) => (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       key={statusOption.value}
                       onPress={() => setStatus(statusOption.value)}
                       style={{
@@ -322,7 +321,7 @@ export const EditAdvancePaymentModal: React.FC<EditAdvancePaymentModalProps> = (
                       >
                         {statusOption.label}
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   ))}
                 </View>
               </View>
@@ -370,7 +369,7 @@ export const EditAdvancePaymentModal: React.FC<EditAdvancePaymentModalProps> = (
                 borderTopColor: Theme.colors.border,
               }}
             >
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={handleSave}
                 disabled={loading}
                 style={{
@@ -393,7 +392,7 @@ export const EditAdvancePaymentModal: React.FC<EditAdvancePaymentModalProps> = (
                     Save Changes
                   </Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </View>
         </View>

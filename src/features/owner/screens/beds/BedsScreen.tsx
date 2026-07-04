@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   TextInput,
   RefreshControl,
   Alert,
@@ -23,6 +22,7 @@ import {
 import { Card } from "../../../../components/Card";
 import { ActionButtons } from "../../../../components/ActionButtons";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
+import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 import { Theme } from "../../../../theme";
 import { ScreenHeader } from "../../../../components/ScreenHeader";
 import { ScreenLayout } from "../../../../components/ScreenLayout";
@@ -357,13 +357,13 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
 
         <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
           {!item.is_occupied && (
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => navigation.navigate("AddTenant", { bed_id: item.s_no, room_id: item.room_id })}
               disabled={!canCreateTenant}
               style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#10B981", justifyContent: "center", opacity: canCreateTenant ? 1 : 0.45 }}
             >
               <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Add Tenant</Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           )}
           <ActionButtons
             onEdit={() => handleEditBed(item)}
@@ -485,7 +485,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
             onChangeText={setSearchQuery}
             onSubmitEditing={handleSearch}
           />
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={handleSearch}
             style={{
               backgroundColor: Theme.colors.primary,
@@ -495,8 +495,8 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
             }}
           >
             <Ionicons name="search" size={18} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </AnimatedPressableCard>
+          <AnimatedPressableCard
             onPress={() => setShowFilters(!showFilters)}
             style={{
               backgroundColor:
@@ -538,7 +538,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
                 </Text>
               </View>
             )}
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
       </View>
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>

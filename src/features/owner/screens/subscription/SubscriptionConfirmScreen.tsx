@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -18,8 +19,7 @@ export const SubscriptionConfirmScreen: React.FC<SubscriptionConfirmScreenProps>
     orderId,
     subscriptionId,
     plan,
-    pricing,
-  } = route.params || {};
+    pricing } = route.params || {};
 
   const formatCurrencyAmount = (amount: number | string | null | undefined, currency?: string) => {
     const num = typeof amount === 'string' ? Number.parseFloat(amount) : (amount ?? 0);
@@ -139,14 +139,13 @@ export const SubscriptionConfirmScreen: React.FC<SubscriptionConfirmScreenProps>
           </View>
         </Card>
 
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => {
             navigation.navigate('PaymentWebView', {
               paymentUrl,
               orderId,
               subscriptionId,
-              paymentMethod: 'ccavenue',
-            });
+              paymentMethod: 'ccavenue' });
           }}
           disabled={!paymentUrl}
           style={{
@@ -155,14 +154,13 @@ export const SubscriptionConfirmScreen: React.FC<SubscriptionConfirmScreenProps>
             borderRadius: 12,
             alignItems: 'center',
             flexDirection: 'row',
-            justifyContent: 'center',
-          }}
+            justifyContent: 'center' }}
         >
           <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff', marginRight: 8 }}>
             Proceed to Payment
           </Text>
           <Ionicons name="arrow-forward" size={20} color="#fff" />
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </ScrollView>
     </ScreenLayout>
   );

@@ -1,8 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
-  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StatusBar, Keyboard, RefreshControl,
-} from 'react-native';
+  View, Text, StyleSheet, FlatList, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StatusBar, Keyboard, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSelector, useDispatch } from 'react-redux';
@@ -20,8 +19,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   OPEN:        { bg: '#eff6ff', text: '#1d4ed8' },
   IN_PROGRESS: { bg: '#fff7ed', text: '#c2410c' },
   RESOLVED:    { bg: '#f0fdf4', text: '#166534' },
-  CLOSED:      { bg: '#f3f4f6', text: '#6b7280' },
-};
+  CLOSED:      { bg: '#f3f4f6', text: '#6b7280' } };
 
 interface Props {
   navigation: any;
@@ -143,9 +141,9 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
 
       {/* Gradient header */}
       <LinearGradient colors={[C.primary, C.primaryDark]} style={[styles.header, { paddingTop: ST + 12 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <AnimatedPressableCard onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
+        </AnimatedPressableCard>
         <View style={styles.headerMeta}>
           <Text style={styles.headerTitle} numberOfLines={1}>{ticket?.title ?? 'Ticket'}</Text>
           <View style={[styles.statusBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
@@ -202,7 +200,7 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
             multiline
             maxLength={1000}
           />
-          <TouchableOpacity
+          <AnimatedPressableCard
             style={[styles.sendBtn, (!message.trim() || sending) && styles.sendBtnDisabled]}
             onPress={handleSend}
             disabled={!message.trim() || sending}
@@ -211,7 +209,7 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
               ? <ActivityIndicator size="small" color="#fff" />
               : <Ionicons name="send" size={18} color="#fff" />
             }
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
       )}
 
@@ -231,17 +229,14 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 4 },
   infoStrip: {
     flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingVertical: 8,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
-  },
+    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   infoChip: {
     fontSize: 11, fontWeight: '600', color: '#6b7280',
-    backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10,
-  },
+    backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   infoAssigned: { fontSize: 11, color: '#9ca3af', marginLeft: 'auto', alignSelf: 'center' },
   closedBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center',
-    backgroundColor: '#f9fafb', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
-  },
+    backgroundColor: '#f9fafb', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   closedText: { fontSize: 12, color: '#6b7280' },
   flatList: { flex: 1 },
   chatContent: { padding: 14, flexGrow: 1, justifyContent: 'flex-end', paddingBottom: 8 },
@@ -258,16 +253,12 @@ const styles = StyleSheet.create({
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 10,
     paddingHorizontal: 14, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 24 : 16,
-    backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#e5e7eb',
-  },
+    backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   input: {
     flex: 1, backgroundColor: '#f3f4f6', borderRadius: 22,
     paddingHorizontal: 14, paddingVertical: 10, fontSize: 14,
-    color: '#111827', maxHeight: 100,
-  },
+    color: '#111827', maxHeight: 100 },
   sendBtn: {
     width: 42, height: 42, borderRadius: 21, backgroundColor: C.primary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  sendBtnDisabled: { opacity: 0.4 },
-});
+    alignItems: 'center', justifyContent: 'center' },
+  sendBtnDisabled: { opacity: 0.4 } });

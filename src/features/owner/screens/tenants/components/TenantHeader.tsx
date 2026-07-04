@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, Image, StyleSheet, Animated, Easing, TouchableOpacity } from "react-native";
+import { View, Text, Image, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressableCard } from "../../../../../components/AnimatedPressableCard";
 import { ActionButtons } from "../../../../../components/ActionButtons";
@@ -46,17 +46,16 @@ const RentTourHintTile: React.FC<{ onPress: () => void; disabled?: boolean }> = 
       </View>
       <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
       <Animated.View style={{ transform: [{ scale: pulse }], width: '100%' }}>
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={onPress}
           disabled={disabled}
-          activeOpacity={0.8}
           style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 12, backgroundColor: '#1E3A8A', borderRadius: 10, alignItems: 'center', justifyContent: 'center', minHeight: 52, shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.55, shadowRadius: 8, elevation: 7, opacity: disabled ? 0.45 : 1 }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="wallet" size={16} color="#fff" />
-            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginLeft: 8 }}>Add Rent</Text>
+            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginLeft: 8 }} numberOfLines={1} adjustsFontSizeToFit>Add Rent</Text>
           </View>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </Animated.View>
     </View>
   );
@@ -79,8 +78,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
   onAddCurrentBill,
   canAddPayment = true,
   canAddAdvance = true,
-  canAddRefund = true,
-}) => {
+  canAddRefund = true }) => {
   const tenantImage =
     tenant.images && tenant.images.length > 0 ? tenant.images[0] : null;
 
@@ -128,8 +126,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
             ? new Date(tenant.check_in_date).toLocaleDateString('en-IN', {
                 day: '2-digit',
                 month: 'short',
-                year: 'numeric',
-              })
+                year: 'numeric' })
             : 'N/A'}
         </Text>
       </View>
@@ -154,6 +151,8 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
                 ? { color: "#D97706" }
                 : { color: "#DC2626" },
           ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
         >
           {tenant.status}
         </Text>
@@ -169,7 +168,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
             style={styles.contactButton}
           >
             <Ionicons name="call" size={16} color="#333" />
-            <Text style={styles.contactText}>Call</Text>
+            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit>Call</Text>
           </AnimatedPressableCard>
         )}
 
@@ -181,7 +180,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
             style={styles.contactButton}
           >
             <Ionicons name="logo-whatsapp" size={16} color="#333" />
-            <Text style={styles.contactText}>WhatsApp</Text>
+            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit>WhatsApp</Text>
           </AnimatedPressableCard>
         )}
       </View>
@@ -196,7 +195,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
         >
           <View style={styles.emailButton}>
             <Ionicons name="mail" size={16} color="#333" />
-            <Text style={styles.contactText}>Email</Text>
+            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit>Email</Text>
           </View>
         </AnimatedPressableCard>
       )}
@@ -236,15 +235,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     alignItems: "center",
-    position: "relative",
-  },
+    position: "relative" },
 
   editButton: {
     position: "absolute",
     top: 12,
     right: 12,
-    zIndex: 10,
-  },
+    zIndex: 10 },
 
   avatarWrapper: {
     width: 110,
@@ -256,26 +253,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: Theme.colors.border,
-  },
+    borderColor: Theme.colors.border },
 
   avatar: {
     width: "100%",
-    height: "100%",
-  },
+    height: "100%" },
 
   avatarFallback: {
     fontSize: 40,
     fontWeight: "700",
-    color: Theme.colors.text.secondary,
-  },
+    color: Theme.colors.text.secondary },
 
   name: {
     fontSize: 20,
     fontWeight: "700",
     color: Theme.colors.text.primary,
-    marginBottom: 6,
-  },
+    marginBottom: 6 },
 
   checkInDateBadge: {
     flexDirection: 'row',
@@ -286,59 +279,50 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: Theme.colors.primary,
-  },
+    borderColor: Theme.colors.primary },
 
   checkInDateLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: Theme.colors.primary,
-    marginLeft: 6,
-  },
+    marginLeft: 6 },
 
   checkInDateValue: {
     fontSize: 13,
     fontWeight: '700',
     color: Theme.colors.primaryDark,
-    marginLeft: 4,
-  },
+    marginLeft: 4 },
 
   statusBadge: {
     paddingHorizontal: 14,
     paddingVertical: 4,
     borderRadius: 12,
     marginBottom: 18,
-    borderWidth: 1,
-  },
+    borderWidth: 1 },
 
   statusActive: {
     backgroundColor: Theme.withOpacity(Theme.colors.secondary, 0.12),
-    borderColor: Theme.withOpacity(Theme.colors.secondary, 0.35),
-  },
+    borderColor: Theme.withOpacity(Theme.colors.secondary, 0.35) },
 
   statusInactive: {
     backgroundColor: "#FEE2E2",
-    borderColor: "#DC2626",
-  },
+    borderColor: "#DC2626" },
 
   statusCheckedOut: {
     backgroundColor: "#FEF3C7",
-    borderColor: "#D97706",
-  },
+    borderColor: "#D97706" },
 
   statusText: {
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
+    letterSpacing: 0.4 },
 
   contactRow: {
     flexDirection: "row",
     gap: 10,
     width: "100%",
-    marginBottom: 16,
-  },
+    marginBottom: 16 },
 
   contactButton: {
     flex: 1,
@@ -349,8 +333,7 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center" },
 
   emailButton: {
     backgroundColor: Theme.colors.background.secondary,
@@ -361,18 +344,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 18,
-  },
+    marginBottom: 18 },
 
   contactText: {
     marginLeft: 6,
     color: Theme.colors.text.primary,
     fontSize: 13,
-    fontWeight: "600",
-  },
+    fontWeight: "600" },
 
   actionGrid: {
     width: "100%",
-    flexDirection: "column",
-  },
-});
+    flexDirection: "column" } });

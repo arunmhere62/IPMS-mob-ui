@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, Alert, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
 import {
@@ -8,8 +9,7 @@ import {
   type AllocationBasis,
   type CustomAllocationItem,
   type CreateElectricityBillDto,
-  type EligibleTenant,
-} from '@/features/owner/api';
+  type EligibleTenant } from '@/features/owner/api';
 import { Theme } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { SlideBottomModal } from '@/components/SlideBottomModal';
@@ -73,8 +73,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
   visible,
   roomId,
   onClose,
-  onSuccess,
-}) => {
+  onSuccess }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const today = new Date();
 
@@ -104,8 +103,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
     const end = new Date(year, month + 1, 0);
     return {
       periodStart: formatDate(start),
-      periodEnd: formatDate(end),
-    };
+      periodEnd: formatDate(end) };
   }, [selectedMonth, selectedYear]);
 
   // Fetch eligible tenants when period changes
@@ -116,8 +114,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
       getEligibleTenants({
         room_id: roomId,
         bill_period_start: periodStart,
-        bill_period_end: periodEnd,
-      }).unwrap().then((response) => {
+        bill_period_end: periodEnd }).unwrap().then((response) => {
         if (isMountedRef.current && response.success) {
           setEligibleTenants(response.data);
         }
@@ -221,8 +218,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
       meter_reading_start: prevReading ? Number(prevReading) : undefined,
       meter_reading_end: currReading ? Number(currReading) : undefined,
       due_date: dueDate || undefined,
-      allocation_basis: allocationBasis!,
-    };
+      allocation_basis: allocationBasis! };
 
     if (allocationBasis === 'CUSTOM') {
       const customItems: CustomAllocationItem[] = eligibleTenants.map((t) => {
@@ -231,8 +227,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
         return {
           tenant_id: t.tenant_id,
           share_amount: share,
-          share_percentage: Number(percentage.toFixed(2)),
-        };
+          share_percentage: Number(percentage.toFixed(2)) };
       });
       payload.custom_allocations = customItems;
     }
@@ -313,8 +308,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                 borderBottomLeftRadius: 8,
                 borderWidth: 1,
                 borderColor: '#E5E7EB',
-                borderRightWidth: 0,
-              }}
+                borderRightWidth: 0 }}
             >
               <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.primary }}>
                 ₹
@@ -334,8 +328,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                 borderLeftWidth: 0,
                 padding: 12,
                 fontSize: 14,
-                backgroundColor: '#fff',
-              }}
+                backgroundColor: '#fff' }}
             />
           </View>
         </View>
@@ -404,6 +397,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
             selectedValue={selectedMonth}
             onSelect={(value) => setSelectedMonth(value || String(today.getMonth()))}
             required
+            disabled={fetchingTenants}
           />
           <OptionSelector
             label="Year"
@@ -411,6 +405,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
             selectedValue={selectedYear}
             onSelect={(value) => setSelectedYear(value || String(today.getFullYear()))}
             required
+            disabled={fetchingTenants}
           />
         </View>
 
@@ -420,8 +415,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
             backgroundColor: '#F0F9FF',
             borderRadius: 10,
             borderLeftWidth: 3,
-            borderLeftColor: Theme.colors.primary,
-          }}
+            borderLeftColor: Theme.colors.primary }}
         >
           <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 2 }}>
             Bill Period
@@ -438,8 +432,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
               fontSize: 13,
               fontWeight: '600',
               color: Theme.colors.text.primary,
-              marginBottom: 6,
-            }}
+              marginBottom: 6 }}
           >
             Total Amount <Text style={{ color: '#EF4444' }}>*</Text>
           </Text>
@@ -453,8 +446,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                 borderBottomLeftRadius: 8,
                 borderWidth: 1,
                 borderColor: '#E5E7EB',
-                borderRightWidth: 0,
-              }}
+                borderRightWidth: 0 }}
             >
               <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.primary }}>
                 ₹
@@ -474,8 +466,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                 borderLeftWidth: 0,
                 padding: 12,
                 fontSize: 14,
-                backgroundColor: '#fff',
-              }}
+                backgroundColor: '#fff' }}
             />
           </View>
         </View>
@@ -497,8 +488,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                 backgroundColor: '#F3F4F6',
                 borderRadius: 10,
                 borderLeftWidth: 3,
-                borderLeftColor: Theme.colors.primary,
-              }}
+                borderLeftColor: Theme.colors.primary }}
             >
               <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 18 }}>
                 {allocationBasis === 'EQUAL' &&
@@ -550,8 +540,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                     backgroundColor: '#F9FAFB',
                     borderRadius: 10,
                     borderWidth: 1,
-                    borderColor: '#E5E7EB',
-                  }}
+                    borderColor: '#E5E7EB' }}
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
@@ -573,15 +562,13 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                         backgroundColor: t.status === 'ACTIVE' ? '#DCFCE7' : '#FEF3C7',
                         paddingHorizontal: 8,
                         paddingVertical: 3,
-                        borderRadius: 6,
-                      }}
+                        borderRadius: 6 }}
                     >
                       <Text
                         style={{
                           fontSize: 10,
                           fontWeight: '700',
-                          color: t.status === 'ACTIVE' ? '#059669' : '#D97706',
-                        }}
+                          color: t.status === 'ACTIVE' ? '#059669' : '#D97706' }}
                       >
                         {t.status === 'ACTIVE' ? 'Active' : 'Checked Out'}
                       </Text>
@@ -613,8 +600,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
 
         {/* Optional details accordion */}
         <View>
-          <TouchableOpacity
-            activeOpacity={0.8}
+          <AnimatedPressableCard
             onPress={() => setOptionalExpanded((prev) => !prev)}
             style={{
               flexDirection: 'row',
@@ -624,8 +610,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
               backgroundColor: '#F9FAFB',
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: '#E5E7EB',
-            }}
+              borderColor: '#E5E7EB' }}
           >
             <View>
               <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
@@ -640,7 +625,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
               size={20}
               color={Theme.colors.text.secondary}
             />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
           {optionalExpanded && (
             <View style={{ marginTop: 12, gap: 16 }}>
@@ -651,8 +636,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                     fontSize: 14,
                     fontWeight: '700',
                     color: Theme.colors.text.primary,
-                    marginBottom: 12,
-                  }}
+                    marginBottom: 12 }}
                 >
                   Meter Reading (optional)
                 </Text>
@@ -663,8 +647,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                       fontSize: 13,
                       fontWeight: '600',
                       color: Theme.colors.text.primary,
-                      marginBottom: 6,
-                    }}
+                      marginBottom: 6 }}
                   >
                     Previous Reading
                   </Text>
@@ -679,8 +662,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
-                    }}
+                      backgroundColor: '#fff' }}
                   />
                 </View>
 
@@ -690,8 +672,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                       fontSize: 13,
                       fontWeight: '600',
                       color: Theme.colors.text.primary,
-                      marginBottom: 6,
-                    }}
+                      marginBottom: 6 }}
                   >
                     Current Reading
                   </Text>
@@ -706,8 +687,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
-                    }}
+                      backgroundColor: '#fff' }}
                   />
                 </View>
 
@@ -717,8 +697,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                       fontSize: 13,
                       fontWeight: '600',
                       color: Theme.colors.text.primary,
-                      marginBottom: 6,
-                    }}
+                      marginBottom: 6 }}
                   >
                     Rate per Unit
                   </Text>
@@ -732,8 +711,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                         borderBottomLeftRadius: 8,
                         borderWidth: 1,
                         borderColor: '#E5E7EB',
-                        borderRightWidth: 0,
-                      }}
+                        borderRightWidth: 0 }}
                     >
                       <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.primary }}>
                         ₹
@@ -753,8 +731,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                         borderLeftWidth: 0,
                         padding: 12,
                         fontSize: 14,
-                        backgroundColor: '#fff',
-                      }}
+                        backgroundColor: '#fff' }}
                     />
                   </View>
                 </View>
@@ -769,8 +746,7 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                       borderRadius: 10,
                       padding: 12,
                       borderWidth: 1,
-                      borderColor: '#BBF7D0',
-                    }}
+                      borderColor: '#BBF7D0' }}
                   >
                     <View>
                       <Text style={{ fontSize: 12, color: '#166534' }}>

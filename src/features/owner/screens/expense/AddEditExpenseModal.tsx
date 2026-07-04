@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, TextInput, Alert } from "react-native";
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, TextInput, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "../../../../theme";
 import {
   Expense,
   PaymentMethod,
   useCreateExpenseMutation,
-  useUpdateExpenseMutation,
-} from "../../api/expensesApi";
+  useUpdateExpenseMutation } from "../../api/expensesApi";
 import { DatePicker } from "../../../../components/DatePicker";
 import { SlideBottomModal } from "../../../../components/SlideBottomModal";
 import { OptionSelector } from "../../../../components/OptionSelector";
@@ -27,26 +27,22 @@ const PAYMENT_METHODS = [
     label: "GPay",
     value: PaymentMethod.GPAY,
     icon: "logo-google",
-    color: "#4285F4",
-  },
+    color: "#4285F4" },
   {
     label: "PhonePe",
     value: PaymentMethod.PHONEPE,
     icon: "phone-portrait-outline",
-    color: "#5F259F",
-  },
+    color: "#5F259F" },
   {
     label: "Cash",
     value: PaymentMethod.CASH,
     icon: "cash-outline",
-    color: "#10B981",
-  },
+    color: "#10B981" },
   {
     label: "Bank Transfer",
     value: PaymentMethod.BANK_TRANSFER,
     icon: "card-outline",
-    color: "#F59E0B",
-  },
+    color: "#F59E0B" },
 ];
 
 const EXPENSE_TYPES = [
@@ -66,8 +62,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
   expense,
   onClose,
   onSave,
-  onRefetchMonthlyMetrics,
-}) => {
+  onRefetchMonthlyMetrics }) => {
   const [createExpense] = useCreateExpenseMutation();
   const [updateExpense] = useUpdateExpenseMutation();
 
@@ -147,8 +142,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
         paid_to: paidTo.trim(),
         paid_date: paidDate,
         payment_method: paymentMethod,
-        remarks: remarks.trim() || undefined,
-      };
+        remarks: remarks.trim() || undefined };
 
       if (expense) {
         // Update existing expense
@@ -203,15 +197,14 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
             fontSize: 14,
             fontWeight: "600",
             color: Theme.colors.text.primary,
-            marginBottom: 12,
-          }}
+            marginBottom: 12 }}
         >
           Expense Type <Text style={{ color: Theme.colors.danger }}>*</Text>
         </Text>
 
         {/* Toggle between predefined and custom */}
         <View style={{ flexDirection: "row", marginBottom: 8, gap: 8 }}>
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => {
               setShowCustomType(false);
               setCustomExpenseType("");
@@ -228,8 +221,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
               backgroundColor: !showCustomType
                 ? Theme.colors.background.blueLight
                 : Theme.colors.canvas,
-              alignItems: "center",
-            }}
+              alignItems: "center" }}
           >
             <Text
               style={{
@@ -237,13 +229,12 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
                 fontWeight: !showCustomType ? "600" : "400",
                 color: !showCustomType
                   ? Theme.colors.primary
-                  : Theme.colors.text.secondary,
-              }}
+                  : Theme.colors.text.secondary }}
             >
               Predefined Types
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </AnimatedPressableCard>
+          <AnimatedPressableCard
             onPress={() => {
               setShowCustomType(true);
               setExpenseType("");
@@ -260,8 +251,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
               backgroundColor: showCustomType
                 ? Theme.colors.background.blueLight
                 : Theme.colors.canvas,
-              alignItems: "center",
-            }}
+              alignItems: "center" }}
           >
             <Text
               style={{
@@ -269,18 +259,17 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
                 fontWeight: showCustomType ? "600" : "400",
                 color: showCustomType
                   ? Theme.colors.primary
-                  : Theme.colors.text.secondary,
-              }}
+                  : Theme.colors.text.secondary }}
             >
               Custom Type
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
 
         {!showCustomType ? (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {EXPENSE_TYPES.map((type) => (
-              <TouchableOpacity
+              <AnimatedPressableCard
                 key={type}
                 onPress={() => setExpenseType(type)}
                 style={{
@@ -295,8 +284,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
                   backgroundColor:
                     expenseType === type
                       ? Theme.colors.background.blueLight
-                      : Theme.colors.canvas,
-                }}
+                      : Theme.colors.canvas }}
               >
                 <Text
                   style={{
@@ -305,12 +293,11 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
                     color:
                       expenseType === type
                         ? Theme.colors.primary
-                        : Theme.colors.text.primary,
-                  }}
+                        : Theme.colors.text.primary }}
                 >
                   {type}
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             ))}
           </View>
         ) : (
@@ -325,8 +312,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
               borderColor: errors.expenseType
                 ? Theme.colors.danger
                 : Theme.colors.input.border,
-              borderRadius: 8,
-            }}
+              borderRadius: 8 }}
             placeholder="Enter custom expense type (e.g., Gas Bill, Pest Control)"
             placeholderTextColor={Theme.colors.input.placeholder}
             value={customExpenseType}
@@ -362,8 +348,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
             fontSize: 14,
             fontWeight: "600",
             color: Theme.colors.text.primary,
-            marginBottom: 8,
-          }}
+            marginBottom: 8 }}
         >
           Paid To <Text style={{ color: Theme.colors.danger }}>*</Text>
         </Text>
@@ -377,8 +362,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
               ? Theme.colors.danger
               : Theme.colors.input.border,
             borderRadius: 8,
-            paddingHorizontal: 16,
-          }}
+            paddingHorizontal: 16 }}
         >
           <Ionicons
             name="person-outline"
@@ -391,8 +375,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
               paddingVertical: 12,
               paddingHorizontal: 12,
               fontSize: 16,
-              color: Theme.colors.text.primary,
-            }}
+              color: Theme.colors.text.primary }}
             placeholder="Enter person or company name"
             placeholderTextColor={Theme.colors.input.placeholder}
             value={paidTo}
@@ -430,13 +413,11 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
               GPay: "💰",
               PhonePe: "📱",
               Cash: "💵",
-              "Bank Transfer": "🏦",
-            };
+              "Bank Transfer": "🏦" };
             return {
               label: method.label,
               value: method.value,
-              icon: iconMap[method.label] || "💳",
-            };
+              icon: iconMap[method.label] || "💳" };
           })}
           selectedValue={paymentMethod}
           onSelect={(value) => setPaymentMethod(value as PaymentMethod)}
@@ -453,8 +434,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
             fontSize: 14,
             fontWeight: "600",
             color: Theme.colors.text.primary,
-            marginBottom: 8,
-          }}
+            marginBottom: 8 }}
         >
           Remarks (Optional)
         </Text>
@@ -469,8 +449,7 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
             borderColor: Theme.colors.input.border,
             borderRadius: 8,
             minHeight: 80,
-            textAlignVertical: "top",
-          }}
+            textAlignVertical: "top" }}
           placeholder="Add any additional notes"
           placeholderTextColor={Theme.colors.input.placeholder}
           multiline

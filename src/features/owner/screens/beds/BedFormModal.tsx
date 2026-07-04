@@ -123,17 +123,6 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // Validate required IDs
-    if (!roomId) {
-      newErrors.room_id = "Room ID is required";
-    }
-    if (!pgId) {
-      newErrors.pg_id = "PG ID is required";
-    }
-    if (!organizationId) {
-      newErrors.organization_id = "Organization ID is required";
-    }
-
     // Validate bed number
     const trimmedBedNo = formData.bed_no.trim();
     if (!trimmedBedNo || trimmedBedNo === "BED") {
@@ -196,26 +185,34 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const hasVisibleErrors = () => {
+    return !!(errors.bed_no || errors.bed_price || errors.images);
+  };
+
   const handleSubmit = async () => {
+    if (!roomId || !pgId) {
+      Alert.alert("Error", "Missing required information. Please try again.");
+      return;
+    }
+
     if (!validateForm()) {
-      Alert.alert(
-        "Validation Error",
-        "Please fill in all required fields correctly"
-      );
+      if (hasVisibleErrors()) {
+        Alert.alert(
+          "Validation Error",
+          "Please fill in all required fields correctly"
+        );
+      }
       return;
     }
 
     try {
       setLoading(true);
 
-      // Note: S3 deletion is handled by the backend
-      // Frontend just sends the updated images list, backend removes deleted images
-
       const bedData: any = {
         room_id: roomId,
         pg_id: pgId,
         bed_price: parseFloat(formData.bed_price),
-        images: formData.images, // Always send images array, even if empty, so backend can clear removed images
+        images: formData.images,
       };
 
       if (!isEditMode || !isBedNoLocked) {

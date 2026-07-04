@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { 
   View, 
   Text, 
   FlatList, 
-  TouchableOpacity, 
   RefreshControl, 
   Alert,
-  ActivityIndicator,
-} from 'react-native';
+  ActivityIndicator } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { Card } from '../../../../components/Card';
@@ -24,8 +23,7 @@ import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
   useLazyGetVisitorsQuery,
-  useDeleteVisitorMutation,
-} from '../../api/visitorsApi';
+  useDeleteVisitorMutation } from '../../api/visitorsApi';
 import { RootState } from '../../store';
 
 interface VisitorsScreenProps {
@@ -63,8 +61,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
     Alert.alert('Access Denied', 'Only Admin/Super Admin can access Visitors.', [
       {
         text: 'OK',
-        onPress: () => navigation.goBack(),
-      },
+        onPress: () => navigation.goBack() },
     ]);
   }, [canManageVisitors, navigation]);
 
@@ -97,8 +94,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       
       const params: any = {
         page,
-        limit: 20,
-      };
+        limit: 20 };
 
       const result = await triggerGetVisitors(params).unwrap();
 
@@ -171,8 +167,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
 
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 50,
-    minimumViewTime: 100,
-  }).current;
+    minimumViewTime: 100 }).current;
 
   const handleDeleteVisitor = (id: number, name: string) => {
     if (!canDeleteVisitor) {
@@ -197,8 +192,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
             } catch (error: any) {
               showErrorAlert(error, 'Delete Error');
             }
-          },
-        },
+          } },
       ]
     );
   };
@@ -252,8 +246,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
       shadowRadius: 2,
-      elevation: 1,
-    }}>
+      elevation: 1 }}>
       {/* Header */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
         <View style={{ flex: 1 }}>
@@ -297,8 +290,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
               <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
                 {new Date(visitedDate).toLocaleDateString('en-IN', {
                   day: '2-digit',
-                  month: 'short',
-                })}
+                  month: 'short' })}
               </Text>
             </View>
           )}
@@ -335,8 +327,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           paddingVertical: 4, 
           borderRadius: 6,
           alignSelf: 'flex-start',
-          marginBottom: 4,
-        }}>
+          marginBottom: 4 }}>
           <Text style={{ fontSize: 10, fontWeight: '700', color: '#10B981' }}>
             ✓ CONVERTED TO TENANT
           </Text>
@@ -351,8 +342,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           backgroundColor: '#F9FAFB', 
           borderRadius: 6,
           borderLeftWidth: 2,
-          borderLeftColor: Theme.colors.primary,
-        }}>
+          borderLeftColor: Theme.colors.primary }}>
           <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 2 }}>Remarks</Text>
           <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }} numberOfLines={2}>
             {remarks}
@@ -388,14 +378,12 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.25,
           shadowRadius: 4,
-          elevation: 5,
-        }}>
+          elevation: 5 }}>
           <Text style={{ 
             fontSize: 12, 
             fontWeight: '700', 
             color: '#fff',
-            textAlign: 'center',
-          }}>
+            textAlign: 'center' }}>
             {visibleItemsCount} of {pagination?.total || visitors.length}
           </Text>
           <Text style={{ 
@@ -403,8 +391,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
             color: '#fff',
             opacity: 0.8,
             textAlign: 'center',
-            marginTop: 2,
-          }}>
+            marginTop: 2 }}>
             {(pagination?.total || visitors.length) - visibleItemsCount} remaining
           </Text>
         </View>
@@ -491,7 +478,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       )}
 
       {/* Floating Add Visitor Button */}
-      <TouchableOpacity
+      <AnimatedPressableCard
         onPress={handleAddVisitor}
         style={{
           position: 'absolute',
@@ -507,11 +494,10 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
-          shadowRadius: 8,
-        }}
+          shadowRadius: 8 }}
       >
         <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>
-      </TouchableOpacity>
+      </AnimatedPressableCard>
 
       {/* Visitor Form Modal */}
       <VisitorFormModal

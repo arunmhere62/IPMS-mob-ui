@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   Alert,
   RefreshControl,
   Image,
@@ -26,10 +25,12 @@ import {
 import { Card } from '../../../../components/Card';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { Theme } from '../../../../theme';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { BedFormModal } from '../beds/BedFormModal';
+import { BulkAddBedsModal } from '../beds/BulkAddBedsModal';
 import { RoomFormModal } from './CreateEditRoomModal';
 import { showDeleteConfirmation } from '../../../../components/DeleteConfirmationDialog';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,8 +38,6 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
-import { useOnboardingTour } from '../../../../context/OnboardingTourContext';
-import { Animated, Easing } from 'react-native';
 
 interface RoomDetailsScreenProps {
   navigation: any;
@@ -49,35 +48,6 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   const { roomId } = route.params;
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
-  const { tourStep, advanceTour, endTour } = useOnboardingTour();
-  const addBedPulse = useRef(new Animated.Value(1)).current;
-  const tenantPulse = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (tourStep === 'tap_add_bed') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(addBedPulse, { toValue: 1.15, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-          Animated.timing(addBedPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        ])
-      ).start();
-    } else {
-      addBedPulse.setValue(1);
-    }
-  }, [tourStep]);
-
-  useEffect(() => {
-    if (tourStep === 'tap_add_tenant') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(tenantPulse, { toValue: 1.18, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-          Animated.timing(tenantPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        ])
-      ).start();
-    } else {
-      tenantPulse.setValue(1);
-    }
-  }, [tourStep]);
-
   const screenWidth = Dimensions.get('window').width;
 
   const canEditRoom = can(Permission.EDIT_ROOM);
@@ -94,6 +64,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   const [bedModalVisible, setBedModalVisible] = useState(false);
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
   const [roomEditModalVisible, setRoomEditModalVisible] = useState(false);
+  const [bulkBedsModalVisible, setBulkBedsModalVisible] = useState(false);
 
   const {
     data: roomResponse,
@@ -167,6 +138,20 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
     setBedModalVisible(true);
   };
 
+  const handleBulkAddBeds = () => {
+    if (!canCreateBed) {
+      Alert.alert('Access Denied', "You don't have permission to create beds");
+      return;
+    }
+    setBulkBedsModalVisible(true);
+  };
+
+  const handleBulkBedsSuccess = async () => {
+    setBulkBedsModalVisible(false);
+    await refetchBeds();
+    await refetchRoom();
+  };
+
   const handleEditBed = (bed: Bed) => {
     if (!canEditBed) {
       Alert.alert('Access Denied', "You don't have permission to edit beds");
@@ -201,7 +186,6 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   const handleBedFormSuccess = async () => {
     await refetchBeds();
     await refetchRoom();
-    if (tourStep === 'tap_add_bed') advanceTour();
   };
 
   const handleEdit = () => {
@@ -531,7 +515,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
         <Card style={{ marginHorizontal: 16, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, fontWeight: '600' }}>TOTAL</Text>
+              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>TOTAL</Text>
               <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginTop: 2 }}>
                 {beds.length}
               </Text>
@@ -540,7 +524,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
             <View style={{ width: 1, height: 26, backgroundColor: Theme.colors.border }} />
 
             <View style={{ alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 11, color: '#059669', fontWeight: '600' }}>AVAILABLE</Text>
+              <Text style={{ fontSize: 11, color: '#059669', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>AVAILABLE</Text>
               <Text style={{ fontSize: 16, fontWeight: '700', color: '#059669', marginTop: 2 }}>
                 {beds.filter((b) => !b.is_occupied).length}
               </Text>
@@ -549,7 +533,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
             <View style={{ width: 1, height: 26, backgroundColor: Theme.colors.border }} />
 
             <View style={{ alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: '600' }}>OCCUPIED</Text>
+              <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>OCCUPIED</Text>
               <Text style={{ fontSize: 16, fontWeight: '700', color: '#DC2626', marginTop: 2 }}>
                 {beds.filter((b) => b.is_occupied).length}
               </Text>
@@ -581,11 +565,11 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
 
         {/* Electricity Bills */}
         <Card style={{ margin: 16, marginTop: 0, padding: 16 }}>
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => navigation.navigate('RoomElectricityBills', { roomId: room.s_no, roomNo: room.room_no })}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
               <View
                 style={{
                   width: 42,
@@ -598,7 +582,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
               >
                 <Text style={{ fontSize: 20 }}>⚡</Text>
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
                   Electricity Bills
                 </Text>
@@ -608,34 +592,40 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
               </View>
             </View>
             <Ionicons name="chevron-forward" size={22} color={Theme.colors.text.tertiary} />
-          </TouchableOpacity>
-        </Card>
+          </AnimatedPressableCard>
 
-        {/* Missing Last Month Bill Warning */}
-        {!hasLastMonthBill && beds.some(b => b.is_occupied) && (
-          <Card
-            style={{
-              marginHorizontal: 16,
-              marginBottom: 12,
-              padding: 14,
-              backgroundColor: '#FEE2E2',
-              borderWidth: 1,
-              borderColor: '#FECACA',
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Ionicons name="warning" size={20} color="#DC2626" />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#DC2626', marginBottom: 2 }}>
-                  Missing Electricity Bill
-                </Text>
-                <Text style={{ fontSize: 12, color: '#991B1B' }}>
-                  No electricity bill added for {lastMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
-                </Text>
-              </View>
+          {/* Last month bill status badge */}
+          {beds.some(b => b.is_occupied) && (
+            <View
+              style={{
+                marginTop: 12,
+                paddingTop: 12,
+                borderTopWidth: 1,
+                borderTopColor: Theme.colors.border,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Ionicons
+                name={hasLastMonthBill ? 'checkmark-circle' : 'alert-circle'}
+                size={16}
+                color={hasLastMonthBill ? '#16A34A' : '#DC2626'}
+              />
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: '600',
+                  color: hasLastMonthBill ? '#16A34A' : '#DC2626',
+                }}
+              >
+                {hasLastMonthBill
+                  ? `Bill created for ${lastMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`
+                  : `No bill for ${lastMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`}
+              </Text>
             </View>
-          </Card>
-        )}
+          )}
+        </Card>
 
         {/* Beds List */}
         <Card style={{ margin: 16, marginTop: 0, padding: 16 }}>
@@ -650,33 +640,24 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
             <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
               🛏️ Beds ({beds.length})
             </Text>
-            {tourStep === 'tap_add_bed' ? (
-              <View style={{ alignItems: 'center' }}>
-                <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap here!</Text>
-                </View>
-                <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
-                <Animated.View style={{ transform: [{ scale: addBedPulse }] }}>
-                  <TouchableOpacity
-                    onPress={handleAddBed}
-                    disabled={!canCreateBed}
-                    style={{ backgroundColor: '#1E3A8A', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4, shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
-                  >
-                    <Ionicons name="add" size={18} color="#fff" />
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Add Bed</Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
-            ) : (
-              <TouchableOpacity
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              <AnimatedPressableCard
                 onPress={handleAddBed}
                 disabled={!canCreateBed}
                 style={{ backgroundColor: Theme.colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4, opacity: canCreateBed ? 1 : 0.45 }}
               >
                 <Ionicons name="add" size={18} color="#fff" />
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Add Bed</Text>
-              </TouchableOpacity>
-            )}
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>Add Bed</Text>
+              </AnimatedPressableCard>
+              <AnimatedPressableCard
+                onPress={handleBulkAddBeds}
+                disabled={!canCreateBed}
+                style={{ backgroundColor: '#6366F1', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4, opacity: canCreateBed ? 1 : 0.45 }}
+              >
+                <Ionicons name="layers" size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>Bulk Add</Text>
+              </AnimatedPressableCard>
+            </View>
           </View>
 
           {beds && beds.length > 0 ? (
@@ -721,7 +702,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                       {occupied && tenant ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <Ionicons name="person" size={12} color="#F59E0B" />
-                          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontWeight: '500' }} numberOfLines={1}>
+                          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontWeight: '500' }} numberOfLines={1} adjustsFontSizeToFit>
                             {tenant.name}
                           </Text>
                         </View>
@@ -734,59 +715,41 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
 
                     {/* Add / View button */}
                     {!occupied ? (
-                      tourStep === 'tap_add_tenant' && index === beds.findIndex(b => !b.is_occupied) ? (
-                        <View style={{ alignItems: 'center' }}>
-                          <View style={{ backgroundColor: '#065F46', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4 }}>
-                            <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap here!</Text>
-                          </View>
-                          <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#065F46', marginBottom: 2 }} />
-                          <Animated.View style={{ transform: [{ scale: tenantPulse }] }}>
-                            <TouchableOpacity
-                              onPress={() => { navigation.navigate('AddTenant', { bed_id: bed.s_no, room_id: room.s_no }); }}
-                              disabled={!canCreateTenant}
-                              style={{ backgroundColor: '#065F46', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, shadowColor: '#065F46', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
-                            >
-                              <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>+ Add Tenant</Text>
-                            </TouchableOpacity>
-                          </Animated.View>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          onPress={() => navigation.navigate('AddTenant', { bed_id: bed.s_no, room_id: room.s_no })}
-                          disabled={!canCreateTenant}
-                          style={{ backgroundColor: '#16A34A', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, opacity: canCreateTenant ? 1 : 0.45 }}
-                        >
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>+ Add Tenant</Text>
-                        </TouchableOpacity>
-                      )
+                      <AnimatedPressableCard
+                        onPress={() => navigation.navigate('AddTenant', { bed_id: bed.s_no, room_id: room.s_no })}
+                        disabled={!canCreateTenant}
+                        style={{ backgroundColor: '#16A34A', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, opacity: canCreateTenant ? 1 : 0.45 }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>+ Add Tenant</Text>
+                      </AnimatedPressableCard>
                     ) : tenant?.s_no ? (
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         onPress={() => navigation.navigate('TenantDetails', { tenantId: tenant.s_no })}
                         style={{ backgroundColor: '#DC2626', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8 }}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>View Tenant</Text>
-                      </TouchableOpacity>
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>View Tenant</Text>
+                      </AnimatedPressableCard>
                     ) : <View style={{ marginBottom: 8 }} />}
 
                     {/* Edit + Delete buttons */}
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       {canEditBed && (
-                        <TouchableOpacity
+                        <AnimatedPressableCard
                           onPress={() => handleEditBed(bed)}
                           style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: '#F3F4F6', borderRadius: 6, paddingVertical: 6, borderWidth: 1, borderColor: '#D1D5DB' }}
                         >
                           <Ionicons name="pencil" size={11} color="#374151" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#374151' }}>Edit</Text>
-                        </TouchableOpacity>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#374151' }} numberOfLines={1} adjustsFontSizeToFit>Edit</Text>
+                        </AnimatedPressableCard>
                       )}
                       {canDeleteBed && (
-                        <TouchableOpacity
+                        <AnimatedPressableCard
                           onPress={() => handleDeleteBed(bed.s_no, bed.bed_no)}
                           style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: '#FEE2E2', borderRadius: 6, paddingVertical: 6, borderWidth: 1, borderColor: '#FECACA' }}
                         >
                           <Ionicons name="trash" size={11} color="#DC2626" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#DC2626' }}>Delete</Text>
-                        </TouchableOpacity>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#DC2626' }} numberOfLines={1} adjustsFontSizeToFit>Delete</Text>
+                        </AnimatedPressableCard>
                       )}
                     </View>
                   </View>
@@ -815,8 +778,16 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
         roomNo={room?.room_no || ''}
         bed={selectedBed}
         pgId={selectedPGLocationId || undefined}
-        organizationId={undefined}
-        userId={undefined}
+      />
+
+      {/* Bulk Add Beds Modal */}
+      <BulkAddBedsModal
+        visible={bulkBedsModalVisible}
+        onClose={() => setBulkBedsModalVisible(false)}
+        onSuccess={handleBulkBedsSuccess}
+        roomId={room?.s_no || roomId}
+        roomNo={room?.room_no || ''}
+        existingBedCount={beds.length}
       />
 
       {/* Room Form Modal */}

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Animated, Dimensions, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { Animated, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { Theme } from '../theme';
 import { networkLogger } from '../utils/networkLogger';
 import { NetworkLoggerModal } from '../screens/network/NetworkLoggerScreen';
@@ -38,8 +39,7 @@ export const NetworkLoggerFloatingButton: React.FC<NetworkLoggerFloatingButtonPr
         onPanResponderGrant: () => {
           pan.setOffset({
             x: (pan.x as any)._value,
-            y: (pan.y as any)._value,
-          });
+            y: (pan.y as any)._value });
         },
         onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false }),
         onPanResponderRelease: () => {
@@ -65,11 +65,9 @@ export const NetworkLoggerFloatingButton: React.FC<NetworkLoggerFloatingButtonPr
             Animated.spring(pan, {
               toValue: { x: newX, y: newY },
               useNativeDriver: false,
-              friction: 7,
-            }).start();
+              friction: 7 }).start();
           }
-        },
-      }),
+        } }),
     [pan]
   );
 
@@ -81,15 +79,13 @@ export const NetworkLoggerFloatingButton: React.FC<NetworkLoggerFloatingButtonPr
         style={[
           styles.floatingButton,
           {
-            transform: [{ translateX: pan.x }, { translateY: pan.y }],
-          },
+            transform: [{ translateX: pan.x }, { translateY: pan.y }] },
         ]}
         {...panResponder.panHandlers}
       >
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => setModalVisible(true)}
           style={styles.floatingButtonInner}
-          activeOpacity={0.85}
         >
           <Text style={styles.floatingButtonText}>🔍</Text>
           {count > 0 && (
@@ -97,7 +93,7 @@ export const NetworkLoggerFloatingButton: React.FC<NetworkLoggerFloatingButtonPr
               <Text style={styles.badgeText}>{count}</Text>
             </View>
           )}
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </Animated.View>
 
       <NetworkLoggerModal visible={modalVisible} onClose={() => setModalVisible(false)} />
@@ -109,8 +105,7 @@ const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
     zIndex: 9999,
-    elevation: 10,
-  },
+    elevation: 10 },
   floatingButtonInner: {
     width: 56,
     height: 56,
@@ -124,11 +119,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 8,
     borderWidth: 1,
-    borderColor: Theme.withOpacity('#FFFFFF', 0.25),
-  },
+    borderColor: Theme.withOpacity('#FFFFFF', 0.25) },
   floatingButtonText: {
-    fontSize: 24,
-  },
+    fontSize: 24 },
   badge: {
     position: 'absolute',
     top: -4,
@@ -139,11 +132,8 @@ const styles = StyleSheet.create({
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
-  },
+    paddingHorizontal: 4 },
   badgeText: {
     color: '#fff',
     fontSize: 10,
-    fontWeight: 'bold',
-  },
-});
+    fontWeight: 'bold' } });

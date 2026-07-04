@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -30,29 +31,25 @@ export const DirectUPIPaymentScreen: React.FC<DirectUPIPaymentScreenProps> = ({ 
       name: 'Google Pay',
       icon: 'logo-google',
       packageName: 'com.google.android.apps.nbu.paisa.user',
-      upiScheme: 'tez://upi/pay',
-    },
+      upiScheme: 'tez://upi/pay' },
     {
       id: 'phonepe',
       name: 'PhonePe',
       icon: 'phone-portrait',
       packageName: 'com.phonepe.app',
-      upiScheme: 'phonepe://pay',
-    },
+      upiScheme: 'phonepe://pay' },
     {
       id: 'paytm',
       name: 'Paytm',
       icon: 'wallet',
       packageName: 'net.one97.paytm',
-      upiScheme: 'paytmmp://upi/pay',
-    },
+      upiScheme: 'paytmmp://upi/pay' },
     {
       id: 'bhim',
       name: 'BHIM',
       icon: 'card',
       packageName: 'in.org.npci.upiapp',
-      upiScheme: 'upi://pay',
-    },
+      upiScheme: 'upi://pay' },
   ];
 
   const generateUPILink = (app: UPIApp) => {
@@ -101,15 +98,12 @@ export const DirectUPIPaymentScreen: React.FC<DirectUPIPaymentScreenProps> = ({ 
                 // Navigate to payment verification
                 navigation.navigate('PaymentVerification', {
                   orderId,
-                  subscriptionId: route.params.subscriptionId,
-                });
-              },
-            },
+                  subscriptionId: route.params.subscriptionId });
+              } },
             {
               text: 'Cancel',
               style: 'cancel',
-              onPress: () => setSelectedApp(''),
-            },
+              onPress: () => setSelectedApp('') },
           ]
         );
       } else {
@@ -170,14 +164,13 @@ export const DirectUPIPaymentScreen: React.FC<DirectUPIPaymentScreenProps> = ({ 
           <Text style={styles.sectionTitle}>Choose UPI App</Text>
           
           {upiApps.map((app) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={app.id}
               style={[
                 styles.appCard,
                 selectedApp === app.id && styles.appCardSelected,
               ]}
               onPress={() => handlePayWithUPI(app)}
-              activeOpacity={0.7}
               disabled={selectedApp !== '' && selectedApp !== app.id}
             >
               <View style={styles.appLeft}>
@@ -196,7 +189,7 @@ export const DirectUPIPaymentScreen: React.FC<DirectUPIPaymentScreenProps> = ({ 
                 size={20} 
                 color={Theme.colors.text.tertiary} 
               />
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </View>
 
@@ -215,14 +208,14 @@ export const DirectUPIPaymentScreen: React.FC<DirectUPIPaymentScreenProps> = ({ 
         </View>
 
         {/* Alternative Payment */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           style={styles.alternativeButton}
           onPress={() => navigation.goBack()}
         >
           <Text style={styles.alternativeText}>
             Use Card or Net Banking Instead
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -233,61 +226,49 @@ export const DirectUPIPaymentScreen: React.FC<DirectUPIPaymentScreenProps> = ({ 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-  },
+    padding: 16 },
   summaryCard: {
     padding: 16,
-    marginBottom: 20,
-  },
+    marginBottom: 20 },
   summaryTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: Theme.colors.text.primary,
-    marginBottom: 16,
-  },
+    marginBottom: 16 },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
-  },
+    marginBottom: 12 },
   label: {
     fontSize: 14,
-    color: Theme.colors.text.secondary,
-  },
+    color: Theme.colors.text.secondary },
   value: {
     fontSize: 14,
     fontWeight: '600',
-    color: Theme.colors.text.primary,
-  },
+    color: Theme.colors.text.primary },
   divider: {
     height: 1,
     backgroundColor: Theme.colors.border,
-    marginVertical: 12,
-  },
+    marginVertical: 12 },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   totalLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: Theme.colors.text.primary,
-  },
+    color: Theme.colors.text.primary },
   totalAmount: {
     fontSize: 24,
     fontWeight: '800',
-    color: Theme.colors.primary,
-  },
+    color: Theme.colors.primary },
   appsContainer: {
-    marginBottom: 20,
-  },
+    marginBottom: 20 },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: Theme.colors.text.primary,
-    marginBottom: 12,
-  },
+    marginBottom: 12 },
   appCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -302,16 +283,13 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
+    shadowRadius: 2 },
   appCardSelected: {
     borderColor: Theme.colors.primary,
-    backgroundColor: Theme.colors.background.blueLight,
-  },
+    backgroundColor: Theme.colors.background.blueLight },
   appLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   iconContainer: {
     width: 48,
     height: 48,
@@ -319,43 +297,34 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.background.blueLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
+    marginRight: 12 },
   appName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Theme.colors.text.primary,
-  },
+    color: Theme.colors.text.primary },
   infoCard: {
     backgroundColor: Theme.withOpacity(Theme.colors.info, 0.1),
     padding: 16,
     borderRadius: 12,
     flexDirection: 'row',
-    marginBottom: 20,
-  },
+    marginBottom: 20 },
   infoText: {
     marginLeft: 12,
-    flex: 1,
-  },
+    flex: 1 },
   infoTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.info,
-    marginBottom: 8,
-  },
+    marginBottom: 8 },
   infoDescription: {
     fontSize: 12,
     color: Theme.colors.info,
-    lineHeight: 18,
-  },
+    lineHeight: 18 },
   alternativeButton: {
     paddingVertical: 16,
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   alternativeText: {
     fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.primary,
-    textDecorationLine: 'underline',
-  },
-});
+    textDecorationLine: 'underline' } });

@@ -2,7 +2,6 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedPressableCard } from '../../../../../components/AnimatedPressableCard';
@@ -87,7 +86,7 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         onPress={() => onEdit(payment)}
                         style={{
                           padding: 6,
@@ -96,8 +95,8 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                         }}
                       >
                         <Ionicons name="pencil" size={16} color={Theme.colors.primary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
+                      </AnimatedPressableCard>
+                      <AnimatedPressableCard
                         onPress={() => onDelete(payment)}
                         style={{
                           padding: 6,
@@ -106,7 +105,7 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                         }}
                       >
                         <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
                       {payment.status && (
                         <View style={{
                           paddingHorizontal: 10,
@@ -200,7 +199,7 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                   {/* Receipt Buttons - Only show for PAID status */}
                   {payment.status === 'PAID' && (
                     <View style={{ flexDirection: 'row', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#D1FAE5' }}>
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         onPress={() => onViewReceipt(payment)}
                         style={{
                           flex: 1,
@@ -218,9 +217,9 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                         <Text style={{ fontSize: 11, fontWeight: '600', color: '#F59E0B', marginLeft: 4 }}>
                           View
                         </Text>
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
 
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         onPress={() => onWhatsAppReceipt(payment)}
                         style={{
                           flex: 1,
@@ -238,9 +237,9 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                         <Text style={{ fontSize: 11, fontWeight: '600', color: '#10B981', marginLeft: 4 }}>
                           WhatsApp
                         </Text>
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
 
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         onPress={() => onShareReceipt(payment)}
                         style={{
                           flex: 1,
@@ -258,7 +257,7 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                         <Text style={{ fontSize: 11, fontWeight: '600', color: '#3B82F6', marginLeft: 4 }}>
                           Share
                         </Text>
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
                     </View>
                   )}
                 </AnimatedPressableCard>

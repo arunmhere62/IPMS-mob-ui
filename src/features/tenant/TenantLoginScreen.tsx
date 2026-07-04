@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView } from 'react-native';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { useTenantSendOtpMutation } from '@/features/tenant/api/tenantPortalAuthApi';
 import Theme from '@/theme';
@@ -28,8 +29,7 @@ export const TenantLoginScreen: React.FC<TenantLoginScreenProps> = ({ navigation
     name: 'India',
     flag: '🇮🇳',
     phoneCode: '+91',
-    phoneLength: 10,
-  });
+    phoneLength: 10 });
   const [sendOtp, { isLoading: sendingOtp }] = useTenantSendOtpMutation();
 
   useEffect(() => {
@@ -85,8 +85,7 @@ export const TenantLoginScreen: React.FC<TenantLoginScreenProps> = ({ navigation
         contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            padding: Theme.spacing.lg,
-          }}
+            padding: Theme.spacing.lg }}
         >
           {/* Logo */}
           <View style={{ alignItems: 'center', marginBottom: keyboardVisible ? Theme.spacing.md : Theme.spacing.xl }}>
@@ -102,15 +101,13 @@ export const TenantLoginScreen: React.FC<TenantLoginScreenProps> = ({ navigation
             <Text style={{
               fontSize: Theme.typography.fontSize.xl,
               fontWeight: Theme.typography.fontWeight.bold,
-              color: Theme.colors.text.primary,
-            }}>
+              color: Theme.colors.text.primary }}>
               Tenant Portal
             </Text>
             <Text style={{
               fontSize: Theme.typography.fontSize.sm,
               color: Theme.colors.text.secondary,
-              marginTop: Theme.spacing.xs,
-            }}>
+              marginTop: Theme.spacing.xs }}>
               Login to view your PG details
             </Text>
           </View>
@@ -147,29 +144,26 @@ export const TenantLoginScreen: React.FC<TenantLoginScreenProps> = ({ navigation
               fontSize: Theme.typography.fontSize.sm,
               color: Theme.colors.text.secondary,
               textAlign: 'center',
-              marginTop: Theme.spacing.md,
-            }}>
+              marginTop: Theme.spacing.md }}>
               You will receive a 4-digit OTP on your registered phone number
             </Text>
           </Card>
 
           {/* Back to Role Selection */}
           <View style={{ marginTop: Theme.spacing.lg, alignItems: 'center' }}>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => navigation.navigate('RoleSelection')}
               style={{
                 paddingVertical: Theme.spacing.sm,
-                paddingHorizontal: Theme.spacing.md,
-              }}
+                paddingHorizontal: Theme.spacing.md }}
             >
               <Text style={{
                 fontSize: Theme.typography.fontSize.sm,
                 color: Theme.colors.text.secondary,
-                fontWeight: '500',
-              }}>
+                fontWeight: '500' }}>
                 ← Back to Welcome
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>

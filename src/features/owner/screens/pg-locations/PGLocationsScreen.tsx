@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   RefreshControl,
   Alert,
   TextInput,
@@ -20,6 +19,7 @@ import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { Card } from '../../../../components/Card';
 import { AnimatedButton } from '../../../../components/AnimatedButton';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
 import { SearchableDropdown } from '../../../../components/SearchableDropdown';
@@ -436,6 +436,8 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
                 fontWeight: 'bold',
                 color: pg.status === 'ACTIVE' ? '#059669' : '#DC2626',
               }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {pg.status}
             </Text>
@@ -512,7 +514,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
           </ScrollView>
 
           {/* Floating Add Button */}
-          <TouchableOpacity
+          <AnimatedPressableCard
             style={{
               position: 'absolute',
               bottom: 90,
@@ -534,7 +536,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
             disabled={!canCreate}
           >
             <Text style={{ fontSize: 32, color: 'white', lineHeight: 32 }}>+</Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
       </ScreenLayout>
 
@@ -676,9 +678,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
           </Text>
 
           {/* Calendar Month Cycle Option */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          <AnimatedPressableCard
             style={{
               backgroundColor: formData.rentCycleType === 'CALENDAR' ? '#EFF6FF' : 'white',
               borderRadius: 8,
@@ -704,12 +704,10 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
             <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
               Example: Jan 1 - Jan 31, Feb 1 - Feb 28, etc. Rent due on 1st of next month.
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
           {/* Mid-Month Cycle Option */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          <AnimatedPressableCard
             style={{
               backgroundColor: formData.rentCycleType === 'MIDMONTH' ? '#EFF6FF' : 'white',
               borderRadius: 8,
@@ -734,7 +732,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
             <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
               Example: If tenant checks in on 10th, rent cycle is 10th to 9th every month.
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
 
         {/* Conditional Info Box for MIDMONTH */}

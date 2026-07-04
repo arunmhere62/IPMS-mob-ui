@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, TouchableOpacity, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, Alert, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { Theme } from '../../../theme';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../../owner/store/slices/authSlice';
@@ -83,8 +84,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
         setCredentials({
           user: result.user,
           accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-        })
+          refreshToken: result.refreshToken })
       );
 
       // Register push notification token after successful login
@@ -106,8 +106,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
             if (nav && typeof nav.navigate === 'function') {
               nav.navigate('LegalDocuments' as never, {
                 context: 'LOGIN',
-                pending: status.pending,
-              } as never);
+                pending: status.pending } as never);
             }
           }, 0);
           return;
@@ -151,8 +150,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
         fcm_token: token,
         device_type: Platform.OS,
         device_id: Device.modelId || Device.modelName || 'unknown',
-        device_name: Device.deviceName || Device.modelName || 'Android Device',
-      }).unwrap();
+        device_name: Device.deviceName || Device.modelName || 'Android Device' }).unwrap();
       
       console.log('[OTP] ✅ Push token registered successfully:', regResult);
     } catch (error) {
@@ -217,8 +215,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
                 fontWeight: Theme.typography.fontWeight.bold,
                 color: Theme.colors.text.primary,
                 marginBottom: Theme.spacing.xs,
-                textAlign: 'center',
-              }}
+                textAlign: 'center' }}
             >
               Enter verification code
             </Text>
@@ -228,8 +225,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
                 fontSize: Theme.typography.fontSize.sm,
                 color: Theme.colors.text.secondary,
                 textAlign: 'center',
-                marginBottom: Theme.spacing.sm,
-              }}
+                marginBottom: Theme.spacing.sm }}
             >
               We sent a 4-digit code to
             </Text>
@@ -243,15 +239,13 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
                 backgroundColor: Theme.withOpacity(Theme.colors.text.primary, 0.06),
                 borderWidth: 1,
                 borderColor: Theme.withOpacity(Theme.colors.border, 0.25),
-                marginBottom: Theme.spacing.lg,
-              }}
+                marginBottom: Theme.spacing.lg }}
             >
               <Text
                 style={{
                   color: Theme.colors.text.primary,
                   fontWeight: Theme.typography.fontWeight.semibold,
-                  textAlign: 'center',
-                }}
+                  textAlign: 'center' }}
               >
                 {phone}
               </Text>
@@ -273,8 +267,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
               color: Theme.colors.danger,
               fontSize: Theme.typography.fontSize.sm,
               marginTop: Theme.spacing.sm,
-              textAlign: 'center',
-            }}>
+              textAlign: 'center' }}>
               {otpError}
             </Text>
           ) : null}
@@ -291,14 +284,14 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
 
           <View style={{ marginTop: Theme.spacing.lg, alignItems: 'center' }}>
             {canResend ? (
-              <TouchableOpacity onPress={handleResendOtp}>
+              <AnimatedPressableCard onPress={handleResendOtp}>
                 <Text style={{ 
                   color: Theme.colors.primary, 
                   fontWeight: Theme.typography.fontWeight.semibold 
                 }}>
                   {resendingOtp ? 'Resending...' : 'Resend OTP'}
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             ) : (
               <Text style={{ color: Theme.colors.text.secondary }}>
                 Resend available in {resendTimer}s
@@ -306,14 +299,14 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
             )}
           </View>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => navigation.goBack()}
               style={{ marginTop: Theme.spacing.md }}
             >
               <Text style={{ color: Theme.colors.text.secondary, textAlign: 'center' }}>
                 Change Phone Number
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </Card>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -1,9 +1,10 @@
 import React from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "../../../../theme";
 import { Room } from "../../api/roomsApi";
 import { SlideBottomModal } from "../../../../components/SlideBottomModal";
+import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 
 interface BedsFilterModalProps {
   visible: boolean;
@@ -79,7 +80,7 @@ export const BedsFilterModal: React.FC<BedsFilterModalProps> = ({
             Filter by Room
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => onRoomChange(null)}
               style={{
                 paddingHorizontal: 16,
@@ -106,9 +107,9 @@ export const BedsFilterModal: React.FC<BedsFilterModalProps> = ({
               >
                 All Rooms
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
             {rooms.map((room) => (
-              <TouchableOpacity
+              <AnimatedPressableCard
                 key={room.s_no}
                 onPress={() => onRoomChange(room.s_no)}
                 style={{
@@ -138,7 +139,7 @@ export const BedsFilterModal: React.FC<BedsFilterModalProps> = ({
                 >
                   {room.room_no}
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             ))}
           </View>
         </View>
@@ -164,7 +165,7 @@ export const BedsFilterModal: React.FC<BedsFilterModalProps> = ({
             Select one status filter (mutually exclusive)
           </Text>
           <View style={{ gap: 8 }}>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => onOccupancyChange("all")}
               style={{
                 flexDirection: "row",
@@ -207,9 +208,9 @@ export const BedsFilterModal: React.FC<BedsFilterModalProps> = ({
               >
                 All
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => onOccupancyChange("available")}
               style={{
                 flexDirection: "row",
@@ -252,9 +253,9 @@ export const BedsFilterModal: React.FC<BedsFilterModalProps> = ({
               >
                 🟢 Available
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => onOccupancyChange("occupied")}
               style={{
                 flexDirection: "row",
@@ -297,7 +298,7 @@ export const BedsFilterModal: React.FC<BedsFilterModalProps> = ({
               >
                 🔴 Occupied
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
         </View>
       </ScrollView>

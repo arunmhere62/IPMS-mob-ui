@@ -4,7 +4,6 @@ import {
   Text,
   Modal,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
@@ -18,6 +17,7 @@ import { DatePicker } from '../../../../components/DatePicker';
 import { Room } from '@/features/owner/api';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { useCreateCurrentBillMutation } from '@/features/owner/api/tenantsApi';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 
 interface CurrentBillModalProps {
   visible: boolean;
@@ -135,18 +135,16 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <TouchableOpacity
+        <View
           style={{
             flex: 1,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             justifyContent: 'flex-end',
           }}
-          activeOpacity={1}
-          onPress={handleClose}
+          onStartShouldSetResponder={() => { handleClose(); return true; }}
         >
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={(e) => e?.stopPropagation()}
+          <View
+            onStartShouldSetResponder={() => true}
             style={{
               backgroundColor: 'white',
               borderTopLeftRadius: 24,
@@ -195,7 +193,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={handleClose}
                 style={{
                   width: 32,
@@ -207,7 +205,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
                 }}
               >
                 <Text style={{ fontSize: 18, color: Theme.colors.text.secondary, fontWeight: 'bold' }}>✕</Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
 
             {/* Modal Content */}
@@ -432,7 +430,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
                 borderTopColor: '#F3F4F6',
               }}
             >
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={handleClose}
                 style={{
                   flex: 1,
@@ -445,8 +443,8 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
                 <Text style={{ fontSize: 15, fontWeight: '600', color: Theme.colors.text.secondary }}>
                   Cancel
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </AnimatedPressableCard>
+              <AnimatedPressableCard
                 onPress={handleSubmit}
                 disabled={loading}
                 style={{
@@ -464,10 +462,10 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
                     Create Bill
                   </Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

@@ -4,12 +4,12 @@ import {
   Text,
   Modal,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
 import { DatePicker } from '../../../../../components/DatePicker';
 import { Theme } from '../../../../../theme';
+import { AnimatedPressableCard } from '../../../../../components/AnimatedPressableCard';
 
 interface CurrentBillModalProps {
   visible: boolean;
@@ -54,18 +54,16 @@ export const AddCurrentBillModal: React.FC<CurrentBillModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <TouchableOpacity
+      <View
         style={{
           flex: 1,
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           justifyContent: 'flex-end',
         }}
-        activeOpacity={1}
-        onPress={onClose}
+        onStartShouldSetResponder={() => { onClose(); return true; }}
       >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={(e) => e.stopPropagation()}
+        <View
+          onStartShouldSetResponder={() => true}
           style={{
             backgroundColor: 'white',
             borderTopLeftRadius: 24,
@@ -82,9 +80,9 @@ export const AddCurrentBillModal: React.FC<CurrentBillModalProps> = ({
             <Text style={{ fontSize: 18, fontWeight: 'bold', color: Theme.colors.text.primary }}>
               Add Current Bill
             </Text>
-            <TouchableOpacity onPress={onClose}>
+            <AnimatedPressableCard onPress={onClose}>
               <Text style={{ fontSize: 24, color: Theme.colors.text.secondary }}>✕</Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
 
           <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
@@ -192,7 +190,7 @@ export const AddCurrentBillModal: React.FC<CurrentBillModalProps> = ({
 
           {/* Action Buttons */}
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={onClose}
               style={{
                 flex: 1,
@@ -203,9 +201,9 @@ export const AddCurrentBillModal: React.FC<CurrentBillModalProps> = ({
               }}
             >
               <Text style={{ color: Theme.colors.text.secondary, fontWeight: '600' }}>Cancel</Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={onSave}
               disabled={loading}
               style={{
@@ -221,10 +219,10 @@ export const AddCurrentBillModal: React.FC<CurrentBillModalProps> = ({
               ) : (
                 <Text style={{ color: '#fff', fontWeight: '600' }}>Add Bill</Text>
               )}
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 };

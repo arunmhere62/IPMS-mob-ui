@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
   TextInput,
   Image,
@@ -655,6 +654,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       ? "#F59E0B"
                       : "#EF4444",
                 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 {item.status}
               </Text>
@@ -708,6 +709,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       fontWeight: "700",
                       color: "#fff",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     ✅ Rent PAID
                   </Text>
@@ -728,6 +731,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       fontWeight: "700",
                       color: "#fff",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     ✅ Advance Paid
                   </Text>
@@ -749,6 +754,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       fontWeight: "700",
                       color: "#fff",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     💰 Refund Paid
                   </Text>
@@ -770,6 +777,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       fontWeight: "700",
                       color: "#fff",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     ⏳ PARTIAL
                   </Text>
@@ -792,6 +801,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       fontWeight: "700",
                       color: "#fff",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     📅 PENDING RENT
                   </Text>
@@ -814,6 +825,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       fontWeight: "700",
                       color: "#fff",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     ₹{rentDueAmount} DUE
                   </Text>
@@ -836,6 +849,8 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       fontWeight: "700",
                       color: "#fff",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     💰 NO ADVANCE
                   </Text>
@@ -856,8 +871,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                 overflow: "hidden",
               }}
             >
-              <TouchableOpacity
-                activeOpacity={0.85}
+              <AnimatedPressableCard
                 onPress={() => togglePaymentDetails(item.s_no)}
                 style={{
                   paddingHorizontal: 12,
@@ -875,6 +889,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       color: isRentPartial ? "#EA580C" : "#B45309",
                     }}
                     numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     {hasBothPartialAndPending
                       ? "Partial + Pending"
@@ -889,6 +904,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                       marginTop: 2,
                     }}
                     numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     Due ₹{rentDueAmount}
                     {unpaidMonths.length > 0
@@ -907,7 +923,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                   size={18}
                   color={isRentPartial ? "#EA580C" : "#B45309"}
                 />
-              </TouchableOpacity>
+              </AnimatedPressableCard>
 
               {expandedPaymentCards.has(item.s_no) && (
                 <View
@@ -1005,7 +1021,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Ionicons name="finger-print" size={11} color="#fff" />
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap to open tenant</Text>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>Tap to open tenant</Text>
                 </View>
                 <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
                 <Animated.View style={{ transform: [{ scale: tenantPulse }], width: '100%' }}>
@@ -1015,7 +1031,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                     duration={120}
                     style={{ paddingVertical: 10, paddingHorizontal: 16, backgroundColor: '#1E3A8A', borderRadius: 8, alignItems: 'center', shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
                   >
-                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>View Details</Text>
+                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }} numberOfLines={1} adjustsFontSizeToFit>View Details</Text>
                   </AnimatedButton>
                 </Animated.View>
               </View>
@@ -1026,7 +1042,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                 duration={120}
                 style={{ flex: 1, minWidth: 100, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: Theme.colors.primary, borderRadius: 8, alignItems: "center" }}
               >
-                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>View Details</Text>
+                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }} numberOfLines={1} adjustsFontSizeToFit>View Details</Text>
               </AnimatedButton>
             )}
           </View>
@@ -1072,7 +1088,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
             onChangeText={setSearchQuery}
             onSubmitEditing={handleSearch}
           />
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={handleSearch}
             style={{
               backgroundColor: Theme.colors.primary,
@@ -1082,9 +1098,9 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
             }}
           >
             <Ionicons name="search" size={18} color="#fff" />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
           {!!appliedSearch && (
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={clearSearch}
               style={{
                 backgroundColor: Theme.colors.light,
@@ -1100,9 +1116,9 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                 size={18}
                 color={Theme.colors.text.secondary}
               />
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           )}
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => setShowFilters(!showFilters)}
             style={{
               backgroundColor:
@@ -1144,7 +1160,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                 </Text>
               </View>
             )}
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
       </View>
 
@@ -1270,7 +1286,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                     (tenantsQuery.error as any)?.error ||
                     "Unable to load tenants. Please try again."}
                 </Text>
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={() => loadTenants(currentPage, tenants.length === 0)}
                   style={{
                     alignSelf: "flex-start",
@@ -1285,7 +1301,7 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
                   >
                     Retry
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               </View>
             )}
             <FlatList

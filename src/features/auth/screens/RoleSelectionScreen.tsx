@@ -1,11 +1,10 @@
 import React from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
-  TouchableOpacity,
   Image,
-  StyleSheet,
-} from 'react-native';
+  StyleSheet } from 'react-native';
 import { Theme } from '../../../theme';
 
 interface RoleSelectionScreenProps {
@@ -29,10 +28,9 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
       {/* Role Buttons */}
       <View style={styles.buttonsContainer}>
         {/* Tenant Button */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           style={styles.roleButton}
           onPress={() => navigation.navigate('TenantLogin')}
-          activeOpacity={0.7}
         >
           <View style={styles.iconCircle}>
             <Text style={styles.icon}>👤</Text>
@@ -42,16 +40,15 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
             <Text style={styles.roleDesc}>View PG details & pay rent</Text>
           </View>
           <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
 
         {/* Divider */}
         <View style={styles.divider} />
 
         {/* Owner Button */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           style={[styles.roleButton, styles.ownerButton]}
           onPress={() => navigation.navigate('Login')}
-          activeOpacity={0.7}
         >
           <View style={[styles.iconCircle, styles.ownerIconCircle]}>
             <Text style={styles.icon}>🛡️</Text>
@@ -61,7 +58,7 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
             <Text style={[styles.roleDesc, styles.ownerDesc]}>Manage properties & operations</Text>
           </View>
           <Text style={[styles.chevron, styles.ownerChevron]}>›</Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
 
       {/* Footer */}
@@ -77,33 +74,27 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
+    backgroundColor: '#fff' },
   header: {
     alignItems: 'center',
     paddingTop: 80,
-    paddingBottom: 40,
-  },
+    paddingBottom: 40 },
   logo: {
     width: 80,
     height: 80,
-    marginBottom: 16,
-  },
+    marginBottom: 16 },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: '#1e293b',
-    marginBottom: 8,
-  },
+    marginBottom: 8 },
   subtitle: {
     fontSize: 15,
-    color: '#64748b',
-  },
+    color: '#64748b' },
   buttonsContainer: {
     flex: 1,
     paddingHorizontal: 24,
-    gap: 12,
-  },
+    gap: 12 },
   roleButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -111,12 +102,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#f8fafc',
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-  },
+    borderColor: '#e2e8f0' },
   ownerButton: {
     backgroundColor: '#eff6ff',
-    borderColor: '#3b82f6',
-  },
+    borderColor: '#3b82f6' },
   iconCircle: {
     width: 48,
     height: 48,
@@ -124,53 +113,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
-  },
+    marginRight: 16 },
   ownerIconCircle: {
-    backgroundColor: '#dbeafe',
-  },
+    backgroundColor: '#dbeafe' },
   icon: {
-    fontSize: 24,
-  },
+    fontSize: 24 },
   textContainer: {
-    flex: 1,
-  },
+    flex: 1 },
   roleTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#1e293b',
-    marginBottom: 4,
-  },
+    marginBottom: 4 },
   ownerTitle: {
-    color: '#2563eb',
-  },
+    color: '#2563eb' },
   roleDesc: {
     fontSize: 13,
-    color: '#64748b',
-  },
+    color: '#64748b' },
   ownerDesc: {
-    color: '#3b82f6',
-  },
+    color: '#3b82f6' },
   chevron: {
     fontSize: 24,
     color: '#94a3b8',
-    fontWeight: '400',
-  },
+    fontWeight: '400' },
   ownerChevron: {
-    color: '#3b82f6',
-  },
+    color: '#3b82f6' },
   divider: {
     height: 1,
     backgroundColor: '#e2e8f0',
-    marginVertical: 8,
-  },
+    marginVertical: 8 },
   footer: {
     padding: 24,
-    paddingBottom: 40,
-  },
+    paddingBottom: 40 },
   footerText: {
     fontSize: 12,
     color: '#94a3b8',
-    textAlign: 'center',
-  },
-});
+    textAlign: 'center' } });

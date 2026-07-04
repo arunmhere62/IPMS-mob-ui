@@ -1,11 +1,10 @@
 import React from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Image,
   Modal,
-  TouchableOpacity,
-  Text,
-} from 'react-native';
+  Text } from 'react-native';
 
 interface ImageViewerModalProps {
   visible: boolean;
@@ -16,8 +15,7 @@ interface ImageViewerModalProps {
 export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
   visible,
   imageUri,
-  onClose,
-}) => {
+  onClose }) => {
   return (
     <Modal
       visible={visible}
@@ -30,11 +28,10 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
           flex: 1,
           backgroundColor: 'rgba(0, 0, 0, 0.95)',
           justifyContent: 'center',
-          alignItems: 'center',
-        }}
+          alignItems: 'center' }}
       >
         {/* Close Button */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={onClose}
           style={{
             position: 'absolute',
@@ -53,11 +50,10 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
             shadowOffset: { width: 0, height: 3 },
             shadowOpacity: 0.35,
             shadowRadius: 4,
-            elevation: 6,
-          }}
+            elevation: 6 }}
         >
           <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>×</Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
 
         {/* Full Screen Image */}
         {imageUri && (

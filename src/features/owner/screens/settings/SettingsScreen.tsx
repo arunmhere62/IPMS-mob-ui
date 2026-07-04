@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { baseApi } from '@/features/owner/api/baseApi';
 import { useLogoutMutation } from '@/features/auth/api/authApi';
 import { persistor } from '../../store';
 import { Card } from '@/components/Card';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { Theme } from '@/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ScreenLayout } from '@/components/ScreenLayout';
@@ -304,9 +305,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
 
               {/* Trial upgrade banner */}
               {rbacSubscription?.is_trial && rbacSubscription?.has_active_plan && (
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={() => navigation.navigate('SubscriptionPlans')}
-                  activeOpacity={0.88}
                   style={{
                     marginBottom: 12,
                     borderRadius: 12,
@@ -363,11 +363,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                       backgroundColor: 'rgba(255,255,255,0.6)',
                     }} />
                   </View>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               )}
 
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={handleRefreshSubscription}
                   style={{
                     paddingVertical: 10,
@@ -381,9 +381,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                   }}
                 >
                   <Ionicons name="refresh" size={18} color={Theme.colors.primary} />
-                </TouchableOpacity>
+                </AnimatedPressableCard>
 
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={() => navigation.navigate('SubscriptionPlans')}
                   style={{
                     flex: 1,
@@ -400,8 +400,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                   <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>
                     View Plans
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </AnimatedPressableCard>
+                <AnimatedPressableCard
                   onPress={() => navigation.navigate('SubscriptionHistory')}
                   style={{
                     flex: 1,
@@ -420,7 +420,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                   <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.primary }}>
                     History
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               </View>
             </Card>
           ) : null}
@@ -428,34 +428,42 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           {/* Settings Options */}
           <Card className="mb-4">
             {settingsOptions.map((option, index) => (
-              <TouchableOpacity
+              <AnimatedPressableCard
                 key={index}
                 onPress={option.onPress}
-                className={`flex-row items-center py-4 ${index < settingsOptions.length - 1 ? 'border-b border-gray-200' : ''
-                  }`}
-              // style={option.highlight ? { backgroundColor: '#FEF3C7' } : {}}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 16,
+                  borderBottomWidth: index < settingsOptions.length - 1 ? 1 : 0,
+                  borderBottomColor: '#E5E7EB',
+                }}
               >
                 <Text className="text-2xl mr-3">{option.icon}</Text>
                 <Text className="text-dark font-semibold flex-1">{option.title}</Text>
-                {/* {option.highlight && <Text style={{ fontSize: 10, color: '#EF4444', fontWeight: '700', marginRight: 8 }}>NEW</Text>} */}
                 <Text className="text-gray-400">›</Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             ))}
           </Card>
 
           {/* Test Notification Button (Dev/Testing) */}
           {/* Logout Button */}
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={handleLogout}
             disabled={loggingOut}
-            className="bg-red-500 rounded-lg py-4 mb-6"
-            style={{ opacity: loggingOut ? 0.75 : 1 }}
+            style={{
+              backgroundColor: '#EF4444',
+              borderRadius: 8,
+              paddingVertical: 16,
+              marginBottom: 24,
+              opacity: loggingOut ? 0.75 : 1,
+            }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
               {loggingOut ? <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 10 }} /> : null}
               <Text className="text-white text-center font-bold text-lg">Logout</Text>
             </View>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
 
           {/* App Version */}
           <Text className="text-center text-gray-500 text-sm mb-4">

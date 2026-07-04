@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
   Alert,
   TextInput,
@@ -18,6 +17,7 @@ import Theme from '@/theme';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 
 interface TicketsScreenProps {
   navigation: any;
@@ -150,7 +150,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
     const categoryIcon = getCategoryIcon(item.category);
 
     return (
-      <TouchableOpacity
+      <AnimatedPressableCard
         onPress={() => navigation.navigate('TicketDetails', { ticketId: item.s_no })}
       >
         <Card style={{ marginBottom: 12, padding: 16 }}>
@@ -204,7 +204,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
             </Text>
           </View>
         </Card>
-      </TouchableOpacity>
+      </AnimatedPressableCard>
     );
   };
 
@@ -236,7 +236,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
             onChangeText={setSearchQuery}
             onSubmitEditing={loadTickets}
           />
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={loadTickets}
             style={{
               backgroundColor: Theme.colors.primary,
@@ -246,13 +246,13 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
             }}
           >
             <Ionicons name="search" size={20} color="#fff" />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
 
         {/* Filter Chips */}
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {['ALL', 'MY_TICKETS', 'OPEN', 'RESOLVED'].map((filter) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={filter}
               onPress={() => setFilterStatus(filter as any)}
               style={{
@@ -271,7 +271,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
               }}>
                 {filter === 'MY_TICKETS' ? 'My Tickets' : filter.replace('_', ' ')}
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </View>
       </View>
@@ -321,7 +321,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
       )}
 
       {/* Floating Add Ticket Button */}
-      <TouchableOpacity
+      <AnimatedPressableCard
         onPress={() => navigation.navigate('CreateTicket')}
         style={{
           position: 'absolute',
@@ -341,7 +341,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
         }}
       >
         <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>
-      </TouchableOpacity>
+      </AnimatedPressableCard>
       </View>
     </ScreenLayout>
   );

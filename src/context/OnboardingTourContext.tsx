@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, Animated, Easing, StyleSheet } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, Modal, Animated, Easing, StyleSheet } from 'react-native';
 
 export type TourStep =
   | 'tap_add_room'      // On Rooms screen: tap FAB + to add a room
@@ -28,8 +29,7 @@ const OnboardingTourContext = createContext<OnboardingTourContextValue>({
   startTenantTour: () => {},
   startRentTour: () => {},
   advanceTour: () => {},
-  endTour: () => {},
-});
+  endTour: () => {} });
 
 const CelebrationModal: React.FC<{ visible: boolean; onClose: () => void }> = ({ visible, onClose }) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -64,9 +64,9 @@ const CelebrationModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
             <Text style={{ fontSize: 28 }}>👤</Text>
             <Text style={{ fontSize: 28 }}>💰</Text>
           </Animated.View>
-          <TouchableOpacity onPress={onClose} style={celebStyles.button}>
+          <AnimatedPressableCard onPress={onClose} style={celebStyles.button}>
             <Text style={celebStyles.buttonText}>Let's Go! 🚀</Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </Animated.View>
       </View>
     </Modal>
@@ -79,8 +79,7 @@ const celebStyles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
-  },
+    padding: 24 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 24,
@@ -92,45 +91,37 @@ const celebStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 24,
-    elevation: 12,
-  },
+    elevation: 12 },
   emoji: {
     fontSize: 64,
-    marginBottom: 12,
-  },
+    marginBottom: 12 },
   title: {
     fontSize: 24,
     fontWeight: '800',
     color: '#111827',
     marginBottom: 6,
-    textAlign: 'center',
-  },
+    textAlign: 'center' },
   subtitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#16A34A',
     marginBottom: 12,
-    textAlign: 'center',
-  },
+    textAlign: 'center' },
   message: {
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 20,
-  },
+    marginBottom: 20 },
   button: {
     backgroundColor: '#16A34A',
     borderRadius: 12,
     paddingVertical: 14,
-    paddingHorizontal: 40,
-  },
+    paddingHorizontal: 40 },
   buttonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
-  },
-});
+    color: '#fff' } });
 
 export const OnboardingTourProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tourStep, setTourStep] = useState<TourStep>(null);

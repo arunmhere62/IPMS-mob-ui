@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   View,
   Text,
-  TouchableOpacity,
   TextInput,
-  ActivityIndicator,
-} from 'react-native';
+  ActivityIndicator } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
 import { Theme } from '../theme';
@@ -30,8 +29,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
   visible,
   onClose,
   onSuccess,
-  visitorId,
-}) => {
+  visitorId }) => {
   const isEditMode = !!visitorId;
   const [createVisitor, { isLoading: isCreating }] = useCreateVisitorMutation();
   const [updateVisitor, { isLoading: isUpdating }] = useUpdateVisitorMutation();
@@ -79,29 +77,25 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
   const {
     data: roomsResponse,
     isFetching: isRoomsFetching,
-    refetch: refetchRooms,
-  } = useGetAllRoomsQuery({ page: 1, limit: 100 });
+    refetch: refetchRooms } = useGetAllRoomsQuery({ page: 1, limit: 100 });
 
   const {
     data: statesResponse,
     isFetching: isStatesFetching,
     error: statesError,
-    refetch: refetchStates,
-  } = useGetStatesQuery({ countryCode: 'IN' });
+    refetch: refetchStates } = useGetStatesQuery({ countryCode: 'IN' });
 
   const [triggerCities, { data: citiesResponse, isFetching: isCitiesFetching, error: citiesError }] = useLazyGetCitiesQuery();
 
   const {
     data: bedsResponse,
     isFetching: isBedsFetching,
-    refetch: refetchBeds,
-  } = useGetAllBedsQuery(
+    refetch: refetchBeds } = useGetAllBedsQuery(
     selectedRoomId
       ? {
           room_id: selectedRoomId,
           page: 1,
-          limit: 100,
-        }
+          limit: 100 }
       : (undefined as any),
     { skip: !selectedRoomId }
   );
@@ -256,8 +250,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
         city_id: selectedCityId || undefined,
         state_id: selectedStateId || undefined,
         remarks: remarks || undefined,
-        convertedTo_tenant: convertedToTenant,
-      };
+        convertedTo_tenant: convertedToTenant };
 
       if (isEditMode) {
         await updateVisitor({ id: visitorId!, data }).unwrap();
@@ -310,8 +303,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                           borderRadius: 8,
                           padding: 12,
                           fontSize: 14,
-                          backgroundColor: '#fff',
-                        }}
+                          backgroundColor: '#fff' }}
                         placeholder="Enter visitor name"
                         value={visitorName}
                         onChangeText={setVisitorName}
@@ -361,8 +353,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                             borderRadius: 8,
                             padding: 12,
                             fontSize: 14,
-                            backgroundColor: '#fff',
-                          }}
+                            backgroundColor: '#fff' }}
                           placeholder="Enter custom purpose"
                           value={customPurpose}
                           onChangeText={setCustomPurpose}
@@ -392,8 +383,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                       items={rooms.map(room => ({
                         id: room.s_no,
                         label: `Room ${room.room_no}`,
-                        value: room.s_no,
-                      }))}
+                        value: room.s_no }))}
                       selectedValue={selectedRoomId}
                       onSelect={(item) => setSelectedRoomId(item.id)}
                       loading={loadingRooms}
@@ -407,8 +397,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                         items={beds.map(bed => ({
                           id: bed.s_no,
                           label: `Bed ${bed.bed_no}`,
-                          value: bed.s_no,
-                        }))}
+                          value: bed.s_no }))}
                         selectedValue={selectedBedId}
                         onSelect={(item) => setSelectedBedId(item.id)}
                         loading={loadingBeds}
@@ -430,8 +419,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                       items={states.map(state => ({
                         id: state.s_no,
                         label: state.name,
-                        value: state.iso_code,
-                      }))}
+                        value: state.iso_code }))}
                       selectedValue={selectedStateId}
                       onSelect={(item) => {
                         if (item.id === 0 || !item.id) {
@@ -453,8 +441,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                         items={cities.map(city => ({
                           id: city.s_no,
                           label: city.name,
-                          value: city.s_no,
-                        }))}
+                          value: city.s_no }))}
                         selectedValue={selectedCityId}
                         onSelect={(item) => {
                           if (item.id === 0 || !item.id) {
@@ -489,8 +476,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                           fontSize: 14,
                           backgroundColor: '#fff',
                           minHeight: 80,
-                          textAlignVertical: 'top',
-                        }}
+                          textAlignVertical: 'top' }}
                         placeholder="Enter any additional notes"
                         value={remarks}
                         onChangeText={setRemarks}
@@ -500,15 +486,14 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                     </View>
 
                     <View style={{ marginBottom: 0 }}>
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         onPress={() => setConvertedToTenant(!convertedToTenant)}
                         style={{
                           flexDirection: 'row',
                           alignItems: 'center',
                           padding: 12,
                           backgroundColor: Theme.colors.background.secondary,
-                          borderRadius: 8,
-                        }}
+                          borderRadius: 8 }}
                       >
                       <View style={{
                         width: 20,
@@ -519,8 +504,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                         backgroundColor: convertedToTenant ? Theme.colors.primary : 'transparent',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        marginRight: 12,
-                      }}>
+                        marginRight: 12 }}>
                         {convertedToTenant && (
                           <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>
                         )}
@@ -528,7 +512,7 @@ export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
                         <Text style={{ fontSize: 14, color: Theme.colors.text.primary }}>
                           Converted to Tenant
                         </Text>
-                      </TouchableOpacity>
+                      </AnimatedPressableCard>
                     </View>
                   </View>
                 </>

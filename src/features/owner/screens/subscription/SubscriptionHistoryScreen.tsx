@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
+  RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -26,8 +25,7 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
     isLoading,
     isFetching,
     error,
-    refetch,
-  } = useGetSubscriptionHistoryQuery();
+    refetch } = useGetSubscriptionHistoryQuery();
 
   const history = historyResponse?.data || [];
   const [refreshing, setRefreshing] = React.useState(false);
@@ -44,8 +42,7 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
 
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 50,
-    minimumViewTime: 100,
-  });
+    minimumViewTime: 100 });
 
   useEffect(() => {
     if (!error) {
@@ -83,8 +80,7 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
     return date.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric',
-    });
+      year: 'numeric' });
   };
 
   const getStatusColor = (status: string) => {
@@ -134,13 +130,11 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
           paddingHorizontal: 10,
           paddingVertical: 5,
           borderRadius: 12,
-          backgroundColor: Theme.withOpacity(getStatusColor(item.status), 0.1),
-        }}>
+          backgroundColor: Theme.withOpacity(getStatusColor(item.status), 0.1) }}>
           <Text style={{
             fontSize: 11,
             fontWeight: '700',
-            color: getStatusColor(item.status),
-          }}>
+            color: getStatusColor(item.status) }}>
             {item.status}
           </Text>
         </View>
@@ -151,8 +145,7 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
         backgroundColor: Theme.colors.background.secondary, 
         padding: 12, 
         borderRadius: 8,
-        marginBottom: 12,
-      }}>
+        marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
           <Text style={{ fontSize: 13, color: Theme.colors.text.tertiary }}>Start Date</Text>
           <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
@@ -197,19 +190,18 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
           </View>
           
           {item.status === 'ACTIVE' && (
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => navigation.navigate('SubscriptionPlans')}
               style={{
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 borderRadius: 8,
-                backgroundColor: Theme.colors.background.blueLight,
-              }}
+                backgroundColor: Theme.colors.background.blueLight }}
             >
               <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.primary }}>
                 Manage
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           )}
         </View>
       )}
@@ -274,20 +266,19 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
                 <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 40 }}>
                   You haven't subscribed to any plan yet
                 </Text>
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={() => navigation.navigate('SubscriptionPlans')}
                   style={{
                     marginTop: 24,
                     paddingVertical: 12,
                     paddingHorizontal: 24,
                     backgroundColor: Theme.colors.primary,
-                    borderRadius: 8,
-                  }}
+                    borderRadius: 8 }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
                     View Plans
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               </View>
             )
           }
@@ -309,14 +300,12 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.25,
           shadowRadius: 4,
-          elevation: 5,
-        }}>
+          elevation: 5 }}>
           <Text style={{
             fontSize: 12,
             fontWeight: '700',
             color: '#fff',
-            textAlign: 'center',
-          }}>
+            textAlign: 'center' }}>
             {visibleItemsCount} of {history.length}
           </Text>
           <Text style={{
@@ -324,8 +313,7 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
             color: '#fff',
             opacity: 0.8,
             textAlign: 'center',
-            marginTop: 2,
-          }}>
+            marginTop: 2 }}>
             {history.length - visibleItemsCount} remaining
           </Text>
         </View>

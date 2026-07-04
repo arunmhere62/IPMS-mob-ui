@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { Card } from '../../../../../components/Card';
 import { Theme } from '../../../../../theme';
 import { Tenant } from '@/features/owner/api/tenantsApi';
@@ -10,8 +10,7 @@ interface AccommodationDetailsProps {
 }
 
 export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
-  tenant,
-}) => {
+  tenant }) => {
   const na = (value: any) => {
     const v = typeof value === 'string' ? value.trim() : value;
     return v ? String(v) : 'N/A';
@@ -35,8 +34,7 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
       return new Date(value).toLocaleDateString('en-IN', {
         day: 'numeric',
         month: 'long',
-        year: 'numeric',
-      });
+        year: 'numeric' });
     } catch {
       return 'N/A';
     }
@@ -49,8 +47,7 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
           fontSize: 16,
           fontWeight: '700',
           color: Theme.colors.text.primary,
-          marginBottom: 12,
-        }}
+          marginBottom: 12 }}
       >
         🏠 Accommodation Details
       </Text>
@@ -96,8 +93,7 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
             style={{
               fontSize: 12,
               color: Theme.colors.text.tertiary,
-              marginRight: 6,
-            }}
+              marginRight: 6 }}
           >
             Rent:
           </Text>
@@ -106,10 +102,10 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
             style={{
               fontSize: 13,
               fontWeight: '600',
-              color: Theme.colors.text.primary,
-            }}
+              color: Theme.colors.text.primary }}
             numberOfLines={1}
             ellipsizeMode="tail"
+            adjustsFontSizeToFit
           >
             {rentText}
           </Text>
@@ -120,8 +116,7 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
             style={{
               fontSize: 12,
               color: Theme.colors.text.tertiary,
-              marginRight: 6,
-            }}
+              marginRight: 6 }}
           >
             Bed Price:
           </Text>
@@ -130,10 +125,10 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
             style={{
               fontSize: 13,
               fontWeight: '600',
-              color: Theme.colors.text.primary,
-            }}
+              color: Theme.colors.text.primary }}
             numberOfLines={1}
             ellipsizeMode="tail"
+            adjustsFontSizeToFit
           >
             {bedPriceText}
           </Text>

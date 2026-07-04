@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+  Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
 import { Card } from '../../../../components/Card';
@@ -85,8 +84,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
     city_id: null as number | null,
     state_id: null as number | null,
     pincode: '',
-    country: 'India',
-  });
+    country: 'India' });
 
   const [profileImages, setProfileImages] = useState<string[]>([]);
   const [proofDocuments, setProofDocuments] = useState<string[]>([]);
@@ -102,8 +100,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
 
   const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, {
-    skip: false,
-  });
+    skip: false });
 
   // Fetch employee data if in edit mode
   useEffect(() => {
@@ -157,8 +154,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
         city_id: employee.city_id || null,
         state_id: employee.state_id || null,
         pincode: employee.pincode || '',
-        country: employee.country || 'India',
-      });
+        country: employee.country || 'India' });
       
       // Load cities if state is set
       if (employee.state_id && stateData.length > 0) {
@@ -326,8 +322,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
         pincode: formData.pincode.trim() || undefined,
         country: formData.country || undefined,
         proof_documents: proofDocuments,
-        profile_images: profileImages,
-      };
+        profile_images: profileImages };
 
       if (isEditMode) {
         // Update existing employee
@@ -420,8 +415,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
-                    }}
+                      backgroundColor: '#fff' }}
                   />
                   {errors.name && (
                     <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.name}</Text>
@@ -446,8 +440,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                         borderRadius: 8,
                         padding: 12,
                         fontSize: 14,
-                        backgroundColor: '#fff',
-                      }}
+                        backgroundColor: '#fff' }}
                     />
                     {errors.email && (
                       <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.email}</Text>
@@ -471,8 +464,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
-                    }}
+                      backgroundColor: '#fff' }}
                   />
                   {errors.password && (
                     <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.password}</Text>
@@ -495,8 +487,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
-                    }}
+                      backgroundColor: '#fff' }}
                   />
                   {errors.confirmPassword && (
                     <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.confirmPassword}</Text>
@@ -552,8 +543,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   items={roleData.map(role => ({
                     id: role.s_no,
                     label: role.role_name,
-                    value: role.s_no,
-                  }))}
+                    value: role.s_no }))}
                   selectedValue={formData.role_id}
                   onSelect={(item) => updateField('role_id', item.id)}
                   loading={loadingRoles}
@@ -585,8 +575,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                     style={{
                       borderRadius: 8,
                       padding: 12,
-                      backgroundColor: '#F9FAFB',
-                    }}
+                      backgroundColor: '#F9FAFB' }}
                   >
                     <Text style={{ color: Theme.colors.text.primary, fontSize: 14 }}>
                       {selectedPGLocation?.location_name || 'No PG selected'}
@@ -608,8 +597,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   items={stateData.map(state => ({
                     id: state.s_no,
                     label: state.name,
-                    value: state.iso_code,
-                  }))}
+                    value: state.iso_code }))}
                   selectedValue={formData.state_id}
                   onSelect={(item) => setFormData(prev => ({ ...prev, state_id: item.id }))}
                   loading={loadingStates}
@@ -623,8 +611,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   items={cityData.map(city => ({
                     id: city.s_no,
                     label: city.name,
-                    value: city.s_no,
-                  }))}
+                    value: city.s_no }))}
                   selectedValue={formData.city_id}
                   onSelect={(item) => setFormData(prev => ({ ...prev, city_id: item.id }))}
                   loading={loadingCities}
@@ -650,8 +637,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       padding: 12,
                       fontSize: 14,
                       backgroundColor: '#fff',
-                      textAlignVertical: 'top',
-                    }}
+                      textAlignVertical: 'top' }}
                   />
                 </View>
 
@@ -672,8 +658,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff',
-                    }}
+                      backgroundColor: '#fff' }}
                   />
                 </View>
               </Card>
@@ -718,7 +703,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
               </Card>
 
               {/* Submit Button */}
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={handleSubmit}
                 disabled={loading}
                 style={{
@@ -726,8 +711,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   padding: 16,
                   borderRadius: 8,
                   alignItems: 'center',
-                  marginBottom: 32,
-                }}
+                  marginBottom: 32 }}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" />
@@ -736,7 +720,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                     {isEditMode ? 'Update Employee' : 'Create Employee'}
                   </Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

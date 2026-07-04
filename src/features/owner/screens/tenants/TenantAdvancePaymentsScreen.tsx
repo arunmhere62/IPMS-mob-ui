@@ -3,11 +3,9 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   Alert,
   ActivityIndicator,
-  TextInput,
-} from 'react-native';
+  TextInput } from 'react-native';
 import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { Theme } from '../../../../theme';
@@ -22,8 +20,7 @@ import { CONTENT_COLOR } from '@/constant';
 import {
   useUpdateAdvancePaymentMutation,
   useVoidAdvancePaymentMutation,
-  type CreateAdvancePaymentDto,
-} from '@/features/owner/api/paymentsApi';
+  type CreateAdvancePaymentDto } from '@/features/owner/api/paymentsApi';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
 import AdvancePaymentForm from '@/features/owner/screens/tenants/AdvancePaymentForm';
@@ -58,6 +55,11 @@ type TenantAdvancePaymentsParams = {
   pgId?: number;
   tenantJoinedDate?: string;
   tenantPhone?: string;
+  tenantEmail?: string;
+  tenantWhatsapp?: string;
+  tenantAddress?: string;
+  tenantCity?: string;
+  tenantState?: string;
   pgName?: string;
   roomNumber?: string;
   bedNumber?: string;
@@ -92,6 +94,11 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   const pgId = route.params?.pgId || 0;
   const tenantJoinedDate = route.params?.tenantJoinedDate || undefined;
   const tenantPhone = route.params?.tenantPhone || '';
+  const tenantEmail = route.params?.tenantEmail || '';
+  const tenantWhatsapp = route.params?.tenantWhatsapp || '';
+  const tenantAddress = route.params?.tenantAddress || '';
+  const tenantCity = route.params?.tenantCity || '';
+  const tenantState = route.params?.tenantState || '';
   const pgName = route.params?.pgName || 'PG';
   const roomNumber = route.params?.roomNumber || '';
   const bedNumber = route.params?.bedNumber || '';
@@ -100,8 +107,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const effectivePgId = pgId || selectedPGLocationId || undefined;
   const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(Number(effectivePgId), {
-    skip: !effectivePgId,
-  });
+    skip: !effectivePgId });
 
   const [loading, setLoading] = useState(false);
   const [advancePaymentFormVisible, setAdvancePaymentFormVisible] = useState(false);
@@ -161,8 +167,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
             setVoidTargetPayment(payment);
             setVoidReason('');
             setVoidModalVisible(true);
-          },
-        },
+          } },
       ]
     );
   };
@@ -201,6 +206,11 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
       paymentDate: new Date(payment.payment_date),
       tenantName: tenantName,
       tenantPhone: tenantPhone,
+      tenantEmail: tenantEmail,
+      tenantWhatsapp: tenantWhatsapp,
+      tenantAddress: tenantAddress,
+      tenantCity: tenantCity,
+      tenantState: tenantState,
       pgName: pgName,
       pgDetails: pgDetails
         ? {
@@ -209,21 +219,18 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
             address: pgDetails.address,
             pincode: pgDetails.pincode ?? undefined,
             city: pgDetails.city ?? undefined,
-            state: pgDetails.state ?? undefined,
-          }
+            state: pgDetails.state ?? undefined }
         : undefined,
       roomNumber: route.params?.roomNumber || '',
       bedNumber: route.params?.bedNumber || '',
       rentPeriod: {
         startDate: new Date(payment.payment_date),
-        endDate: new Date(payment.payment_date),
-      },
+        endDate: new Date(payment.payment_date) },
       actualRent: Number(payment.amount_paid || 0),
       amountPaid: Number(payment.amount_paid || 0),
       paymentMethod: payment.payment_method || 'CASH',
       remarks: payment.remarks,
-      receiptType: 'ADVANCE' as const,
-    };
+      receiptType: 'ADVANCE' as const };
 
     return data;
   };
@@ -267,8 +274,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
           paddingVertical: 12,
           backgroundColor: Theme.colors.background.blueLight,
           borderBottomWidth: 1,
-          borderBottomColor: '#E5E7EB',
-        }}>
+          borderBottomColor: '#E5E7EB' }}>
           <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.text.primary }}>
             {tenantName}
           </Text>
@@ -312,8 +318,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                   <Card style={{
                     padding: 12,
                     borderLeftWidth: 3,
-                    borderLeftColor: '#10B981',
-                  }}>
+                    borderLeftColor: '#10B981' }}>
                     {/* Header Row */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                       <View style={{ flex: 1 }}>
@@ -321,8 +326,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                           {new Date(payment.payment_date).toLocaleDateString('en-IN', {
                             day: '2-digit',
                             month: 'short',
-                            year: 'numeric',
-                          })}
+                            year: 'numeric' })}
                         </Text>
                         <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 4 }}>
                           {paymentAccommodationLabel}
@@ -335,8 +339,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                         paddingHorizontal: 8,
                         paddingVertical: 4,
                         borderRadius: 6,
-                        backgroundColor: statusColor.bg,
-                      }}>
+                        backgroundColor: statusColor.bg }}>
                         <Text style={{ fontSize: 10, fontWeight: '700', color: statusColor.text }}>
                           {statusColor.icon} {payment.status}
                         </Text>
@@ -371,8 +374,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                       paddingTop: 10,
                       borderTopWidth: 1,
                       borderTopColor: '#E5E7EB',
-                      marginBottom: 10,
-                    }}>
+                      marginBottom: 10 }}>
                       <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
                         {payment.payment_method || 'N/A'}
                       </Text>
@@ -393,7 +395,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                         disableDelete={!canDeleteAdvance}
                         blockPressWhenDisabled
                       />
-                      <TouchableOpacity
+                      <AnimatedPressableCard
                         onPress={() => handleViewReceipt(payment)}
                         style={{
                           paddingVertical: 8,
@@ -401,14 +403,13 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                           backgroundColor: '#DBEAFE',
                           borderRadius: 8,
                           alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
+                          justifyContent: 'center' }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: '600', color: '#1D4ED8' }}>
                           View Invoice
                         </Text>
-                      </TouchableOpacity>
-                      {/* <TouchableOpacity
+                      </AnimatedPressableCard>
+                      {/* <AnimatedPressableCard
                         onPress={() => handleWhatsAppReceipt(payment)}
                         style={{
                           paddingVertical: 8,
@@ -416,13 +417,12 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                           backgroundColor: '#DCFCE7',
                           borderRadius: 8,
                           alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
+                          justifyContent: 'center' }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: '600', color: '#16A34A' }}>
                           💬 WhatsApp
                         </Text>
-                      </TouchableOpacity> */}
+                      </AnimatedPressableCard> */}
                     </View>
                   </Card>
                 </AnimatedPressableCard>
@@ -440,8 +440,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                 backgroundColor: '#F0FDF4',
                 justifyContent: 'center',
                 alignItems: 'center',
-                marginBottom: 16,
-              }}>
+                marginBottom: 16 }}>
                 <Ionicons name="wallet-outline" size={48} color="#10B981" />
               </View>
               <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 8 }}>
@@ -527,8 +526,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
               minHeight: 90,
               textAlignVertical: 'top',
               backgroundColor: '#FFFFFF',
-              color: Theme.colors.text.primary,
-            }}
+              color: Theme.colors.text.primary }}
           />
         </View>
       </SlideBottomModal>

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Theme from '@/theme';
 import { Card } from '@/components/Card';
@@ -17,8 +18,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
   overview,
   recentTickets,
   unreadTickets,
-  isLoading = false,
-}) => {
+  isLoading = false }) => {
   const navigation = useNavigation();
 
   if (isLoading) {
@@ -73,7 +73,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
   );
 
   const TicketItem: React.FC<{ ticket: Ticket }> = ({ ticket }) => (
-    <TouchableOpacity
+    <AnimatedPressableCard
       style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: Theme.colors.lightSecondary }}
       onPress={() => (navigation as any).navigate('TenantTicketDetail', { ticketId: ticket.s_no })}
     >
@@ -96,7 +96,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
           <Text style={{ fontSize: 10, color: Theme.colors.darkSecondary }}>{ticket._count.tenant_ticket_comments}</Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </AnimatedPressableCard>
   );
 
   return (
@@ -106,9 +106,9 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
           <Ionicons name="ticket-outline" size={24} color={Theme.colors.primary} />
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: Theme.colors.dark, marginLeft: 12 }}>My Tickets</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('TenantTickets' as never)}>
+        <AnimatedPressableCard onPress={() => navigation.navigate('TenantTickets' as never)}>
           <Text style={{ fontSize: 14, color: Theme.colors.primary }}>View All</Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
 
       {/* Overview Stats */}

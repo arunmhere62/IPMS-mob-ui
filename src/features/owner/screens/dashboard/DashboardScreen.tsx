@@ -1,16 +1,15 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   ScrollView,
   FlatList,
   RefreshControl,
   Text,
-  TouchableOpacity,
   Linking,
   Alert,
-  Animated,
 } from "react-native";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
+import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
 import { Theme } from "../../../../theme";
 import { useDispatch, useSelector } from "react-redux";
@@ -46,9 +45,6 @@ import { AppDispatch, RootState } from "../../store";
 import { Tenant } from "../../api";
 import { AnnouncementBanner } from "../../../../components/AnnouncementBanner";
 import { TrialBanner } from "../../../../components/TrialBanner";
-import { OnboardingChecklist, OnboardingStep } from "../../../../components/OnboardingChecklist";
-import { useLazyCheckOnboardingStatusQuery } from "../../api/organizationApi";
-import { useOnboardingTour } from "../../../../context/OnboardingTourContext";
 
 type DashboardRouteName =
   | "PGLocations"
@@ -61,34 +57,8 @@ type DashboardRouteName =
   | "Visitors"
   | "Employees"
   | "Expenses"
-  | "Settings";
-
-const AnimatedPressable: React.FC<{
-  onPress: () => void;
-  style?: any;
-  children: React.ReactNode;
-}> = ({ onPress, style, children }) => {
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const handlePressIn = () => {
-    Animated.spring(scaleValue, { toValue: 0.96, useNativeDriver: true, tension: 120, friction: 8 }).start();
-  };
-  const handlePressOut = () => {
-    Animated.spring(scaleValue, { toValue: 1, useNativeDriver: true, tension: 120, friction: 6 }).start();
-  };
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
-      <TouchableOpacity
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        activeOpacity={1}
-        style={style}
-      >
-        {children}
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
+  | "Settings"
+  | "QuickSetup";
 
 export const DashboardScreen: React.FC = () => {
   // All hooks must be called at the top level
@@ -99,7 +69,6 @@ export const DashboardScreen: React.FC = () => {
     (state: RootState) => state.pgLocations
   );
   const { user } = useSelector((state: RootState) => state.auth);
-  const isOnboardingComplete = useSelector((state: RootState) => (state as any).rbac?.isOnboardingComplete ?? null);
   const appStatus = useSelector((state: RootState) => (state as any).appSettings?.appSettings);
   usePermissions();
   const [refreshing, setRefreshing] = useState(false);
@@ -107,11 +76,6 @@ export const DashboardScreen: React.FC = () => {
     "pending_rent" | "partial_rent" | "without_advance"
   >("pending_rent");
   const [showOwnerInfo, setShowOwnerInfo] = useState(false);
-  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
-
-  const [checkOnboardingStatus, { data: onboardingStatus }] =
-    useLazyCheckOnboardingStatusQuery();
-  const { startRoomTour, startBedTour, startTenantTour, startRentTour } = useOnboardingTour();
   const {
     onScroll: bottomNavOnScroll,
     scrollEventThrottle: bottomNavThrottle,
@@ -182,23 +146,6 @@ export const DashboardScreen: React.FC = () => {
     }
   }, [selectedPGLocationId, getMonthlyMetrics]);
 
-  const hasInitiallyChecked = useRef(false);
-  useFocusEffect(
-    useCallback(() => {
-      // Only call the detailed onboarding API if the flag from permissions says onboarding is NOT complete
-      if (user?.organization_id && !onboardingDismissed && isOnboardingComplete === false) {
-        checkOnboardingStatus(user.organization_id);
-        hasInitiallyChecked.current = true;
-      }
-    }, [user?.organization_id, checkOnboardingStatus, onboardingDismissed, isOnboardingComplete])
-  );
-
-  // Show checklist only when: permissions flag says not complete AND detailed API confirms is_new=true
-  const showOnboardingChecklist =
-    !onboardingDismissed &&
-    isOnboardingComplete === false &&
-    onboardingStatus?.is_new === true;
-
   const handleDateRangeChange = useCallback(
     (monthStart?: string, monthEnd?: string) => {
       getMonthlyMetrics({ monthStart, monthEnd });
@@ -209,10 +156,10 @@ export const DashboardScreen: React.FC = () => {
   const dashboardQuickActions = useMemo(
     () => [
       {
-        title: "PG Locations",
-        icon: "business",
-        screen: "PGLocations",
-        color: "#06B6D4",
+        title: "Quick Setup",
+        icon: "flash",
+        screen: "QuickSetup",
+        color: "#6366F1",
       },
       { title: "Rooms", icon: "home", screen: "Rooms", color: "#22C55E" },
       { title: "Tenants", icon: "people", screen: "Tenants", color: "#EC4899" },
@@ -639,72 +586,6 @@ export const DashboardScreen: React.FC = () => {
         />
       ) : null}
       <TrialBanner />
-      {showOnboardingChecklist && (() => {
-        const onboardingData = onboardingStatus;
-        const checklistSteps: OnboardingStep[] = [
-          {
-            id: 'pg',
-            title: 'PG Location created',
-            description: 'Your PG location is already set up during signup.',
-            icon: '🏢',
-            completed: true,
-          },
-          {
-            id: 'room',
-            title: 'Add a Room',
-            description: 'Create rooms inside your PG location.',
-            icon: '🏠',
-            completed: onboardingData?.has_rooms ?? false,
-            actionLabel: 'Add Room',
-            onAction: () => { startRoomTour(); navigation.navigate('Rooms' as never); },
-          },
-          {
-            id: 'bed',
-            title: 'Add Beds to Room',
-            description: 'Open a room, then tap "+" to add beds inside it.',
-            icon: '🛏️',
-            completed: onboardingData?.has_beds ?? false,
-            actionLabel: 'Go to Rooms',
-            onAction: () => {
-              startBedTour();
-              navigation.navigate('Rooms' as never);
-            },
-          },
-          {
-            id: 'tenant',
-            title: 'Add your first Tenant',
-            description: 'Assign a tenant to an available bed.',
-            icon: '👤',
-            completed: onboardingData?.has_tenants ?? false,
-            actionLabel: 'Add Tenant',
-            onAction: () => {
-              startTenantTour();
-              navigation.navigate('Rooms' as never);
-            },
-          },
-          {
-            id: 'payment',
-            title: 'Add First Rent',
-            description: 'Open a tenant, then tap "Add Rent" to record the first payment.',
-            icon: '💰',
-            completed: onboardingData?.has_payments ?? false,
-            actionLabel: 'Add First Rent',
-            onAction: () => {
-              startRentTour();
-              navigation.navigate('Tenants' as never);
-            },
-          },
-        ];
-        return (
-          <OnboardingChecklist
-            steps={checklistSteps}
-            onContactUs={() => navigation.navigate('Settings' as never)}
-            onDismiss={() => {
-              setOnboardingDismissed(true);
-            }}
-          />
-        );
-      })()}
       <View style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={{ paddingBottom: 80 }}
@@ -764,9 +645,8 @@ export const DashboardScreen: React.FC = () => {
                     gap: 10,
                   }}
                 >
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     onPress={() => setShowOwnerInfo(true)}
-                    activeOpacity={0.9}
                     style={{
                       width: 40,
                       height: 40,
@@ -783,7 +663,7 @@ export const DashboardScreen: React.FC = () => {
                       size={18}
                       color={Theme.colors.text.secondary}
                     />
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
 
                   <View
                     style={{
@@ -808,6 +688,8 @@ export const DashboardScreen: React.FC = () => {
                       fontSize: 11,
                       fontWeight: "800",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     TOTAL BEDS
                   </Text>
@@ -829,6 +711,8 @@ export const DashboardScreen: React.FC = () => {
                       fontSize: 11,
                       fontWeight: "800",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     OCCUPIED
                   </Text>
@@ -850,6 +734,8 @@ export const DashboardScreen: React.FC = () => {
                       fontSize: 11,
                       fontWeight: "800",
                     }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     OCCUPANCY
                   </Text>
@@ -980,7 +866,7 @@ export const DashboardScreen: React.FC = () => {
               {widgetItems.map((w) => {
                 const active = w.key === attentionTab;
                 return (
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     key={w.key}
                     onPress={() => setAttentionTab(w.key)}
                     style={{
@@ -1026,7 +912,7 @@ export const DashboardScreen: React.FC = () => {
                         {w.count}
                       </Text>
                     </View>
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                 );
               })}
             </ScrollView>
@@ -1050,7 +936,7 @@ export const DashboardScreen: React.FC = () => {
               >
                 {selectedAttention?.subtitle ?? ""}
               </Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Tenants")}>
+              <AnimatedPressableCard onPress={() => navigation.navigate("Tenants")}>
                 <Text
                   style={{
                     color: Theme.colors.primary,
@@ -1060,7 +946,7 @@ export const DashboardScreen: React.FC = () => {
                 >
                   See all
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
 
             {/* Tenant list */}
@@ -1148,7 +1034,7 @@ export const DashboardScreen: React.FC = () => {
                   };
 
                   return (
-                    <AnimatedPressable
+                    <AnimatedPressableCard
                       key={t.s_no}
                       onPress={openTenantDetails}
                       style={{
@@ -1223,7 +1109,7 @@ export const DashboardScreen: React.FC = () => {
                       </View>
 
                       <View style={{ flexDirection: "row", gap: 8 }}>
-                        <TouchableOpacity
+                        <AnimatedPressableCard
                           onPress={() => openCall(phone)}
                           style={{
                             width: 34,
@@ -1235,8 +1121,8 @@ export const DashboardScreen: React.FC = () => {
                           }}
                         >
                           <Ionicons name="call" size={15} color={Theme.colors.primary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </AnimatedPressableCard>
+                        <AnimatedPressableCard
                           onPress={onPressWhatsApp}
                           style={{
                             width: 34,
@@ -1248,9 +1134,9 @@ export const DashboardScreen: React.FC = () => {
                           }}
                         >
                           <Ionicons name="logo-whatsapp" size={15} color="#22C55E" />
-                        </TouchableOpacity>
+                        </AnimatedPressableCard>
                       </View>
-                    </AnimatedPressable>
+                    </AnimatedPressableCard>
                   );
                 })}
               </ScrollView>

@@ -1,13 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
   RefreshControl,
-  TouchableOpacity,
   ActivityIndicator,
-  Alert,
-} from 'react-native';
+  Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenLayout } from '@/components/ScreenLayout';
@@ -22,8 +21,7 @@ import {
   useGetPlansQuery,
   useGetSubscriptionStatusQuery,
   useSubscribeToPlanMutation,
-  useUpgradePlanMutation,
-} from '@/features/owner/api/subscriptionApi';
+  useUpgradePlanMutation } from '@/features/owner/api/subscriptionApi';
 
 interface SubscriptionPlansScreenProps {
   navigation: any;
@@ -39,15 +37,13 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     data: plansResponse,
     isLoading: plansLoading,
     error: plansError,
-    refetch: refetchPlans,
-  } = useGetPlansQuery();
+    refetch: refetchPlans } = useGetPlansQuery();
 
   const {
     data: subscriptionStatus,
     isLoading: statusLoading,
     error: statusError,
-    refetch: refetchStatus,
-  } = useGetSubscriptionStatusQuery();
+    refetch: refetchStatus } = useGetSubscriptionStatusQuery();
 
   const [subscribeToPlan, { isLoading: subscribing }] = useSubscribeToPlanMutation();
   const [upgradePlan, { isLoading: upgrading }] = useUpgradePlanMutation();
@@ -127,8 +123,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           orderId,
           subscriptionId,
           plan: responsePlan,
-          pricing: responsePricing,
-        });
+          pricing: responsePricing });
       } else {
         showSuccessAlert('Subscription initiated successfully!');
       }
@@ -176,8 +171,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           orderId,
           subscriptionId,
           plan: responsePlan,
-          pricing: responsePricing,
-        });
+          pricing: responsePricing });
       } else {
         showSuccessAlert('Upgrade initiated successfully!');
       }
@@ -283,10 +277,9 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     const priceSectionBg = '#0F172A';
 
     return (
-      <TouchableOpacity
+      <AnimatedPressableCard
         key={plan.s_no}
         onPress={() => setSelectedPlan(plan.s_no)}
-        activeOpacity={0.93}
         style={{
           marginBottom: 24,
           borderRadius: 28,
@@ -297,8 +290,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           shadowColor: isSelected ? accentColor : '#000',
           shadowOffset: { width: 0, height: isSelected ? 6 : 3 },
           shadowOpacity: isSelected ? 0.3 : 0.12,
-          shadowRadius: isSelected ? 14 : 8,
-        }}
+          shadowRadius: isSelected ? 14 : 8 }}
       >
         {/* ── TOP COLOR BAR with plan label ── */}
         <View style={{ backgroundColor: accentColor, paddingVertical: 11, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -329,8 +321,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
             <View style={{
               width: 20, height: 20, borderRadius: 10,
               backgroundColor: isSelected ? '#fff' : 'rgba(255,255,255,0.3)',
-              alignItems: 'center', justifyContent: 'center',
-            }}>
+              alignItems: 'center', justifyContent: 'center' }}>
               {isSelected && <Ionicons name="checkmark" size={12} color={accentColor} />}
             </View>
           </View>
@@ -352,8 +343,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
               width: 52, height: 52, borderRadius: 18,
               backgroundColor: `${accentColor}22`,
               borderWidth: 1.5, borderColor: `${accentColor}50`,
-              alignItems: 'center', justifyContent: 'center',
-            }}>
+              alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name={tierInfo.icon as any} size={26} color={accentColor} />
             </View>
           </View>
@@ -397,8 +387,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
               backgroundColor: `${accentColor}22`,
               borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10,
               alignItems: 'center',
-              borderWidth: 1.5, borderColor: `${accentColor}45`,
-            }}>
+              borderWidth: 1.5, borderColor: `${accentColor}45` }}>
               <Text style={{ fontSize: 22, fontWeight: '900', color: accentColor, letterSpacing: -0.5 }}>{plan.duration}</Text>
               <Text style={{ fontSize: 10, fontWeight: '700', color: accentColor, opacity: 0.8, letterSpacing: 0.5 }}>DAYS</Text>
             </View>
@@ -428,8 +417,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                     width: 24, height: 24, borderRadius: 12,
                     backgroundColor: isUnlimitedFeature ? '#DCFCE7' : `${accentColor}15`,
                     alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
+                    flexShrink: 0 }}>
                     <Ionicons
                       name={isUnlimitedFeature ? 'infinite' : 'checkmark'}
                       size={12}
@@ -461,11 +449,9 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.06,
                 shadowRadius: 4,
-                elevation: 2,
-              }}>
-                <TouchableOpacity
+                elevation: 2 }}>
+                <AnimatedPressableCard
                   onPress={() => setCollapsedGst(prev => ({ ...prev, [plan.s_no]: !isGstCollapsed }))}
-                  activeOpacity={0.7}
                   style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#F9FAFB' }}
                 >
                   <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: `${accentColor}15`, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
@@ -475,7 +461,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                   <View style={{ backgroundColor: '#F3F4F6', borderRadius: 20, padding: 4 }}>
                     <Ionicons name={isGstCollapsed ? 'chevron-down' : 'chevron-up'} size={14} color="#6B7280" />
                   </View>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
                 {!isGstCollapsed && (() => {
                   const gstTotal = plan.gst_breakdown.cgst_amount + plan.gst_breakdown.sgst_amount;
                   const basePrice = plan.gst_breakdown.total_price_including_gst - gstTotal;
@@ -515,7 +501,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
             <Text style={{ fontSize: 15, fontWeight: '700', color: '#10B981' }}>Your Current Plan</Text>
           </View>
         ) : (
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => {
               if (isExpiredFreePlanCard) return;
               if (hasActiveSubscription) { handleUpgrade(plan.s_no); return; }
@@ -528,8 +514,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 10,
-            }}
+              gap: 10 }}
           >
             {(subscribing || upgrading) && selectedPlan === plan.s_no ? (
               <ActivityIndicator color="#fff" />
@@ -541,9 +526,9 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                 {!isExpiredFreePlanCard && <Ionicons name="arrow-forward-circle" size={22} color="rgba(255,255,255,0.85)" />}
               </>
             )}
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         )}
-      </TouchableOpacity>
+      </AnimatedPressableCard>
     );
   };
 
@@ -588,7 +573,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
         {/* Current Status Card */}
         {ss && (
           <Card style={{ marginBottom: 24, padding: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
               <View style={{
                 width: 48,
                 height: 48,
@@ -598,8 +583,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                   : Theme.withOpacity(Theme.colors.warning, 0.1),
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginRight: 16,
-              }}>
+                marginRight: 16 }}>
                 <Ionicons 
                   name={ss.has_active_subscription ? "checkmark-circle" : "alert-circle"} 
                   size={28} 
@@ -623,8 +607,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                 backgroundColor: Theme.colors.background.secondary,
                 padding: 12,
                 borderRadius: 8,
-                marginTop: 8,
-              }}>
+                marginTop: 8 }}>
                 <Text style={{ fontSize: 14, color: Theme.colors.text.primary, fontWeight: '600' }}>
                   {ss.days_remaining} days remaining
                 </Text>
@@ -634,13 +617,11 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                   backgroundColor: Theme.withOpacity(Theme.colors.primary, 0.15),
                   borderRadius: 999,
                   overflow: 'hidden',
-                  marginTop: 8,
-                }}>
+                  marginTop: 8 }}>
                   <View style={{
                     height: '100%',
                     width: `${(ss.days_remaining / (ss.subscription?.plan?.duration || 30)) * 100}%`,
-                    backgroundColor: Theme.colors.primary,
-                  }} />
+                    backgroundColor: Theme.colors.primary }} />
                 </View>
               </View>
             )}
@@ -651,8 +632,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                   backgroundColor: Theme.withOpacity(Theme.colors.warning, 0.12),
                   padding: 12,
                   borderRadius: 10,
-                  marginTop: 12,
-                }}
+                  marginTop: 12 }}
               >
                 <Text style={{ fontSize: 13, color: Theme.colors.text.primary, fontWeight: '700', marginBottom: 4 }}>
                   Your free plan has ended
@@ -671,13 +651,11 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                 marginTop: 12,
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 10,
-              }}>
+                gap: 10 }}>
                 <View style={{
                   width: 34, height: 34, borderRadius: 17,
                   backgroundColor: 'rgba(255,255,255,0.18)',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
+                  alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ fontSize: 16 }}>🚀</Text>
                 </View>
                 <View style={{ flex: 1 }}>
@@ -704,14 +682,14 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
 
         {/* Plans */}
         {((plansLoading || statusLoading) && (!plans || plans.length === 0)) ? (
-          <View style={{ paddingVertical: 60, alignItems: 'center',  }}>
+          <View style={{ paddingVertical: 60, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={Theme.colors.primary} />
             <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
               Loading plans...
             </Text>
           </View>
         ) : !plans || plans.length === 0 ? (
-          <View style={{ paddingVertical: 60, alignItems: 'center', }}>
+          <View style={{ paddingVertical: 60, alignItems: 'center' }}>
             <Ionicons name="pricetags-outline" size={64} color={Theme.colors.text.tertiary} />
             <Text style={{ fontSize: 18, fontWeight: '600', color: Theme.colors.text.primary, marginTop: 16 }}>
               No Plans Available
@@ -725,19 +703,16 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
             {/* Showing X of Y indicator */}
             <View style={{
               alignItems: 'center',
-              marginBottom: 16,
-            }}>
+              marginBottom: 16 }}>
               <View style={{
                 backgroundColor: Theme.colors.text.primary,
                 paddingHorizontal: 16,
                 paddingVertical: 8,
-                borderRadius: 20,
-              }}>
+                borderRadius: 20 }}>
                 <Text style={{
                   color: '#fff',
                   fontSize: 13,
-                  fontWeight: '600',
-                }}>
+                  fontWeight: '600' }}>
                   {plans.length} {plans.length === 1 ? 'Plan' : 'Plans'} Available
                 </Text>
               </View>
