@@ -3,6 +3,8 @@ import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { View, Text, Modal, Animated, Easing, StyleSheet } from 'react-native';
 
 export type TourStep =
+  | 'tap_quick_setup'   // On Dashboard: tap Quick Setup in quick actions
+  | 'tap_rooms'         // On Dashboard: tap Rooms in quick actions (after QuickSetup)
   | 'tap_add_room'      // On Rooms screen: tap FAB + to add a room
   | 'tap_room'          // On Rooms screen: tap a room to open details
   | 'tap_add_bed'       // On RoomDetails screen: tap + to add bed
@@ -14,6 +16,8 @@ export type TourStep =
 
 interface OnboardingTourContextValue {
   tourStep: TourStep;
+  startOnboardingTour: () => void;
+  startRoomsFromDashboardTour: () => void;
   startRoomTour: () => void;
   startBedTour: () => void;
   startTenantTour: () => void;
@@ -24,6 +28,8 @@ interface OnboardingTourContextValue {
 
 const OnboardingTourContext = createContext<OnboardingTourContextValue>({
   tourStep: null,
+  startOnboardingTour: () => {},
+  startRoomsFromDashboardTour: () => {},
   startRoomTour: () => {},
   startBedTour: () => {},
   startTenantTour: () => {},
@@ -127,6 +133,14 @@ export const OnboardingTourProvider: React.FC<{ children: React.ReactNode }> = (
   const [tourStep, setTourStep] = useState<TourStep>(null);
   const [showCelebration, setShowCelebration] = useState(false);
 
+  const startOnboardingTour = useCallback(() => {
+    setTourStep('tap_quick_setup');
+  }, []);
+
+  const startRoomsFromDashboardTour = useCallback(() => {
+    setTourStep('tap_rooms');
+  }, []);
+
   const startRoomTour = useCallback(() => {
     setTourStep('tap_add_room');
   }, []);
@@ -145,6 +159,8 @@ export const OnboardingTourProvider: React.FC<{ children: React.ReactNode }> = (
 
   const advanceTour = useCallback(() => {
     setTourStep((prev) => {
+      if (prev === 'tap_quick_setup') return null;             // quick setup tapped → tour pauses, QuickSetup handles rest
+      if (prev === 'tap_rooms') return 'tap_room_for_tenant'; // rooms tapped from dashboard → go to rooms list, tap a room
       if (prev === 'tap_add_room') return 'tap_room';        // room created → tap room to open
       if (prev === 'tap_room') return 'tap_add_bed';         // room opened → add bed
       if (prev === 'tap_add_bed') return 'tap_add_tenant';   // bed created → add tenant
@@ -161,7 +177,7 @@ export const OnboardingTourProvider: React.FC<{ children: React.ReactNode }> = (
   }, []);
 
   return (
-    <OnboardingTourContext.Provider value={{ tourStep, startRoomTour, startBedTour, startTenantTour, startRentTour, advanceTour, endTour }}>
+    <OnboardingTourContext.Provider value={{ tourStep, startOnboardingTour, startRoomsFromDashboardTour, startRoomTour, startBedTour, startTenantTour, startRentTour, advanceTour, endTour }}>
       {children}
       <CelebrationModal visible={showCelebration} onClose={() => setShowCelebration(false)} />
     </OnboardingTourContext.Provider>

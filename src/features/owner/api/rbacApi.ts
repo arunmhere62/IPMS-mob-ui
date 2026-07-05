@@ -30,6 +30,8 @@ export type MyPermissionsResponse = {
   permissions: string[];
   subscription: SubscriptionFlags;
   is_onboarding_complete: boolean;
+  onboarding_has_rooms?: boolean;
+  onboarding_has_tenants?: boolean;
 };
 
 export type PermissionCatalogItem = {

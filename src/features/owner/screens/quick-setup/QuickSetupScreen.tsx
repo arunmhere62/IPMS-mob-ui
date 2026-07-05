@@ -27,6 +27,7 @@ import {
 } from "@/features/owner/api/roomsApi";
 import { useGetPGLocationsQuery } from "@/features/owner/api/pgLocationsApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
+import { useOnboardingTour } from "@/context/OnboardingTourContext";
 import { Ionicons } from "@expo/vector-icons";
 
 interface RoomSetupRow {
@@ -76,6 +77,10 @@ export const QuickSetupScreen: React.FC = () => {
 
   const [createRoom] = useCreateRoomMutation();
   const [bulkCreateBeds] = useBulkCreateBedMutation();
+  const { startRoomsFromDashboardTour } = useOnboardingTour();
+  const isOnboardingComplete = useSelector(
+    (state: RootState) => (state as any).rbac?.isOnboardingComplete ?? null
+  );
 
   const [numRooms, setNumRooms] = useState("");
   const [defaultPrice, setDefaultPrice] = useState("");
@@ -392,7 +397,10 @@ export const QuickSetupScreen: React.FC = () => {
       }
 
       showSuccessAlert("Rooms and beds created successfully", {
-        onOk: () => navigation.navigate("MainTabs"),
+        onOk: () => {
+          startRoomsFromDashboardTour();
+          navigation.navigate("MainTabs", { screen: "Dashboard" });
+        },
       });
     } catch (error: any) {
       showErrorAlert(error, "Failed to set up rooms and beds");
@@ -427,7 +435,7 @@ export const QuickSetupScreen: React.FC = () => {
       <ScreenHeader
         title="Quick Setup"
         subtitle="Create your rooms and beds in one go"
-        showBackButton={true}
+        showBackButton={isOnboardingComplete !== false}
         onBackPress={() => navigation.goBack()}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}

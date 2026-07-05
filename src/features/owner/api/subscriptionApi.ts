@@ -164,7 +164,6 @@ export type PreparePaymentResponse = {
     payment_url: string;
     order_id: string;
     payment_method: string;
-    payment_option: string;
   };
 };
 

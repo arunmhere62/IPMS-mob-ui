@@ -6,6 +6,8 @@ import {
   TextInput,
   RefreshControl,
   Alert,
+  Animated,
+  Easing,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
@@ -29,6 +31,7 @@ import { CONTENT_COLOR } from "@/constant";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 import { Ionicons } from "@expo/vector-icons";
+import { useOnboardingTour } from "@/context/OnboardingTourContext";
 
 interface RoomsScreenProps {
   navigation: any;
@@ -71,6 +74,22 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   });
 
   const [deleteRoomMutation] = useDeleteRoomMutation();
+
+  const { tourStep, advanceTour } = useOnboardingTour();
+
+  const roomPulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (tourStep === 'tap_room_for_tenant') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(roomPulse, { toValue: 1.08, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+          Animated.timing(roomPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        ])
+      ).start();
+    } else {
+      roomPulse.setValue(1);
+    }
+  }, [tourStep, roomPulse]);
 
   // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -192,12 +211,25 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           ? Math.max(totalBeds - occupiedBeds, 0)
           : undefined;
 
+      const showTourHint = tourStep === 'tap_room_for_tenant' && index === 0;
+
       return (
         <AnimatedPressableCard
           onPress={() => {
+            if (showTourHint) advanceTour();
             navigation.navigate("RoomDetails", { roomId: item.s_no });
           }}
         >
+          {showTourHint && (
+            <View style={{ alignItems: 'center', marginBottom: 4 }}>
+              <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Ionicons name="finger-print" size={11} color="#fff" />
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>Tap to open room</Text>
+              </View>
+              <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
+            </View>
+          )}
+          <Animated.View style={{ transform: [{ scale: showTourHint ? roomPulse : 1 }] }}>
           <Card
             className=""
             style={{ marginHorizontal: 10, marginVertical: 4, padding: 12 }}
@@ -291,6 +323,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
               </View>
             )}
           </Card>
+          </Animated.View>
         </AnimatedPressableCard>
       );
   };

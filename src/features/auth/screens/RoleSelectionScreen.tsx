@@ -74,14 +74,16 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ naviga
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff' },
+    backgroundColor: '#fff',
+    justifyContent: 'center' },
   header: {
     alignItems: 'center',
-    paddingTop: 80,
+    paddingTop: 0,
     paddingBottom: 40 },
   logo: {
     width: 80,
     height: 80,
+    borderRadius: 16,
     marginBottom: 16 },
   title: {
     fontSize: 28,
@@ -92,9 +94,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#64748b' },
   buttonsContainer: {
-    flex: 1,
     paddingHorizontal: 24,
-    gap: 12 },
+    gap: 12,
+    marginBottom: 40 },
   roleButton: {
     flexDirection: 'row',
     alignItems: 'center',

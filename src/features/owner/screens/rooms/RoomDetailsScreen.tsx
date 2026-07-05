@@ -7,6 +7,8 @@ import {
   RefreshControl,
   Image,
   Dimensions,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
@@ -38,6 +40,7 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
+import { useOnboardingTour } from '@/context/OnboardingTourContext';
 
 interface RoomDetailsScreenProps {
   navigation: any;
@@ -56,6 +59,22 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   const canEditBed = can(Permission.EDIT_BED);
   const canDeleteBed = can(Permission.DELETE_BED);
   const canCreateTenant = can(Permission.CREATE_TENANT);
+
+  const { tourStep } = useOnboardingTour();
+
+  const tenantPulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (tourStep === 'tap_add_tenant') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(tenantPulse, { toValue: 1.12, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+          Animated.timing(tenantPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        ])
+      ).start();
+    } else {
+      tenantPulse.setValue(1);
+    }
+  }, [tourStep, tenantPulse]);
 
   const [room, setRoom] = useState<Room | null>(null);
   const [beds, setBeds] = useState<Bed[]>([]);
@@ -715,13 +734,28 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
 
                     {/* Add / View button */}
                     {!occupied ? (
-                      <AnimatedPressableCard
-                        onPress={() => navigation.navigate('AddTenant', { bed_id: bed.s_no, room_id: room.s_no })}
-                        disabled={!canCreateTenant}
-                        style={{ backgroundColor: '#16A34A', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, opacity: canCreateTenant ? 1 : 0.45 }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>+ Add Tenant</Text>
-                      </AnimatedPressableCard>
+                      <>
+                        {tourStep === 'tap_add_tenant' && index === 0 && (
+                          <View style={{ alignItems: 'center', marginBottom: 4 }}>
+                            <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Ionicons name="finger-print" size={11} color="#fff" />
+                              <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>Tap to add tenant</Text>
+                            </View>
+                            <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
+                          </View>
+                        )}
+                        <Animated.View style={{ transform: [{ scale: tourStep === 'tap_add_tenant' && index === 0 ? tenantPulse : 1 }] }}>
+                          <AnimatedPressableCard
+                            onPress={() => {
+                              navigation.navigate('AddTenant', { bed_id: bed.s_no, room_id: room.s_no });
+                            }}
+                            disabled={!canCreateTenant}
+                            style={{ backgroundColor: '#16A34A', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, opacity: canCreateTenant ? 1 : 0.45 }}
+                          >
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>+ Add Tenant</Text>
+                          </AnimatedPressableCard>
+                        </Animated.View>
+                      </>
                     ) : tenant?.s_no ? (
                       <AnimatedPressableCard
                         onPress={() => navigation.navigate('TenantDetails', { tenantId: tenant.s_no })}

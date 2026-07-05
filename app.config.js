@@ -57,8 +57,8 @@ module.exports = ({ config }) => {
       appEnv: (process.env.APP_ENV || process.env.MODE || 'dev').toLowerCase(),
       // Production builds must set API_BASE_URL via eas.json env.
       // Local dev fallback: update this IP if your dev machine changes.
-      // apiBaseUrl: process.env.API_BASE_URL || "http://192.168.1.5:3001/api/v1",
-      apiBaseUrl: process.env.API_BASE_URL || "https://mobapi.indianpgmanagement.com/api/v1",
+      apiBaseUrl: process.env.API_BASE_URL || "http://192.168.1.5:3001/api/v1",
+      // apiBaseUrl: process.env.API_BASE_URL || "https://mobapi.indianpgmanagement.com/api/v1",
       // Subscription Configuration
       subscriptionMode: process.env.SUBSCRIPTION_MODE === 'true',
       showDevBanner: process.env.SHOW_DEV_BANNER === 'true'

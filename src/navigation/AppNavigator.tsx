@@ -102,6 +102,7 @@ const stackScreenOptions = {
 export const AppNavigator = () => {
   const { isAuthenticated, lastUserRole: adminLastRole } = useSelector((state: RootState) => state.auth);
   const { isAuthenticated: isTenantAuthenticated, lastUserRole: tenantLastRole } = useSelector((state: RootState) => state.tenantAuth);
+  const isOnboardingComplete = useSelector((state: RootState) => (state as any).rbac?.isOnboardingComplete ?? null);
   const dispatch = useDispatch();
 
   // Determine which login screen to show based on last user role
@@ -125,6 +126,19 @@ export const AppNavigator = () => {
       dispatch(clearPermissions());
     }
   }, [isAuthenticated, dispatch]);
+
+  // Onboarding: user lands on Dashboard. DashboardScreen auto-starts the tour
+  // (arrow on Quick Setup) when isOnboardingComplete is false.
+  // After QuickSetup completes, it navigates back to Dashboard with the rooms tour.
+  useEffect(() => {
+    if (!isAuthenticated || isTenantAuthenticated) return;
+    if (isOnboardingComplete === null) return;
+
+    const currentRoute = navigationRef.current?.getCurrentRoute()?.name;
+    if (isOnboardingComplete === true && currentRoute === 'QuickSetup') {
+      navigationRef.current?.navigate('MainTabs', { screen: 'Dashboard' });
+    }
+  }, [isAuthenticated, isTenantAuthenticated, isOnboardingComplete]);
 
   // Determine which screens to show based on auth state
   const isUnauthenticated = !isAuthenticated && !isTenantAuthenticated;

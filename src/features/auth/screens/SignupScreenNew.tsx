@@ -819,7 +819,7 @@ export const SignupScreenNew: React.FC = () => {
                 <Image
                   source={require("../../../../assets/splash-logo.png")}
                   resizeMode="contain"
-                  style={{ width: 110, height: 110 }}
+                  style={{ width: 110, height: 110, borderRadius: 22 }}
                 />
                 <Text
                   style={{

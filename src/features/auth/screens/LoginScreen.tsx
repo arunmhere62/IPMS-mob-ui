@@ -105,7 +105,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <Image
               source={require('../../../../assets/splash-logo.png')}
               resizeMode="contain"
-              style={{ width: 110, height: 110 }}
+              style={{ width: 110, height: 110, borderRadius: 22 }}
             />
           </View>
           <Card className="mb-6 shadow-none">

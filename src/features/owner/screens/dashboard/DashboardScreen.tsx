@@ -45,6 +45,7 @@ import { AppDispatch, RootState } from "../../store";
 import { Tenant } from "../../api";
 import { AnnouncementBanner } from "../../../../components/AnnouncementBanner";
 import { TrialBanner } from "../../../../components/TrialBanner";
+import { useOnboardingTour } from "@/context/OnboardingTourContext";
 
 type DashboardRouteName =
   | "PGLocations"
@@ -70,7 +71,22 @@ export const DashboardScreen: React.FC = () => {
   );
   const { user } = useSelector((state: RootState) => state.auth);
   const appStatus = useSelector((state: RootState) => (state as any).appSettings?.appSettings);
+  const isOnboardingComplete = useSelector((state: RootState) => (state as any).rbac?.isOnboardingComplete ?? null);
+  const onboardingHasRooms = useSelector((state: RootState) => (state as any).rbac?.onboardingHasRooms ?? false);
   usePermissions();
+  const { tourStep, startOnboardingTour, startRoomsFromDashboardTour, advanceTour } = useOnboardingTour();
+
+  // Auto-start tour when onboarding is not complete.
+  // If rooms already exist (e.g. from QuickSetup), skip to tap_rooms.
+  useEffect(() => {
+    if (isOnboardingComplete === false && tourStep === null) {
+      if (onboardingHasRooms) {
+        startRoomsFromDashboardTour();
+      } else {
+        startOnboardingTour();
+      }
+    }
+  }, [isOnboardingComplete, onboardingHasRooms, tourStep, startOnboardingTour, startRoomsFromDashboardTour]);
   const [refreshing, setRefreshing] = useState(false);
   const [attentionTab, setAttentionTab] = useState<
     "pending_rent" | "partial_rent" | "without_advance"
@@ -175,6 +191,14 @@ export const DashboardScreen: React.FC = () => {
 
   const handleQuickActionNavigate = useCallback(
     (screen: string) => {
+      // Advance tour if user tapped Quick Setup during onboarding
+      if (screen === "QuickSetup" && tourStep === 'tap_quick_setup') {
+        advanceTour();
+      }
+      // Advance tour if user tapped Rooms during onboarding
+      if (screen === "Rooms" && tourStep === 'tap_rooms') {
+        advanceTour();
+      }
       // Screens that exist as tabs — navigate within tab navigator to keep bottom nav visible
       const tabScreens = ["Rooms", "Tenants", "UpcomingVacancies", "Dashboard"];
       if (tabScreens.includes(screen)) {
@@ -195,7 +219,7 @@ export const DashboardScreen: React.FC = () => {
         }
       }
     },
-    [navigation]
+    [navigation, tourStep, advanceTour]
   );
 
   const getGapSnapshotForTab = useCallback(
@@ -817,6 +841,11 @@ export const DashboardScreen: React.FC = () => {
           <QuickActions
             menuItems={dashboardQuickActions}
             onNavigate={handleQuickActionNavigate}
+            tourHintScreen={
+              tourStep === 'tap_quick_setup' ? 'QuickSetup'
+              : tourStep === 'tap_rooms' ? 'Rooms'
+              : null
+            }
           />
 
           <View style={{ paddingHorizontal: 16, marginTop: 12 }}>

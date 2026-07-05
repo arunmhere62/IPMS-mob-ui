@@ -6,6 +6,8 @@ export type RbacState = {
   loadedAt: number | null;
   subscription: SubscriptionFlags | null;
   isOnboardingComplete: boolean | null;
+  onboardingHasRooms: boolean;
+  onboardingHasTenants: boolean;
 };
 
 const initialState: RbacState = {
@@ -13,6 +15,8 @@ const initialState: RbacState = {
   loadedAt: null,
   subscription: null,
   isOnboardingComplete: null,
+  onboardingHasRooms: false,
+  onboardingHasTenants: false,
 };
 
 const rbacSlice = createSlice({
@@ -29,14 +33,20 @@ const rbacSlice = createSlice({
     setIsOnboardingComplete: (state, action: PayloadAction<boolean | null>) => {
       state.isOnboardingComplete = action.payload;
     },
+    setOnboardingFlags: (state, action: PayloadAction<{ hasRooms: boolean; hasTenants: boolean }>) => {
+      state.onboardingHasRooms = action.payload.hasRooms;
+      state.onboardingHasTenants = action.payload.hasTenants;
+    },
     clearPermissions: (state) => {
       state.permissionsMap = {};
       state.loadedAt = null;
       state.subscription = null;
       state.isOnboardingComplete = null;
+      state.onboardingHasRooms = false;
+      state.onboardingHasTenants = false;
     },
   },
 });
 
-export const { setPermissionsMap, setSubscription, setIsOnboardingComplete, clearPermissions } = rbacSlice.actions;
+export const { setPermissionsMap, setSubscription, setIsOnboardingComplete, setOnboardingFlags, clearPermissions } = rbacSlice.actions;
 export default rbacSlice.reducer;

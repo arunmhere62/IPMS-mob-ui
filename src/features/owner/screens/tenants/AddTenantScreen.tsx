@@ -71,7 +71,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
   const [verifyPhoneOtp] = useVerifyPhoneOtpMutation();
   const [loading, setLoading] = useState(false);
   const { can } = usePermissions();
-  const { tourStep, advanceTour } = useOnboardingTour();
+  const { tourStep, endTour } = useOnboardingTour();
 
   // Phone verification state
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -626,7 +626,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
 
         showSuccessAlert(res);
         if (tourStep === 'tap_add_tenant' && (res as any)?.data?.s_no) {
-          advanceTour();
+          endTour();
           navigation.navigate('TenantDetails', { tenantId: (res as any).data.s_no });
         } else {
           navigation.navigate("Tenants", { refresh: Date.now() });

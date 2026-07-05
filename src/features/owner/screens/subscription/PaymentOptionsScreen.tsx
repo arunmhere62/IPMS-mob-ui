@@ -6,7 +6,6 @@ import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Theme } from '@/theme';
 import { usePreparePaymentMutation } from '@/features/owner/api/subscriptionApi';
-import { showErrorAlert } from '@/utils/errorHandler';
 
 interface PaymentOptionsScreenProps {
   navigation: any;
@@ -72,8 +71,12 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({ navi
         subscriptionId,
         paymentMethod: selectedMethod });
     } catch (error: unknown) {
-      console.error('❌ Prepare payment error:', error);
-      showErrorAlert(error, 'Payment Preparation Error');
+      console.error('❌ Prepare payment error, falling back to original URL:', error);
+      navigation.navigate('PaymentWebView', {
+        paymentUrl,
+        orderId,
+        subscriptionId,
+        paymentMethod: selectedMethod });
     }
   };
 

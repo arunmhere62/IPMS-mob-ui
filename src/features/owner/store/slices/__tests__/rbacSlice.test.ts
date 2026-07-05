@@ -12,6 +12,8 @@ describe('rbacSlice', () => {
     loadedAt: null,
     subscription: null,
     isOnboardingComplete: null,
+    onboardingHasRooms: false,
+    onboardingHasTenants: false,
   };
 
   it('should return initial state', () => {
@@ -35,6 +37,8 @@ describe('rbacSlice', () => {
         loadedAt: 123456,
         subscription: null,
         isOnboardingComplete: null,
+        onboardingHasRooms: false,
+        onboardingHasTenants: false,
       };
       const newPermissions = { new_permission: true };
       const action = setPermissionsMap(newPermissions);
@@ -68,6 +72,8 @@ describe('rbacSlice', () => {
         loadedAt: 123456,
         subscription: { plan: 'basic' } as any,
         isOnboardingComplete: null,
+        onboardingHasRooms: false,
+        onboardingHasTenants: false,
       };
       const action = setSubscription(null);
       const state = rbacReducer(existingState, action);
@@ -97,6 +103,8 @@ describe('rbacSlice', () => {
         loadedAt: 123456,
         subscription: null,
         isOnboardingComplete: true,
+        onboardingHasRooms: false,
+        onboardingHasTenants: false,
       };
       const action = setIsOnboardingComplete(null);
       const state = rbacReducer(existingState, action);
@@ -112,6 +120,8 @@ describe('rbacSlice', () => {
         loadedAt: 123456,
         subscription: { plan: 'premium' } as any,
         isOnboardingComplete: true,
+        onboardingHasRooms: false,
+        onboardingHasTenants: false,
       };
       const action = clearPermissions();
       const state = rbacReducer(existingState, action);
