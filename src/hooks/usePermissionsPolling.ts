@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import type { RootState } from '../store';
 import { useRefreshMyPermissions } from './useRefreshMyPermissions';
+import { RootState } from '@/features/owner/store';
 
 export const usePermissionsPolling = () => {
   const { isAuthenticated, accessToken } = useSelector((state: RootState) => state.auth);

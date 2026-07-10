@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { View, TextInput, Text } from 'react-native';
 import { Theme } from '../theme';
 
 export interface PasswordInputProps {
@@ -21,8 +22,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   label,
   error = false,
   errorMessage,
-  editable = true,
-}) => {
+  editable = true }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -41,16 +41,14 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
           borderRadius: 8,
           paddingHorizontal: 12,
           borderWidth: 1,
-          borderColor: error ? '#EF4444' : '#E5E7EB',
-        }}
+          borderColor: error ? '#EF4444' : '#E5E7EB' }}
       >
         <TextInput
           style={{
             flex: 1,
             paddingVertical: 12,
             fontSize: 14,
-            color: Theme.colors.text.primary,
-          }}
+            color: Theme.colors.text.primary }}
           placeholder={placeholder}
           placeholderTextColor={placeholderTextColor}
           value={value}
@@ -59,18 +57,17 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
           editable={editable}
         />
         
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => setShowPassword(!showPassword)}
           style={{
             padding: 8,
-            marginLeft: 8,
-          }}
+            marginLeft: 8 }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Text style={{ fontSize: 18, color: Theme.colors.text.secondary }}>
             {showPassword ? '👁️' : '👁️‍🗨️'}
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
 
       {error && errorMessage && (

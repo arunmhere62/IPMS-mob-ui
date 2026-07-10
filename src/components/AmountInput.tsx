@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, ViewStyle } from 'react-native';
+import { View, Text, TextInput, ViewStyle, Keyboard, TextInputProps } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 
@@ -14,6 +14,9 @@ interface AmountInputProps {
   containerStyle?: ViewStyle;
   prefix?: string;
   maxLength?: number;
+  returnKeyType?: TextInputProps['returnKeyType'];
+  blurOnSubmit?: boolean;
+  onSubmitEditing?: () => void;
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
@@ -27,7 +30,28 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   containerStyle,
   prefix = '₹',
   maxLength = 10,
+  returnKeyType,
+  blurOnSubmit,
+  onSubmitEditing,
 }) => {
+  const handleChange = (text: string) => {
+    // Prevent negative numbers
+    if (text.startsWith('-')) {
+      return;
+    }
+    
+    // Prevent multiple decimal points
+    const decimalPoints = (text.match(/\./g) || []).length;
+    if (decimalPoints > 1) {
+      // Remove all but the first decimal point
+      const parts = text.split('.');
+      const newText = parts[0] + '.' + parts.slice(1).join('');
+      onChangeText(newText);
+    } else {
+      onChangeText(text);
+    }
+  };
+
   return (
     <View style={containerStyle}>
       <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
@@ -61,9 +85,12 @@ export const AmountInput: React.FC<AmountInputProps> = ({
           placeholderTextColor={Theme.colors.text.tertiary}
           keyboardType="numeric"
           value={value}
-          onChangeText={onChangeText}
+          onChangeText={handleChange}
           maxLength={maxLength}
           editable={!disabled}
+          returnKeyType={(returnKeyType ?? 'done') as any}
+          blurOnSubmit={blurOnSubmit ?? ((returnKeyType ?? 'done') === 'done')}
+          onSubmitEditing={onSubmitEditing ?? (() => Keyboard.dismiss())}
         />
       </View>
 

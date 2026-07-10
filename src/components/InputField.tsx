@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, ViewStyle, TextInputProps } from 'react-native';
+import { View, Text, TextInput, ViewStyle, TextInputProps, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 
@@ -44,6 +44,12 @@ export const InputField: React.FC<InputFieldProps> = ({
   maxLength,
   ...textInputProps
 }) => {
+  // Inbuilt defaults: if not multiline, use Done to dismiss keyboard
+  const derivedReturnKeyType = textInputProps.returnKeyType ?? (multiline ? undefined : 'done');
+  const derivedBlurOnSubmit = textInputProps.blurOnSubmit ?? (!!derivedReturnKeyType && derivedReturnKeyType === 'done');
+  const derivedOnSubmitEditing = textInputProps.onSubmitEditing ?? (
+    (!!derivedReturnKeyType && derivedReturnKeyType === 'done') ? () => Keyboard.dismiss() : undefined
+  );
   return (
     <View style={containerStyle}>
       <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
@@ -92,6 +98,9 @@ export const InputField: React.FC<InputFieldProps> = ({
           numberOfLines={numberOfLines}
           maxLength={maxLength}
           editable={!disabled}
+          returnKeyType={derivedReturnKeyType as any}
+          blurOnSubmit={derivedBlurOnSubmit}
+          onSubmitEditing={derivedOnSubmitEditing}
           {...textInputProps}
         />
       </View>

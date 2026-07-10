@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
-  Dimensions,
-} from 'react-native';
+  Dimensions } from 'react-native';
 import { SlideBottomModal } from './SlideBottomModal';
 import { ScreenLayout } from './ScreenLayout';
 import { ScreenHeader } from './ScreenHeader';
@@ -23,8 +22,7 @@ interface NetworkLoggerSlideModalProps {
 
 export const NetworkLoggerSlideModal: React.FC<NetworkLoggerSlideModalProps> = ({
   visible,
-  onClose,
-}) => {
+  onClose }) => {
   const [logs, setLogs] = useState<NetworkLog[]>([]);
   const [selectedLog, setSelectedLog] = useState<NetworkLog | null>(null);
 
@@ -75,7 +73,7 @@ export const NetworkLoggerSlideModal: React.FC<NetworkLoggerSlideModalProps> = (
           </View>
 
           {logs.map((log, index) => (
-            <TouchableOpacity
+            <AnimatedPressableCard
               key={`${log.id}-${index}`}
               style={styles.logItem}
               onPress={() => setSelectedLog(log)}
@@ -100,7 +98,7 @@ export const NetworkLoggerSlideModal: React.FC<NetworkLoggerSlideModalProps> = (
               {log.error && (
                 <Text style={styles.error}>❌ {log.error}</Text>
               )}
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           ))}
         </>
       )}
@@ -145,29 +143,24 @@ export const NetworkLoggerSlideModal: React.FC<NetworkLoggerSlideModalProps> = (
 const styles = StyleSheet.create({
   logsList: {
     flex: 1,
-    maxHeight: SCREEN_HEIGHT * 0.6,
-  },
+    maxHeight: SCREEN_HEIGHT * 0.6 },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
-  },
+    paddingVertical: 40 },
   emptyText: {
     fontSize: 14,
-    color: '#999',
-  },
+    color: '#999' },
   statsContainer: {
     backgroundColor: '#f0f0f0',
     padding: 12,
     marginBottom: 12,
-    borderRadius: 8,
-  },
+    borderRadius: 8 },
   statsText: {
     fontSize: 12,
     color: '#666',
-    fontWeight: '600',
-  },
+    fontWeight: '600' },
   logItem: {
     backgroundColor: '#fff',
     padding: 12,
@@ -175,40 +168,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderLeftWidth: 4,
     borderLeftColor: '#3B82F6',
-    marginHorizontal: 4,
-  },
+    marginHorizontal: 4 },
   logHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    gap: 8,
-  },
+    gap: 8 },
   method: {
     fontSize: 12,
     fontWeight: 'bold',
-    minWidth: 40,
-  },
+    minWidth: 40 },
   status: {
     fontSize: 12,
     fontWeight: '600',
-    minWidth: 50,
-  },
+    minWidth: 50 },
   duration: {
     fontSize: 11,
-    color: '#999',
-  },
+    color: '#999' },
   url: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 4,
-  },
+    marginBottom: 4 },
   timestamp: {
     fontSize: 10,
-    color: '#999',
-  },
+    color: '#999' },
   error: {
     fontSize: 11,
     color: '#EF4444',
-    marginTop: 4,
-  },
-});
+    marginTop: 4 } });

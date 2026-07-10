@@ -1,17 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   View,
   Text,
   Modal,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   ActivityIndicator,
   PanResponder,
   Animated,
-  Dimensions,
-} from "react-native";
+  Dimensions } from "react-native";
 import { Theme } from "../theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -46,8 +45,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
   enableFullHeightDrag = false,
   enableFlexibleHeightDrag = false,
   minHeightPercent = 0.85,
-  maxHeightPercent = 1,
-}) => {
+  maxHeightPercent = 1 }) => {
   const insets = useSafeAreaInsets();
   const [panY] = useState(new Animated.Value(0));
   const [backdropOpacity] = useState(new Animated.Value(0));
@@ -89,13 +87,11 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
         Animated.timing(backdropOpacity, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true }),
         Animated.timing(slideY, {
           toValue: 0,
           duration: 400,
-          useNativeDriver: !enableFlexibleHeightDrag,
-        }),
+          useNativeDriver: !enableFlexibleHeightDrag }),
       ]).start();
     } else {
       if (isExpanded) setIsExpanded(false);
@@ -103,13 +99,11 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
         Animated.timing(backdropOpacity, {
           toValue: 0,
           duration: 300,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true }),
         Animated.timing(slideY, {
           toValue: 500,
           duration: 300,
-          useNativeDriver: !enableFlexibleHeightDrag,
-        }),
+          useNativeDriver: !enableFlexibleHeightDrag }),
       ]).start();
     }
   }, [
@@ -122,6 +116,8 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
     minH,
     enableFlexibleHeightDrag,
   ]);
+
+  
 
   const headerPanResponder = React.useRef(
     PanResponder.create({
@@ -177,8 +173,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
           const clamped = Math.max(minH, Math.min(maxH, currentH));
           Animated.spring(sheetHeight, {
             toValue: clamped,
-            useNativeDriver: false,
-          }).start();
+            useNativeDriver: false }).start();
           return;
         }
 
@@ -187,8 +182,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
           setIsExpanded(true);
           Animated.spring(panY, {
             toValue: 0,
-            useNativeDriver: true,
-          }).start();
+            useNativeDriver: true }).start();
           return;
         }
 
@@ -197,8 +191,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
           setIsExpanded(false);
           Animated.spring(panY, {
             toValue: 0,
-            useNativeDriver: true,
-          }).start();
+            useNativeDriver: true }).start();
           return;
         }
 
@@ -211,10 +204,8 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
         // Snap back to original position
         Animated.spring(panY, {
           toValue: 0,
-          useNativeDriver: !enableFlexibleHeightDrag,
-        }).start();
-      },
-    })
+          useNativeDriver: !enableFlexibleHeightDrag }).start();
+      } })
   ).current;
 
   const handleSubmit = async () => {
@@ -244,8 +235,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
             flex: 1,
             backgroundColor: "rgba(0, 0, 0, 0.5)",
             justifyContent: "flex-end",
-            opacity: backdropOpacity,
-          }}
+            opacity: backdropOpacity }}
         >
           <Animated.View
             style={{
@@ -262,8 +252,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
               flex: enableFlexibleHeightDrag ? 0 : 1,
               flexDirection: "column",
               overflow: "hidden",
-              transform: [{ translateY: slideY }, { translateY: panY }],
-            }}
+              transform: [{ translateY: slideY }, { translateY: panY }] }}
           >
             {/* Drag Indicator & Header Container */}
             <View
@@ -271,16 +260,14 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
               style={{
                 alignItems: "center",
                 paddingTop: 12,
-                paddingBottom: 8,
-              }}
+                paddingBottom: 8 }}
             >
               <View
                 style={{
                   width: 40,
                   height: 4,
                   borderRadius: 2,
-                  backgroundColor: "#D1D5DB",
-                }}
+                  backgroundColor: "#D1D5DB" }}
               />
             </View>
 
@@ -294,16 +281,14 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                 paddingHorizontal: 20,
                 paddingBottom: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: Theme.colors.border,
-              }}
+                borderBottomColor: Theme.colors.border }}
             >
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
                     fontSize: 20,
                     fontWeight: "700",
-                    color: Theme.colors.text.primary,
-                  }}
+                    color: Theme.colors.text.primary }}
                 >
                   {title}
                 </Text>
@@ -312,14 +297,13 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                     style={{
                       fontSize: 14,
                       color: Theme.colors.text.secondary,
-                      marginTop: 4,
-                    }}
+                      marginTop: 4 }}
                   >
                     {subtitle}
                   </Text>
                 )}
               </View>
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={onClose}
                 disabled={isLoading}
                 style={{
@@ -329,19 +313,17 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                   backgroundColor: "#F3F4F6",
                   justifyContent: "center",
                   alignItems: "center",
-                  marginLeft: 12,
-                }}
+                  marginLeft: 12 }}
               >
                 <Text
                   style={{
                     fontSize: 20,
                     fontWeight: "600",
-                    color: Theme.colors.text.primary,
-                  }}
+                    color: Theme.colors.text.primary }}
                 >
                   ✕
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
 
             {/* Form */}
@@ -354,8 +336,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                 contentContainerStyle={{
                   padding: 20,
                   paddingBottom: 20,
-                  flexGrow: 1,
-                }}
+                  flexGrow: 1 }}
                 showsVerticalScrollIndicator={true}
                 keyboardShouldPersistTaps="handled"
                 bounces={true}
@@ -371,10 +352,9 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                     paddingTop: 20,
                     paddingBottom: 70,
                     borderTopWidth: 1,
-                    borderTopColor: Theme.colors.border,
-                  }}
+                    borderTopColor: Theme.colors.border }}
                 >
-                  <TouchableOpacity
+                  <AnimatedPressableCard
                     onPress={handleCancel}
                     disabled={isLoading}
                     style={{
@@ -384,21 +364,19 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                       borderColor: Theme.colors.border,
                       borderWidth: 1,
                       backgroundColor: Theme.colors.light,
-                      alignItems: "center",
-                    }}
+                      alignItems: "center" }}
                   >
                     <Text
                       style={{
                         fontSize: 16,
                         fontWeight: "600",
-                        color: Theme.colors.text.primary,
-                      }}
+                        color: Theme.colors.text.primary }}
                     >
                       {cancelLabel}
                     </Text>
-                  </TouchableOpacity>
+                  </AnimatedPressableCard>
                   {onSubmit && (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       onPress={handleSubmit}
                       disabled={isLoading}
                       style={{
@@ -408,8 +386,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                         backgroundColor: Theme.colors.primary,
                         alignItems: "center",
                         justifyContent: "center",
-                        opacity: isLoading ? 0.7 : 1,
-                      }}
+                        opacity: isLoading ? 0.7 : 1 }}
                     >
                       {isLoading ? (
                         <ActivityIndicator color="#fff" />
@@ -418,13 +395,12 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                           style={{
                             fontSize: 16,
                             fontWeight: "600",
-                            color: "#fff",
-                          }}
+                            color: "#fff" }}
                         >
                           {submitLabel}
                         </Text>
                       )}
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   )}
                 </View>
               </ScrollView>

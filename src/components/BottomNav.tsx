@@ -1,19 +1,18 @@
 import React, { useMemo, useRef, useState } from "react";
 import {
   View,
-  TouchableOpacity,
   Text,
   StyleSheet,
   Animated,
   Modal,
-  ScrollView,
-} from "react-native";
+  ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../theme";
 import { Permission } from "../config/rbac.config";
 import { Ionicons } from "@expo/vector-icons";
 import { useBottomNavVisibility } from "./BottomNavVisibility";
 import { usePermissions } from "@/hooks/usePermissions";
+import { AnimatedPressableCard } from "./AnimatedPressableCard";
 
 // Fallback hook for when BottomNavVisibilityProvider is not available
 const useBottomNavVisibilitySafe = () => {
@@ -28,8 +27,7 @@ const useBottomNavVisibilitySafe = () => {
       show: () => {},
       translateY,
       hideDistance: 100,
-      setHideDistance: () => {},
-    }), [translateY]);
+      setHideDistance: () => {} }), [translateY]);
   }
 };
 
@@ -63,20 +61,21 @@ const userTabs: TabConfig[] = [
     name: "Dashboard",
     label: "Home",
     icon: "home",
-    permission: Permission.VIEW_DASHBOARD,
-  },
+    permission: Permission.VIEW_DASHBOARD },
+  {
+    name: "Rooms",
+    label: "Rooms",
+    icon: "bed-outline",
+    permission: Permission.VIEW_ROOM },
   {
     name: "Tenants",
     label: "Tenants",
     icon: "people",
-    permission: Permission.VIEW_TENANTS,
-  },
+    permission: Permission.VIEW_TENANTS },
   {
-    name: "Payments",
-    label: "Payments",
-    icon: "card",
-    permission: Permission.VIEW_PAYMENT,
-  },
+    name: "UpcomingVacancies",
+    label: "Vacancies",
+    icon: "log-out-outline" },
   { name: "More", label: "More", icon: "grid" },
 ];
 
@@ -85,155 +84,85 @@ const moreMenuItems: MenuItem[] = [
     name: "PG Locations",
     label: "PG Locations",
     icon: "business",
-    route: "PGLocations",
-  },
-  {
-    name: "Tenants",
-    label: "Tenants",
-    icon: "people",
-    route: "Tenants",
-    permission: Permission.VIEW_TENANTS,
-  },
+    route: "PGLocations" },
   { name: "Employees", label: "Employees", icon: "people", route: "Employees" },
-  {
-    name: "Rooms",
-    label: "Rooms",
-    icon: "home",
-    route: "Rooms",
-    permission: Permission.VIEW_ROOM,
-  },
-  {
-    name: "Beds",
-    label: "Beds",
-    icon: "bed",
-    route: "Beds",
-    permission: Permission.VIEW_BED,
-  },
   {
     name: "Rent",
     label: "Rent",
     icon: "cash",
     route: "RentPayments",
-    permission: Permission.VIEW_PAYMENT,
-  },
+    permission: Permission.VIEW_PAYMENT },
   {
     name: "Advance",
     label: "Advance",
     icon: "card",
     route: "AdvancePayments",
-    permission: Permission.VIEW_PAYMENT,
-  },
+    permission: Permission.VIEW_PAYMENT },
   {
     name: "Refund",
     label: "Refund",
     icon: "return-down-back",
     route: "RefundPayments",
-    permission: Permission.VIEW_PAYMENT,
-  },
+    permission: Permission.VIEW_PAYMENT },
   { name: "Expenses", label: "Expenses", icon: "receipt", route: "Expenses" },
   { name: "TenantTickets", label: "Tenant Tickets", icon: "ticket-outline", route: "PgTenantTickets" },
   { name: "Settings", label: "Settings", icon: "settings", route: "Settings" },
 ];
 
 const MenuGridItem = ({ item, onPress }: { item: MenuItem; onPress: () => void }) => {
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
-  const opacityAnim = React.useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 0.9, useNativeDriver: true, tension: 300, friction: 8 }),
-      Animated.timing(opacityAnim, { toValue: 0.7, duration: 100, useNativeDriver: true }),
-    ]).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 300, friction: 8 }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
-    ]).start();
-  };
-
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: opacityAnim }}>
-      <TouchableOpacity
-        style={styles.menuGridItem}
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        activeOpacity={1}
-      >
-        <View style={styles.menuGridIconContainer}>
-          <Ionicons name={item.icon as any} size={24} color={Theme.colors.primary} />
-        </View>
-        <Text style={styles.menuGridLabel}>{item.label}</Text>
-      </TouchableOpacity>
-    </Animated.View>
+    <AnimatedPressableCard
+      onPress={onPress}
+      scaleValue={0.9}
+      style={styles.menuGridItem}
+    >
+      <View style={styles.menuGridIconContainer}>
+        <Ionicons name={item.icon as any} size={24} color={Theme.colors.primary} />
+      </View>
+      <Text style={styles.menuGridLabel}>{item.label}</Text>
+    </AnimatedPressableCard>
   );
 };
 
 const TabItem = ({
   tab,
   isActive,
-  onPress,
-}: {
+  onPress }: {
   tab: TabConfig;
   isActive: boolean;
   onPress: () => void;
 }) => {
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.9,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 8,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 8,
-    }).start();
-  };
-
   return (
-    <TouchableOpacity
-      style={styles.tab}
+    <AnimatedPressableCard
       onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      activeOpacity={1}
+      scaleValue={0.9}
+      style={styles.tab}
     >
-      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <View style={styles.tabContainer}>
-          <View style={styles.tabContent}>
-            <Ionicons
-              name={tab.icon as any}
-              size={20}
-              color={
-                isActive ? Theme.colors.primary : Theme.colors.text.tertiary
-              }
-            />
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: isActive
-                    ? Theme.colors.primary
-                    : Theme.colors.text.tertiary,
-                },
-              ]}
-            >
-              {tab.label}
-            </Text>
-          </View>
+      <View style={styles.tabContainer}>
+        <View style={styles.tabContent}>
+          <Ionicons
+            name={tab.icon as any}
+            size={20}
+            color={
+              isActive ? Theme.colors.primary : Theme.colors.text.tertiary
+            }
+          />
+          <Text
+            style={[
+              styles.label,
+              {
+                color: isActive
+                  ? Theme.colors.primary
+                  : Theme.colors.text.tertiary },
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {tab.label}
+          </Text>
         </View>
-      </Animated.View>
-    </TouchableOpacity>
+      </View>
+    </AnimatedPressableCard>
   );
 };
 
@@ -247,14 +176,13 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
     const { can } = usePermissions();
 
     const handleTabPress = (tab: TabConfig) => {
-      // If onTabPress is provided, use it (configurable mode)
-      if (onTabPress) {
-        onTabPress(tab.name);
-        return;
-      }
-      // Otherwise use navigation (admin mode)
       if (tab.name === "More") {
         setMoreModalVisible(true);
+        return;
+      }
+      // If onTabPress is provided, use it for tab navigation
+      if (onTabPress) {
+        onTabPress(tab.name);
       } else if (navigation) {
         navigation.navigate(tab.name);
       }
@@ -307,9 +235,8 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
           animationType="fade"
           onRequestClose={() => setMoreModalVisible(false)}
         >
-          <TouchableOpacity
+          <AnimatedPressableCard
             style={styles.modalOverlay}
-            activeOpacity={1}
             onPress={() => setMoreModalVisible(false)}
           >
             <View style={styles.modalContent}>
@@ -328,7 +255,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
                 </View>
               </ScrollView>
             </View>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </Modal>
         )}
       </>
@@ -356,24 +283,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5,
-  },
+    elevation: 5 },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 0,
-    position: "relative",
-  },
+    position: "relative" },
   icon: {
     marginBottom: 1,
-    textAlign: "center",
-  },
+    textAlign: "center" },
   label: {
     fontSize: 9,
     fontWeight: "600",
-    textAlign: "center",
-  },
+    textAlign: "center" },
   activeIndicator: {
     position: "absolute",
     top: -4,
@@ -382,50 +305,42 @@ const styles = StyleSheet.create({
     bottom: -4,
     backgroundColor: Theme.colors.primary,
     borderRadius: 20,
-    zIndex: -1,
-  },
+    zIndex: -1 },
   tabContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     height: "100%",
-    position: "relative",
-  },
+    position: "relative" },
   tabContent: {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
     paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
+    paddingVertical: 3 },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
+    justifyContent: "flex-end" },
   modalContent: {
     backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
     paddingBottom: 40,
-    maxHeight: "70%",
-  },
+    maxHeight: "70%" },
   menuScrollView: {
-    maxHeight: "100%",
-  },
+    maxHeight: "100%" },
   menuGrid: {
     flexDirection: "row",
     justifyContent: "space-around",
     flexWrap: "wrap",
-    gap: 16,
-  },
+    gap: 16 },
   menuGridItem: {
     alignItems: "center",
     width: 70,
-    marginBottom: 8,
-  },
+    marginBottom: 8 },
   menuGridIconContainer: {
     width: 50,
     height: 50,
@@ -433,12 +348,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
-  },
+    marginBottom: 6 },
   menuGridLabel: {
     fontSize: 12,
     fontWeight: "600",
     color: Theme.colors.text.primary,
-    textAlign: "center",
-  },
-});
+    textAlign: "center" } });

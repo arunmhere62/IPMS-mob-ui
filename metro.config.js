@@ -1,4 +1,5 @@
 const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
@@ -16,7 +17,8 @@ config.symbolicator = {
 
 // Ensure proper resolver for TypeScript and alias paths
 config.resolver.alias = {
-  '@': './src',
+  '@': path.resolve(__dirname, 'src'),
+  '@assets': path.resolve(__dirname, 'assets'),
 };
 
 module.exports = config;

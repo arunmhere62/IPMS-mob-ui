@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   View,
   Text,
   Modal,
-  TouchableOpacity,
   ScrollView,
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-} from 'react-native';
+  Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 import { Payment } from '../types';
@@ -46,8 +45,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
   onClose,
   onSave,
   onSuccess,
-  previousPayments = [],
-}) => {
+  previousPayments = [] }) => {
   const [amountPaid, setAmountPaid] = useState('');
   const [actualRentAmount, setActualRentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState('');
@@ -135,9 +133,8 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
         style={{ flex: 1 }}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <TouchableOpacity
+          <AnimatedPressableCard
             style={{ flex: 0.1 }}
-            activeOpacity={1}
             onPress={handleClose}
           />
           
@@ -147,8 +144,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
               backgroundColor: Theme.colors.canvas,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
-              paddingTop: 20,
-            }}
+              paddingTop: 20 }}
           >
             {/* Header */}
             <View
@@ -159,16 +155,14 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                 paddingHorizontal: 20,
                 paddingBottom: 16,
                 borderBottomWidth: 1,
-                borderBottomColor: Theme.colors.border,
-              }}
+                borderBottomColor: Theme.colors.border }}
             >
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
                     fontSize: 20,
                     fontWeight: '600',
-                    color: Theme.colors.text.primary,
-                  }}
+                    color: Theme.colors.text.primary }}
                 >
                   Edit Rent Payment
                 </Text>
@@ -176,15 +170,14 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                   style={{
                     fontSize: 14,
                     color: Theme.colors.text.secondary,
-                    marginTop: 4,
-                  }}
+                    marginTop: 4 }}
                 >
                   {payment.tenants?.name || 'Unknown'} • {payment.rooms?.room_no || 'N/A'}/{payment.beds?.bed_no || 'N/A'}
                 </Text>
               </View>
-              <TouchableOpacity onPress={handleClose}>
+              <AnimatedPressableCard onPress={handleClose}>
                 <Ionicons name="close" size={24} color={Theme.colors.text.primary} />
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
 
             {/* Current Payment Info & Previous Payments */}
@@ -195,8 +188,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                   paddingHorizontal: 20,
                   paddingVertical: 12,
                   borderBottomWidth: 1,
-                  borderBottomColor: Theme.colors.border,
-                }}
+                  borderBottomColor: Theme.colors.border }}
               >
                 <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 6, fontWeight: '600' }}>
                   CURRENT PAYMENT PERIOD
@@ -208,14 +200,12 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                   <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
                     {new Date(payment.start_date).toLocaleDateString('en-IN', {
                       day: '2-digit',
-                      month: 'short',
-                    })}
+                      month: 'short' })}
                     {' - '}
                     {new Date(payment.end_date).toLocaleDateString('en-IN', {
                       day: '2-digit',
                       month: 'short',
-                      year: 'numeric',
-                    })}
+                      year: 'numeric' })}
                   </Text>
                 </View>
                 {payment.payment_date && (
@@ -227,8 +217,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                       {new Date(payment.payment_date).toLocaleDateString('en-IN', {
                         day: '2-digit',
                         month: 'short',
-                        year: 'numeric',
-                      })}
+                        year: 'numeric' })}
                     </Text>
                   </View>
                 )}
@@ -249,12 +238,10 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                             {prevPayment.start_date && prevPayment.end_date ? (
                               `${new Date(prevPayment.start_date).toLocaleDateString('en-IN', {
                                 day: '2-digit',
-                                month: 'short',
-                              })} - ${new Date(prevPayment.end_date).toLocaleDateString('en-IN', {
+                                month: 'short' })} - ${new Date(prevPayment.end_date).toLocaleDateString('en-IN', {
                                 day: '2-digit',
                                 month: 'short',
-                                year: 'numeric',
-                              })}`
+                                year: 'numeric' })}`
                             ) : (
                               'N/A'
                             )}
@@ -283,8 +270,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                     fontSize: 14,
                     fontWeight: '500',
                     color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
+                    marginBottom: 8 }}
                 >
                   Amount Paid <Text style={{ color: Theme.colors.danger }}>*</Text>
                 </Text>
@@ -297,8 +283,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     fontSize: 16,
-                    color: Theme.colors.text.primary,
-                  }}
+                    color: Theme.colors.text.primary }}
                   placeholder="Enter amount"
                   placeholderTextColor={Theme.colors.input.placeholder}
                   keyboardType="numeric"
@@ -319,8 +304,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                     fontSize: 14,
                     fontWeight: '500',
                     color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
+                    marginBottom: 8 }}
                 >
                   Actual Rent Amount <Text style={{ color: Theme.colors.danger }}>*</Text>
                 </Text>
@@ -333,8 +317,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     fontSize: 16,
-                    color: Theme.colors.text.primary,
-                  }}
+                    color: Theme.colors.text.primary }}
                   placeholder="Enter actual rent"
                   placeholderTextColor={Theme.colors.input.placeholder}
                   keyboardType="numeric"
@@ -364,8 +347,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                     fontSize: 14,
                     fontWeight: '500',
                     color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
+                    marginBottom: 8 }}
                 >
                   Payment Period <Text style={{ color: Theme.colors.danger }}>*</Text>
                 </Text>
@@ -398,14 +380,13 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                     fontSize: 14,
                     fontWeight: '500',
                     color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
+                    marginBottom: 8 }}
                 >
                   Payment Method <Text style={{ color: Theme.colors.danger }}>*</Text>
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {PAYMENT_METHODS.map((method) => (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       key={method.value}
                       onPress={() => setPaymentMethod(method.value)}
                       style={{
@@ -422,8 +403,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                         backgroundColor:
                           paymentMethod === method.value
                             ? Theme.colors.background.blueLight
-                            : Theme.colors.canvas,
-                      }}
+                            : Theme.colors.canvas }}
                     >
                       <Ionicons
                         name={method.icon as any}
@@ -442,12 +422,11 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                           color:
                             paymentMethod === method.value
                               ? Theme.colors.primary
-                              : Theme.colors.text.primary,
-                        }}
+                              : Theme.colors.text.primary }}
                       >
                         {method.label}
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   ))}
                 </View>
               </View>
@@ -459,20 +438,17 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                 backgroundColor: Theme.colors.background.blueLight,
                 borderRadius: 8,
                 borderLeftWidth: 3,
-                borderLeftColor: Theme.colors.primary,
-              }}>
+                borderLeftColor: Theme.colors.primary }}>
                 <Text style={{
                   fontSize: 12,
                   fontWeight: '600',
                   color: Theme.colors.primary,
-                  marginBottom: 4,
-                }}>
+                  marginBottom: 4 }}>
                   ℹ️ Payment Status
                 </Text>
                 <Text style={{
                   fontSize: 12,
-                  color: Theme.colors.text.secondary,
-                }}>
+                  color: Theme.colors.text.secondary }}>
                   You will be asked to select the payment status when you save the changes.
                 </Text>
               </View>
@@ -484,8 +460,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                     fontSize: 14,
                     fontWeight: '500',
                     color: Theme.colors.text.primary,
-                    marginBottom: 8,
-                  }}
+                    marginBottom: 8 }}
                 >
                   Remarks (Optional)
                 </Text>
@@ -500,8 +475,7 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                     fontSize: 16,
                     color: Theme.colors.text.primary,
                     minHeight: 80,
-                    textAlignVertical: 'top',
-                  }}
+                    textAlignVertical: 'top' }}
                   placeholder="Add any notes..."
                   placeholderTextColor={Theme.colors.input.placeholder}
                   multiline
@@ -517,18 +491,16 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
               style={{
                 padding: 20,
                 borderTopWidth: 1,
-                borderTopColor: Theme.colors.border,
-              }}
+                borderTopColor: Theme.colors.border }}
             >
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={handleSave}
                 disabled={loading}
                 style={{
                   backgroundColor: loading ? Theme.colors.button.disabled : Theme.colors.primary,
                   paddingVertical: 14,
                   borderRadius: 8,
-                  alignItems: 'center',
-                }}
+                  alignItems: 'center' }}
               >
                 {loading ? (
                   <ActivityIndicator color={Theme.colors.canvas} />
@@ -537,13 +509,12 @@ export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
                     style={{
                       color: Theme.colors.canvas,
                       fontSize: 16,
-                      fontWeight: '600',
-                    }}
+                      fontWeight: '600' }}
                   >
                     Save Changes
                   </Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </View>
         </View>

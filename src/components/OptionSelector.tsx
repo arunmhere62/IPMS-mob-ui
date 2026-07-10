@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TouchableOpacity, ViewStyle } from "react-native";
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { View, Text, ViewStyle } from "react-native";
 import { Theme } from '../theme';
 
 export interface Option {
@@ -35,8 +36,7 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
   disabled = false,
   containerStyle,
   description,
-  error,
-}) => {
+  error }) => {
   return (
     <View style={containerStyle}>
       <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary, marginBottom: 6 }}>
@@ -51,7 +51,7 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
 
       <View style={{ flexDirection: 'row', columnGap : 10, rowGap : 8, flexWrap: 'wrap' }}>
         {options.map((option) => (
-          <TouchableOpacity
+          <AnimatedPressableCard
             key={option.value}
             onPress={() => onSelect(selectedValue === option.value ? null : option.value)}
             style={{
@@ -62,21 +62,21 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
               borderColor: selectedValue === option.value ? Theme.colors.primary : '#D1D5DB',
               backgroundColor: selectedValue === option.value ? 'rgba(59, 130, 246, 0.1)' : '#F9FAFB',
               alignItems: 'center',
-              justifyContent: 'center',
-            }}
+              justifyContent: 'center' }}
             disabled={disabled}
           >
             <Text
               style={{
                 fontSize: 12,
                 fontWeight: selectedValue === option.value ? '600' : '500',
-                color: selectedValue === option.value ? Theme.colors.primary : Theme.colors.text.primary,
-              }}
+                color: selectedValue === option.value ? Theme.colors.primary : Theme.colors.text.primary }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {option.icon && `${option.icon} `}
               {option.label}
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         ))}
       </View>
 

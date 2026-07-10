@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, TextInput, StyleSheet, Keyboard } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { View, Text, Modal, FlatList, TextInput, StyleSheet, Keyboard, TextInputProps } from 'react-native';
 import { Theme } from '../theme';
 
 interface Country {
@@ -34,34 +35,12 @@ interface CountryPhoneSelectorProps {
   size?: 'small' | 'medium' | 'large';
   phoneValue?: string;
   onPhoneChange?: (phone: string) => void;
+  // New optional controls for keyboard behavior and focus chaining
+  inputRef?: React.RefObject<TextInput | null>;
+  returnKeyType?: TextInputProps['returnKeyType'];
+  onSubmitEditing?: () => void;
+  blurOnSubmit?: boolean;
 }
-
-const getSizeStyles = (size: 'small' | 'medium' | 'large' = 'medium') => {
-  switch (size) {
-    case 'small':
-      return {
-        containerPadding: 8,
-        fontSize: 12,
-        inputPadding: 8,
-        flagSize: 18,
-      };
-    case 'large':
-      return {
-        containerPadding: 16,
-        fontSize: 16,
-        inputPadding: 14,
-        flagSize: 28,
-      };
-    case 'medium':
-    default:
-      return {
-        containerPadding: 12,
-        fontSize: 14,
-        inputPadding: 12,
-        flagSize: 24,
-      };
-  }
-};
 
 export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
   selectedCountry = COUNTRIES[0], // Default to India
@@ -69,10 +48,13 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
   size = 'medium',
   phoneValue = '',
   onPhoneChange,
+  inputRef,
+  returnKeyType,
+  onSubmitEditing,
+  blurOnSubmit,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const sizeStyles = getSizeStyles(size);
   const lastEmittedPhoneRef = useRef<string | null>(null);
 
   const sanitizePhoneInput = (raw: string) => {
@@ -101,15 +83,13 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
       return {
         matchedCountry,
         localDigits: strippedDigits.slice(0, matchedCountry.phoneLength),
-        hasExplicitCountryPrefix,
-      };
+        hasExplicitCountryPrefix };
     }
 
     return {
       matchedCountry: null as Country | null,
       localDigits: digitsOnly.slice(0, selectedCountry.phoneLength),
-      hasExplicitCountryPrefix,
-    };
+      hasExplicitCountryPrefix };
   };
 
   useEffect(() => {
@@ -137,15 +117,14 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
   );
 
   const renderCountryItem = ({ item }: { item: Country }) => (
-    <TouchableOpacity
+    <AnimatedPressableCard
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
-      }}
+        borderBottomColor: '#F3F4F6' }}
       onPress={() => {
         onSelectCountry(item);
         setShowModal(false);
@@ -164,7 +143,7 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
       <Text style={{ fontSize: 14, color: Theme.colors.text.secondary }}>
         {item.code}
       </Text>
-    </TouchableOpacity>
+    </AnimatedPressableCard>
   );
 
   const getPaddingStyles = () => {
@@ -174,23 +153,20 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
           paddingHorizontal: Theme.spacing.sm,
           paddingVertical: 6,
           fontSize: 12,
-          flagSize: 14,
-        };
+          flagSize: 14 };
       case 'large':
         return {
           paddingHorizontal: Theme.spacing.lg,
           paddingVertical: 16,
           fontSize: 15,
-          flagSize: 14,
-        };
+          flagSize: 14 };
       case 'medium':
       default:
         return {
           paddingHorizontal: Theme.spacing.md,
           paddingVertical: 13,
           fontSize: 14,
-          flagSize: 14,
-        };
+          flagSize: 14 };
     }
   };
 
@@ -201,13 +177,12 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
       {/* Single Row Country + Phone Input - Matching Input Component Style */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Theme.spacing.md, gap: 8 }}>
         {/* Country Selector Button */}
-        <TouchableOpacity
+        <AnimatedPressableCard
           style={[
             styles.countryButton,
             {
               paddingHorizontal: 6,
-              paddingVertical: paddingStyles.paddingVertical,
-            },
+              paddingVertical: paddingStyles.paddingVertical },
           ]}
           onPress={() => setShowModal(true)}
         >
@@ -218,7 +193,7 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
             {selectedCountry.phoneCode}
           </Text>
           <Text style={[styles.dropdown, { fontSize: paddingStyles.fontSize - 2, marginLeft: 2 }]}>▼</Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
 
         {/* Phone Input */}
         <TextInput
@@ -227,8 +202,7 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
             {
               paddingHorizontal: paddingStyles.paddingHorizontal,
               paddingVertical: paddingStyles.paddingVertical,
-              fontSize: paddingStyles.fontSize,
-            },
+              fontSize: paddingStyles.fontSize },
           ]}
           placeholder={`${selectedCountry.phoneLength}-digit number`}
           placeholderTextColor={Theme.colors.text.tertiary}
@@ -244,9 +218,16 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
             onPhoneChange?.(localDigits);
           }}
           keyboardType="phone-pad"
+          autoComplete="tel"
+          textContentType="telephoneNumber"
+          importantForAutofill="yes"
+          autoCorrect={false}
+          spellCheck={false}
           maxLength={20}
-          blurOnSubmit
-          onSubmitEditing={() => Keyboard.dismiss()}
+          ref={inputRef}
+          returnKeyType={returnKeyType as any}
+          blurOnSubmit={blurOnSubmit ?? (returnKeyType === 'done')}
+          onSubmitEditing={onSubmitEditing ?? (() => Keyboard.dismiss())}
         />
       </View>
 
@@ -268,8 +249,7 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
               backgroundColor: 'white',
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
-              overflow: 'hidden',
-            }}
+              overflow: 'hidden' }}
           >
             {/* Header */}
             <View
@@ -277,8 +257,7 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
                 paddingHorizontal: 16,
                 paddingVertical: 12,
                 borderBottomWidth: 1,
-                borderBottomColor: '#F3F4F6',
-              }}
+                borderBottomColor: '#F3F4F6' }}
             >
               <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
                 Select Country
@@ -295,8 +274,7 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
                   paddingVertical: 10,
                   fontSize: 14,
                   borderWidth: 1,
-                  borderColor: '#E5E7EB',
-                }}
+                  borderColor: '#E5E7EB' }}
                 placeholder="Search country or code..."
                 placeholderTextColor="#9CA3AF"
                 value={searchText}
@@ -313,14 +291,13 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
             />
 
             {/* Close Button */}
-            <TouchableOpacity
+            <AnimatedPressableCard
               style={{
                 paddingVertical: 12,
                 paddingHorizontal: 16,
                 borderTopWidth: 1,
                 borderTopColor: '#F3F4F6',
-                backgroundColor: '#F9FAFB',
-              }}
+                backgroundColor: '#F9FAFB' }}
               onPress={() => {
                 setShowModal(false);
                 setSearchText('');
@@ -331,12 +308,11 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
                   fontSize: 16,
                   fontWeight: '600',
                   color: Theme.colors.primary,
-                  textAlign: 'center',
-                }}
+                  textAlign: 'center' }}
               >
                 Close
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
         </View>
       </Modal>
@@ -353,19 +329,16 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
     borderRadius: 8,
     backgroundColor: 'transparent',
-    minWidth: 45,
-  },
+    minWidth: 45 },
   phoneCode: {
     fontSize: Theme.typography.fontSize.base,
     fontWeight: Theme.typography.fontWeight.medium,
     color: Theme.colors.text.primary,
-    marginRight: 4,
-  },
+    marginRight: 4 },
   dropdown: {
     fontSize: 12,
     color: Theme.colors.text.secondary,
-    marginLeft: 4,
-  },
+    marginLeft: 4 },
   phoneInput: {
     flex: 1,
     borderWidth: 1,
@@ -374,6 +347,4 @@ const styles = StyleSheet.create({
     fontSize: Theme.typography.fontSize.base,
     color: Theme.colors.text.primary,
     backgroundColor: 'transparent',
-    textAlignVertical: 'center',
-  },
-});
+    textAlignVertical: 'center' } });

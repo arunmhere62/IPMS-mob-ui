@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux';
-import { RootState } from '../store';
 import { Permission } from '../config/rbac.config';
 import { getBackendPermissionKeyCandidates } from '../config/rbac-backend-map';
+import { RootState } from '@/features/owner/store';
 
 /**
  * Custom hook for role-based access control
@@ -15,11 +15,11 @@ import { getBackendPermissionKeyCandidates } from '../config/rbac-backend-map';
  */
 export const usePermissions = () => {
   const user = useSelector((state: RootState) => state.auth.user);
-  const userRole = user?.role_name || '';
+  const userRole = user?.role_name ?? '';
   const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole.toLowerCase() === 'super_admin';
-  const permissionsMap = useSelector((state: RootState) => (state as any).rbac?.permissionsMap || {});
-  const loadedAt = useSelector((state: RootState) => (state as any).rbac?.loadedAt || null);
-  const isReady = Boolean(loadedAt);
+  const permissionsMap = useSelector((state: RootState) => (state as any).rbac?.permissionsMap ?? {});
+  const loadedAt = useSelector((state: RootState) => (state as any).rbac?.loadedAt ?? null);
+  const isReady = loadedAt != null;
 
 
   return {

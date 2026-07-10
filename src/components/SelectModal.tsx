@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Animated, Easing } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { View, Text, TextInput, ScrollView, Animated, Easing } from 'react-native';
 import { Theme } from '../theme';
 import { SlideBottomModal } from './SlideBottomModal';
 
@@ -32,8 +33,7 @@ export const SelectModal: React.FC<SelectModalProps> = ({
   onSelect,
   isLoading = false,
   placeholder = 'Select an option',
-  searchPlaceholder = 'Search...',
-}) => {
+  searchPlaceholder = 'Search...' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [animatedValues] = useState(
     items.reduce((acc, item) => {
@@ -74,7 +74,7 @@ export const SelectModal: React.FC<SelectModalProps> = ({
     <View style={{ flex: 1 }}>
       {/* Clear Button */}
       {selectedValue && (
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={handleClearSelection}
           style={{
             paddingVertical: 12,
@@ -87,14 +87,13 @@ export const SelectModal: React.FC<SelectModalProps> = ({
             flexDirection: 'row',
             justifyContent: 'center',
             alignItems: 'center',
-            gap: 8,
-          }}
+            gap: 8 }}
         >
           <Text style={{ fontSize: 16, color: '#DC2626' }}>✕</Text>
           <Text style={{ fontSize: 14, fontWeight: '600', color: '#DC2626' }}>
             Clear Selection
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       )}
 
       {/* Search Input */}
@@ -108,8 +107,7 @@ export const SelectModal: React.FC<SelectModalProps> = ({
             fontSize: 14,
             color: Theme.colors.text.primary,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
-          }}
+            borderColor: '#E5E7EB' }}
           placeholder={searchPlaceholder}
           placeholderTextColor="#9CA3AF"
           value={searchQuery}
@@ -128,25 +126,21 @@ export const SelectModal: React.FC<SelectModalProps> = ({
             const isSelected = selectedValue === item.id;
             const scaleValue = animatedValues[item.id]?.interpolate({
               inputRange: [0, 1],
-              outputRange: [1, 0.95],
-            }) || 1;
+              outputRange: [1, 0.95] }) || 1;
 
             const bgColorValue = animatedValues[item.id]?.interpolate({
               inputRange: [0, 1],
-              outputRange: ['rgba(239, 246, 255, 0)', 'rgba(59, 130, 246, 0.1)'],
-            }) || 'rgba(239, 246, 255, 0)';
+              outputRange: ['rgba(239, 246, 255, 0)', 'rgba(59, 130, 246, 0.1)'] }) || 'rgba(239, 246, 255, 0)';
 
             return (
               <Animated.View
                 key={item.id}
                 style={{
                   transform: [{ scale: scaleValue }],
-                  marginBottom: index !== filteredItems.length - 1 ? 8 : 0,
-                }}
+                  marginBottom: index !== filteredItems.length - 1 ? 8 : 0 }}
               >
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={() => handleSelect(item)}
-                  activeOpacity={0.7}
                   style={{
                     paddingVertical: 14,
                     paddingHorizontal: 14,
@@ -155,17 +149,16 @@ export const SelectModal: React.FC<SelectModalProps> = ({
                     borderWidth: isSelected ? 2 : 1,
                     borderColor: isSelected ? Theme.colors.primary : '#E5E7EB',
                     flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
+                    alignItems: 'center' }}
                 >
                   <Text
                     style={{
                       fontSize: 15,
                       color: isSelected ? Theme.colors.primary : Theme.colors.text.primary,
                       fontWeight: isSelected ? '600' : '500',
-                      flex: 1,
-                    }}
+                      flex: 1 }}
                     numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     {item.label}
                   </Text>
@@ -179,8 +172,7 @@ export const SelectModal: React.FC<SelectModalProps> = ({
                       borderRadius: 12,
                       backgroundColor: isSelected ? Theme.colors.primary : 'transparent',
                       justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
+                      alignItems: 'center' }}
                   >
                     {isSelected && (
                       <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>
@@ -188,7 +180,7 @@ export const SelectModal: React.FC<SelectModalProps> = ({
                       </Text>
                     )}
                   </View>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               </Animated.View>
             );
           })

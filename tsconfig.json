@@ -25,10 +25,12 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true
   },
   "include": [
+    "index.js",
     "**/*.ts",
     "**/*.tsx"
   ],

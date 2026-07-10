@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Animated, AppState, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -142,45 +142,61 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
   // Monitor network status changes
   useEffect(() => {
     let isActive = true;
+    let isAppActive = AppState.currentState === 'active';
+    const isCheckingRef = { current: false };
 
-    // Initial check
-    checkConnection();
+    const runCheck = async () => {
+      if (!isActive || !isAppActive || isCheckingRef.current) return;
+      isCheckingRef.current = true;
+      try {
+        const wasOnline = isOnlineRef.current;
+        const isNowOnline = await checkConnection();
 
-    // Periodic connectivity checks (every 10 seconds)
-    checkIntervalRef.current = setInterval(async () => {
-      if (!isActive) return;
-      
-      const wasOnline = isOnlineRef.current;
-      const isNowOnline = await checkConnection();
-
-      // Network state changed
-      if (wasOnline !== isNowOnline) {
-        if (!isNowOnline) {
-          console.log('📡 Network: OFFLINE');
-          setBannerDismissed(false);
-          showBanner();
-        } else {
-          console.log('📡 Network: ONLINE');
-          setBannerDismissed(false);
-          // Show "Back Online" message briefly
-          setTimeout(() => {
-            hideBanner();
-          }, 2000);
+        // Network state changed
+        if (wasOnline !== isNowOnline) {
+          if (!isNowOnline) {
+            console.log('📡 Network: OFFLINE');
+            setBannerDismissed(false);
+            showBanner();
+          } else {
+            console.log('📡 Network: ONLINE');
+            setBannerDismissed(false);
+            // Show "Back Online" message briefly
+            setTimeout(() => {
+              hideBanner();
+            }, 2000);
+          }
         }
-      }
-    }, 10000); // Check every 10 seconds
-
-    // Listen for app state changes (foreground/background)
-    const handleAppStateChange = async (state: string) => {
-      if (state === 'active') {
-        // App came to foreground, check connectivity
-        await checkConnection();
+      } finally {
+        isCheckingRef.current = false;
       }
     };
+
+    // Initial check only when app is active
+    if (isAppActive) {
+      runCheck();
+    }
+
+    // Periodic connectivity checks (every 30 seconds) only while active
+    checkIntervalRef.current = setInterval(() => {
+      runCheck();
+    }, 30000);
+
+    // Listen for app state changes (foreground/background)
+    const handleAppStateChange = (state: string) => {
+      isAppActive = state === 'active';
+      if (isAppActive) {
+        // App came to foreground, check connectivity immediately
+        runCheck();
+      }
+    };
+
+    const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
 
     // Cleanup
     return () => {
       isActive = false;
+      appStateSubscription.remove();
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
       }

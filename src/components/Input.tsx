@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, Text, TextInputProps, StyleSheet } from 'react-native';
+import { View, TextInput, Text, TextInputProps, StyleSheet, Keyboard } from 'react-native';
 import { Theme } from '../theme';
 
 interface InputProps extends TextInputProps {
@@ -14,6 +14,12 @@ export const Input: React.FC<InputProps> = ({
   containerClassName = '',
   ...props
 }) => {
+  // Inbuilt defaults: make Done dismiss the keyboard when not multiline.
+  const derivedReturnKeyType = props.returnKeyType ?? (props.multiline ? undefined : 'done');
+  const derivedBlurOnSubmit = props.blurOnSubmit ?? (!!derivedReturnKeyType && derivedReturnKeyType === 'done');
+  const derivedOnSubmitEditing = props.onSubmitEditing ?? (
+    (!!derivedReturnKeyType && derivedReturnKeyType === 'done') ? () => Keyboard.dismiss() : undefined
+  );
   return (
     <View className={`mb-4 ${containerClassName}`}>
       {label && (
@@ -27,6 +33,9 @@ export const Input: React.FC<InputProps> = ({
         ]}
         placeholderTextColor={Theme.colors.text.tertiary}
         {...props}
+        returnKeyType={derivedReturnKeyType as any}
+        blurOnSubmit={derivedBlurOnSubmit}
+        onSubmitEditing={derivedOnSubmitEditing}
       />
       {error && (
         <Text style={styles.errorText}>{error}</Text>

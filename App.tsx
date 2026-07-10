@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { store, persistor } from "./src/store";
 import {
   ActivityIndicator,
   View,
@@ -20,22 +19,24 @@ import { ErrorProvider } from "./src/providers/ErrorProvider";
 import ErrorAlert from "./src/components/ErrorAlert/ErrorAlert";
 import { useError } from "./src/providers/ErrorProvider";
 import { NetworkLoggerFloatingButton } from "./src/components/NetworkLoggerFloatingButton";
+import { AppStatusGate } from "./src/providers/AppStatusGate";
 import notificationService from "./src/services/notifications/notificationService";
 import { ToastProvider } from "./src/providers/ToastProvider";
 import * as Notifications from "expo-notifications";
 import { Animated, Easing } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import LottieView from "lottie-react-native";
+import { persistor, store } from "@/features/owner/store";
+import { OnboardingTourProvider } from "./src/context/OnboardingTourContext";
 
 // CRITICAL: Set notification handler at the TOP LEVEL (outside component)
 // This ensures notifications are handled even when app is in background/killed
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
   }),
 });
 
@@ -171,6 +172,7 @@ export default function App() {
               persistor={persistor}
             >
               <ErrorProvider>
+                <OnboardingTourProvider>
                 <ToastProvider>
                   {appError ? (
                     <View
@@ -230,6 +232,7 @@ export default function App() {
                     <AppContent />
                   )}
                 </ToastProvider>
+                </OnboardingTourProvider>
               </ErrorProvider>
             </PersistGate>
           </Provider>
@@ -265,12 +268,28 @@ export default function App() {
 function AppContent() {
   const { error, clearError } = useError();
 
-  // Removed all notification setup code - now handled only in LoginScreen
+  // Re-initialize notifications on app load if user is already authenticated
+  // This handles hot reload scenarios where listeners need to be refreshed
+  useEffect(() => {
+    const reinitializeNotifications = () => {
+      const state = store.getState();
+      const userId = state.auth.user?.s_no || state.tenantAuth.tenant?.tenant_id;
+
+      if (userId) {
+        console.log('[App] 🔄 Re-initializing notifications for authenticated user:', userId);
+        void notificationService.initialize(userId, true); // Force re-init for hot reload
+      }
+    };
+
+    reinitializeNotifications();
+  }, []);
 
   return (
     <NetworkStatusProvider>
       <ErrorAlert error={error} onDismiss={clearError} />
-      <AppNavigator />
+      <AppStatusGate>
+        <AppNavigator />
+      </AppStatusGate>
       <NetworkLoggerFloatingButton enabled={__DEV__} />
     </NetworkStatusProvider>
   );

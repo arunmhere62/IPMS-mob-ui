@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   Modal,
   StyleSheet,
   Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Theme } from '../theme';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 
 interface DatePickerProps {
   label: string;
@@ -107,7 +107,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
       {/* Date Display Button */}
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => !disabled && setShowPicker(true)}
           disabled={disabled}
           style={[
@@ -129,11 +129,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               {formatDate(value)}
             </Text>
           </View>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
         
         {/* Clear Button - Only show if date is selected */}
         {value && !disabled && (
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => onChange('')}
             style={{
               width: 48,
@@ -147,7 +147,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             }}
           >
             <Text style={{ fontSize: 20, color: '#DC2626', fontWeight: '700' }}>✕</Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         )}
       </View>
 
@@ -166,13 +166,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <View style={styles.modalContent}>
               {/* Header */}
               <View style={styles.modalHeader}>
-                <TouchableOpacity onPress={handleCancel}>
+                <AnimatedPressableCard onPress={handleCancel}>
                   <Text style={styles.cancelButton}>Cancel</Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
                 <Text style={styles.modalTitle}>{label}</Text>
-                <TouchableOpacity onPress={handleConfirm}>
+                <AnimatedPressableCard onPress={handleConfirm}>
                   <Text style={styles.confirmButton}>Done</Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               </View>
 
               {/* iOS Date Picker */}

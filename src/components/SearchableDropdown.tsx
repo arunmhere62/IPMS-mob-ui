@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   Modal,
   FlatList,
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   Animated,
 } from 'react-native';
 import { Theme } from '../theme';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 
 interface DropdownItem {
   id: number;
@@ -99,26 +99,27 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   const renderItem = ({ item }: { item: DropdownItem }) => {
     const isSelected = item.id === selectedValue;
     return (
-      <TouchableOpacity
+      <AnimatedPressableCard
         style={[
           styles.dropdownItem,
           isSelected && styles.selectedItem,
         ]}
         onPress={() => handleSelect(item)}
-        activeOpacity={0.7}
       >
         <Text
           style={[
             styles.dropdownItemText,
             isSelected && styles.selectedItemText,
           ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
         >
           {item.label}
         </Text>
         {isSelected && (
           <Text style={styles.checkmark}>✓</Text>
         )}
-      </TouchableOpacity>
+      </AnimatedPressableCard>
     );
   };
 
@@ -131,7 +132,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
 
       {/* Dropdown Button */}
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-        <TouchableOpacity
+        <AnimatedPressableCard
           style={[
             styles.dropdownButton,
             error && styles.dropdownButtonError,
@@ -140,7 +141,6 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
           ]}
           onPress={openModal}
           disabled={disabled || loading}
-          activeOpacity={0.7}
         >
           {loading ? (
             <ActivityIndicator size="small" color={Theme.colors.primary} />
@@ -152,15 +152,16 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
                   !selectedItem && styles.placeholderText,
                 ]}
                 numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 {selectedItem ? selectedItem.label : placeholder}
               </Text>
               <Text style={styles.dropdownIcon}>▼</Text>
             </>
           )}
-        </TouchableOpacity>
+        </AnimatedPressableCard>
         {selectedItem && !disabled && (
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => {
               onSelect({ id: 0, label: '', value: null });
             }}
@@ -176,7 +177,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
             }}
           >
             <Text style={{ fontSize: 20, color: '#DC2626', fontWeight: '700' }}>✕</Text>
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         )}
       </View>
 
@@ -190,10 +191,9 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         animationType="fade"
         onRequestClose={closeModal}
       >
-        <TouchableOpacity
+        <View
           style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={closeModal}
+          onStartShouldSetResponder={() => { closeModal(); return true; }}
         >
           <Animated.View
             style={[
@@ -209,13 +209,13 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
               <Text style={styles.modalTitle}>{label}</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 {selectedValue && !disabled && (
-                  <TouchableOpacity onPress={handleClearSelection} style={styles.clearSelectionButton}>
-                    <Text style={styles.clearSelectionButtonText}>Clear</Text>
-                  </TouchableOpacity>
+                  <AnimatedPressableCard onPress={handleClearSelection} style={styles.clearSelectionButton}>
+                    <Text style={styles.clearSelectionButtonText} numberOfLines={1} adjustsFontSizeToFit>Clear</Text>
+                  </AnimatedPressableCard>
                 )}
-                <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
+                <AnimatedPressableCard onPress={closeModal} style={styles.closeButton}>
                   <Text style={styles.closeButtonText}>✕</Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               </View>
             </View>
 
@@ -231,12 +231,12 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
                 autoCorrect={false}
               />
               {searchQuery ? (
-                <TouchableOpacity
+                <AnimatedPressableCard
                   onPress={() => setSearchQuery('')}
                   style={styles.clearButton}
                 >
                   <Text style={styles.clearButtonText}>✕</Text>
-                </TouchableOpacity>
+                </AnimatedPressableCard>
               ) : null}
             </View>
 
@@ -262,7 +262,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
               )}
             </View>
           </Animated.View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );

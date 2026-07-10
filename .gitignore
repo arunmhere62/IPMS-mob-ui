@@ -20,5 +20,8 @@ android/build/
 # macOS
 .DS_Store
 
+# Test coverage
+coverage/
+
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
