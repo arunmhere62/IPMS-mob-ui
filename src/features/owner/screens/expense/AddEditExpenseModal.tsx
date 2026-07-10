@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { View, Text, TextInput, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -65,6 +65,8 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
   onRefetchMonthlyMetrics }) => {
   const [createExpense] = useCreateExpenseMutation();
   const [updateExpense] = useUpdateExpenseMutation();
+  const paidToRef = useRef<TextInput>(null);
+  const remarksRef = useRef<TextInput>(null);
 
   const [expenseType, setExpenseType] = useState("");
   const [customExpenseType, setCustomExpenseType] = useState("");
@@ -318,6 +320,8 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
             value={customExpenseType}
             onChangeText={setCustomExpenseType}
             autoFocus
+            returnKeyType={'next'}
+            onSubmitEditing={() => paidToRef.current?.focus()}
           />
         )}
         {errors.expenseType && (
@@ -380,6 +384,9 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
             placeholderTextColor={Theme.colors.input.placeholder}
             value={paidTo}
             onChangeText={setPaidTo}
+            ref={paidToRef}
+            returnKeyType={'next'}
+            onSubmitEditing={() => remarksRef.current?.focus()}
           />
         </View>
         {errors.paidTo && (
@@ -456,6 +463,12 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
           numberOfLines={3}
           value={remarks}
           onChangeText={setRemarks}
+          ref={remarksRef}
+          returnKeyType={'done'}
+          blurOnSubmit={true}
+          onSubmitEditing={() => {
+            try { (TextInput as any).State?.blurTextInput(TextInput.State.currentlyFocusedInput?.()); } catch {}
+          }}
         />
       </View>
     </SlideBottomModal>

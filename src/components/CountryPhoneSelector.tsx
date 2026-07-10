@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatedPressableCard } from './AnimatedPressableCard';
-import { View, Text, Modal, FlatList, TextInput, StyleSheet, Keyboard } from 'react-native';
+import { View, Text, Modal, FlatList, TextInput, StyleSheet, Keyboard, TextInputProps } from 'react-native';
 import { Theme } from '../theme';
 
 interface Country {
@@ -35,6 +35,11 @@ interface CountryPhoneSelectorProps {
   size?: 'small' | 'medium' | 'large';
   phoneValue?: string;
   onPhoneChange?: (phone: string) => void;
+  // New optional controls for keyboard behavior and focus chaining
+  inputRef?: React.RefObject<TextInput | null>;
+  returnKeyType?: TextInputProps['returnKeyType'];
+  onSubmitEditing?: () => void;
+  blurOnSubmit?: boolean;
 }
 
 export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
@@ -42,7 +47,12 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
   onSelectCountry,
   size = 'medium',
   phoneValue = '',
-  onPhoneChange }) => {
+  onPhoneChange,
+  inputRef,
+  returnKeyType,
+  onSubmitEditing,
+  blurOnSubmit,
+}) => {
   const [showModal, setShowModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const lastEmittedPhoneRef = useRef<string | null>(null);
@@ -214,8 +224,10 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
           autoCorrect={false}
           spellCheck={false}
           maxLength={20}
-          blurOnSubmit
-          onSubmitEditing={() => Keyboard.dismiss()}
+          ref={inputRef}
+          returnKeyType={returnKeyType as any}
+          blurOnSubmit={blurOnSubmit ?? (returnKeyType === 'done')}
+          onSubmitEditing={onSubmitEditing ?? (() => Keyboard.dismiss())}
         />
       </View>
 

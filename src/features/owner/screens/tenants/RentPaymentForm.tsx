@@ -28,6 +28,11 @@ import type { Payment } from "@/types";
 import type { BedResponse } from "@/features/owner/api/roomsApi";
 import { AppDispatch } from "../../store";
 
+// Constants
+const MIN_PAYMENT_AMOUNT = 1
+const MAX_PAYMENT_AMOUNT = 10_00_000
+const MAX_DECIMAL_PLACES = 2
+
 interface RentPaymentFormProps {
   visible: boolean;
   tenantId: number;
@@ -542,8 +547,20 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
         newErrors.amount_paid = "Please enter a valid amount (invalid format)";
       } else {
         const amountPaid = parseFloat(formData.amount_paid);
-        if (isNaN(amountPaid) || amountPaid <= 0) {
+        if (isNaN(amountPaid)) {
           newErrors.amount_paid = "Amount paid is required";
+        } else if (amountPaid < 0) {
+          newErrors.amount_paid = "Amount cannot be negative";
+        } else if (amountPaid < MIN_PAYMENT_AMOUNT) {
+          newErrors.amount_paid = `Minimum amount is ₹${MIN_PAYMENT_AMOUNT}`;
+        } else if (amountPaid > MAX_PAYMENT_AMOUNT) {
+          newErrors.amount_paid = `Maximum amount is ₹${MAX_PAYMENT_AMOUNT.toLocaleString('en-IN')}`;
+        } else {
+          // Check decimal precision
+          const decimalPart = formData.amount_paid.split('.')[1];
+          if (decimalPart && decimalPart.length > MAX_DECIMAL_PLACES) {
+            newErrors.amount_paid = `Amount can have maximum ${MAX_DECIMAL_PLACES} decimal places`;
+          }
         }
       }
     }
@@ -738,6 +755,7 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
           onChangeText={(text) => setFormData((prev) => ({ ...prev, amount_paid: text }))}
           error={errors.amount_paid}
           required
+          returnKeyType={'done'}
         />
 
         <DatePicker
@@ -840,6 +858,11 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
             numberOfLines={3}
             value={formData.remarks}
             onChangeText={(text) => setFormData((prev) => ({ ...prev, remarks: text }))}
+            returnKeyType={'done'}
+            blurOnSubmit={true}
+            onSubmitEditing={() => {
+              try { (TextInput as any).State?.blurTextInput(TextInput.State.currentlyFocusedInput?.()); } catch {}
+            }}
           />
         </View>
 

@@ -15,6 +15,11 @@ import { AmountInput } from "../../../../components/AmountInput";
 import { useLazyGetBedByIdQuery } from "@/features/owner/api/roomsApi";
 import { showErrorAlert } from "@/utils/errorHandler";
 
+// Constants
+const MIN_PAYMENT_AMOUNT = 1
+const MAX_PAYMENT_AMOUNT = 10_00_000
+const MAX_DECIMAL_PLACES = 2
+
 interface AddRefundPaymentModalProps {
   visible: boolean;
   mode?: 'add' | 'edit';
@@ -161,28 +166,40 @@ export const AddRefundPaymentModal: React.FC<AddRefundPaymentModalProps> = ({
       return;
     }
 
+    // Check for multiple decimal points
+    const decimalPoints = (trimmedAmount.match(/\./g) || []).length;
+    if (decimalPoints > 1) {
+      Alert.alert('Validation Error', 'Please enter a valid amount (invalid format)');
+      return;
+    }
+
     const refundAmount = parseFloat(trimmedAmount);
-    if (isNaN(refundAmount) || refundAmount <= 0) {
+    if (isNaN(refundAmount)) {
       Alert.alert('Validation Error', 'Please enter a valid refund amount');
       return;
     }
 
+    if (refundAmount < 0) {
+      Alert.alert('Validation Error', 'Amount cannot be negative');
+      return;
+    }
+
     // Minimum refund amount
-    if (refundAmount < 10) {
-      Alert.alert('Validation Error', 'Minimum refund amount is ₹10');
+    if (refundAmount < MIN_PAYMENT_AMOUNT) {
+      Alert.alert('Validation Error', `Minimum refund amount is ₹${MIN_PAYMENT_AMOUNT}`);
       return;
     }
 
     // Maximum refund amount
-    if (refundAmount > 100000) {
-      Alert.alert('Validation Error', 'Maximum refund amount is ₹1,00,000');
+    if (refundAmount > MAX_PAYMENT_AMOUNT) {
+      Alert.alert('Validation Error', `Maximum refund amount is ₹${MAX_PAYMENT_AMOUNT.toLocaleString('en-IN')}`);
       return;
     }
 
     // Decimal precision check
     const decimalPart = trimmedAmount.split('.')[1];
-    if (decimalPart && decimalPart.length > 2) {
-      Alert.alert('Validation Error', 'Amount can have maximum 2 decimal places');
+    if (decimalPart && decimalPart.length > MAX_DECIMAL_PLACES) {
+      Alert.alert('Validation Error', `Amount can have maximum ${MAX_DECIMAL_PLACES} decimal places`);
       return;
     }
 

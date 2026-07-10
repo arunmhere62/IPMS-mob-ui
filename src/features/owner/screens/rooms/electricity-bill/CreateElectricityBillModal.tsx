@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, Alert, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, Alert, TextInput, ActivityIndicator, Keyboard } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
 import {
@@ -95,6 +95,10 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
 
   const isMountedRef = useRef(true);
   const submittingRef = useRef(false);
+  // Refs for chaining meter reading inputs
+  const prevReadingRef = useRef<TextInput>(null);
+  const currReadingRef = useRef<TextInput>(null);
+  const ratePerUnitRef = useRef<TextInput>(null);
 
   const { periodStart, periodEnd } = useMemo(() => {
     const year = Number(selectedYear);
@@ -319,6 +323,9 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
               onChangeText={(text: string) => setCustomAllocations((prev) => ({ ...prev, [t.tenant_id]: sanitizeNumeric(text) }))}
               placeholder="Share amount"
               keyboardType="numeric"
+              returnKeyType={'done'}
+              blurOnSubmit={true}
+              onSubmitEditing={() => Keyboard.dismiss()}
               style={{
                 flex: 1,
                 borderWidth: 1,
@@ -457,6 +464,9 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
               onChangeText={(text) => setTotalAmount(sanitizeNumeric(text))}
               placeholder="Enter total bill amount"
               keyboardType="numeric"
+              returnKeyType={'done'}
+              blurOnSubmit={true}
+              onSubmitEditing={() => Keyboard.dismiss()}
               style={{
                 flex: 1,
                 borderWidth: 1,
@@ -656,6 +666,9 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                     onChangeText={(text) => setPrevReading(sanitizeNumeric(text))}
                     placeholder="0"
                     keyboardType="numeric"
+                    ref={prevReadingRef}
+                    returnKeyType={'next'}
+                    onSubmitEditing={() => currReadingRef.current?.focus()}
                     style={{
                       borderWidth: 1,
                       borderColor: '#E5E7EB',
@@ -681,6 +694,9 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                     onChangeText={(text) => setCurrReading(sanitizeNumeric(text))}
                     placeholder="0"
                     keyboardType="numeric"
+                    ref={currReadingRef}
+                    returnKeyType={'next'}
+                    onSubmitEditing={() => ratePerUnitRef.current?.focus()}
                     style={{
                       borderWidth: 1,
                       borderColor: '#E5E7EB',
@@ -722,6 +738,10 @@ export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProp
                       onChangeText={(text) => setRatePerUnit(sanitizeNumeric(text))}
                       placeholder="0.00"
                       keyboardType="numeric"
+                      ref={ratePerUnitRef}
+                      returnKeyType={'done'}
+                      blurOnSubmit={true}
+                      onSubmitEditing={() => Keyboard.dismiss()}
                       style={{
                         flex: 1,
                         borderWidth: 1,

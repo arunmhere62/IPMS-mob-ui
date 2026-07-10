@@ -16,6 +16,11 @@ import { useCreateAdvancePaymentMutation, type CreateAdvancePaymentDto } from "@
 import { useLazyGetBedByIdQuery } from "@/features/owner/api/roomsApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 
+// Constants
+const MIN_PAYMENT_AMOUNT = 1
+const MAX_PAYMENT_AMOUNT = 10_00_000
+const MAX_DECIMAL_PLACES = 2
+
 interface AdvancePaymentFormProps {
   visible: boolean;
   mode: "add" | "edit";
@@ -182,17 +187,19 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
         newErrors.amount_paid = "Please enter a valid amount (invalid format)";
       } else {
         const amountPaid = parseFloat(trimmedAmount);
-        if (isNaN(amountPaid) || amountPaid <= 0) {
+        if (isNaN(amountPaid)) {
           newErrors.amount_paid = "Amount paid is required";
-        } else if (amountPaid < 10) {
-          newErrors.amount_paid = "Minimum amount is ₹10";
-        } else if (amountPaid > 100000) {
-          newErrors.amount_paid = "Maximum amount is ₹1,00,000";
+        } else if (amountPaid < 0) {
+          newErrors.amount_paid = "Amount cannot be negative";
+        } else if (amountPaid < MIN_PAYMENT_AMOUNT) {
+          newErrors.amount_paid = `Minimum amount is ₹${MIN_PAYMENT_AMOUNT}`;
+        } else if (amountPaid > MAX_PAYMENT_AMOUNT) {
+          newErrors.amount_paid = `Maximum amount is ₹${MAX_PAYMENT_AMOUNT.toLocaleString('en-IN')}`;
         } else {
           // Check decimal precision
           const decimalPart = trimmedAmount.split('.')[1];
-          if (decimalPart && decimalPart.length > 2) {
-            newErrors.amount_paid = "Amount can have maximum 2 decimal places";
+          if (decimalPart && decimalPart.length > MAX_DECIMAL_PLACES) {
+            newErrors.amount_paid = `Amount can have maximum ${MAX_DECIMAL_PLACES} decimal places`;
           }
         }
       }
@@ -433,6 +440,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
           error={errors.amount_paid}
           required
           containerStyle={{ marginBottom: 16 }}
+          returnKeyType={'done'}
         />
 
         
@@ -497,6 +505,11 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
             maxLength={500}
             accessibilityLabel="Remarks input"
             accessibilityHint="Enter any notes about this payment (optional)"
+            returnKeyType={'done'}
+            blurOnSubmit={true}
+            onSubmitEditing={() => {
+              try { (TextInput as any).State?.blurTextInput(TextInput.State.currentlyFocusedInput?.()); } catch {}
+            }}
           />
         </View>
       </ScrollView>

@@ -43,6 +43,9 @@ export const BulkAddBedsModal: React.FC<BulkAddBedsModalProps> = ({
   ]);
   const [errors, setErrors] = useState<Record<number, { bed_no?: string; bed_price?: string }>>({});
   const submittingRef = useRef(false);
+  // Refs to chain focus across dynamic rows
+  const bedNoRefs = useRef<Array<TextInput | null>>([]);
+  const priceRefs = useRef<Array<TextInput | null>>([]);
 
   const reset = () => {
     setBeds([{ bed_no: '', bed_price: '' }]);
@@ -181,7 +184,12 @@ export const BulkAddBedsModal: React.FC<BulkAddBedsModalProps> = ({
       onCancel={handleClose}
       minHeightPercent={0.85}
     >
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 16 }}
+      >
         {beds.map((bed, index) => (
           <View
             key={index}
@@ -217,6 +225,9 @@ export const BulkAddBedsModal: React.FC<BulkAddBedsModalProps> = ({
                   onChangeText={(v) => updateBed(index, 'bed_no', v)}
                   placeholder="1"
                   keyboardType="numeric"
+                  ref={(el) => { bedNoRefs.current[index] = el; }}
+                  returnKeyType={'next'}
+                  onSubmitEditing={() => priceRefs.current[index]?.focus()}
                   style={{
                     flex: 1,
                     borderWidth: 1,
@@ -262,6 +273,14 @@ export const BulkAddBedsModal: React.FC<BulkAddBedsModalProps> = ({
                   onChangeText={(v) => updateBed(index, 'bed_price', v)}
                   placeholder="5000"
                   keyboardType="numeric"
+                  ref={(el) => { priceRefs.current[index] = el; }}
+                  returnKeyType={index < beds.length - 1 ? 'next' : 'done'}
+                  blurOnSubmit={index === beds.length - 1}
+                  onSubmitEditing={() => {
+                    if (index < beds.length - 1) {
+                      bedNoRefs.current[index + 1]?.focus();
+                    }
+                  }}
                   style={{
                     flex: 1,
                     borderWidth: 1,

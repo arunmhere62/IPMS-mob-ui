@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Alert } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, TextInput, Alert, Keyboard } from "react-native";
 import { Theme } from "../../../../theme";
 import { ImageUploadS3 } from "../../../../components/ImageUploadS3";
 import { SlideBottomModal } from "../../../../components/SlideBottomModal";
@@ -36,6 +36,7 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
 }) => {
   const [createBedMutation] = useCreateBedMutation();
   const [updateBedMutation] = useUpdateBedMutation();
+  const priceInputRef = useRef<TextInput>(null);
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -311,6 +312,8 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
             placeholder="1, 2, 101"
             keyboardType="numeric"
             editable={!isBedNoLocked}
+            returnKeyType={"next"}
+            onSubmitEditing={() => priceInputRef.current?.focus()}
             style={{
               flex: 1,
               borderWidth: 1,
@@ -399,6 +402,10 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
             onChangeText={(value) => updateField("bed_price", value)}
             placeholder="0.00"
             keyboardType="numeric"
+            ref={priceInputRef}
+            returnKeyType={"done"}
+            blurOnSubmit={true}
+            onSubmitEditing={Keyboard.dismiss}
             style={{
               flex: 1,
               borderWidth: 1,

@@ -258,6 +258,11 @@ export const RoomModal: React.FC<RoomModalProps> = ({
                       onChangeText={(value) => updateField('room_no', 'RM' + value)}
                       placeholder="101, A1, Ground-1"
                       editable={!isRoomNoLocked}
+                      returnKeyType={'done'}
+                      blurOnSubmit={true}
+                      onSubmitEditing={() => {
+                        try { (TextInput as any).State?.blurTextInput(TextInput.State.currentlyFocusedInput?.()); } catch {}
+                      }}
                       style={{
                         flex: 1,
                         borderWidth: 1,

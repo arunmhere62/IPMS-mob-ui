@@ -82,6 +82,13 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
 
+  // Keyboard focus refs for chaining fields
+  const emailInputRef = useRef<TextInput | null>(null);
+  const occupationInputRef = useRef<TextInput | null>(null);
+  const addressInputRef = useRef<TextInput | null>(null);
+  const phoneInputRef = useRef<TextInput | null>(null);
+  const whatsappInputRef = useRef<TextInput | null>(null);
+
   const handleSkipVerification = () => {
     const phone = getFullPhoneNumber();
     const displayPhone = formData.phone_no
@@ -748,6 +755,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     value={formData.name}
                     onChangeText={(value) => updateField("name", value)}
                     placeholder="Enter full name"
+                    returnKeyType={"next"}
                     maxLength={100}
                     style={{
                       borderWidth: 1,
@@ -796,6 +804,13 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       setOtpError("");
                     }}
                     size="medium"
+                    inputRef={phoneInputRef}
+                    returnKeyType={showOtpInput ? 'next' : 'done'}
+                    onSubmitEditing={() => {
+                      if (showOtpInput) return; // OTP flow handles its own submit
+                      // If no OTP, proceed to WhatsApp field
+                      whatsappInputRef.current?.focus();
+                    }}
                   />
 
                   {/* Phone Verification UI */}
@@ -902,6 +917,11 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                                   value={otpValue}
                                   onChangeText={setOtpValue}
                                   placeholder="_ _ _ _"
+                                  returnKeyType={"done"}
+                                  blurOnSubmit={true}
+                                  onSubmitEditing={() => {
+                                    try { (TextInput as any).State?.blurTextInput(TextInput.State.currentlyFocusedInput?.()); } catch {}
+                                  }}
                                   keyboardType="numeric"
                                   maxLength={4}
                                   contextMenuHidden={false}
@@ -1056,6 +1076,9 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       updateField("whatsapp_number", phone)
                     }
                     size="medium"
+                    inputRef={whatsappInputRef}
+                    returnKeyType={'next'}
+                    onSubmitEditing={() => emailInputRef.current?.focus()}
                   />
                   {errors.whatsapp_number && (
                     <Text
@@ -1087,6 +1110,9 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     value={formData.email}
                     onChangeText={(value) => updateField("email", value)}
                     placeholder="Enter email address (optional)"
+                    ref={emailInputRef}
+                    returnKeyType={"next"}
+                    onSubmitEditing={() => occupationInputRef.current?.focus()}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     maxLength={255}
@@ -1128,6 +1154,9 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     value={formData.occupation}
                     onChangeText={(value) => updateField("occupation", value)}
                     placeholder="Enter occupation (optional)"
+                    ref={occupationInputRef}
+                    returnKeyType={"next"}
+                    onSubmitEditing={() => addressInputRef.current?.focus()}
                     maxLength={100}
                     style={{
                       borderWidth: 1,
@@ -1208,6 +1237,12 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                     onChangeText={(value) =>
                       updateField("tenant_address", value)
                     }
+                    ref={addressInputRef}
+                    returnKeyType={"done"}
+                    blurOnSubmit={true}
+                    onSubmitEditing={() => {
+                      try { (TextInput as any).State?.blurTextInput(TextInput.State.currentlyFocusedInput?.()); } catch {}
+                    }}
                     placeholder="Enter full address (optional)"
                     multiline
                     numberOfLines={3}

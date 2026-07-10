@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   View,
@@ -116,6 +116,8 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
     minH,
     enableFlexibleHeightDrag,
   ]);
+
+  
 
   const headerPanResponder = React.useRef(
     PanResponder.create({
