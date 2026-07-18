@@ -24,6 +24,12 @@ export interface ReceiptData {
   paymentDate: Date;
   tenantName: string;
   tenantPhone: string;
+  tenantEmail?: string;
+  tenantWhatsapp?: string;
+  tenantAddress?: string;
+  tenantCity?: string;
+  tenantState?: string;
+  tenantPincode?: string;
   pgName: string;
   pgDetails?: ReceiptPgDetails;
   roomNumber: string;

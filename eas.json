@@ -28,10 +28,14 @@
       "autoIncrement": true,
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "API_BASE_URL": "https://mobapi.indianpgmanagement.com/api/v1"
       },
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "resourceClass": "medium"
       }
     },
     "apk": {
@@ -102,6 +106,13 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6787488713",
+        "ascApiKeyPath": "./AuthKey_K7AJ92MPPM.p8",
+        "ascApiKeyIssuerId": "503743cc-4811-409c-bb55-975ddf0b3468",
+        "ascApiKeyId": "K7AJ92MPPM"
+      }
+    }
   }
 }

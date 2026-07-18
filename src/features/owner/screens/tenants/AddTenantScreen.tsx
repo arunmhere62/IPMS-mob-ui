@@ -1,0 +1,1535 @@
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
+import {
+  useGetAllBedsQuery,
+  useGetAllRoomsQuery,
+} from "@/features/owner/api/roomsApi";
+import {
+  useGetStatesQuery,
+  useLazyGetCitiesQuery,
+} from "@/features/owner/api/locationApi";
+import { Card } from "../../../../components/Card";
+import { Theme } from "../../../../theme";
+import { ScreenHeader } from "../../../../components/ScreenHeader";
+import { ScreenLayout } from "../../../../components/ScreenLayout";
+import { ImageUploadS3 } from "../../../../components/ImageUploadS3";
+import { DatePicker } from "../../../../components/DatePicker";
+import { SearchableDropdown } from "../../../../components/SearchableDropdown";
+import { CountryPhoneSelector } from "../../../../components/CountryPhoneSelector";
+import { getFolderConfig } from "../../../../config/aws.config";
+import { CONTENT_COLOR } from "@/constant";
+import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/config/rbac.config";
+import { useCreateTenantMutation, useGetTenantByIdQuery, useUpdateTenantMutation, useSendPhoneOtpMutation, useVerifyPhoneOtpMutation } from "../../api";
+import { useOnboardingTour } from '../../../../context/OnboardingTourContext';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
+
+interface AddTenantScreenProps {
+  navigation: any;
+  route?: any;
+}
+
+interface OptionType {
+  label: string;
+  value: string;
+}
+
+interface StateData {
+  s_no: number;
+  name: string;
+  iso_code: string;
+}
+
+interface CityData {
+  s_no: number;
+  name: string;
+}
+
+export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
+  navigation,
+  route,
+}) => {
+  const { selectedPGLocationId } = useSelector(
+    (state: RootState) => state.pgLocations
+  );
+  const [createTenantMutation] = useCreateTenantMutation();
+  const [updateTenantMutation] = useUpdateTenantMutation();
+  const [sendPhoneOtp] = useSendPhoneOtpMutation();
+  const [verifyPhoneOtp] = useVerifyPhoneOtpMutation();
+  const [loading, setLoading] = useState(false);
+  const { can } = usePermissions();
+  const { tourStep, endTour } = useOnboardingTour();
+
+  // Phone verification state
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneVerifiedSkipped, setPhoneVerifiedSkipped] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  // Keyboard focus refs for chaining fields
+  const emailInputRef = useRef<TextInput | null>(null);
+  const occupationInputRef = useRef<TextInput | null>(null);
+  const addressInputRef = useRef<TextInput | null>(null);
+  const phoneInputRef = useRef<TextInput | null>(null);
+  const whatsappInputRef = useRef<TextInput | null>(null);
+
+  const handleSkipVerification = () => {
+    const phone = getFullPhoneNumber();
+    const displayPhone = formData.phone_no
+      ? `+${selectedPhoneCountry.phoneCode.replace('+', '')} ${formData.phone_no}`
+      : phone;
+    Alert.alert(
+      "Skip Phone Verification?",
+      `Are you sure the number ${displayPhone} is correct?\n\nThe tenant will NOT be able to login to the tenant portal unless this number matches their registered phone.`,
+      [
+        { text: "Go Back", style: "cancel" },
+        {
+          text: "Yes, Skip Verification",
+          style: "destructive",
+          onPress: () => {
+            setPhoneVerified(true);
+            setPhoneVerifiedSkipped(true);
+            setShowOtpInput(false);
+            setOtpValue("");
+            setOtpError("");
+          },
+        },
+      ]
+    );
+  };
+
+  // Get full phone number with country code
+  const getFullPhoneNumber = () => {
+    const digits = formData.phone_no.replace(/\D/g, '');
+    if (!digits || digits.length < 10) return '';
+    return selectedPhoneCountry.phoneCode.replace('+', '') + digits;
+  };
+
+  // Check if we're in edit mode
+  const tenantId = route?.params?.tenantId;
+  const isEditMode = !!tenantId;
+
+  const {
+    data: tenantByIdResponse,
+    isFetching: tenantByIdFetching,
+    error: tenantByIdError,
+  } = useGetTenantByIdQuery(Number(tenantId), { skip: !isEditMode });
+
+  const tenantInEdit = (tenantByIdResponse as any)?.data;
+  const lockTenancyFacts =
+    isEditMode &&
+    !!tenantInEdit &&
+    ((Array.isArray(tenantInEdit?.rent_payments) &&
+      tenantInEdit.rent_payments.length > 0) ||
+      (Array.isArray(tenantInEdit?.advance_payments) &&
+        tenantInEdit.advance_payments.length > 0) ||
+      (Array.isArray(tenantInEdit?.refund_payments) &&
+        tenantInEdit.refund_payments.length > 0) ||
+      (Array.isArray(tenantInEdit?.current_bills) &&
+        tenantInEdit.current_bills.length > 0) ||
+      (Array.isArray(tenantInEdit?.payment_cycle_summaries) &&
+        tenantInEdit.payment_cycle_summaries.length > 0));
+
+  // Check if we're coming from bed screen with pre-selected bed and room
+  const preSelectedBedId = route?.params?.bed_id;
+  const preSelectedRoomId = route?.params?.room_id;
+  const isFromBedFlow =
+    !isEditMode && !!preSelectedBedId && !!preSelectedRoomId;
+
+  // Dropdown data
+  const [roomList, setRoomList] = useState<OptionType[]>([]);
+  const [bedsList, setBedsList] = useState<OptionType[]>([]);
+  const [stateData, setStateData] = useState<StateData[]>([]);
+  const [cityData, setCityData] = useState<CityData[]>([]);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    phone_no: "",
+    whatsapp_number: "",
+    email: "",
+    occupation: "",
+    tenant_address: "",
+    room_id: null as number | null,
+    bed_id: null as number | null,
+    check_in_date: "",
+    check_out_date: "",
+    expected_vacate_date: "",
+    city_id: null as number | null,
+    state_id: null as number | null,
+    status: "ACTIVE",
+  });
+
+  const [tenantImages, setTenantImages] = useState<string[]>([]);
+  const [proofDocuments, setProofDocuments] = useState<string[]>([]);
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedPhoneCountry, setSelectedPhoneCountry] = useState({
+    code: "IN",
+    name: "India",
+    flag: "🇮🇳",
+    phoneCode: "+91",
+    phoneLength: 10,
+  });
+  const [selectedWhatsappCountry, setSelectedWhatsappCountry] = useState({
+    code: "IN",
+    name: "India",
+    flag: "🇮🇳",
+    phoneCode: "+91",
+    phoneLength: 10,
+  });
+
+  const pendingStateKeyRef = useRef<any>(null);
+  const pendingCityKeyRef = useRef<any>(null);
+  const pendingBedKeyRef = useRef<any>(null);
+
+  const toDigits = (value: string) => (value || "").replace(/\D/g, "");
+
+  const toNumberOrNull = (value: any): number | null => {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const toLocalNumber = (value: string) => {
+    const digits = toDigits(value);
+    // For safety, keep last 10 digits (India) when a country code was stored
+    if (digits.length > 10) return digits.slice(-10);
+    return digits;
+  };
+
+  const withCountryCode = (countryPhoneCode: string, value: string) => {
+    const trimmed = (value || "").trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("+")) return trimmed;
+    const digits = toDigits(trimmed);
+    if (!digits) return "";
+    const code = (countryPhoneCode || "").startsWith("+")
+      ? countryPhoneCode
+      : `+${countryPhoneCode}`;
+    return `${code}${digits}`;
+  };
+
+  // Hydrate form data in edit mode from RTK Query
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (tenantByIdError) {
+      showErrorAlert(tenantByIdError as any, "Failed to load tenant data");
+      navigation.goBack();
+      return;
+    }
+
+    const tenant = (tenantByIdResponse as any)?.data;
+    if (!tenant) return;
+
+    pendingStateKeyRef.current =
+      tenant.state_id ?? tenant.state?.iso_code ?? tenant.state?.name ?? null;
+    pendingCityKeyRef.current = tenant.city_id ?? tenant.city?.name ?? null;
+    pendingBedKeyRef.current = tenant.bed_id ?? tenant.beds?.bed_no ?? null;
+
+    setFormData({
+      name: tenant.name || "",
+      phone_no: toLocalNumber(tenant.phone_no || ""),
+      whatsapp_number: toLocalNumber(tenant.whatsapp_number || ""),
+      email: tenant.email || "",
+      occupation: tenant.occupation || "",
+      tenant_address: tenant.tenant_address || "",
+      room_id: toNumberOrNull(tenant.room_id),
+      bed_id: toNumberOrNull(tenant.bed_id),
+      check_in_date: tenant.check_in_date
+        ? new Date(tenant.check_in_date).toISOString().split("T")[0]
+        : "",
+      check_out_date: tenant.check_out_date
+        ? new Date(tenant.check_out_date).toISOString().split("T")[0]
+        : "",
+      expected_vacate_date: tenant.expected_vacate_date
+        ? new Date(tenant.expected_vacate_date).toISOString().split("T")[0]
+        : "",
+      city_id: toNumberOrNull(tenant.city_id),
+      state_id: toNumberOrNull(tenant.state_id),
+      status: tenant.status || "ACTIVE",
+    });
+
+    setTenantImages(Array.isArray(tenant.images) ? tenant.images : []);
+    setProofDocuments(
+      Array.isArray(tenant.proof_documents) ? tenant.proof_documents : []
+    );
+  }, [isEditMode, tenantByIdResponse, tenantByIdError]);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (formData.state_id) return;
+    if (!pendingStateKeyRef.current) return;
+    if (!stateData || stateData.length === 0) return;
+
+    const key = pendingStateKeyRef.current;
+    const resolved =
+      stateData.find((s) => s.s_no === Number(key)) ??
+      stateData.find((s) => s.iso_code === String(key)) ??
+      stateData.find((s) => s.name === String(key));
+
+    if (resolved) {
+      setFormData((prev) => ({ ...prev, state_id: resolved.s_no }));
+    }
+  }, [isEditMode, formData.state_id, stateData]);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (formData.city_id) return;
+    if (!pendingCityKeyRef.current) return;
+    if (!cityData || cityData.length === 0) return;
+
+    const key = pendingCityKeyRef.current;
+    const resolved =
+      cityData.find((c) => c.s_no === Number(key)) ??
+      cityData.find((c) => c.name === String(key));
+
+    if (resolved) {
+      setFormData((prev) => ({ ...prev, city_id: resolved.s_no }));
+    }
+  }, [isEditMode, formData.city_id, cityData]);
+
+  // Pre-fill room and bed if coming from bed screen
+  useEffect(() => {
+    if (preSelectedRoomId && preSelectedBedId) {
+      setFormData((prev) => ({
+        ...prev,
+        room_id: preSelectedRoomId,
+        bed_id: preSelectedBedId,
+      }));
+    }
+  }, [preSelectedRoomId, preSelectedBedId]);
+
+  const {
+    data: statesResponse,
+    isFetching: loadingStates,
+    error: statesError,
+  } = useGetStatesQuery({ countryCode: "IN" });
+
+  useEffect(() => {
+    if (statesError) {
+      showErrorAlert(statesError as any, "Failed to load states");
+      return;
+    }
+    if (statesResponse?.data) {
+      setStateData(statesResponse.data as any);
+    }
+  }, [statesResponse, statesError]);
+
+  const [
+    triggerCities,
+    { data: citiesResponse, isFetching: loadingCities, error: citiesError },
+  ] = useLazyGetCitiesQuery();
+
+  useEffect(() => {
+    if (citiesError) {
+      showErrorAlert(citiesError as any, "Failed to load cities");
+      return;
+    }
+    if (citiesResponse?.data) {
+      setCityData(citiesResponse.data as any);
+    }
+  }, [citiesResponse, citiesError]);
+
+  const {
+    data: roomsResponse,
+    isFetching: loadingRooms,
+    error: roomsError,
+  } = useGetAllRoomsQuery(
+    selectedPGLocationId
+      ? ({ pg_id: selectedPGLocationId } as any)
+      : (undefined as any),
+    {
+      skip: !selectedPGLocationId,
+    }
+  );
+
+  useEffect(() => {
+    if (roomsError) {
+      showErrorAlert(roomsError as any, "Failed to load rooms");
+      return;
+    }
+    const rooms = (roomsResponse as any)?.data || [];
+    // Remove duplicates based on s_no
+    const uniqueRooms = Array.from(
+      new Map(rooms.map((room: any) => [room.s_no, room])).values()
+    );
+    setRoomList(
+      uniqueRooms.map((room: any) => ({
+        label: `Room ${room.room_no}`,
+        value: room.s_no.toString(),
+      }))
+    );
+  }, [roomsResponse, roomsError]);
+
+  const {
+    data: bedsResponse,
+    isFetching: loadingBeds,
+    error: bedsError,
+  } = useGetAllBedsQuery(
+    formData.room_id
+      ? ({
+          room_id: Number(formData.room_id),
+          ...(!isEditMode ? { only_unoccupied: true } : {}),
+        } as any)
+      : (undefined as any),
+    { skip: !formData.room_id }
+  );
+
+  useEffect(() => {
+    if (bedsError) {
+      showErrorAlert(bedsError as any, "Failed to load beds");
+      return;
+    }
+    const beds = (bedsResponse as any)?.data || [];
+    setBedsList(
+      beds.map((bed: any) => ({
+        label: `Bed ${bed.bed_no}`,
+        value: bed.s_no.toString(),
+      }))
+    );
+  }, [bedsResponse, bedsError]);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (!formData.room_id) return;
+
+    const beds = (bedsResponse as any)?.data || [];
+    if (!beds || beds.length === 0) return;
+
+    const currentSelected = formData.bed_id;
+    const hasSelectedInList = currentSelected
+      ? beds.some((b: any) => Number(b.s_no) === Number(currentSelected))
+      : false;
+    if (hasSelectedInList) return;
+
+    const key = pendingBedKeyRef.current;
+    if (!key) return;
+
+    const resolved =
+      beds.find((b: any) => Number(b.s_no) === Number(key)) ??
+      beds.find((b: any) => String(b.bed_no) === String(key));
+
+    if (resolved?.s_no) {
+      setFormData((prev) => ({ ...prev, bed_id: Number(resolved.s_no) }));
+    }
+  }, [isEditMode, formData.room_id, formData.bed_id, bedsResponse]);
+
+  // Fetch beds when room is selected
+  useEffect(() => {
+    if (formData.room_id) {
+      // handled by RTK query above
+    } else {
+      setBedsList([]);
+      // Only reset bed_id if it wasn't pre-selected from bed screen
+      if (!preSelectedBedId) {
+        setFormData((prev) => ({ ...prev, bed_id: null }));
+      }
+    }
+  }, [formData.room_id, preSelectedBedId]);
+
+  useEffect(() => {
+    if (formData.state_id) {
+      const selectedState = stateData.find((s) => s.s_no === formData.state_id);
+      if (selectedState) {
+        triggerCities({ stateCode: selectedState.iso_code });
+      }
+    } else {
+      setCityData([]);
+      setFormData((prev) => ({ ...prev, city_id: null }));
+    }
+  }, [formData.state_id, stateData, triggerCities]);
+
+  const updateField = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // Name validation
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
+      newErrors.name = "Name is required";
+    } else if (trimmedName.length < 2) {
+      newErrors.name = "Name must be at least 2 characters";
+    } else if (trimmedName.length > 100) {
+      newErrors.name = "Name must not exceed 100 characters";
+    } else if (!/^[a-zA-Z\s\-']+$/.test(trimmedName)) {
+      newErrors.name = "Name can only contain letters, spaces, hyphens, and apostrophes";
+    }
+
+    // Phone validation - use country-specific length
+    const phoneDigits = toDigits(formData.phone_no);
+    if (!phoneDigits) {
+      newErrors.phone_no = "Phone number is required";
+    } else if (phoneDigits.length !== selectedPhoneCountry.phoneLength) {
+      newErrors.phone_no = `Phone number must be ${selectedPhoneCountry.phoneLength} digits`;
+    }
+
+    // WhatsApp validation - use country-specific length
+    if (formData.whatsapp_number) {
+      const whatsappDigits = toDigits(formData.whatsapp_number);
+      if (whatsappDigits.length !== selectedWhatsappCountry.phoneLength) {
+        newErrors.whatsapp_number = `WhatsApp number must be ${selectedWhatsappCountry.phoneLength} digits`;
+      }
+    }
+
+    // Email validation with improved regex
+    if (formData.email) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        newErrors.email = "Invalid email format";
+      }
+    }
+
+    // Room validation
+    if (!formData.room_id) {
+      newErrors.room_id = "Room is required";
+    }
+
+    // Bed validation
+    if (!formData.bed_id) {
+      newErrors.bed_id = "Bed is required";
+    }
+
+    // Check-in date validation
+    if (!formData.check_in_date) {
+      newErrors.check_in_date = "Check-in date is required";
+    }
+
+    // Expected vacate date validation (if provided)
+    if (formData.expected_vacate_date && formData.check_in_date) {
+      const checkInDate = new Date(formData.check_in_date);
+      const vacateDate = new Date(formData.expected_vacate_date);
+      checkInDate.setHours(0, 0, 0, 0);
+      vacateDate.setHours(0, 0, 0, 0);
+      
+      if (vacateDate <= checkInDate) {
+        newErrors.expected_vacate_date = "Expected vacate date must be after check-in date";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    // Prevent duplicate submission
+    if (loading) {
+      return;
+    }
+
+    if (isEditMode && !can(Permission.EDIT_TENANT)) {
+      Alert.alert("Access Denied", "You don't have permission to edit tenants");
+      return;
+    }
+    if (!isEditMode && !can(Permission.CREATE_TENANT)) {
+      Alert.alert(
+        "Access Denied",
+        "You don't have permission to create tenants"
+      );
+      return;
+    }
+
+    if (!validateForm()) {
+      Alert.alert(
+        "Validation Error",
+        "Please fill in all required fields correctly"
+      );
+      return;
+    }
+
+    // Phone verification check for new tenants
+    if (!isEditMode && !phoneVerified) {
+      Alert.alert("Phone Not Verified", "Please verify the phone number before creating the tenant.");
+      return;
+    }
+
+    // Confirmation for edit mode
+    if (isEditMode) {
+      Alert.alert(
+        "Confirm Update",
+        "Are you sure you want to update this tenant's information?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Update",
+            style: "default",
+            onPress: () => proceedWithSubmission(),
+          },
+        ]
+      );
+      return;
+    }
+
+    proceedWithSubmission();
+  };
+
+  const proceedWithSubmission = async () => {
+    try {
+      setLoading(true);
+
+      const tenantData = {
+        name: formData.name.trim(),
+        phone_no: withCountryCode(
+          selectedPhoneCountry.phoneCode,
+          formData.phone_no
+        ),
+        whatsapp_number: formData.whatsapp_number.trim()
+          ? withCountryCode(
+              selectedWhatsappCountry.phoneCode,
+              formData.whatsapp_number
+            )
+          : "",
+        email: formData.email.trim() || undefined,
+        occupation: formData.occupation.trim() || undefined,
+        tenant_address: formData.tenant_address.trim() || undefined,
+        pg_id: selectedPGLocationId,
+        room_id: formData.room_id || undefined,
+        bed_id: formData.bed_id || undefined,
+        check_in_date: formData.check_in_date,
+        expected_vacate_date: formData.expected_vacate_date || null,
+        city_id: formData.city_id || undefined,
+        state_id: formData.state_id || undefined,
+        images: tenantImages,
+        proof_documents: proofDocuments,
+        status: formData.status as "ACTIVE" | "INACTIVE",
+      };
+
+      if (isEditMode) {
+        const res = await updateTenantMutation({
+          id: Number(tenantId),
+          data: tenantData as any,
+        }).unwrap();
+        showSuccessAlert(res);
+        navigation.navigate("Tenants", { refresh: Date.now() });
+      } else {
+        const res = await createTenantMutation(tenantData as any).unwrap();
+
+        showSuccessAlert(res);
+        if (tourStep === 'tap_add_tenant' && (res as any)?.data?.s_no) {
+          endTour();
+          navigation.navigate('TenantDetails', { tenantId: (res as any).data.s_no });
+        } else {
+          navigation.navigate("Tenants", { refresh: Date.now() });
+        }
+        
+        // Reset form after successful creation
+        resetForm();
+      }
+    } catch (error: any) {
+      showErrorAlert(error, "Error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      phone_no: "",
+      whatsapp_number: "",
+      email: "",
+      occupation: "",
+      tenant_address: "",
+      room_id: null,
+      bed_id: null,
+      check_in_date: "",
+      check_out_date: "",
+      expected_vacate_date: "",
+      city_id: null,
+      state_id: null,
+      status: "ACTIVE",
+    });
+    setTenantImages([]);
+    setProofDocuments([]);
+    setErrors({});
+    setPhoneVerified(false);
+    setPhoneVerifiedSkipped(false);
+    setShowOtpInput(false);
+    setOtpValue("");
+    setOtpError("");
+  };
+
+  if (tenantByIdFetching) {
+    return (
+      <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+        <ScreenHeader
+          title={isEditMode ? "Edit Tenant" : "Add New Tenant"}
+          showBackButton={true}
+          onBackPress={() => navigation.goBack()}
+          backgroundColor={Theme.colors.background.blue}
+          syncMobileHeaderBg={true}
+        />
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: CONTENT_COLOR,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <ActivityIndicator size="large" color={Theme.colors.primary} />
+          <Text style={{ marginTop: 16, color: Theme.colors.text.secondary }}>
+            Loading tenant data...
+          </Text>
+        </View>
+      </ScreenLayout>
+    );
+  }
+
+  return (
+    <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+      <ScreenHeader
+        title={isEditMode ? "Edit Tenant" : "Add New Tenant"}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+        backgroundColor={Theme.colors.background.blue}
+        syncMobileHeaderBg={true}
+      />
+
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 80}
+        >
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 150 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={{ padding: 16 }}>
+              {/* Personal Information */}
+              <Card style={{ padding: 16, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
+                  👤 Personal Information
+                </Text>
+
+                {/* Name */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Full Name <Text style={{ color: "#EF4444" }}>*</Text>
+                  </Text>
+                  <TextInput
+                    value={formData.name}
+                    onChangeText={(value) => updateField("name", value)}
+                    placeholder="Enter full name"
+                    returnKeyType={"next"}
+                    maxLength={100}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: errors.name
+                        ? "#EF4444"
+                        : Theme.colors.border,
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 14,
+                      backgroundColor: "#fff",
+                    }}
+                    accessibilityLabel="Full name input"
+                    accessibilityHint="Enter tenant's full name"
+                  />
+                  {errors.name && (
+                    <Text
+                      style={{ fontSize: 11, color: "#EF4444", marginTop: 4 }}
+                    >
+                      {errors.name}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Phone Number */}
+                <View style={{ marginBottom: 20 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Phone Number <Text style={{ color: "#EF4444" }}>*</Text>
+                  </Text>
+                  <CountryPhoneSelector
+                    selectedCountry={selectedPhoneCountry}
+                    onSelectCountry={setSelectedPhoneCountry}
+                    phoneValue={formData.phone_no}
+                    onPhoneChange={(phone) => {
+                      updateField("phone_no", phone);
+                      setPhoneVerified(false);
+                      setPhoneVerifiedSkipped(false);
+                      setShowOtpInput(false);
+                      setOtpValue("");
+                      setOtpError("");
+                    }}
+                    size="medium"
+                    inputRef={phoneInputRef}
+                    returnKeyType={showOtpInput ? 'next' : 'done'}
+                    onSubmitEditing={() => {
+                      if (showOtpInput) return; // OTP flow handles its own submit
+                      // If no OTP, proceed to WhatsApp field
+                      whatsappInputRef.current?.focus();
+                    }}
+                  />
+
+                  {/* Phone Verification UI */}
+                  {!isEditMode && formData.phone_no.length >= 10 && (
+                    <View style={{ marginTop: 10 }}>
+                      {phoneVerified ? (
+                        /* ── Verified / Skipped state ── */
+                        phoneVerifiedSkipped ? (
+                          <View style={{
+                            backgroundColor: "#FFFBEB",
+                            borderWidth: 1,
+                            borderColor: "#FCD34D",
+                            borderRadius: 10,
+                            padding: 12,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 10,
+                          }}>
+                            <View style={{
+                              width: 32, height: 32, borderRadius: 16,
+                              backgroundColor: "#FEF3C7",
+                              alignItems: "center", justifyContent: "center",
+                            }}>
+                              <Text style={{ fontSize: 16 }}>⚠️</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 13, fontWeight: "700", color: "#92400E" }}>
+                                Verification Skipped
+                              </Text>
+                              <Text style={{ fontSize: 11, color: "#B45309", marginTop: 2 }}>
+                                Tenant won't be able to login if number is wrong
+                              </Text>
+                            </View>
+                            <AnimatedPressableCard
+                              onPress={() => { setPhoneVerified(false); setPhoneVerifiedSkipped(false); }}
+                              style={{
+                                borderWidth: 1, borderColor: "#F59E0B",
+                                borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5,
+                              }}
+                            >
+                              <Text style={{ fontSize: 11, color: "#D97706", fontWeight: "600" }}>Verify</Text>
+                            </AnimatedPressableCard>
+                          </View>
+                        ) : (
+                          <View style={{
+                            backgroundColor: "#F0FDF4",
+                            borderWidth: 1,
+                            borderColor: "#86EFAC",
+                            borderRadius: 10,
+                            padding: 12,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 10,
+                          }}>
+                            <View style={{
+                              width: 32, height: 32, borderRadius: 16,
+                              backgroundColor: "#DCFCE7",
+                              alignItems: "center", justifyContent: "center",
+                            }}>
+                              <Text style={{ fontSize: 16 }}>✅</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 13, fontWeight: "700", color: "#166534" }}>
+                                Phone Verified
+                              </Text>
+                              <Text style={{ fontSize: 11, color: "#15803D", marginTop: 2 }}>
+                                Tenant can login with this number
+                              </Text>
+                            </View>
+                          </View>
+                        )
+                      ) : (
+                        /* ── Unverified state ── */
+                        <View style={{
+                          backgroundColor: "#F8FAFF",
+                          borderWidth: 1,
+                          borderColor: "#BFDBFE",
+                          borderRadius: 10,
+                          padding: 12,
+                          gap: 10,
+                        }}>
+                          {/* Header row */}
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <View style={{
+                              width: 28, height: 28, borderRadius: 14,
+                              backgroundColor: "#DBEAFE",
+                              alignItems: "center", justifyContent: "center",
+                            }}>
+                              <Text style={{ fontSize: 14 }}>📱</Text>
+                            </View>
+                            <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E3A8A", flex: 1 }}>
+                              Verify Phone Number
+                            </Text>
+                          </View>
+
+                          {/* OTP input row (shown after send) */}
+                          {showOtpInput && (
+                            <View style={{ gap: 4 }}>
+                              <Text style={{ fontSize: 11, color: "#3B82F6" }}>
+                                OTP sent · Enter the 4-digit code
+                              </Text>
+                              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                                <TextInput
+                                  value={otpValue}
+                                  onChangeText={setOtpValue}
+                                  placeholder="_ _ _ _"
+                                  returnKeyType={"done"}
+                                  blurOnSubmit={true}
+                                  onSubmitEditing={() => {
+                                    try { (TextInput as any).State?.blurTextInput(TextInput.State.currentlyFocusedInput?.()); } catch {}
+                                  }}
+                                  keyboardType="numeric"
+                                  maxLength={4}
+                                  contextMenuHidden={false}
+                                  style={{
+                                    flex: 1,
+                                    borderWidth: 1.5,
+                                    borderColor: otpError ? "#EF4444" : "#93C5FD",
+                                    borderRadius: 8,
+                                    paddingHorizontal: 10,
+                                    paddingVertical: 7,
+                                    fontSize: 16,
+                                    fontWeight: "700",
+                                    letterSpacing: 6,
+                                    textAlign: "center",
+                                    backgroundColor: "#fff",
+                                    color: "#1E3A8A",
+                                  }}
+                                  accessibilityLabel="OTP input"
+                                  accessibilityHint="Enter the 4-digit OTP sent to your phone"
+                                />
+                                <AnimatedPressableCard
+                                  onPress={async () => {
+                                    const phone = getFullPhoneNumber();
+                                    if (otpValue.length !== 4) {
+                                      setOtpError("Please enter 4-digit OTP");
+                                      return;
+                                    }
+                                    try {
+                                      setVerifyingOtp(true);
+                                      await verifyPhoneOtp({ phone, otp: otpValue }).unwrap();
+                                      setPhoneVerified(true);
+                                      setShowOtpInput(false);
+                                      setOtpError("");
+                                    } catch (error: any) {
+                                      const msg = error?.data?.message || "Invalid OTP";
+                                      setOtpError(msg);
+                                    } finally {
+                                      setVerifyingOtp(false);
+                                    }
+                                  }}
+                                  disabled={verifyingOtp || otpValue.length !== 4}
+                                  style={{
+                                    backgroundColor: verifyingOtp || otpValue.length !== 4 ? "#9CA3AF" : "#10B981",
+                                    paddingHorizontal: 14,
+                                    paddingVertical: 8,
+                                    borderRadius: 8,
+                                  }}
+                                >
+                                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
+                                    {verifyingOtp ? "..." : "Confirm"}
+                                  </Text>
+                                </AnimatedPressableCard>
+                              </View>
+                              {otpError ? (
+                                <Text style={{ fontSize: 11, color: "#EF4444" }}>{otpError}</Text>
+                              ) : null}
+                            </View>
+                          )}
+
+                          {/* Action buttons row */}
+                          <View style={{ flexDirection: "row", gap: 8 }}>
+                            <AnimatedPressableCard
+                              onPress={async () => {
+                                const phone = getFullPhoneNumber();
+                                if (!phone) {
+                                  Alert.alert("Error", "Please enter a valid phone number");
+                                  return;
+                                }
+                                try {
+                                  setSendingOtp(true);
+                                  await sendPhoneOtp({ phone }).unwrap();
+                                  setShowOtpInput(true);
+                                  setOtpError("");
+                                } catch (error: any) {
+                                  const msg = error?.data?.message || "Failed to send OTP";
+                                  Alert.alert("Error", msg);
+                                } finally {
+                                  setSendingOtp(false);
+                                }
+                              }}
+                              disabled={sendingOtp}
+                              style={{
+                                flex: 1,
+                                backgroundColor: sendingOtp ? "#9CA3AF" : Theme.colors.primary,
+                                paddingVertical: 10,
+                                borderRadius: 8,
+                                alignItems: "center",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                gap: 6,
+                              }}
+                            >
+                              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
+                                {sendingOtp ? "Sending OTP..." : showOtpInput ? "Resend OTP" : "Send OTP"}
+                              </Text>
+                            </AnimatedPressableCard>
+
+                            <AnimatedPressableCard
+                              onPress={handleSkipVerification}
+                              style={{
+                                borderWidth: 1,
+                                borderColor: "#E5E7EB",
+                                paddingVertical: 10,
+                                paddingHorizontal: 14,
+                                borderRadius: 8,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: "#fff",
+                              }}
+                            >
+                              <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "500" }}>
+                                Skip
+                              </Text>
+                            </AnimatedPressableCard>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {errors.phone_no && (
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#EF4444",
+                        marginTop: -8,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {errors.phone_no}
+                    </Text>
+                  )}
+                </View>
+
+                {/* WhatsApp Number */}
+                <View style={{ marginBottom: 8 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
+                    WhatsApp Number
+                  </Text>
+                  <CountryPhoneSelector
+                    selectedCountry={selectedWhatsappCountry}
+                    onSelectCountry={setSelectedWhatsappCountry}
+                    phoneValue={formData.whatsapp_number}
+                    onPhoneChange={(phone) =>
+                      updateField("whatsapp_number", phone)
+                    }
+                    size="medium"
+                    inputRef={whatsappInputRef}
+                    returnKeyType={'next'}
+                    onSubmitEditing={() => emailInputRef.current?.focus()}
+                  />
+                  {errors.whatsapp_number && (
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#EF4444",
+                        marginTop: -8,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {errors.whatsapp_number}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Email */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Email Address
+                  </Text>
+                  <TextInput
+                    value={formData.email}
+                    onChangeText={(value) => updateField("email", value)}
+                    placeholder="Enter email address (optional)"
+                    ref={emailInputRef}
+                    returnKeyType={"next"}
+                    onSubmitEditing={() => occupationInputRef.current?.focus()}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    maxLength={255}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: errors.email
+                        ? "#EF4444"
+                        : Theme.colors.border,
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 14,
+                      backgroundColor: "#fff",
+                    }}
+                    accessibilityLabel="Email address input"
+                    accessibilityHint="Enter tenant's email address (optional)"
+                  />
+                  {errors.email && (
+                    <Text
+                      style={{ fontSize: 11, color: "#EF4444", marginTop: 4 }}
+                    >
+                      {errors.email}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Occupation */}
+                <View style={{ marginBottom: 0 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Occupation
+                  </Text>
+                  <TextInput
+                    value={formData.occupation}
+                    onChangeText={(value) => updateField("occupation", value)}
+                    placeholder="Enter occupation (optional)"
+                    ref={occupationInputRef}
+                    returnKeyType={"next"}
+                    onSubmitEditing={() => addressInputRef.current?.focus()}
+                    maxLength={100}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: Theme.colors.border,
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 14,
+                      backgroundColor: "#fff",
+                    }}
+                    accessibilityLabel="Occupation input"
+                    accessibilityHint="Enter tenant's occupation (optional)"
+                  />
+                </View>
+              </Card>
+
+              {/* Address Information */}
+              <Card style={{ padding: 16, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
+                  📍 Address Information
+                </Text>
+
+                {/* State Select */}
+                <SearchableDropdown
+                  label="State"
+                  placeholder="Select a state"
+                  items={stateData.map((state) => ({
+                    id: state.s_no,
+                    label: state.name,
+                    value: state.iso_code,
+                  }))}
+                  selectedValue={formData.state_id}
+                  onSelect={(item) =>
+                    setFormData((prev) => ({ ...prev, state_id: item.id }))
+                  }
+                  loading={loadingStates}
+                  required={false}
+                />
+
+                {/* City Select */}
+                <SearchableDropdown
+                  label="City"
+                  placeholder="Select a city"
+                  items={cityData.map((city) => ({
+                    id: city.s_no,
+                    label: city.name,
+                    value: city.s_no,
+                  }))}
+                  selectedValue={formData.city_id}
+                  onSelect={(item) =>
+                    setFormData((prev) => ({ ...prev, city_id: item.id }))
+                  }
+                  loading={loadingCities}
+                  disabled={!formData.state_id}
+                  required={false}
+                />
+
+                {/* Address */}
+                <View style={{ marginBottom: 0 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: Theme.colors.text.primary,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Address
+                  </Text>
+                  <TextInput
+                    value={formData.tenant_address}
+                    onChangeText={(value) =>
+                      updateField("tenant_address", value)
+                    }
+                    ref={addressInputRef}
+                    returnKeyType={"done"}
+                    blurOnSubmit={true}
+                    onSubmitEditing={() => {
+                      try { (TextInput as any).State?.blurTextInput(TextInput.State.currentlyFocusedInput?.()); } catch {}
+                    }}
+                    placeholder="Enter full address (optional)"
+                    multiline
+                    numberOfLines={3}
+                    maxLength={500}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: Theme.colors.border,
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 14,
+                      backgroundColor: "#fff",
+                      textAlignVertical: "top",
+                    }}
+                    accessibilityLabel="Address input"
+                    accessibilityHint="Enter tenant's full address (optional)"
+                  />
+                </View>
+              </Card>
+
+              {/* Accommodation Details */}
+              <Card style={{ padding: 16, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
+                  🏠 Accommodation Details
+                </Text>
+
+                {lockTenancyFacts && (
+                  <View
+                    style={{
+                      marginBottom: 12,
+                      padding: 10,
+                      backgroundColor: Theme.colors.background.blueLight,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.border,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: Theme.colors.text.secondary,
+                        lineHeight: 16,
+                      }}
+                    >
+                      Once rent is generated or any payment exists, Check-in
+                      date, Room, and Bed cannot be changed.
+                    </Text>
+                  </View>
+                )}
+
+                {/* Room Select */}
+                <SearchableDropdown
+                  label="Room"
+                  placeholder="Select a room"
+                  items={roomList.map((room) => ({
+                    id: parseInt(room.value),
+                    label: room.label,
+                    value: room.value,
+                  }))}
+                  selectedValue={formData.room_id}
+                  onSelect={(item) =>
+                    setFormData((prev) => ({ ...prev, room_id: item.id }))
+                  }
+                  loading={loadingRooms}
+                  disabled={!isEditMode || lockTenancyFacts}
+                  error={errors.room_id}
+                  required={true}
+                />
+
+                {/* Bed Select */}
+                <SearchableDropdown
+                  label="Bed"
+                  placeholder="Select a bed"
+                  items={bedsList.map((bed) => ({
+                    id: parseInt(bed.value),
+                    label: bed.label,
+                    value: bed.value,
+                  }))}
+                  selectedValue={formData.bed_id}
+                  onSelect={(item) =>
+                    setFormData((prev) => ({ ...prev, bed_id: item.id }))
+                  }
+                  loading={loadingBeds}
+                  disabled={
+                    !isEditMode || !formData.room_id || lockTenancyFacts
+                  }
+                  error={errors.bed_id}
+                  required={true}
+                />
+
+                {/* Check-in Date */}
+                <View style={{ marginBottom: 0 }}>
+                  {!isEditMode && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: Theme.colors.text.secondary,
+                          fontWeight: "600",
+                          marginLeft: 2,
+                        }}
+                      >
+                        Check-in Date{" "}
+                        <Text style={{ color: "#EF4444" }}>*</Text>
+                      </Text>
+                      <AnimatedPressableCard
+                        onPress={() =>
+                          updateField(
+                            "check_in_date",
+                            new Date().toISOString().split("T")[0]
+                          )
+                        }
+                        style={{
+                          backgroundColor: Theme.colors.primary,
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: "600",
+                            color: "#fff",
+                          }}
+                        >
+                          Today
+                        </Text>
+                      </AnimatedPressableCard>
+                    </View>
+                  )}
+                  {isEditMode && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: Theme.colors.text.secondary,
+                          fontWeight: "600",
+                          marginLeft: 2,
+                        }}
+                      >
+                        Check-in Date{" "}
+                        <Text style={{ color: "#EF4444" }}>*</Text>
+                      </Text>
+                    </View>
+                  )}
+                  <DatePicker
+                    label=""
+                    value={formData.check_in_date}
+                    onChange={(date) => updateField("check_in_date", date)}
+                    error={errors.check_in_date}
+                    required={false}
+                    disabled={lockTenancyFacts}
+                  />
+                </View>
+
+                {isEditMode && (
+                  <View style={{ marginTop: 16 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <Text style={{ fontSize: 11, fontWeight: "600", color: Theme.colors.text.secondary, marginLeft: 2 }}>
+                        Expected Vacate Date
+                      </Text>
+                      {formData.expected_vacate_date ? (
+                        <AnimatedPressableCard
+                          onPress={() => updateField("expected_vacate_date", "")}
+                          style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" }}
+                        >
+                          <Text style={{ fontSize: 11, color: "#DC2626", fontWeight: "600" }}>Clear</Text>
+                        </AnimatedPressableCard>
+                      ) : null}
+                    </View>
+                    <DatePicker
+                      label=""
+                      value={formData.expected_vacate_date}
+                      onChange={(date) => updateField("expected_vacate_date", date)}
+                      required={false}
+                    />
+                    <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 4, marginLeft: 2 }}>
+                      Set this if the tenant plans to leave on a specific date
+                    </Text>
+                  </View>
+                )}
+              </Card>
+
+              {/* Tenant Images */}
+              <Card style={{ padding: 16, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
+                  📷 Tenant Images
+                </Text>
+                <ImageUploadS3
+                  images={tenantImages}
+                  onImagesChange={setTenantImages}
+                  maxImages={1}
+                  label="Tenant Photos"
+                  folder={getFolderConfig().tenants.images}
+                  useS3={true}
+                  entityId={isEditMode ? tenantId?.toString() : undefined}
+                  autoSave={false}
+                />
+              </Card>
+
+              {/* Proof Documents */}
+              <Card style={{ padding: 16, marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: Theme.colors.text.primary,
+                    marginBottom: 16,
+                  }}
+                >
+                  📄 Proof Documents
+                </Text>
+                <ImageUploadS3
+                  images={proofDocuments}
+                  onImagesChange={setProofDocuments}
+                  maxImages={3}
+                  label="ID Proof / Documents"
+                  folder={getFolderConfig().tenants.documents}
+                  useS3={true}
+                  entityId={isEditMode ? tenantId?.toString() : undefined}
+                  autoSave={false}
+                />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: Theme.colors.text.secondary,
+                    marginTop: 8,
+                  }}
+                >
+                  Upload Aadhaar, PAN, Driving License, or other ID proofs
+                </Text>
+              </Card>
+
+              {/* Submit Button */}
+              <AnimatedPressableCard
+                onPress={handleSubmit}
+                disabled={loading}
+                style={{
+                  backgroundColor: loading ? "#9CA3AF" : Theme.colors.primary,
+                  padding: 16,
+                  borderRadius: 8,
+                  alignItems: "center",
+                  marginBottom: 32,
+                }}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text
+                    style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}
+                  >
+                    {isEditMode ? "Update Tenant" : "Create Tenant"}
+                  </Text>
+                )}
+              </AnimatedPressableCard>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </ScreenLayout>
+  );
+};

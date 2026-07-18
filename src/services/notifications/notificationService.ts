@@ -7,10 +7,12 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { store } from '../../store';
-import { notificationsApi } from '../api/notificationsApi';
+import { notificationsApi } from '../../features/owner/api/notificationsApi';
 import { FEATURES } from '../../config/env.config';
 import Constants from 'expo-constants';
+import { store } from '@/features/owner/store';
+import { navigate, navigationRef as navRef } from '../../navigation/navigationRef';
+import { RootState } from '@/features/owner/store';
 
 export interface NotificationData {
   type: string;
@@ -27,7 +29,9 @@ class NotificationService {
   private isInitialized: boolean = false;
   private lastInitializedUserId: number | null = null;
   private lastTestSentTimestamp: number = 0;
-  
+  private initializeCallCount: number = 0;
+  private coldStartHandled: boolean = false;
+
   // Static flag to prevent multiple initializations across app restarts
   private static _instance: NotificationService | null = null;
   
@@ -58,11 +62,10 @@ class NotificationService {
       // Configure notification handler first
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
           shouldShowBanner: true,
           shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
         }),
       });
 
@@ -125,19 +128,28 @@ class NotificationService {
   /**
    * Initialize notification service
    */
-  async initialize(userId: number) {
+  async initialize(userId: number, force = false) {
     try {
+      this.initializeCallCount++;
+      console.log('[PUSH] 🚀 initialize called for userId:', userId, 'call #', this.initializeCallCount, 'force:', force);
+      console.log('[PUSH] Current state - isInitialized:', this.isInitialized, 'lastUserId:', this.lastInitializedUserId, 'isInitializing:', this.isInitializing);
+
       // Guard: Prevent multiple simultaneous initializations
       if (this.isInitializing) {
         console.log('[PUSH] ⚠️ Initialization already in progress, skipping');
         return false;
       }
 
-      // Guard: Prevent re-initialization for same user
-      if (this.isInitialized && this.lastInitializedUserId === userId) {
-        console.log('[PUSH] ℹ️ Already initialized for user', userId);
+      // Guard: Prevent re-initialization for same user (unless forced)
+      if (!force && this.isInitialized && this.lastInitializedUserId === userId) {
+        console.log('[PUSH] ℹ️ Already initialized for user', userId, '- skipping (use force=true to re-init)');
         return true;
       }
+
+      // Cleanup existing listeners before setting up new ones
+      // This prevents duplicate listeners from multiple initialize calls
+      console.log('[PUSH] 🧹 Cleaning up existing listeners before initialization...');
+      this.cleanup();
 
       this.isInitializing = true;
 
@@ -161,11 +173,10 @@ class NotificationService {
       // Configure notification handler
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
           shouldShowBanner: true,
           shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
         }),
       });
 
@@ -284,11 +295,10 @@ class NotificationService {
     // Configure notification handler
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
         shouldShowBanner: true,
         shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
       }),
     });
 
@@ -530,32 +540,19 @@ class NotificationService {
    * Setup notification listeners
    */
   private setupNotificationListeners() {
+    console.log('[PUSH] 🎧 Setting up notification listeners...');
+
     // Listener for notifications received while app is foregrounded
+    // Note: Expo's notification handler (set at top of App.tsx) handles displaying notifications
+    // We don't need to manually reschedule them here
     this.notificationListener = Notifications.addNotificationReceivedListener(async notification => {
-      console.log('🔔 Notification received (foreground):', notification);
-      
-      // CRITICAL: Display the notification even when app is in foreground
-      // Without this, notifications are silently ignored in EAS builds
-      try {
-        const notificationType = notification.request.content.data?.type as string | undefined;
-        const channelId = this.getChannelId(notificationType);
-        
-        console.log('[PUSH] Re-scheduling foreground notification with channel:', channelId);
-        
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: notification.request.content.title || 'Notification',
-            body: notification.request.content.body || '',
-            data: notification.request.content.data,
-            sound: 'default',
-            badge: notification.request.content.badge ?? undefined,
-          },
-          trigger: null, // Show immediately
-        });
-        console.log('✅ Foreground notification displayed on channel:', channelId);
-      } catch (error) {
-        console.error('❌ Failed to display foreground notification:', error);
-      }
+      const isLocal = (notification.request.trigger && 'type' in notification.request.trigger && notification.request.trigger.type === 'timeInterval') ||
+        notification.request.content.data?.local === true;
+      // Skip local notifications
+      if (isLocal) return;
+
+      console.log('🔔 Remote notification received (foreground):', notification.request.content.data);
+      // No need to reschedule - Expo handler already displays it
     });
 
     // Listener for when user taps on notification
@@ -564,13 +561,19 @@ class NotificationService {
       this.handleNotificationTapped(response.notification);
     });
 
-    // Check if app was opened from a notification
-    Notifications.getLastNotificationResponseAsync().then(response => {
-      if (response) {
-        console.log('👆 App opened from notification:', response);
-        this.handleNotificationTapped(response.notification);
-      }
-    });
+    // Check if app was opened from a notification (cold start)
+    // Only handle this once to prevent navigation after login
+    if (!this.coldStartHandled) {
+      Notifications.getLastNotificationResponseAsync().then(response => {
+        if (response) {
+          console.log('👆 App opened from notification (cold start):', response);
+          this.coldStartHandled = true;
+          setTimeout(() => {
+            this.handleNotificationTapped(response.notification);
+          }, 1000);
+        }
+      });
+    }
   }
 
   /**
@@ -598,11 +601,17 @@ class NotificationService {
    */
   private handleNotificationTapped(notification: Notifications.Notification) {
     const data = notification.request.content.data;
-    
-    // Navigate to appropriate screen based on notification type
-    if (data?.type) {
-      this.navigateToScreen(data.type as string, data);
+    console.log('[PUSH] 👆 Tapped - full data:', JSON.stringify(data));
+    console.log('[PUSH] 👆 Tapped - data keys:', data ? Object.keys(data) : 'no data');
+    console.log('[PUSH] 👆 Tapped - type:', data?.type);
+    console.log('[PUSH] 👆 Tapped - ticketId:', data?.ticketId);
+    console.log('[PUSH] 👆 Tapped - screen:', data?.screen);
+
+    if (!data?.type) {
+      console.warn('[PUSH] Tapped notification has no type, skipping navigation');
+      return;
     }
+    this.navigateToScreen(data.type as string, data);
   }
 
 
@@ -631,20 +640,84 @@ class NotificationService {
   /**
    * Navigate to screen based on notification type
    */
-  private navigateToScreen(type: string, data: any) {
-    // This will be implemented with navigation reference
-    console.log('Navigate to:', type, data);
-    
-    // Example navigation logic:
-    // switch (type) {
-    //   case FCM_CONFIG.types.RENT_REMINDER:
-    //     navigation.navigate('TenantDetails', { tenantId: data.tenant_id });
-    //     break;
-    //   case FCM_CONFIG.types.PAYMENT_CONFIRMATION:
-    //     navigation.navigate('Payments');
-    //     break;
-    //   // ... other cases
-    // }
+  private navigateToScreen(type: string, data: any, attempt = 0) {
+    const isReady = navRef?.current?.isReady?.();
+    console.log(`[PUSH] navigateToScreen type=${type} attempt=${attempt} navReady=${String(isReady)}`, data);
+
+    if (!isReady) {
+      if (attempt < 10) {
+        console.log(`[PUSH] Navigator not ready, retrying in 300ms (attempt ${attempt + 1}/10)`);
+        setTimeout(() => this.navigateToScreen(type, data, attempt + 1), 300);
+      } else {
+        console.warn('[PUSH] Navigator never became ready after 10 attempts');
+      }
+      return;
+    }
+
+    // Check if current user is tenant or owner
+    const state = store.getState() as RootState;
+    const isTenant = state.tenantAuth.isAuthenticated;
+    const isOwner = state.auth.isAuthenticated;
+    console.log('[PUSH] User state - isTenant:', isTenant, 'isOwner:', isOwner);
+
+    switch (type) {
+      case 'TICKET_NEW':
+      case 'TICKET_COMMENT':
+      case 'TICKET_CLOSED':
+      case 'TICKET_STATUS':
+      case 'TICKET_STATUS_CHANGED': {
+        const ticketId = data?.ticketId ? Number(data.ticketId) : null;
+        console.log('[PUSH] Ticket notification - ticketId:', ticketId);
+        if (ticketId) {
+          // Navigate to appropriate screen based on user type
+          if (isTenant) {
+            console.log('[PUSH] Navigating to TenantTicketDetail with ticketId:', ticketId);
+            navigate('TenantTicketDetail', { ticketId });
+          } else if (isOwner) {
+            console.log('[PUSH] Navigating to PgTenantTicketDetail with ticketId:', ticketId);
+            navigate('PgTenantTicketDetail', { ticketId });
+          } else {
+            // Fallback based on screen from backend
+            const screen = data?.screen === 'TicketDetail' ? 'PgTenantTicketDetail' : 'TenantTicketDetail';
+            console.log('[PUSH] Fallback navigation to:', screen, 'with ticketId:', ticketId);
+            navigate(screen, { ticketId });
+          }
+        } else {
+          // Navigate to list screen
+          if (isTenant) {
+            console.log('[PUSH] Navigating to TenantTickets (no ticketId)');
+            navigate('TenantTickets');
+          } else if (isOwner) {
+            console.log('[PUSH] Navigating to PgTenantTickets (no ticketId)');
+            navigate('PgTenantTickets');
+          } else {
+            console.log('[PUSH] Fallback navigation to TenantTickets (no ticketId)');
+            navigate('TenantTickets');
+          }
+        }
+        break;
+      }
+      case 'RENT_REMINDER':
+      case 'PAYMENT_DUE_SOON':
+      case 'OVERDUE_ALERT':
+      case 'PAYMENT_OVERDUE':
+      case 'PAYMENT_CONFIRMATION':
+      case 'PARTIAL_PAYMENT':
+      case 'FULL_PAYMENT': {
+        const tenantId = data?.tenantId ? Number(data.tenantId) : null;
+        console.log('[PUSH] Payment notification - tenantId:', tenantId);
+        if (tenantId) {
+          console.log('[PUSH] Navigating to TenantDetails with tenantId:', tenantId);
+          navigate('TenantDetails', { tenantId });
+        } else {
+          console.log('[PUSH] Navigating to Tenants (no tenantId)');
+          navigate('Tenants');
+        }
+        break;
+      }
+      default:
+        console.log('[PUSH] No navigation handler for type:', type);
+    }
   }
 
   /**

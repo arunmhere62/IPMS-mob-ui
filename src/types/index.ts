@@ -58,7 +58,8 @@ export interface Tenant {
   bed_id?: number;
   check_in_date: string;
   check_out_date?: string;
-  status?: 'ACTIVE' | 'INACTIVE';
+  expected_vacate_date?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'CHECKED_OUT';
   occupation?: string;
   tenant_address?: string;
   images?: any;
@@ -77,6 +78,19 @@ export interface Tenant {
   is_advance_paid?: boolean;
   is_refund_paid?: boolean;
   pending_months?: number;
+  pending_payment?: {
+    due?: number;
+    cycle_start?: string;
+    cycle_end?: string;
+  } | null;
+  // Advance/Refund summary fields
+  advance_payment_summary?: {
+    total_advance_paid?: number;
+  };
+  refund_payment_summary?: {
+    total_refund_given?: number;
+  };
+  net_advance_remaining?: number;
   // Relations
   pg_locations?: {
     s_no: number;

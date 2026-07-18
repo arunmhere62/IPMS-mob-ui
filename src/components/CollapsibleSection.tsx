@@ -1,13 +1,12 @@
 import React from 'react';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   ViewStyle,
   TextStyle,
-  StyleProp,
-} from 'react-native';
+  StyleProp } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export interface CollapsibleSectionTheme {
@@ -44,8 +43,7 @@ export const THEME_PRESETS = {
     iconColor: '#6B7280',
     chevronColor: '#6B7280',
     contentBackgroundColor: '#FFFFFF',
-    accentColor: '#1F2937',
-  } as CollapsibleSectionTheme,
+    accentColor: '#1F2937' } as CollapsibleSectionTheme,
   
   // Light blue theme
   lightBlue: {
@@ -58,8 +56,7 @@ export const THEME_PRESETS = {
     iconColor: '#3B82F6',
     chevronColor: '#3B82F6',
     contentBackgroundColor: '#FFFFFF',
-    accentColor: '#1E40AF',
-  } as CollapsibleSectionTheme,
+    accentColor: '#1E40AF' } as CollapsibleSectionTheme,
   
   // Light green theme
   lightGreen: {
@@ -72,8 +69,7 @@ export const THEME_PRESETS = {
     iconColor: '#10B981',
     chevronColor: '#10B981',
     contentBackgroundColor: '#FFFFFF',
-    accentColor: '#166534',
-  } as CollapsibleSectionTheme,
+    accentColor: '#166534' } as CollapsibleSectionTheme,
   
   // Light orange theme
   lightOrange: {
@@ -86,8 +82,7 @@ export const THEME_PRESETS = {
     iconColor: '#F59E0B',
     chevronColor: '#F59E0B',
     contentBackgroundColor: '#FFFFFF',
-    accentColor: '#92400E',
-  } as CollapsibleSectionTheme,
+    accentColor: '#92400E' } as CollapsibleSectionTheme,
   
   // Light purple theme
   lightPurple: {
@@ -100,9 +95,7 @@ export const THEME_PRESETS = {
     iconColor: '#A855F7',
     chevronColor: '#A855F7',
     contentBackgroundColor: '#FFFFFF',
-    accentColor: '#6B21A8',
-  } as CollapsibleSectionTheme,
-};
+    accentColor: '#6B21A8' } as CollapsibleSectionTheme };
 
 interface CollapsibleSectionProps {
   // Content
@@ -144,8 +137,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   contentStyle,
   maxHeight = 600,
   showShadow = true,
-  borderRadius = 8,
-}) => {
+  borderRadius = 8 }) => {
   // Resolve theme
   const resolvedTheme = typeof theme === 'string' 
     ? THEME_PRESETS[theme as keyof typeof THEME_PRESETS]
@@ -160,8 +152,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     containerShadowColor = '#000000',
     iconColor = '#FFFFFF',
     chevronColor = '#FFFFFF',
-    contentBackgroundColor = '#FFFFFF',
-  } = resolvedTheme;
+    contentBackgroundColor = '#FFFFFF' } = resolvedTheme;
 
   return (
     <View
@@ -179,14 +170,12 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
             shadowOpacity: 0.1,
             shadowRadius: 4,
             shadowOffset: { width: 0, height: 2 },
-            elevation: 3,
-          }),
-        },
+            elevation: 3 }) },
         containerStyle,
       ]}
     >
       {/* Header */}
-      <TouchableOpacity
+      <AnimatedPressableCard
         onPress={onToggle}
         style={[
           {
@@ -197,8 +186,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
             paddingVertical: 14,
             backgroundColor: headerBackgroundColor,
             borderBottomWidth: expanded ? 1 : 0,
-            borderBottomColor: headerBorderColor,
-          },
+            borderBottomColor: headerBorderColor },
           headerStyle,
         ]}
       >
@@ -216,10 +204,11 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
               {
                 fontSize: 16,
                 fontWeight: '700',
-                color: headerTextColor,
-              },
+                color: headerTextColor },
               titleStyle,
             ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
           >
             {title}
             {itemCount !== undefined && ` (${itemCount})`}
@@ -231,7 +220,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
           size={20}
           color={chevronColor}
         />
-      </TouchableOpacity>
+      </AnimatedPressableCard>
 
       {/* Content */}
       {expanded && (
@@ -240,8 +229,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
             {
               maxHeight,
               paddingVertical: 10,
-              backgroundColor: contentBackgroundColor,
-            },
+              backgroundColor: contentBackgroundColor },
             contentStyle,
           ]}
           nestedScrollEnabled={true}

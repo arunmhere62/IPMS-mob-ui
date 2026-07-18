@@ -1,0 +1,357 @@
+import React, { useEffect, useRef } from "react";
+import { View, Text, Image, StyleSheet, Animated, Easing } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { AnimatedPressableCard } from "../../../../../components/AnimatedPressableCard";
+import { ActionButtons } from "../../../../../components/ActionButtons";
+import { ActionTile } from "../../../../../components/ActionButtons";
+import { Tenant } from "../../../api/tenantsApi";
+import { Theme } from "../../../../../theme";
+
+interface TenantHeaderProps {
+  tenant: Tenant;
+  onEdit: () => void;
+  showEdit?: boolean;
+  onDelete?: () => void;
+  showDelete?: boolean;
+  disableDelete?: boolean;
+  onCall: (phone: string) => void;
+  onWhatsApp: (phone: string) => void;
+  onEmail: (email: string) => void;
+  onAddPayment: () => void;
+  onAddAdvance: () => void;
+  onAddRefund: () => void;
+  onAddCurrentBill?: () => void;
+  canAddPayment?: boolean;
+  canAddAdvance?: boolean;
+  canAddRefund?: boolean;
+  showRentTourHint?: boolean;
+}
+
+const RentTourHintTile: React.FC<{ onPress: () => void; disabled?: boolean }> = ({ onPress, disabled }) => {
+  const pulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.08, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(pulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center' }}>
+      <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <Ionicons name="finger-print" size={11} color="#fff" />
+        <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Tap here!</Text>
+      </View>
+      <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
+      <Animated.View style={{ transform: [{ scale: pulse }], width: '100%' }}>
+        <AnimatedPressableCard
+          onPress={onPress}
+          disabled={disabled}
+          style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 12, backgroundColor: '#1E3A8A', borderRadius: 10, alignItems: 'center', justifyContent: 'center', minHeight: 52, shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.55, shadowRadius: 8, elevation: 7, opacity: disabled ? 0.45 : 1 }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="wallet" size={16} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginLeft: 8 }} numberOfLines={1} adjustsFontSizeToFit>Add Rent</Text>
+          </View>
+        </AnimatedPressableCard>
+      </Animated.View>
+    </View>
+  );
+};
+
+export const TenantHeader: React.FC<TenantHeaderProps> = ({
+  showRentTourHint,
+  tenant,
+  onEdit,
+  showEdit = true,
+  onDelete,
+  showDelete = false,
+  disableDelete = false,
+  onCall,
+  onWhatsApp,
+  onEmail,
+  onAddPayment,
+  onAddAdvance,
+  onAddRefund,
+  onAddCurrentBill,
+  canAddPayment = true,
+  canAddAdvance = true,
+  canAddRefund = true }) => {
+  const tenantImage =
+    tenant.images && tenant.images.length > 0 ? tenant.images[0] : null;
+
+  return (
+    <View style={styles.card}>
+      {/* Edit button */}
+      <View style={styles.editButton}>
+        <ActionButtons
+          onEdit={onEdit}
+          showEdit={true}
+          disableEdit={!showEdit}
+          onDelete={onDelete}
+          showDelete={showDelete}
+          disableDelete={disableDelete}
+          blockPressWhenDisabled={true}
+          showView={false}
+          containerStyle={{ backgroundColor: "transparent", padding: 0 }}
+        />
+      </View>
+
+      {/* Profile Image */}
+      <View style={styles.avatarWrapper}>
+        {tenantImage ? (
+          <Image
+            source={{ uri: tenantImage }}
+            style={styles.avatar}
+            resizeMode="cover"
+          />
+        ) : (
+          <Text style={styles.avatarFallback}>
+            {tenant.name?.charAt(0)?.toUpperCase()}
+          </Text>
+        )}
+      </View>
+
+      {/* Name */}
+      <Text style={styles.name}>{tenant.name}</Text>
+
+      {/* Check-in Date - Eye-catching */}
+      <View style={styles.checkInDateBadge}>
+        <Ionicons name="calendar" size={14} color={Theme.colors.primary} />
+        <Text style={styles.checkInDateLabel}>Check-in:</Text>
+        <Text style={styles.checkInDateValue}>
+          {tenant.check_in_date
+            ? new Date(tenant.check_in_date).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric' })
+            : 'N/A'}
+        </Text>
+      </View>
+
+      {/* Status Badge */}
+      <View
+        style={[
+          styles.statusBadge,
+          tenant.status === "ACTIVE"
+            ? styles.statusActive
+            : tenant.status === "CHECKED_OUT"
+              ? styles.statusCheckedOut
+              : styles.statusInactive,
+        ]}
+      >
+        <Text
+          style={[
+            styles.statusText,
+            tenant.status === "ACTIVE"
+              ? { color: "#16A34A" }
+              : tenant.status === "CHECKED_OUT"
+                ? { color: "#D97706" }
+                : { color: "#DC2626" },
+          ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {tenant.status}
+        </Text>
+      </View>
+
+      {/* Contact Buttons */}
+      <View style={styles.contactRow}>
+        {!!tenant.phone_no && (
+          <AnimatedPressableCard
+            onPress={() => onCall(tenant.phone_no || '')}
+            scaleValue={0.95}
+            duration={100}
+            style={styles.contactButton}
+          >
+            <Ionicons name="call" size={16} color="#333" />
+            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit>Call</Text>
+          </AnimatedPressableCard>
+        )}
+
+        {!!tenant.whatsapp_number && (
+          <AnimatedPressableCard
+            onPress={() => onWhatsApp(tenant.whatsapp_number || '')}
+            scaleValue={0.95}
+            duration={100}
+            style={styles.contactButton}
+          >
+            <Ionicons name="logo-whatsapp" size={16} color="#333" />
+            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit>WhatsApp</Text>
+          </AnimatedPressableCard>
+        )}
+      </View>
+
+      {/* Email */}
+      {!!tenant.email && (
+        <AnimatedPressableCard
+          onPress={() => onEmail(tenant.email || '')}
+          scaleValue={0.95}
+          duration={100}
+          style={{ width: "100%" }}
+        >
+          <View style={styles.emailButton}>
+            <Ionicons name="mail" size={16} color="#333" />
+            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit>Email</Text>
+          </View>
+        </AnimatedPressableCard>
+      )}
+
+      {/* Action Buttons */}
+      <View style={styles.actionGrid}>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+          {showRentTourHint ? (
+            <RentTourHintTile onPress={onAddPayment} disabled={!canAddPayment} />
+          ) : (
+            <ActionTile title="Add Rent" icon="wallet" onPress={onAddPayment} disabled={!canAddPayment} />
+          )}
+          <ActionTile title="Add Advance" icon="trending-up" onPress={onAddAdvance} disabled={!canAddAdvance} />
+        </View>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <ActionTile title="Add Refund" icon="trending-down" onPress={onAddRefund} disabled={!canAddRefund} />
+          {!!onAddCurrentBill ? (
+            <ActionTile title="Add Bill" icon="document-text" onPress={onAddCurrentBill} />
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  card: {
+    marginHorizontal: 16,
+    marginVertical: 12,
+    padding: 22,
+    borderRadius: 18,
+    backgroundColor: Theme.colors.card.background,
+    shadowColor: Theme.colors.card.shadow,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    alignItems: "center",
+    position: "relative" },
+
+  editButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    zIndex: 10 },
+
+  avatarWrapper: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: Theme.colors.background.tertiary,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: Theme.colors.border },
+
+  avatar: {
+    width: "100%",
+    height: "100%" },
+
+  avatarFallback: {
+    fontSize: 40,
+    fontWeight: "700",
+    color: Theme.colors.text.secondary },
+
+  name: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Theme.colors.text.primary,
+    marginBottom: 6 },
+
+  checkInDateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Theme.colors.background.blueLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Theme.colors.primary },
+
+  checkInDateLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Theme.colors.primary,
+    marginLeft: 6 },
+
+  checkInDateValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Theme.colors.primaryDark,
+    marginLeft: 4 },
+
+  statusBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 18,
+    borderWidth: 1 },
+
+  statusActive: {
+    backgroundColor: Theme.withOpacity(Theme.colors.secondary, 0.12),
+    borderColor: Theme.withOpacity(Theme.colors.secondary, 0.35) },
+
+  statusInactive: {
+    backgroundColor: "#FEE2E2",
+    borderColor: "#DC2626" },
+
+  statusCheckedOut: {
+    backgroundColor: "#FEF3C7",
+    borderColor: "#D97706" },
+
+  statusText: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.4 },
+
+  contactRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+    marginBottom: 16 },
+
+  contactButton: {
+    flex: 1,
+    backgroundColor: Theme.colors.background.secondary,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center" },
+
+  emailButton: {
+    backgroundColor: Theme.colors.background.secondary,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18 },
+
+  contactText: {
+    marginLeft: 6,
+    color: Theme.colors.text.primary,
+    fontSize: 13,
+    fontWeight: "600" },
+
+  actionGrid: {
+    width: "100%",
+    flexDirection: "column" } });

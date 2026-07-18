@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { View, Text, FlatList, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -100,8 +101,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           borderRadius: 999,
           backgroundColor: Theme.colors.background.blueLight,
           borderWidth: 1,
-          borderColor: Theme.colors.background.blueMedium,
-        }}>
+          borderColor: Theme.colors.background.blueMedium }}>
           <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.primaryDark }}>📦 {stats.total}</Text>
         </View>
         <View style={{
@@ -110,8 +110,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           borderRadius: 999,
           backgroundColor: Theme.withOpacity('#10B981', 0.18),
           borderWidth: 1,
-          borderColor: Theme.withOpacity('#10B981', 0.35),
-        }}>
+          borderColor: Theme.withOpacity('#10B981', 0.35) }}>
           <Text style={{ fontSize: 12, fontWeight: '800', color: '#10B981' }}>✅ {stats.success}</Text>
         </View>
         <View style={{
@@ -120,12 +119,11 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           borderRadius: 999,
           backgroundColor: Theme.withOpacity('#EF4444', 0.18),
           borderWidth: 1,
-          borderColor: Theme.withOpacity('#EF4444', 0.35),
-        }}>
+          borderColor: Theme.withOpacity('#EF4444', 0.35) }}>
           <Text style={{ fontSize: 12, fontWeight: '800', color: '#EF4444' }}>❌ {stats.errors}</Text>
         </View>
 
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => {
             networkLogger.clearLogs();
             loadLogs();
@@ -136,13 +134,12 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             borderRadius: 10,
             backgroundColor: Theme.colors.danger,
             borderWidth: 1,
-            borderColor: Theme.colors.danger,
-          }}
+            borderColor: Theme.colors.danger }}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Clear</Text>
-        </TouchableOpacity>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }} numberOfLines={1} adjustsFontSizeToFit>Clear</Text>
+        </AnimatedPressableCard>
 
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={loadLogs}
           style={{
             paddingHorizontal: 12,
@@ -150,11 +147,10 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             borderRadius: 10,
             backgroundColor: Theme.colors.primary,
             borderWidth: 1,
-            borderColor: Theme.colors.primary,
-          }}
+            borderColor: Theme.colors.primary }}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Refresh</Text>
-        </TouchableOpacity>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }} numberOfLines={1} adjustsFontSizeToFit>Refresh</Text>
+        </AnimatedPressableCard>
       </View>
 
       <FlatList
@@ -171,7 +167,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           </View>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <AnimatedPressableCard
             onPress={() => setSelectedLog(item)}
             style={{
               backgroundColor: Theme.colors.card.background,
@@ -182,8 +178,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               borderColor: Theme.withOpacity(Theme.colors.border, 0.9),
               borderLeftWidth: 5,
               borderLeftColor: getStatusColor(item.status),
-              ...Theme.colors.shadows.medium,
-            }}
+              ...Theme.colors.shadows.medium }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, gap: 10 }}>
               <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 10, rowGap: 8, paddingRight: 6 }}>
@@ -193,8 +188,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                   borderRadius: 999,
                   backgroundColor: Theme.colors.background.blueLight,
                   borderWidth: 1,
-                  borderColor: Theme.colors.background.blueMedium,
-                }}>
+                  borderColor: Theme.colors.background.blueMedium }}>
                   <Text style={{ fontWeight: '900', fontSize: 11, color: getMethodColor(item.method) }}>{item.method}</Text>
                 </View>
 
@@ -204,8 +198,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                   borderRadius: 999,
                   backgroundColor: getStatusBg(item.status),
                   borderWidth: 1,
-                  borderColor: Theme.withOpacity(getStatusColor(item.status), 0.25),
-                }}>
+                  borderColor: Theme.withOpacity(getStatusColor(item.status), 0.25) }}>
                   <Text style={{ fontWeight: '900', fontSize: 11, color: getStatusColor(item.status) }}>
                     {item.status ?? 'PENDING'}
                   </Text>
@@ -218,8 +211,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                     borderRadius: 999,
                     backgroundColor: Theme.colors.background.tertiary,
                     borderWidth: 1,
-                    borderColor: Theme.colors.border,
-                  }}>
+                    borderColor: Theme.colors.border }}>
                     <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontWeight: '800' }}>{item.duration}ms</Text>
                   </View>
                 )}
@@ -230,8 +222,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                   borderRadius: 999,
                   backgroundColor: Theme.colors.background.tertiary,
                   borderWidth: 1,
-                  borderColor: Theme.colors.border,
-                }}>
+                  borderColor: Theme.colors.border }}>
                   <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontWeight: '800' }}>
                     OUT {countKeys((item as any)?.headers?.request ?? (item as any)?.headers)} | IN {countKeys((item as any)?.headers?.response)}
                   </Text>
@@ -258,14 +249,13 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                 backgroundColor: Theme.withOpacity(Theme.colors.danger, 0.08),
                 borderRadius: 8,
                 borderLeftWidth: 3,
-                borderLeftColor: Theme.colors.danger,
-              }}>
+                borderLeftColor: Theme.colors.danger }}>
                 <Text numberOfLines={2} style={{ fontSize: 12, color: Theme.colors.danger, fontWeight: '700' }}>
                   {item.error}
                 </Text>
               </View>
             )}
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         )}
       />
 

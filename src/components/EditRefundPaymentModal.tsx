@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Modal,
-  TouchableOpacity,
   ScrollView,
   TextInput,
   ActivityIndicator,
@@ -13,7 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
 import { DatePicker } from './DatePicker';
-import { RefundPayment } from '@/services/api/paymentsApi';
+import { RefundPayment } from '@/features/owner/api/paymentsApi';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 
 interface EditRefundPaymentModalProps {
   visible: boolean;
@@ -141,9 +141,9 @@ export const EditRefundPaymentModal: React.FC<EditRefundPaymentModalProps> = ({
                   {payment.tenants?.name || 'N/A'}
                 </Text>
               </View>
-              <TouchableOpacity onPress={handleClose}>
+              <AnimatedPressableCard onPress={handleClose}>
                 <Ionicons name="close" size={24} color={Theme.colors.text.primary} />
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
 
             {/* Form */}
@@ -211,7 +211,7 @@ export const EditRefundPaymentModal: React.FC<EditRefundPaymentModalProps> = ({
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {PAYMENT_METHODS.map((method) => (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       key={method.value}
                       onPress={() => setPaymentMethod(method.value)}
                       style={{
@@ -253,7 +253,7 @@ export const EditRefundPaymentModal: React.FC<EditRefundPaymentModalProps> = ({
                       >
                         {method.label}
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   ))}
                 </View>
               </View>
@@ -272,7 +272,7 @@ export const EditRefundPaymentModal: React.FC<EditRefundPaymentModalProps> = ({
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   {REFUND_PAYMENT_STATUSES.map((statusOption) => (
-                    <TouchableOpacity
+                    <AnimatedPressableCard
                       key={statusOption.value}
                       onPress={() => setStatus(statusOption.value)}
                       style={{
@@ -303,7 +303,7 @@ export const EditRefundPaymentModal: React.FC<EditRefundPaymentModalProps> = ({
                       >
                         {statusOption.label}
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressableCard>
                   ))}
                 </View>
               </View>
@@ -353,7 +353,7 @@ export const EditRefundPaymentModal: React.FC<EditRefundPaymentModalProps> = ({
                 borderTopColor: Theme.colors.border,
               }}
             >
-              <TouchableOpacity
+              <AnimatedPressableCard
                 onPress={handleClose}
                 disabled={loading}
                 style={{
@@ -367,8 +367,8 @@ export const EditRefundPaymentModal: React.FC<EditRefundPaymentModalProps> = ({
                 <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary }}>
                   Cancel
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </AnimatedPressableCard>
+              <AnimatedPressableCard
                 onPress={handleSave}
                 disabled={loading}
                 style={{
@@ -387,7 +387,7 @@ export const EditRefundPaymentModal: React.FC<EditRefundPaymentModalProps> = ({
                     Save Changes
                   </Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             </View>
           </View>
         </View>

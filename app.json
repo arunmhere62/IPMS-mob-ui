@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "PG Management",
+    "name": "IPGMS",
     "slug": "pgmanagement",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -24,9 +24,6 @@
       "bundleIdentifier": "com.pgmanagement.app",
       "infoPlist": {
         "UIBackgroundModes": [
-          "remote-notification",
-          "remote-notification",
-          "remote-notification",
           "remote-notification"
         ],
         "ITSAppUsesNonExemptEncryption": false
@@ -43,9 +40,6 @@
         "backgroundColor": "#0F172A"
       },
       "permissions": [
-        "NOTIFICATIONS",
-        "POST_NOTIFICATIONS",
-        "INTERNET",
         "NOTIFICATIONS",
         "POST_NOTIFICATIONS",
         "INTERNET"

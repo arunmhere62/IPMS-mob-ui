@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   Clipboard,
   Alert,
@@ -14,6 +13,7 @@ import {
 } from 'react-native';
 import { NetworkLog } from '../utils/networkLogger';
 import { Theme } from '../theme';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
 
 interface RequestDetailsComponentProps {
   log: NetworkLog;
@@ -143,15 +143,15 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
   ) => (
     <View style={styles.section}>
       <View style={styles.sectionHeaderRow}>
-        <TouchableOpacity activeOpacity={1} onPress={() => toggleSection(sectionKey)} style={styles.sectionHeader}>
+        <AnimatedPressableCard onPress={() => toggleSection(sectionKey)} style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, color ? { color } : {}]}>
             {expandedSections[sectionKey] ? '▼' : '▶'} {title}
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
         {expandedSections[sectionKey] && actions && actions.length > 0 && (
           <View style={styles.sectionActions}>
             {actions.map((a, idx) => (
-              <TouchableOpacity
+              <AnimatedPressableCard
                 key={`${sectionKey}-${idx}`}
                 onPress={a.onPress}
                 style={[styles.actionButton, a.variant === 'primary' ? styles.actionPrimary : styles.actionNeutral]}
@@ -159,7 +159,7 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
                 <Text style={[styles.actionText, a.variant === 'primary' ? styles.actionTextPrimary : styles.actionTextNeutral]}>
                   {a.label}
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             ))}
           </View>
         )}
@@ -233,18 +233,18 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
       </View>
 
       <View style={styles.topActionsRow}>
-        <TouchableOpacity
+        <AnimatedPressableCard
           onPress={() => copyToClipboard(generateCurl(), 'CURL')}
           style={[styles.topActionButton, styles.buttonPrimary]}
         >
           <Text style={styles.topActionText}>Copy CURL</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </AnimatedPressableCard>
+        <AnimatedPressableCard
           onPress={() => shareText(generateCurl(), 'CURL')}
           style={[styles.topActionButton, styles.buttonNeutral]}
         >
           <Text style={styles.topActionTextNeutral}>Share</Text>
-        </TouchableOpacity>
+        </AnimatedPressableCard>
       </View>
 
       {/* Request Data */}

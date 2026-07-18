@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { Theme } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -24,8 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
-      showNetworkLogs: false,
-    };
+      showNetworkLogs: false };
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -33,8 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: true,
       error,
       errorInfo: null,
-      showNetworkLogs: false,
-    };
+      showNetworkLogs: false };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -44,8 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
     
     this.setState({
       error,
-      errorInfo,
-    });
+      errorInfo });
     
     // Log to any crash reporting service here if needed
     // Example: Crashlytics.recordError(error);
@@ -56,8 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
-      showNetworkLogs: false,
-    });
+      showNetworkLogs: false });
   };
 
   handleClearStorage = async () => {
@@ -67,8 +64,7 @@ export class ErrorBoundary extends Component<Props, State> {
       [
         {
           text: 'Cancel',
-          style: 'cancel',
-        },
+          style: 'cancel' },
         {
           text: 'Clear All',
           style: 'destructive',
@@ -83,16 +79,14 @@ export class ErrorBoundary extends Component<Props, State> {
                 hasError: false,
                 error: null,
                 errorInfo: null,
-                showNetworkLogs: false,
-              });
+                showNetworkLogs: false });
               
               showSuccessAlert('All data cleared. Please restart the app.');
             } catch (error) {
               console.error('❌ Error clearing storage:', error);
               Alert.alert('Error', 'Failed to clear storage: ' + (error instanceof Error ? error.message : String(error)));
             }
-          },
-        },
+          } },
       ]
     );
   };
@@ -104,8 +98,7 @@ export class ErrorBoundary extends Component<Props, State> {
           flex: 1,
           backgroundColor: Theme.colors.background.blue,
           padding: 20,
-          justifyContent: 'center',
-        }}>
+          justifyContent: 'center' }}>
           <View style={{
             backgroundColor: '#fff',
             borderRadius: 16,
@@ -114,12 +107,10 @@ export class ErrorBoundary extends Component<Props, State> {
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.15,
             shadowRadius: 8,
-            elevation: 5,
-          }}>
+            elevation: 5 }}>
             <View style={{
               alignItems: 'center',
-              marginBottom: 16,
-            }}>
+              marginBottom: 16 }}>
               <View style={{
                 width: 64,
                 height: 64,
@@ -127,8 +118,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 backgroundColor: '#FEE2E2',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: 12,
-              }}>
+                marginBottom: 12 }}>
                 <MaterialCommunityIcons name="alert-circle" size={36} color={Theme.colors.danger} />
               </View>
               <Text style={{
@@ -136,8 +126,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 fontWeight: '700',
                 color: '#1F2937',
                 marginBottom: 8,
-                textAlign: 'center',
-              }}>
+                textAlign: 'center' }}>
                 Something Went Wrong
               </Text>
             </View>
@@ -147,8 +136,7 @@ export class ErrorBoundary extends Component<Props, State> {
               color: '#6B7280',
               marginBottom: 24,
               textAlign: 'center',
-              lineHeight: 20,
-            }}>
+              lineHeight: 20 }}>
               The app encountered an unexpected error. Try again or clear your data to start fresh.
             </Text>
 
@@ -158,13 +146,11 @@ export class ErrorBoundary extends Component<Props, State> {
                 backgroundColor: '#f5f5f5',
                 borderRadius: 8,
                 padding: 12,
-                marginBottom: 20,
-              }}>
+                marginBottom: 20 }}>
                 <Text style={{
                   fontSize: 12,
                   color: '#666',
-                  fontFamily: 'monospace',
-                }}>
+                  fontFamily: 'monospace' }}>
                   {this.state.error.toString()}
                   {'\n\n'}
                   {this.state.errorInfo?.componentStack}
@@ -172,7 +158,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </ScrollView>
             )}
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={this.handleReset}
               style={{
                 backgroundColor: Theme.colors.primary,
@@ -187,20 +173,18 @@ export class ErrorBoundary extends Component<Props, State> {
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.2,
                 shadowRadius: 4,
-                elevation: 2,
-              }}
+                elevation: 2 }}
             >
               <MaterialCommunityIcons name="refresh" size={20} color="#fff" />
               <Text style={{
                 color: '#fff',
                 fontSize: 16,
-                fontWeight: '600',
-              }}>
+                fontWeight: '600' }}>
                 Try Again
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={() => {
                 this.setState({ showNetworkLogs: true });
               }}
@@ -217,25 +201,23 @@ export class ErrorBoundary extends Component<Props, State> {
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.2,
                 shadowRadius: 4,
-                elevation: 2,
-              }}
+                elevation: 2 }}
             >
               <MaterialCommunityIcons name="network" size={20} color="#fff" />
               <Text style={{
                 color: '#fff',
                 fontSize: 16,
-                fontWeight: '600',
-              }}>
+                fontWeight: '600' }}>
                 View Network Logs
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
 
             <NetworkLoggerModal
               visible={this.state.showNetworkLogs}
               onClose={() => this.setState({ showNetworkLogs: false })}
             />
 
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={this.handleClearStorage}
               style={{
                 backgroundColor: '#EF4444',
@@ -249,18 +231,16 @@ export class ErrorBoundary extends Component<Props, State> {
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.2,
                 shadowRadius: 4,
-                elevation: 2,
-              }}
+                elevation: 2 }}
             >
               <MaterialCommunityIcons name="trash-can-outline" size={20} color="#fff" />
               <Text style={{
                 color: '#fff',
                 fontSize: 16,
-                fontWeight: '600',
-              }}>
+                fontWeight: '600' }}>
                 Clear Storage & Restart
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
         </View>
       );

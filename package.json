@@ -5,6 +5,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "start": "expo start",
     "start:dev": "expo start --dev-client",
     "prestart": "npm run typecheck",
@@ -69,12 +72,16 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@react-native-community/cli": "^19.0.0",
+    "@testing-library/react-native": "^13.0.0",
+    "@types/jest": "^29.5.0",
     "@types/react": "~19.1.10",
     "@types/react-native": "^0.72.8",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
+    "jest-expo": "~54.0.0",
+    "react-test-renderer": "19.1.0",
     "tailwindcss": "3.3.2",
     "typescript": "^5.1.3"
   },

@@ -1,0 +1,464 @@
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, TextInput, Alert, Keyboard } from "react-native";
+import { Theme } from "../../../../theme";
+import { ImageUploadS3 } from "../../../../components/ImageUploadS3";
+import { SlideBottomModal } from "../../../../components/SlideBottomModal";
+import { getFolderConfig } from "../../../../config/aws.config";
+import {
+  Bed,
+  useCreateBedMutation,
+  useUpdateBedMutation,
+} from "../../api/roomsApi";
+import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
+
+interface BedFormModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  roomId: number;
+  roomNo: string;
+  bed?: Bed | null;
+  pgId?: number;
+  organizationId?: number;
+  userId?: number;
+}
+
+export const BedFormModal: React.FC<BedFormModalProps> = ({
+  visible,
+  onClose,
+  onSuccess,
+  roomId,
+  roomNo,
+  bed,
+  pgId,
+  organizationId,
+  userId,
+}) => {
+  const [createBedMutation] = useCreateBedMutation();
+  const [updateBedMutation] = useUpdateBedMutation();
+  const priceInputRef = useRef<TextInput>(null);
+
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    bed_no: "BED",
+    bed_price: "",
+    images: [] as string[],
+  });
+  const [originalImages, setOriginalImages] = useState<string[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isEditMode = !!bed;
+  const isBedNoLocked =
+    isEditMode &&
+    (!!(bed as any)?.is_occupied ||
+      (((bed as any)?.tenants || []) as any[]).length > 0);
+
+  const resetCreateForm = () => {
+    setFormData({
+      bed_no: "BED",
+      bed_price: "",
+      images: [],
+    });
+    setOriginalImages([]);
+    setErrors({});
+  };
+
+  useEffect(() => {
+    if (visible) {
+      if (bed) {
+        const bedImages = bed.images || [];
+        setFormData({
+          bed_no: bed.bed_no,
+          bed_price: bed.bed_price?.toString() || "",
+          images: bedImages,
+        });
+        setOriginalImages([...bedImages]);
+      } else {
+        setFormData({
+          bed_no: "BED",
+          bed_price: "",
+          images: [],
+        });
+      }
+      setErrors({});
+    }
+  }, [visible, bed]);
+
+  const updateField = (field: string, value: string) => {
+    if (field === "bed_no") {
+      const numericValue = value.replace(/[^0-9]/g, "");
+      value = "BED" + numericValue;
+    }
+
+    if (field === "bed_price") {
+      const numericValue = value.replace(/[^0-9.]/g, "");
+      const parts = numericValue.split(".");
+      if (parts.length > 2) {
+        value = parts[0] + "." + parts.slice(1).join("");
+      } else {
+        value = numericValue;
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleImagesChange = (images: string[]) => {
+    setFormData((prev) => ({ ...prev, images }));
+    if (errors.images) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.images;
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // Validate bed number
+    const trimmedBedNo = formData.bed_no.trim();
+    if (!trimmedBedNo || trimmedBedNo === "BED") {
+      newErrors.bed_no = "Bed number is required (e.g., BED1, BED2)";
+    } else {
+      // Check format: must start with BED followed by numbers
+      if (!/^BED\d+$/.test(trimmedBedNo)) {
+        newErrors.bed_no = "Bed number must be in format BED1, BED2, etc.";
+      } else {
+        // Check maximum length for numeric suffix (max 3 digits)
+        const numericSuffix = trimmedBedNo.substring(3);
+        if (numericSuffix.length > 3) {
+          newErrors.bed_no = "Bed number suffix cannot exceed 3 digits";
+        }
+        // Check minimum suffix length (at least 1 digit)
+        if (numericSuffix.length === 0) {
+          newErrors.bed_no = "Bed number must have at least 1 digit after BED";
+        }
+      }
+    }
+
+    // Validate bed price
+    const trimmedPrice = formData.bed_price.trim();
+    if (!trimmedPrice) {
+      newErrors.bed_price = "Bed price is required";
+    } else {
+      // Check for multiple decimal points (invalid format)
+      const decimalPoints = (trimmedPrice.match(/\./g) || []).length;
+      if (decimalPoints > 1) {
+        newErrors.bed_price = "Please enter a valid price (invalid format)";
+      } else {
+        const price = parseFloat(trimmedPrice);
+        if (isNaN(price)) {
+          newErrors.bed_price = "Please enter a valid price";
+        } else if (price <= 0) {
+          newErrors.bed_price = "Price must be greater than 0";
+        } else if (price < 100) {
+          newErrors.bed_price = "Minimum bed price is ₹100";
+        } else if (price > 100000) {
+          newErrors.bed_price = "Maximum bed price is ₹100,000";
+        } else {
+          // Check decimal precision (max 2 decimal places)
+          const decimalPart = trimmedPrice.split('.')[1];
+          if (decimalPart && decimalPart.length > 2) {
+            newErrors.bed_price = "Price can have maximum 2 decimal places";
+          }
+        }
+      }
+    }
+
+    // Validate images (optional but recommended to have at least 1)
+    if (formData.images.length === 0) {
+      // Optional: Uncomment to make images required
+      // newErrors.images = "At least 1 bed image is required";
+    } else if (formData.images.length > 3) {
+      newErrors.images = "Maximum 3 images allowed";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const hasVisibleErrors = () => {
+    return !!(errors.bed_no || errors.bed_price || errors.images);
+  };
+
+  const handleSubmit = async () => {
+    if (!roomId || !pgId) {
+      Alert.alert("Error", "Missing required information. Please try again.");
+      return;
+    }
+
+    if (!validateForm()) {
+      if (hasVisibleErrors()) {
+        Alert.alert(
+          "Validation Error",
+          "Please fill in all required fields correctly"
+        );
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const bedData: any = {
+        room_id: roomId,
+        pg_id: pgId,
+        bed_price: parseFloat(formData.bed_price),
+        images: formData.images,
+      };
+
+      if (!isEditMode || !isBedNoLocked) {
+        bedData.bed_no = formData.bed_no.trim();
+      }
+
+      if (isEditMode && bed) {
+        await updateBedMutation({ id: bed.s_no, data: bedData }).unwrap();
+        showSuccessAlert("Bed updated successfully");
+      } else {
+        await createBedMutation(bedData).unwrap();
+        showSuccessAlert("Bed created successfully");
+      }
+
+      onSuccess();
+
+      if (isEditMode) {
+        onClose();
+      } else {
+        resetCreateForm();
+      }
+    } catch (error: any) {
+      const errorMessage = `Failed to ${isEditMode ? "update" : "create"} bed`;
+      if (__DEV__) {
+        console.log("❌ Bed creation/update failed:", {
+          status: error?.response?.status,
+          message: errorMessage,
+          bedNumber: formData.bed_no,
+          roomId: roomId,
+        });
+      }
+
+      showErrorAlert(error, errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (loading) return;
+    onClose();
+  };
+
+  return (
+    <SlideBottomModal
+      visible={visible}
+      onClose={handleClose}
+      title={isEditMode ? "✏️ Edit Bed" : "🛏️ Add New Bed"}
+      subtitle={`Room ${roomNo}`}
+      submitLabel={isEditMode ? "Update" : "Create"}
+      cancelLabel="Cancel"
+      isLoading={loading}
+      onSubmit={handleSubmit}
+      onCancel={handleClose}
+    >
+      {/* Bed Number */}
+      <View style={{ marginBottom: 20 }}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: "600",
+            color: Theme.colors.text.primary,
+            marginBottom: 8,
+          }}
+        >
+          Bed Number <Text style={{ color: Theme.colors.danger }}>*</Text>
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View
+            style={{
+              backgroundColor: Theme.colors.primary + "15",
+              paddingHorizontal: 12,
+              paddingVertical: 12,
+              borderTopLeftRadius: 8,
+              borderBottomLeftRadius: 8,
+              borderWidth: 1,
+              borderColor: errors.bed_no
+                ? Theme.colors.danger
+                : Theme.colors.border,
+              borderRightWidth: 0,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: Theme.colors.primary,
+              }}
+            >
+              BED
+            </Text>
+          </View>
+          <TextInput
+            value={formData.bed_no.substring(3)}
+            onChangeText={(value) => updateField("bed_no", value)}
+            placeholder="1, 2, 101"
+            keyboardType="numeric"
+            editable={!isBedNoLocked}
+            returnKeyType={"next"}
+            onSubmitEditing={() => priceInputRef.current?.focus()}
+            style={{
+              flex: 1,
+              borderWidth: 1,
+              borderColor: errors.bed_no
+                ? Theme.colors.danger
+                : Theme.colors.border,
+              borderTopRightRadius: 8,
+              borderBottomRightRadius: 8,
+              borderLeftWidth: 0,
+              padding: 12,
+              fontSize: 14,
+              backgroundColor: isBedNoLocked
+                ? Theme.colors.border + "30"
+                : "#fff",
+            }}
+          />
+        </View>
+        {errors.bed_no && (
+          <Text
+            style={{ fontSize: 11, color: Theme.colors.danger, marginTop: 4 }}
+          >
+            {errors.bed_no}
+          </Text>
+        )}
+        {isBedNoLocked && (
+          <Text
+            style={{
+              fontSize: 11,
+              color: Theme.colors.text.tertiary,
+              marginTop: 4,
+            }}
+          >
+            Bed number can’t be edited after it’s assigned to a tenant.
+          </Text>
+        )}
+        <Text
+          style={{
+            fontSize: 11,
+            color: Theme.colors.text.tertiary,
+            marginTop: 4,
+          }}
+        >
+          Bed number will be: {formData.bed_no || "BED___"}
+        </Text>
+      </View>
+
+      {/* Bed Price */}
+      <View style={{ marginBottom: 20 }}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: "600",
+            color: Theme.colors.text.primary,
+            marginBottom: 8,
+          }}
+        >
+          Bed Price <Text style={{ color: Theme.colors.danger }}>*</Text>
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View
+            style={{
+              backgroundColor: Theme.colors.primary + "15",
+              paddingHorizontal: 12,
+              paddingVertical: 12,
+              borderTopLeftRadius: 8,
+              borderBottomLeftRadius: 8,
+              borderWidth: 1,
+              borderColor: errors.bed_price
+                ? Theme.colors.danger
+                : Theme.colors.border,
+              borderRightWidth: 0,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: Theme.colors.primary,
+              }}
+            >
+              ₹
+            </Text>
+          </View>
+          <TextInput
+            value={formData.bed_price}
+            onChangeText={(value) => updateField("bed_price", value)}
+            placeholder="0.00"
+            keyboardType="numeric"
+            ref={priceInputRef}
+            returnKeyType={"done"}
+            blurOnSubmit={true}
+            onSubmitEditing={Keyboard.dismiss}
+            style={{
+              flex: 1,
+              borderWidth: 1,
+              borderColor: errors.bed_price
+                ? Theme.colors.danger
+                : Theme.colors.border,
+              borderTopRightRadius: 8,
+              borderBottomRightRadius: 8,
+              borderLeftWidth: 0,
+              padding: 12,
+              fontSize: 14,
+              backgroundColor: "#fff",
+            }}
+          />
+        </View>
+        {errors.bed_price && (
+          <Text
+            style={{ fontSize: 11, color: Theme.colors.danger, marginTop: 4 }}
+          >
+            {errors.bed_price}
+          </Text>
+        )}
+        <Text
+          style={{
+            fontSize: 11,
+            color: Theme.colors.text.tertiary,
+            marginTop: 4,
+          }}
+        >
+          Individual bed price (overrides room price if set)
+        </Text>
+      </View>
+
+      {/* Bed Images */}
+      <View style={{ marginBottom: 20 }}>
+        <ImageUploadS3
+          images={formData.images}
+          onImagesChange={handleImagesChange}
+          maxImages={3}
+          label="Bed Images (Optional)"
+          disabled={loading}
+          folder={getFolderConfig().beds.images}
+          useS3={true}
+          entityId={isEditMode ? bed?.s_no?.toString() : undefined}
+        />
+        {errors.images && (
+          <Text
+            style={{ fontSize: 11, color: Theme.colors.danger, marginTop: 4 }}
+          >
+            {errors.images}
+          </Text>
+        )}
+      </View>
+    </SlideBottomModal>
+  );
+};

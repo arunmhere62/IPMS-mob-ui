@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, Animated, Dimensions } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { View, Text, Modal, Animated, Dimensions } from 'react-native';
 import type { ComponentProps } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../theme';
@@ -22,8 +23,7 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
   visible,
   onClose,
   menuItems,
-  onNavigate,
-}) => {
+  onNavigate }) => {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -35,19 +35,16 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: 300,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true }),
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 250,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true }),
         Animated.spring(scaleAnim, {
           toValue: 1,
           tension: 50,
           friction: 7,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true }),
       ]).start();
     } else {
       // Animate out
@@ -55,18 +52,15 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
         Animated.timing(slideAnim, {
           toValue: screenHeight,
           duration: 250,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true }),
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 200,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true }),
         Animated.timing(scaleAnim, {
           toValue: 0.8,
           duration: 200,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true }),
       ]).start();
     }
   }, [visible]);
@@ -91,12 +85,10 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
           style={{
             flex: 1,
             backgroundColor: 'rgba(0,0,0,0.5)',
-            opacity: fadeAnim,
-          }}
+            opacity: fadeAnim }}
         >
-          <TouchableOpacity
+          <AnimatedPressableCard
             style={{ flex: 1 }}
-            activeOpacity={1}
             onPress={onClose}
           />
         </Animated.View>
@@ -119,34 +111,30 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
             shadowOffset: { width: 0, height: -4 },
             shadowOpacity: 0.15,
             shadowRadius: 8,
-            elevation: 12,
-          }}
+            elevation: 12 }}
         >
           {/* Header */}
           <View style={{
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: 20,
-          }}>
+            marginBottom: 20 }}>
             <View>
               <Text style={{
                 fontSize: 20,
                 fontWeight: '800',
-                color: Theme.colors.text.primary,
-              }}>
+                color: Theme.colors.text.primary }}>
                 Quick Navigation
               </Text>
               <Text style={{
                 fontSize: 13,
                 color: Theme.colors.text.secondary,
-                marginTop: 4,
-              }}>
+                marginTop: 4 }}>
                 Jump to any section
               </Text>
             </View>
             
-            <TouchableOpacity
+            <AnimatedPressableCard
               onPress={onClose}
               style={{
                 width: 36,
@@ -156,21 +144,19 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: 1,
-                borderColor: Theme.colors.border,
-              }}
+                borderColor: Theme.colors.border }}
             >
               <Ionicons name="close" size={18} color={Theme.colors.text.secondary} />
-            </TouchableOpacity>
+            </AnimatedPressableCard>
           </View>
 
           {/* Navigation Grid */}
           <View style={{
             flexDirection: 'row',
             flexWrap: 'wrap',
-            justifyContent: 'space-between',
-          }}>
+            justifyContent: 'space-between' }}>
             {menuItems.map((item, index) => (
-              <TouchableOpacity
+              <AnimatedPressableCard
                 key={index}
                 onPress={() => handleNavigate(item.screen)}
                 style={{
@@ -187,8 +173,7 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
                   shadowOffset: { width: 0, height: 1 },
                   shadowOpacity: 0.05,
                   shadowRadius: 2,
-                  elevation: 1,
-                }}
+                  elevation: 1 }}
               >
                 <View
                   style={{
@@ -200,8 +185,7 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
                     borderColor: Theme.withOpacity(item.color, 0.2),
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginBottom: 12,
-                  }}
+                    marginBottom: 12 }}
                 >
                   <Ionicons name={item.icon as ComponentProps<typeof Ionicons>['name']} size={24} color={item.color} />
                 </View>
@@ -212,25 +196,22 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
                     fontWeight: '700',
                     textAlign: 'center',
                     fontSize: 12,
-                    lineHeight: 14,
-                  }}
+                    lineHeight: 14 }}
                 >
                   {item.title}
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressableCard>
             ))}
           </View>
 
           {/* Bottom Hint */}
           <View style={{
             alignItems: 'center',
-            marginTop: 8,
-          }}>
+            marginTop: 8 }}>
             <Text style={{
               fontSize: 11,
               color: Theme.colors.text.secondary,
-              fontStyle: 'italic',
-            }}>
+              fontStyle: 'italic' }}>
               Swipe down or tap outside to close
             </Text>
           </View>

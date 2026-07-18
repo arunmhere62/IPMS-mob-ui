@@ -1,5 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { AnimatedPressableCard } from './AnimatedPressableCard';
+import { ActivityIndicator, Text, View, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedButton } from './AnimatedButton';
 import { Theme } from '../theme';
@@ -21,13 +22,12 @@ export const ActionTile: React.FC<ActionTileProps> = ({
   disabled = false,
   disabledReason,
   loading = false,
-  containerStyle,
-}) => {
+  containerStyle }) => {
   const resolvedDisabled = disabled || !!disabledReason || loading;
 
   return (
     <View style={[{ flex: 1 }, containerStyle]}>
-      <TouchableOpacity
+      <AnimatedPressableCard
         onPress={onPress}
         disabled={resolvedDisabled}
         style={{
@@ -41,20 +41,23 @@ export const ActionTile: React.FC<ActionTileProps> = ({
           minHeight: 52,
           borderWidth: 1,
           borderColor: Theme.colors.border,
-          opacity: resolvedDisabled ? 0.45 : 1,
-        }}
+          opacity: resolvedDisabled ? 0.45 : 1 }}
       >
         {loading ? (
           <ActivityIndicator color={Theme.colors.text.tertiary} size="small" />
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name={icon} size={16} color={Theme.colors.text.primary} />
-            <Text style={{ color: Theme.colors.text.primary, fontSize: 12, fontWeight: '700', marginLeft: 8 }}>
+            <Text
+              style={{ color: Theme.colors.text.primary, fontSize: 12, fontWeight: '700', marginLeft: 8 }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
               {title}
             </Text>
           </View>
         )}
-      </TouchableOpacity>
+      </AnimatedPressableCard>
 
       {!!disabledReason && (
         <View
@@ -68,8 +71,7 @@ export const ActionTile: React.FC<ActionTileProps> = ({
             borderColor: Theme.colors.border,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 6,
-          }}
+            gap: 6 }}
         >
           <Ionicons name="information-circle-outline" size={14} color={Theme.colors.text.secondary} />
           <Text style={{ flex: 1, fontSize: 11, color: Theme.colors.text.secondary, lineHeight: 14 }}>
@@ -110,8 +112,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   disableView = false,
   disableEdit = false,
   disableDelete = false,
-  blockPressWhenDisabled = false,
-}) => {
+  blockPressWhenDisabled = false }) => {
   return (
     <View style={[{ flexDirection: 'row', gap: 8 }, containerStyle]}>
       {showView && onView && (
@@ -122,8 +123,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             backgroundColor: '#F0F9FF',
             padding: 8,
             borderRadius: 8,
-            opacity: disableView ? 0.45 : 1,
-          }}
+            opacity: disableView ? 0.45 : 1 }}
         >
           <Ionicons name="eye" size={18} color={Theme.colors.primary} />
         </AnimatedButton>
@@ -137,8 +137,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             backgroundColor: '#EEF2FF',
             padding: 8,
             borderRadius: 8,
-            opacity: disableEdit ? 0.45 : 1,
-          }}
+            opacity: disableEdit ? 0.45 : 1 }}
         >
           <Ionicons name="pencil" size={18} color={Theme.colors.primary} />
         </AnimatedButton>
@@ -152,8 +151,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             backgroundColor: '#FEE2E2',
             padding: 8,
             borderRadius: 8,
-            opacity: disableDelete ? 0.45 : 1,
-          }}
+            opacity: disableDelete ? 0.45 : 1 }}
         >
           <Ionicons name="trash" size={18} color="#EF4444" />
         </AnimatedButton>

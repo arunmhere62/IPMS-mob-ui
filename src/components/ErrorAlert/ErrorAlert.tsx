@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { AnimatedPressableCard } from '../AnimatedPressableCard';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Animated,
-  Alert,
-} from 'react-native';
+  Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 export interface ApiError {
@@ -32,8 +31,7 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
   error,
   onDismiss,
   autoHideDuration = 5000,
-  showDetails = false,
-}) => {
+  showDetails = false }) => {
   const [visible, setVisible] = useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -43,8 +41,7 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true,
-      }).start();
+        useNativeDriver: true }).start();
 
       if (autoHideDuration > 0) {
         const timer = setTimeout(() => {
@@ -59,8 +56,7 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
+      useNativeDriver: true }).start(() => {
       setVisible(false);
       onDismiss?.();
     });
@@ -93,8 +89,7 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
       style={[
         styles.container,
         {
-          opacity: fadeAnim,
-        },
+          opacity: fadeAnim },
       ]}
     >
       <View style={[styles.errorBox, { borderLeftColor: errorColor }]}>
@@ -108,9 +103,9 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
             <Text style={styles.title}>Error</Text>
             <Text style={styles.statusCode}>({error.statusCode})</Text>
           </View>
-          <TouchableOpacity onPress={handleDismiss}>
+          <AnimatedPressableCard onPress={handleDismiss}>
             <MaterialIcons name="close" size={24} color="#666" />
-          </TouchableOpacity>
+          </AnimatedPressableCard>
         </View>
 
         <Text style={styles.message}>{error.message}</Text>
@@ -142,8 +137,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 1000,
     paddingHorizontal: 16,
-    paddingTop: 8,
-  },
+    paddingTop: 8 },
   errorBox: {
     backgroundColor: '#FFF',
     borderRadius: 8,
@@ -153,58 +147,47 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
-  },
+    elevation: 5 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-  },
+    marginBottom: 12 },
   titleContainer: {
     flex: 1,
     marginLeft: 12,
     flexDirection: 'row',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-  },
+    color: '#333' },
   statusCode: {
     fontSize: 12,
     color: '#999',
-    marginLeft: 8,
-  },
+    marginLeft: 8 },
   message: {
     fontSize: 14,
     color: '#555',
     lineHeight: 20,
-    marginBottom: 8,
-  },
+    marginBottom: 8 },
   detailsContainer: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#EEE',
-  },
+    borderTopColor: '#EEE' },
   detailsLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#666',
-    marginBottom: 4,
-  },
+    marginBottom: 4 },
   detailsText: {
     fontSize: 11,
     color: '#999',
-    fontFamily: 'monospace',
-  },
+    fontFamily: 'monospace' },
   errorCode: {
     fontSize: 11,
     color: '#999',
     marginTop: 8,
-    fontFamily: 'monospace',
-  },
-});
+    fontFamily: 'monospace' } });
 
 export default ErrorAlert;

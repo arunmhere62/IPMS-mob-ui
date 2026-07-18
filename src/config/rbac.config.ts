@@ -40,5 +40,11 @@ export enum Permission {
   CREATE_EMPLOYEE = 'employee_create',
   EDIT_EMPLOYEE = 'employee_edit',
   DELETE_EMPLOYEE = 'employee_delete',
+
+  // Ticket
+  VIEW_TICKET = 'ticket_view',
+  CREATE_TICKET = 'ticket_create',
+  EDIT_TICKET = 'ticket_edit',
+  DELETE_TICKET = 'ticket_delete',
   
 }
