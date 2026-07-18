@@ -64,7 +64,6 @@ import { CreateTicketScreen } from '@/screens/tickets/CreateTicketScreen';
 import { TicketDetailsScreen } from '@/screens/tickets/TicketDetailsScreen';
 import { SubscriptionPlansScreen } from '@/screens/subscription/SubscriptionPlansScreen';
 import { SubscriptionHistoryScreen } from '@/screens/subscription/SubscriptionHistoryScreen';
-import { PaymentOptionsScreen } from '@/screens/subscription/PaymentOptionsScreen';
 import { PaymentWebViewScreen } from '@/screens/subscription/PaymentWebViewScreen';
 import { SubscriptionConfirmScreen } from '@/screens/subscription/SubscriptionConfirmScreen';
 import { PaymentsScreen } from '@/screens/payments/PaymentsScreen';
@@ -264,7 +263,6 @@ export const AppNavigator = () => {
             <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlansScreen} />
             <Stack.Screen name="SubscriptionHistory" component={SubscriptionHistoryScreen} />
             <Stack.Screen name="SubscriptionConfirm" component={SubscriptionConfirmScreen} />
-            <Stack.Screen name="PaymentOptions" component={PaymentOptionsScreen} />
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} />
             <Stack.Screen name="TenantRentPaymentsScreen" component={TenantRentPaymentsScreen} />
             <Stack.Screen name="TenantAdvancePaymentsScreen" component={TenantAdvancePaymentsScreen} />

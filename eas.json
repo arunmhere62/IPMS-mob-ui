@@ -89,6 +89,16 @@
       "env": {
         "NODE_ENV": "production"
       }
+    },
+    "ios-production": {
+      "distribution": "store",
+      "node": "20.19.4",
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "ios": {
+        "autoIncrement": true
+      }
     }
   },
   "submit": {

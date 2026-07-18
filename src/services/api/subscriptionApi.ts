@@ -263,6 +263,7 @@ export const subscriptionApi = baseApi.injectEndpoints({
         { type: 'SubscriptionHistory', id: 'LIST' },
       ],
     }),
+
   }),
   overrideExisting: false,
 });
