@@ -18,14 +18,14 @@ import { CountryPhoneSelector } from './CountryPhoneSelector';
 import { COUNTRIES } from './CountryPhoneSelector';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
-interface VisitorFormModalProps {
+interface VisitorFormProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
   visitorId?: number; // For edit mode
 }
 
-export const VisitorFormModal: React.FC<VisitorFormModalProps> = ({
+export const VisitorForm: React.FC<VisitorFormProps> = ({
   visible,
   onClose,
   onSuccess,

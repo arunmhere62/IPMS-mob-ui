@@ -388,10 +388,9 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
                     {/* Action Buttons */}
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                       <ActionButtons
-                        onEdit={() => handleEditAdvancePayment(payment)}
                         onDelete={() => handleDeletePayment(payment)}
                         showView={false}
-                        disableEdit={!canEditAdvance}
+                        showEdit={false}
                         disableDelete={!canDeleteAdvance}
                         blockPressWhenDisabled
                       />

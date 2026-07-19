@@ -22,7 +22,7 @@ import {
   useLazyGetExpensesQuery,
 } from "../../api/expensesApi";
 import { useLazyGetDashboardMonthlyMetricsQuery } from "../../api/dashboardApi";
-import { AddEditExpenseModal } from "./AddEditExpenseModal";
+import { AddEditExpenseForm } from "./AddEditExpenseForm";
 import { ActionButtons } from "../../../../components/ActionButtons";
 import { SlideBottomModal } from "../../../../components/SlideBottomModal";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
@@ -763,7 +763,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
       </View>
 
       {/* Add Modal */}
-      <AddEditExpenseModal
+      <AddEditExpenseForm
         visible={showAddModal}
         expense={null}
         onClose={() => {

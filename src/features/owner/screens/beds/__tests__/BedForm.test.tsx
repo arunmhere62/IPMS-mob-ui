@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import { BedFormModal } from '../BedFormModal';
+import { BedForm } from '../BedForm';
 
 jest.mock('@/features/owner/api/roomsApi', () => ({
   useCreateBedMutation: jest.fn(() => [jest.fn(), { isLoading: false }]),
@@ -21,7 +21,7 @@ jest.mock('@/utils/errorHandler', () => ({
   showSuccessAlert: jest.fn(),
 }));
 
-describe('BedFormModal', () => {
+describe('BedForm', () => {
   const defaultProps = {
     visible: true,
     onClose: jest.fn(),
@@ -38,12 +38,12 @@ describe('BedFormModal', () => {
   });
 
   it('renders correctly when visible', () => {
-    const { getByText } = render(<BedFormModal {...defaultProps} />);
+    const { getByText } = render(<BedForm {...defaultProps} />);
     expect(getByText('BED')).toBeTruthy();
   });
 
   it('does not render when not visible', () => {
-    const { queryByText } = render(<BedFormModal {...defaultProps} visible={false} />);
+    const { queryByText } = render(<BedForm {...defaultProps} visible={false} />);
     expect(queryByText('Bed Number')).toBeNull();
   });
 });

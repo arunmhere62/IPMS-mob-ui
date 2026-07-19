@@ -141,7 +141,7 @@ export const SubscriptionConfirmScreen: React.FC<SubscriptionConfirmScreenProps>
 
         <AnimatedPressableCard
           onPress={() => {
-            navigation.navigate('PaymentOptions', {
+            navigation.navigate('PaymentWebView', {
               plan,
               paymentUrl,
               orderId,

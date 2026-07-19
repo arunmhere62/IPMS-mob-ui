@@ -1,43 +1,40 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { Provider, useSelector } from 'react-redux';
+import { render } from '@testing-library/react-native';
+import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import { CreateElectricityBillModal } from '../CreateElectricityBillModal';
+import { useSelector } from 'react-redux';
+import { RoomModal } from '../CreateEditRoomForm';
 
-// Mock dependencies
 jest.mock('react-redux', () => ({
   Provider: ({ children }: any) => <>{children}</>,
   useSelector: jest.fn(),
   useDispatch: jest.fn(),
 }));
 
-jest.mock('@/features/owner/api', () => ({
-  useCreateElectricityBillMutation: jest.fn(() => [jest.fn(), { isLoading: false }]),
-  useGetTenantsQuery: jest.fn(() => ({ data: { data: [] }, isFetching: false })),
-}));
-
-jest.mock('@expo/vector-icons', () => ({
-  Ionicons: () => null,
+jest.mock('@/features/owner/api/roomsApi', () => ({
+  useCreateRoomMutation: jest.fn(() => [jest.fn(), { isLoading: false }]),
+  useUpdateRoomMutation: jest.fn(() => [jest.fn(), { isLoading: false }]),
+  useGetRoomByIdQuery: jest.fn(() => ({ data: null, isFetching: false, isError: false })),
 }));
 
 jest.mock('@/components/SlideBottomModal', () => ({
   SlideBottomModal: ({ children, visible }: any) => (visible ? <>{children}</> : null),
 }));
-jest.mock('@/components/DatePicker', () => ({
-  DatePicker: () => null,
+jest.mock('@/components/ImageUploadS3', () => ({
+  ImageUploadS3: () => null,
 }));
-jest.mock('@/components/OptionSelector', () => ({
-  OptionSelector: () => null,
-}));
-jest.mock('@/components/Card', () => ({
-  Card: ({ children }: any) => <>{children}</>,
+jest.mock('@/config/aws.config', () => ({
+  getFolderConfig: jest.fn(() => ({ rooms: { images: 'test-rooms' } })),
 }));
 jest.mock('@/utils/errorHandler', () => ({
   showErrorAlert: jest.fn(),
   showSuccessAlert: jest.fn(),
 }));
+jest.mock('@/hooks/usePermissions', () => ({
+  usePermissions: jest.fn(() => ({ can: jest.fn(() => true) })),
+}));
 
-describe('CreateElectricityBillModal', () => {
+describe('RoomModal', () => {
   const mockStore = configureStore({
     reducer: {
       pgLocations: () => ({ selectedPGLocationId: 1 }),
@@ -46,7 +43,7 @@ describe('CreateElectricityBillModal', () => {
 
   const defaultProps = {
     visible: true,
-    roomId: 1,
+    roomId: null,
     onClose: jest.fn(),
     onSuccess: jest.fn(),
   };
@@ -61,18 +58,18 @@ describe('CreateElectricityBillModal', () => {
   it('renders correctly when visible', () => {
     const { getByText } = render(
       <Provider store={mockStore}>
-        <CreateElectricityBillModal {...defaultProps} />
+        <RoomModal {...defaultProps} />
       </Provider>,
     );
-    expect(getByText('Bill Period')).toBeTruthy();
+    expect(getByText('RM')).toBeTruthy();
   });
 
   it('does not render when not visible', () => {
     const { queryByText } = render(
       <Provider store={mockStore}>
-        <CreateElectricityBillModal {...defaultProps} visible={false} />
+        <RoomModal {...defaultProps} visible={false} />
       </Provider>,
     );
-    expect(queryByText('Bill Period')).toBeNull();
+    expect(queryByText('RM')).toBeNull();
   });
 });

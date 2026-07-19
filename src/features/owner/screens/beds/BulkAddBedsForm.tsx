@@ -11,7 +11,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
-interface BulkAddBedsModalProps {
+interface BulkAddBedsFormProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -29,7 +29,7 @@ const sanitizeNumeric = (text: string): string => {
   return text.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
 };
 
-export const BulkAddBedsModal: React.FC<BulkAddBedsModalProps> = ({
+export const BulkAddBedsForm: React.FC<BulkAddBedsFormProps> = ({
   visible,
   onClose,
   onSuccess,

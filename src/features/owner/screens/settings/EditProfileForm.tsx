@@ -20,7 +20,7 @@ import { useGetUserProfileQuery, useUpdateUserProfileMutation } from '@/features
 import { useGetCitiesQuery, useGetStatesQuery } from '@/features/owner/api/locationApi';
 import { useSendSignupOtpMutation, useVerifySignupOtpMutation } from '@/features/auth/api/authApi';
 
-interface EditProfileModalProps {
+interface EditProfileFormProps {
   visible: boolean;
   user: User | null;
   onClose: () => void;
@@ -32,7 +32,7 @@ const GENDER_OPTIONS = [
   { label: 'Female', value: 'FEMALE' },
 ];
 
-export const EditProfileModal: React.FC<EditProfileModalProps> = ({
+export const EditProfileForm: React.FC<EditProfileFormProps> = ({
   visible,
   user,
   onClose,

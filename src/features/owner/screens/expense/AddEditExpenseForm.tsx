@@ -14,7 +14,7 @@ import { OptionSelector } from "../../../../components/OptionSelector";
 import { AmountInput } from "../../../../components/AmountInput";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 
-interface AddEditExpenseModalProps {
+interface AddEditExpenseFormProps {
   visible: boolean;
   expense: Expense | null;
   onClose: () => void;
@@ -57,7 +57,7 @@ const EXPENSE_TYPES = [
   "Salary",
 ];
 
-export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
+export const AddEditExpenseForm: React.FC<AddEditExpenseFormProps> = ({
   visible,
   expense,
   onClose,

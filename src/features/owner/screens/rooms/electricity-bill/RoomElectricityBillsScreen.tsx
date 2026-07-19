@@ -21,8 +21,8 @@ import {
   type ElectricityBillItem } from '@/features/owner/api/electricityBillApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { formatCurrency } from '@/utils/formatCurrency';
-import { CreateElectricityBillModal } from './CreateElectricityBillModal';
-import { RecordPaymentModal } from './RecordPaymentModal';
+import { CreateElectricityBillForm } from './CreateElectricityBillForm';
+import { RecordPaymentForm } from './RecordPaymentForm';
 
 interface RoomElectricityBillsScreenProps {
   navigation: any;
@@ -286,14 +286,14 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
         </AnimatedPressableCard>
       </View>
 
-      <CreateElectricityBillModal
+      <CreateElectricityBillForm
         visible={createModalVisible}
         roomId={roomId}
         onClose={() => setCreateModalVisible(false)}
         onSuccess={handleCreateSuccess}
       />
 
-      <RecordPaymentModal
+      <RecordPaymentForm
         visible={!!selectedItem}
         item={selectedItem}
         billId={selectedBillId}

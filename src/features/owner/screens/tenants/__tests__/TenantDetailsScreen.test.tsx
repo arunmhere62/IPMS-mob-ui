@@ -94,10 +94,10 @@ jest.mock('../components', () => ({
 }));
 
 jest.mock('../RentPaymentForm', () => 'RentPaymentForm');
-jest.mock('../AddRefundPaymentModal', () => 'AddRefundPaymentModal');
+jest.mock('../AddRefundPaymentForm', () => 'AddRefundPaymentForm');
 jest.mock('../CheckoutTenantForm', () => 'CheckoutTenantForm');
 jest.mock('../AdvancePaymentForm', () => 'AdvancePaymentForm');
-jest.mock('../../../../components/EditRefundPaymentModal', () => 'EditRefundPaymentModal');
+jest.mock('../../../../components/EditRefundPaymentForm', () => 'EditRefundPaymentForm');
 
 describe('TenantDetailsScreen', () => {
   const mockStore = configureStore({

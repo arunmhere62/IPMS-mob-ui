@@ -16,7 +16,7 @@ import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { ErrorBanner } from '../../../../components/ErrorBanner';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
-import { VisitorFormModal } from '../../../../components/VisitorFormModal';
+import { VisitorForm } from '../../../../components/VisitorForm';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
@@ -500,7 +500,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       </AnimatedPressableCard>
 
       {/* Visitor Form Modal */}
-      <VisitorFormModal
+      <VisitorForm
         visible={visitorModalVisible}
         onClose={handleCloseModal}
         onSuccess={handleVisitorFormSuccess}

@@ -19,7 +19,7 @@ import { useDeleteRefundPaymentMutation, useUpdateRefundPaymentMutation } from '
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
 import { ReceiptViewModal } from './components';
-import { AddRefundPaymentModal } from './AddRefundPaymentModal';
+import { AddRefundPaymentForm } from './AddRefundPaymentForm';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
 import type { RootState } from '@/features/owner/store';
@@ -455,7 +455,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
       )}
 
       {/* Refund Payment Form Modal */}
-      <AddRefundPaymentModal
+      <AddRefundPaymentForm
         visible={refundFormVisible}
         mode={refundFormMode}
         tenant={{

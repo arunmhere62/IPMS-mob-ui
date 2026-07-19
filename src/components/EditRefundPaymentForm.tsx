@@ -15,7 +15,7 @@ import { DatePicker } from './DatePicker';
 import { RefundPayment } from '@/features/owner/api/paymentsApi';
 import { AnimatedPressableCard } from './AnimatedPressableCard';
 
-interface EditRefundPaymentModalProps {
+interface EditRefundPaymentFormProps {
   visible: boolean;
   payment: RefundPayment | null;
   onClose: () => void;
@@ -35,7 +35,7 @@ const REFUND_PAYMENT_STATUSES = [
   { label: 'Failed', value: 'FAILED', color: Theme.colors.danger },
 ];
 
-export const EditRefundPaymentModal: React.FC<EditRefundPaymentModalProps> = ({
+export const EditRefundPaymentForm: React.FC<EditRefundPaymentFormProps> = ({
   visible,
   payment,
   onClose,

@@ -19,14 +19,14 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { useCreateCurrentBillMutation } from '@/features/owner/api/tenantsApi';
 import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 
-interface CurrentBillModalProps {
+interface CurrentBillFormProps {
   visible: boolean;
   room: Room;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
+export const CurrentBillForm: React.FC<CurrentBillFormProps> = ({
   visible,
   room,
   onClose,

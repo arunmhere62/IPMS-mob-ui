@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { useSelector } from 'react-redux';
-import { CurrentBillModal } from '../CurrentBillModal';
+import { CurrentBillForm } from '../CurrentBillForm';
 import type { Room } from '@/features/owner/api';
 
 jest.mock('react-redux', () => ({
@@ -44,7 +44,7 @@ jest.mock('@/utils/errorHandler', () => ({
 
 jest.spyOn(Alert, 'alert');
 
-describe('CurrentBillModal', () => {
+describe('CurrentBillForm', () => {
   const mockStore = configureStore({
     reducer: {
       pgLocations: () => ({ selectedPGLocationId: 1 }),
@@ -79,7 +79,7 @@ describe('CurrentBillModal', () => {
     it('renders correctly when visible', () => {
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
       expect(getByText('Add Current Bill')).toBeTruthy();
@@ -89,7 +89,7 @@ describe('CurrentBillModal', () => {
     it('does not render when not visible', () => {
       const { queryByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} visible={false} />
+          <CurrentBillForm {...defaultProps} visible={false} />
         </Provider>,
       );
       expect(queryByText('Add Current Bill')).toBeNull();
@@ -98,7 +98,7 @@ describe('CurrentBillModal', () => {
     it('displays correct number of beds', () => {
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
       expect(getByText('2')).toBeTruthy();
@@ -108,7 +108,7 @@ describe('CurrentBillModal', () => {
       const roomWithoutBeds: Room = { s_no: 1, room_no: '102', pg_id: 1, beds: [] };
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} room={roomWithoutBeds} />
+          <CurrentBillForm {...defaultProps} room={roomWithoutBeds} />
         </Provider>,
       );
       expect(getByText('0')).toBeTruthy();
@@ -118,7 +118,7 @@ describe('CurrentBillModal', () => {
       const roomWithUndefinedBeds: Room = { s_no: 1, room_no: '103', pg_id: 1, beds: undefined as any };
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} room={roomWithUndefinedBeds} />
+          <CurrentBillForm {...defaultProps} room={roomWithUndefinedBeds} />
         </Provider>,
       );
       expect(getByText('0')).toBeTruthy();
@@ -129,7 +129,7 @@ describe('CurrentBillModal', () => {
     it('shows error when bill amount is empty', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -144,7 +144,7 @@ describe('CurrentBillModal', () => {
     it('shows error for invalid bill amount with multiple decimal points', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -162,7 +162,7 @@ describe('CurrentBillModal', () => {
     it('shows error for negative bill amount', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -180,7 +180,7 @@ describe('CurrentBillModal', () => {
     it('shows error for zero bill amount', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -198,7 +198,7 @@ describe('CurrentBillModal', () => {
     it('shows error for NaN bill amount', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -216,7 +216,7 @@ describe('CurrentBillModal', () => {
     it('shows error when bill date is empty', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -234,7 +234,7 @@ describe('CurrentBillModal', () => {
     it('clears error when user starts typing valid amount', () => {
       const { getByPlaceholderText, queryByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -250,7 +250,7 @@ describe('CurrentBillModal', () => {
     it('accepts valid positive bill amount', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -268,7 +268,7 @@ describe('CurrentBillModal', () => {
     it('accepts decimal bill amount', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -286,7 +286,7 @@ describe('CurrentBillModal', () => {
     it('handles empty string amount', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -304,7 +304,7 @@ describe('CurrentBillModal', () => {
     it('handles whitespace-only amount', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -324,7 +324,7 @@ describe('CurrentBillModal', () => {
     it('calculates per bed amount correctly', () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -338,7 +338,7 @@ describe('CurrentBillModal', () => {
       const roomWithoutBeds: Room = { s_no: 1, room_no: '102', pg_id: 1, beds: [] };
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} room={roomWithoutBeds} />
+          <CurrentBillForm {...defaultProps} room={roomWithoutBeds} />
         </Provider>,
       );
 
@@ -351,7 +351,7 @@ describe('CurrentBillModal', () => {
     it('displays zero when no amount entered', () => {
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -362,7 +362,7 @@ describe('CurrentBillModal', () => {
     it('handles floating point precision correctly', () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -375,7 +375,7 @@ describe('CurrentBillModal', () => {
     it('handles very large amounts', () => {
       const { getByPlaceholderText, getAllByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -393,7 +393,7 @@ describe('CurrentBillModal', () => {
     it('displays month when date is selected', () => {
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -405,7 +405,7 @@ describe('CurrentBillModal', () => {
     it('shows "Select a date" when no date selected', () => {
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -415,7 +415,7 @@ describe('CurrentBillModal', () => {
     it('handles invalid date format gracefully', () => {
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -426,7 +426,7 @@ describe('CurrentBillModal', () => {
     it('handles leap year dates', () => {
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -437,7 +437,7 @@ describe('CurrentBillModal', () => {
     it('handles month end dates', () => {
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -450,7 +450,7 @@ describe('CurrentBillModal', () => {
     it('calls onClose when cancel button pressed', () => {
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -463,7 +463,7 @@ describe('CurrentBillModal', () => {
     it('resets form when handleClose is called', () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -483,7 +483,7 @@ describe('CurrentBillModal', () => {
 
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -506,7 +506,7 @@ describe('CurrentBillModal', () => {
 
       const { getByText, getByPlaceholderText, getByTestId } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -532,7 +532,7 @@ describe('CurrentBillModal', () => {
 
       const { getByText, getByPlaceholderText, getByTestId } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -556,7 +556,7 @@ describe('CurrentBillModal', () => {
     it('handles Infinity amount', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -574,7 +574,7 @@ describe('CurrentBillModal', () => {
     it('handles -Infinity amount', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -592,7 +592,7 @@ describe('CurrentBillModal', () => {
     it('handles amount with leading zeros', async () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -610,7 +610,7 @@ describe('CurrentBillModal', () => {
     it('handles amount with trailing decimal point', async () => {
       const { getByText, getByPlaceholderText, getByTestId } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -632,7 +632,7 @@ describe('CurrentBillModal', () => {
     it('handles amount with leading decimal point', async () => {
       const { getByText, getByPlaceholderText, getByTestId } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -654,7 +654,7 @@ describe('CurrentBillModal', () => {
     it('handles very small decimal amounts', () => {
       const { getAllByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -669,7 +669,7 @@ describe('CurrentBillModal', () => {
     it('handles remarks field correctly', () => {
       const { getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -686,7 +686,7 @@ describe('CurrentBillModal', () => {
 
       const { getByText, getByPlaceholderText, getByTestId } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -713,7 +713,7 @@ describe('CurrentBillModal', () => {
 
       const { getByText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -729,7 +729,7 @@ describe('CurrentBillModal', () => {
       const originalRoom = JSON.parse(JSON.stringify(mockRoom));
       render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -739,7 +739,7 @@ describe('CurrentBillModal', () => {
     it('correctly formats bill amount with locale', () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 
@@ -752,7 +752,7 @@ describe('CurrentBillModal', () => {
     it('correctly formats per bed amount with locale', () => {
       const { getByText, getByPlaceholderText } = render(
         <Provider store={mockStore}>
-          <CurrentBillModal {...defaultProps} />
+          <CurrentBillForm {...defaultProps} />
         </Provider>,
       );
 

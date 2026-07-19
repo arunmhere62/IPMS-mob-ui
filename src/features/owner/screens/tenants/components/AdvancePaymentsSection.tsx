@@ -13,7 +13,6 @@ interface AdvancePaymentsSectionProps {
   payments: AdvancePayment[] | undefined;
   expanded: boolean;
   onToggle: () => void;
-  onEdit: (payment: AdvancePayment) => void;
   onDelete: (payment: AdvancePayment) => void;
   onViewReceipt: (payment: AdvancePayment) => void;
   onWhatsAppReceipt: (payment: AdvancePayment) => void;
@@ -24,7 +23,6 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
   payments,
   expanded,
   onToggle,
-  onEdit,
   onDelete,
   onViewReceipt,
   onWhatsAppReceipt,
@@ -86,16 +84,6 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <AnimatedPressableCard
-                        onPress={() => onEdit(payment)}
-                        style={{
-                          padding: 6,
-                          borderRadius: 6,
-                          backgroundColor: Theme.colors.background.blueLight,
-                        }}
-                      >
-                        <Ionicons name="pencil" size={16} color={Theme.colors.primary} />
-                      </AnimatedPressableCard>
                       <AnimatedPressableCard
                         onPress={() => onDelete(payment)}
                         style={{

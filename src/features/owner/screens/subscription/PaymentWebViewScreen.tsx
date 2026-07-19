@@ -12,7 +12,7 @@ interface PaymentWebViewScreenProps {
 }
 
 /**
- * CCAvenue mobile kit requires a POST form submission with enc_val and access_code
+ * CCAvenue requires a POST form submission with encRequest and access_code
  * as form fields. Loading the payment URL directly (GET) results in a blank page.
  * This function parses the payment URL and builds an auto-submitting HTML form.
  */
@@ -49,7 +49,7 @@ const buildPaymentFormHtml = (paymentUrl: string): string => {
     <p>Redirecting to payment gateway...</p>
   </div>
   <form id="paymentForm" method="POST" action="${actionUrl}">
-    <input type="hidden" name="enc_val" value="${encVal}">
+    <input type="hidden" name="encRequest" value="${encVal}">
     <input type="hidden" name="access_code" value="${accessCode}">
   </form>
   <script>
@@ -65,97 +65,15 @@ const buildPaymentFormHtml = (paymentUrl: string): string => {
 };
 
 export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navigation, route }) => {
-  const { paymentUrl, orderId, subscriptionId, paymentMethod } = route.params;
+  const { paymentUrl, orderId, subscriptionId } = route.params;
   const [loading, setLoading] = useState(true);
   const webViewRef = useRef<WebView>(null);
-
-  // JavaScript to inject for auto-selecting UPI apps on CCAvenue page
-  const injectedJavaScript = `
-    (function() {
-      function tryClickUPI() {
-        try {
-          // CCAvenue uses radio buttons and labels for payment options
-          // Try multiple strategies to find UPI option
-
-          // Strategy 1: Look for text containing UPI/Google Pay
-          var allElements = document.querySelectorAll('label, div, span, a, li, input[type="radio"]');
-          for (var i = 0; i < allElements.length; i++) {
-            var el = allElements[i];
-            var text = (el.textContent || el.innerText || '').toLowerCase().trim();
-            if (text === 'upi' || text === 'google pay' || text === 'gpay' || text === 'phonepe' || text === 'paytm' || text === 'amazon pay') {
-              // If it's a radio button, select it
-              if (el.tagName === 'INPUT' && el.type === 'radio') {
-                el.checked = true;
-                el.click();
-                console.log('Clicked radio for: ' + text);
-                return true;
-              }
-              // Otherwise click the element or its parent label
-              var radio = el.querySelector('input[type="radio"]') || el.closest('label')?.querySelector('input[type="radio"]');
-              if (radio) {
-                radio.checked = true;
-                radio.click();
-                console.log('Clicked radio via parent for: ' + text);
-                return true;
-              }
-              // Just click the element
-              el.click();
-              console.log('Clicked element for: ' + text);
-              return true;
-            }
-          }
-
-          // Strategy 2: Look for images with UPI-related alt/src
-          var imgs = document.querySelectorAll('img');
-          for (var i = 0; i < imgs.length; i++) {
-            var alt = (imgs[i].alt || '').toLowerCase();
-            var src = (imgs[i].src || '').toLowerCase();
-            if (alt.indexOf('upi') >= 0 || alt.indexOf('gpay') >= 0 || alt.indexOf('google pay') >= 0 ||
-                src.indexOf('upi') >= 0 || src.indexOf('gpay') >= 0 || src.indexOf('google') >= 0) {
-              var parent = imgs[i].closest('label, a, div, li');
-              if (parent) {
-                parent.click();
-                console.log('Clicked image parent for: ' + alt);
-                return true;
-              }
-            }
-          }
-
-          // Strategy 3: Look for payment option tabs/buttons with UPI
-          var tabs = document.querySelectorAll('[class*="payment"], [class*="option"], [id*="payment"], [id*="upi"]');
-          for (var i = 0; i < tabs.length; i++) {
-            var tabText = (tabs[i].textContent || tabs[i].innerText || '').toLowerCase();
-            if (tabText.indexOf('upi') >= 0) {
-              tabs[i].click();
-              console.log('Clicked tab/div for UPI');
-              return true;
-            }
-          }
-
-          return false;
-        } catch (e) {
-          console.log('Auto-click error:', e);
-          return false;
-        }
-      }
-
-      // Try multiple times as the page may load dynamically
-      var attempts = 0;
-      var maxAttempts = 10;
-      var interval = setInterval(function() {
-        attempts++;
-        if (tryClickUPI() || attempts >= maxAttempts) {
-          clearInterval(interval);
-        }
-      }, 1000);
-    })();
-    true;
-  `;
+  const paymentFormHtml = useMemo(() => buildPaymentFormHtml(paymentUrl), [paymentUrl]);
 
   const handleDeepLink = (url: string) => {
     console.log('� Deep link received:', url);
-    const parsed = new URL(url);
-    const status = parsed.searchParams.get('status');
+    const statusMatch = url.match(/[?&]status=([^&]+)/);
+    const status = statusMatch ? decodeURIComponent(statusMatch[1]) : '';
 
     if (status === 'Success') {
       Alert.alert(
@@ -167,7 +85,7 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
             onPress: () => {
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'Settings' }],
+                routes: [{ name: 'MainTabs', params: { screen: 'Settings' } }],
               });
             },
           },
@@ -236,7 +154,7 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
         
         <WebView
           ref={webViewRef}
-          source={{ html: paymentFormHtml, baseUrl: 'https://secure.ccavenue.com' }}
+          source={{ uri: paymentUrl }}
           onLoadStart={() => setLoading(true)}
           onLoadEnd={() => setLoading(false)}
           onNavigationStateChange={handleNavigationStateChange}
@@ -245,8 +163,6 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           startInLoadingState={true}
           scalesPageToFit={true}
           style={styles.webview}
-          // Inject JavaScript to auto-click UPI apps
-          injectedJavaScript={paymentMethod === 'upi' ? injectedJavaScript : undefined}
           // Enhanced settings for payment gateway
           thirdPartyCookiesEnabled={true}
           sharedCookiesEnabled={true}

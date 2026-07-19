@@ -15,7 +15,7 @@ import { DatePicker } from './DatePicker';
 import { AdvancePayment } from '@/features/owner/api/paymentsApi';
 import { AnimatedPressableCard } from './AnimatedPressableCard';
 
-interface EditAdvancePaymentModalProps {
+interface EditAdvancePaymentFormProps {
   visible: boolean;
   payment: AdvancePayment | null;
   onClose: () => void;
@@ -36,7 +36,7 @@ const ADVANCE_PAYMENT_STATUSES = [
   { label: 'Refunded', value: 'REFUNDED', color: Theme.colors.primary },
 ];
 
-export const EditAdvancePaymentModal: React.FC<EditAdvancePaymentModalProps> = ({
+export const EditAdvancePaymentForm: React.FC<EditAdvancePaymentFormProps> = ({
   visible,
   payment,
   onClose,

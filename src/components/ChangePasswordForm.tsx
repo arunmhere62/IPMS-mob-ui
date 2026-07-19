@@ -14,13 +14,13 @@ import { Theme } from '../theme';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { AnimatedPressableCard } from './AnimatedPressableCard';
 
-interface ChangePasswordModalProps {
+interface ChangePasswordFormProps {
   visible: boolean;
   onClose: () => void;
   onSave: (data: { currentPassword: string; newPassword: string }) => Promise<void>;
 }
 
-export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
+export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
   visible,
   onClose,
   onSave,

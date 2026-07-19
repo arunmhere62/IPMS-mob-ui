@@ -16,7 +16,7 @@ import { Payment } from '../types';
 import { DatePicker } from './DatePicker';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
-interface EditRentPaymentModalProps {
+interface EditRentPaymentFormProps {
   visible: boolean;
   payment: Payment | null;
   onClose: () => void;
@@ -39,7 +39,7 @@ const PAYMENT_STATUS = [
   { label: '❌ Failed', value: 'FAILED', color: '#EF4444', icon: 'close-circle' },
 ];
 
-export const EditRentPaymentModal: React.FC<EditRentPaymentModalProps> = ({
+export const EditRentPaymentForm: React.FC<EditRentPaymentFormProps> = ({
   visible,
   payment,
   onClose,

@@ -101,6 +101,10 @@ export const RoomModal: React.FC<RoomModalProps> = ({
       if (value.length >= 2) {
         value = 'RM' + value.substring(2);
       }
+      // Only allow alphanumeric and hyphen after RM prefix, max 10 chars total
+      const suffix = value.substring(2);
+      const cleanSuffix = suffix.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 8);
+      value = 'RM' + cleanSuffix;
     }
 
     setFormData((prev: typeof formData) => ({ ...prev, [field]: value }));
@@ -116,8 +120,13 @@ export const RoomModal: React.FC<RoomModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.room_no.trim() || formData.room_no.trim() === 'RM') {
+    const trimmedRoomNo = formData.room_no.trim();
+    if (!trimmedRoomNo || trimmedRoomNo === 'RM') {
       newErrors.room_no = 'Room number is required (e.g., RM101, RM-A1)';
+    } else if (!/^RM[a-zA-Z0-9-]+$/.test(trimmedRoomNo)) {
+      newErrors.room_no = 'Room number must contain only letters, numbers, or hyphens after RM';
+    } else if (trimmedRoomNo.length > 10) {
+      newErrors.room_no = 'Room number cannot exceed 10 characters';
     }
 
 

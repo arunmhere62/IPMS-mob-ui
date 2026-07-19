@@ -26,8 +26,8 @@ import { ActionTile } from '../../../../components/ActionButtons';
 import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { CONTENT_COLOR } from '@/constant';
 import RentPaymentForm from './RentPaymentForm';
-import { AddRefundPaymentModal } from './AddRefundPaymentModal';
-import { EditRefundPaymentModal } from '../../../../components/EditRefundPaymentModal';
+import { AddRefundPaymentForm } from './AddRefundPaymentForm';
+import { EditRefundPaymentForm } from '../../../../components/EditRefundPaymentForm';
 import { CheckoutTenantForm } from './CheckoutTenantForm';
 import { Ionicons } from '@expo/vector-icons';
 import { CompactReceiptGenerator } from '@/services/receipt/compactReceiptGenerator';
@@ -39,6 +39,7 @@ import {
   PersonalInformation,
   ImageViewerModal,
   ReceiptViewModal,
+  ExpectedVacateDateForm,
 } from './components';
 import {
   useCreateAdvancePaymentMutation,
@@ -467,11 +468,11 @@ const TenantDetailsContent: React.FC<{
   const [refundPaymentModalVisible, setRefundPaymentModalVisible] = useState(false);
   
   // Edit advance payment modal state
-  const [editAdvancePaymentModalVisible, setEditAdvancePaymentModalVisible] = useState(false);
+  const [EditAdvancePaymentFormVisible, setEditAdvancePaymentFormVisible] = useState(false);
   const [editingAdvancePayment, setEditingAdvancePayment] = useState<PaymentsAdvancePayment | null>(null);
 
   // Edit refund payment modal state
-  const [editRefundPaymentModalVisible, setEditRefundPaymentModalVisible] = useState(false);
+  const [EditRefundPaymentFormVisible, setEditRefundPaymentFormVisible] = useState(false);
   const [editingRefundPayment, setEditingRefundPayment] = useState<PaymentsRefundPayment | null>(null);
 
 
@@ -823,7 +824,7 @@ const TenantDetailsContent: React.FC<{
       return;
     }
     setEditingAdvancePayment(payment);
-    setEditAdvancePaymentModalVisible(true);
+    setEditAdvancePaymentFormVisible(true);
   };
 
   const handleUpdateAdvancePayment = async (id: number, data: Partial<CreateAdvancePaymentDto>) => {
@@ -833,7 +834,7 @@ const TenantDetailsContent: React.FC<{
     }
     try {
       await updateAdvancePayment({ id, data }).unwrap();
-      setEditAdvancePaymentModalVisible(false);
+      setEditAdvancePaymentFormVisible(false);
       setEditingAdvancePayment(null);
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
@@ -879,7 +880,7 @@ const TenantDetailsContent: React.FC<{
       return;
     }
     setEditingRefundPayment(payment);
-    setEditRefundPaymentModalVisible(true);
+    setEditRefundPaymentFormVisible(true);
   };
 
   const handleUpdateRefundPayment = async (id: number, data: Partial<CreateRefundPaymentDto>) => {
@@ -889,7 +890,7 @@ const TenantDetailsContent: React.FC<{
     }
     try {
       await updateRefundPayment({ id, data }).unwrap();
-      setEditRefundPaymentModalVisible(false);
+      setEditRefundPaymentFormVisible(false);
       setEditingRefundPayment(null);
       refetchTenant();
       refreshTenantList(); // Refresh tenant list
@@ -946,12 +947,7 @@ const TenantDetailsContent: React.FC<{
   };
 
   const handleOpenVacateModal = () => {
-    console.log('handleOpenVacateModal called', currentTenant?.expected_vacate_date);
-    setNewVacateDate(currentTenant?.expected_vacate_date
-      ? new Date(currentTenant.expected_vacate_date).toISOString().split('T')[0]
-      : '');
     setVacateDateModalVisible(true);
-    console.log('vacateDateModalVisible set to true');
   };
 
   const handleSaveVacateDate = async () => {
@@ -1145,18 +1141,36 @@ const TenantDetailsContent: React.FC<{
   };
 
   const confirmUpdateCheckoutDate = async () => {
-    try {
-      setCheckoutLoading(true);
-      await updateTenantCheckoutDate({ id: tenantId, check_out_date: newCheckoutDate }).unwrap();
-      showSuccessAlert('Checkout date updated successfully');
-      setCheckoutDateModalVisible(false);
-      refetchTenant();
-      refreshTenantList(); // Refresh tenant list
-    } catch (error: unknown) {
-      showErrorAlert(error, 'Update Checkout Date Error');
-    } finally {
-      setCheckoutLoading(false);
+    if (!newCheckoutDate) {
+      Alert.alert('Error', 'Please select a checkout date');
+      return;
     }
+
+    Alert.alert(
+      'Confirm Checkout',
+      `Are you sure you want to checkout ${currentTenant?.name || 'this tenant'} on ${new Date(newCheckoutDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}?\n\nThis will mark the tenant as inactive from that date.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm Checkout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setCheckoutLoading(true);
+              await updateTenantCheckoutDate({ id: tenantId, check_out_date: newCheckoutDate }).unwrap();
+              showSuccessAlert('Checkout date updated successfully');
+              setCheckoutDateModalVisible(false);
+              refetchTenant();
+              refreshTenantList();
+            } catch (error: unknown) {
+              showErrorAlert(error, 'Update Checkout Date Error');
+            } finally {
+              setCheckoutLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (tenantLoading || !currentTenant) {
@@ -2115,36 +2129,28 @@ const TenantDetailsContent: React.FC<{
 
       {/* Expected Vacate Date Modal */}
       {tenant && (
-        <SlideBottomModal
+        <ExpectedVacateDateForm
           visible={vacateDateModalVisible}
-          title="Expected Vacate Date"
-          subtitle={tenant?.name ? `Tenant: ${tenant.name}` : 'Tenant'}
-          isLoading={vacateLoading}
-          submitLabel="Save"
-          cancelLabel="Cancel"
+          tenantName={tenant.name}
+          currentVacateDate={tenant.expected_vacate_date}
           onClose={() => setVacateDateModalVisible(false)}
-          onSubmit={handleSaveVacateDate}
-        >
-          <View style={{ marginBottom: 10, padding: 10, backgroundColor: Theme.colors.background.blueLight, borderRadius: 10, borderWidth: 1, borderColor: Theme.colors.border }}>
-            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
-              Set this if the tenant plans to leave on a specific date. This is different from the actual checkout date — it's for planning purposes only.
-            </Text>
-          </View>
-          <DatePicker
-            label="Expected Vacate Date"
-            value={newVacateDate}
-            onChange={setNewVacateDate}
-            required={false}
-          />
-          {newVacateDate && (
-            <AnimatedPressableCard
-              onPress={() => setNewVacateDate('')}
-              style={{ marginTop: 12, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', alignItems: 'center' }}
-            >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Clear Date</Text>
-            </AnimatedPressableCard>
-          )}
-        </SlideBottomModal>
+          onSave={async (date) => {
+            if (date) {
+              await updateTenantMutation({
+                id: currentTenant.s_no,
+                data: { expected_vacate_date: date } as any,
+              }).unwrap();
+              showSuccessAlert('Expected vacate date saved');
+            } else {
+              await updateTenantMutation({
+                id: currentTenant.s_no,
+                data: { expected_vacate_date: null } as any,
+              }).unwrap();
+              showSuccessAlert('Expected vacate date cleared');
+            }
+            refetchTenant();
+          }}
+        />
       )}
 
       {/* Rent Payment Form (Add/Edit) */}
@@ -2250,8 +2256,8 @@ const TenantDetailsContent: React.FC<{
       {/* Advance Payment Form (Add/Edit) */}
       {tenant && (
         <AdvancePaymentForm
-          visible={advancePaymentModalVisible || editAdvancePaymentModalVisible}
-          mode={editAdvancePaymentModalVisible ? "edit" : "add"}
+          visible={advancePaymentModalVisible || EditAdvancePaymentFormVisible}
+          mode={EditAdvancePaymentFormVisible ? "edit" : "add"}
           tenantId={tenant.s_no}
           tenantName={tenant.name}
           tenantJoinedDate={tenant.check_in_date}
@@ -2264,7 +2270,7 @@ const TenantDetailsContent: React.FC<{
           existingPayment={editingAdvancePayment}
           onClose={() => {
             setAdvancePaymentModalVisible(false);
-            setEditAdvancePaymentModalVisible(false);
+            setEditAdvancePaymentFormVisible(false);
             setEditingAdvancePayment(null);
           }}
           onSuccess={() => {
@@ -2277,7 +2283,7 @@ const TenantDetailsContent: React.FC<{
 
       {/* Add Refund Payment Modal */}
       {tenant && (
-        <AddRefundPaymentModal
+        <AddRefundPaymentForm
           visible={refundPaymentModalVisible}
           tenant={tenant}
           totalAdvancePaid={tenant.advance_payment_summary?.total_advance_paid || 0}
@@ -2288,11 +2294,11 @@ const TenantDetailsContent: React.FC<{
 
       {/* Edit Refund Payment Modal */}
       {tenant && (
-        <EditRefundPaymentModal
-          visible={editRefundPaymentModalVisible}
+        <EditRefundPaymentForm
+          visible={EditRefundPaymentFormVisible}
           payment={editingRefundPayment}
           onClose={() => {
-            setEditRefundPaymentModalVisible(false);
+            setEditRefundPaymentFormVisible(false);
             setEditingRefundPayment(null);
           }}
           onSave={handleUpdateRefundPayment}

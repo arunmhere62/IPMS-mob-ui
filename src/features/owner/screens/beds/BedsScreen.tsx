@@ -26,7 +26,7 @@ import { AnimatedPressableCard } from "../../../../components/AnimatedPressableC
 import { Theme } from "../../../../theme";
 import { ScreenHeader } from "../../../../components/ScreenHeader";
 import { ScreenLayout } from "../../../../components/ScreenLayout";
-import { BedFormModal } from "./BedFormModal";
+import { BedForm } from "./BedForm";
 
 import { showDeleteConfirmation } from "../../../../components/DeleteConfirmationDialog";
 import { Ionicons } from "@expo/vector-icons";
@@ -660,7 +660,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
         )}
 
         {/* Bed Form Modal - Only for editing */}
-        <BedFormModal
+        <BedForm
           visible={bedModalVisible}
           onClose={() => setBedModalVisible(false)}
           onSuccess={handleBedFormSuccess}

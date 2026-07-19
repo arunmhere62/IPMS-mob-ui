@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { AddRefundPaymentModal } from '../AddRefundPaymentModal';
+import { AddRefundPaymentForm } from '../AddRefundPaymentForm';
 
 // Mock API hooks
 jest.mock('@/features/owner/api/roomsApi', () => ({
@@ -26,7 +26,7 @@ jest.mock('react-native', () => ({
   },
 }));
 
-describe('AddRefundPaymentModal', () => {
+describe('AddRefundPaymentForm', () => {
   const defaultProps = {
     visible: true,
     mode: 'add' as const,
@@ -56,7 +56,7 @@ describe('AddRefundPaymentModal', () => {
 
   // Helper function
   const renderComponent = (props = {}) => {
-    return render(<AddRefundPaymentModal {...defaultProps} {...props} />);
+    return render(<AddRefundPaymentForm {...defaultProps} {...props} />);
   };
 
   describe('Rendering', () => {

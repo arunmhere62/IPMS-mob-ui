@@ -11,7 +11,7 @@ import { DatePicker } from '../../../../../components/DatePicker';
 import { Theme } from '../../../../../theme';
 import { AnimatedPressableCard } from '../../../../../components/AnimatedPressableCard';
 
-interface CurrentBillModalProps {
+interface CurrentBillFormProps {
   visible: boolean;
   billAmount: string;
   billDate: string;
@@ -24,7 +24,7 @@ interface CurrentBillModalProps {
   onSave: () => void;
 }
 
-export const AddCurrentBillModal: React.FC<CurrentBillModalProps> = ({
+export const AddCurrentBillForm: React.FC<CurrentBillFormProps> = ({
   visible,
   billAmount,
   billDate,

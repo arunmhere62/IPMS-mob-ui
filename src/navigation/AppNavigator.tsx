@@ -73,7 +73,6 @@ import { FaqWebViewScreen } from '@/features/owner/screens/settings/FaqWebViewSc
 import { SubscriptionPlansScreen } from '@/features/owner/screens/subscription/SubscriptionPlansScreen';
 import { SubscriptionHistoryScreen } from '@/features/owner/screens/subscription/SubscriptionHistoryScreen';
 import { SubscriptionConfirmScreen } from '@/features/owner/screens/subscription/SubscriptionConfirmScreen';
-import { PaymentOptionsScreen } from '@/features/owner/screens/subscription/PaymentOptionsScreen';
 import { PaymentWebViewScreen } from '@/features/owner/screens/subscription/PaymentWebViewScreen';
 import { NetworkLoggerScreen } from '@/screens/network/NetworkLoggerScreen';
 

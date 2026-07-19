@@ -9,7 +9,7 @@ import {
   type ElectricityBillItem,
 } from '@/features/owner/api/electricityBillApi';
 
-interface RecordPaymentModalProps {
+interface RecordPaymentFormProps {
   visible: boolean;
   item: ElectricityBillItem | null;
   billId: number | null;
@@ -26,7 +26,7 @@ const formatDate = (d: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
+export const RecordPaymentForm: React.FC<RecordPaymentFormProps> = ({
   visible,
   item,
   onClose,

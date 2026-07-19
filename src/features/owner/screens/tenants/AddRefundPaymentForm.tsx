@@ -20,7 +20,7 @@ const MIN_PAYMENT_AMOUNT = 1
 const MAX_PAYMENT_AMOUNT = 10_00_000
 const MAX_DECIMAL_PLACES = 2
 
-interface AddRefundPaymentModalProps {
+interface AddRefundPaymentFormProps {
   visible: boolean;
   mode?: 'add' | 'edit';
   tenant: {
@@ -83,7 +83,7 @@ const PAYMENT_STATUS: Option[] = [
   { label: "Failed", value: "FAILED", icon: "❌" },
 ];
 
-export const AddRefundPaymentModal: React.FC<AddRefundPaymentModalProps> = ({
+export const AddRefundPaymentForm: React.FC<AddRefundPaymentFormProps> = ({
   visible,
   mode = 'add',
   tenant,

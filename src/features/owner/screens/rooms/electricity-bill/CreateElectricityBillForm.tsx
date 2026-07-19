@@ -18,7 +18,7 @@ import { OptionSelector } from '@/components/OptionSelector';
 import { Card } from '@/components/Card';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 
-interface CreateElectricityBillModalProps {
+interface CreateElectricityBillFormProps {
   visible: boolean;
   roomId: number;
   onClose: () => void;
@@ -69,7 +69,7 @@ const yearOptions = Array.from({ length: 5 }, (_, i) => {
   return { label: String(year), value: String(year) };
 });
 
-export const CreateElectricityBillModal: React.FC<CreateElectricityBillModalProps> = ({
+export const CreateElectricityBillForm: React.FC<CreateElectricityBillFormProps> = ({
   visible,
   roomId,
   onClose,

@@ -31,9 +31,9 @@ import { AnimatedPressableCard } from '../../../../components/AnimatedPressableC
 import { Theme } from '../../../../theme';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
-import { BedFormModal } from '../beds/BedFormModal';
-import { BulkAddBedsModal } from '../beds/BulkAddBedsModal';
-import { RoomFormModal } from './CreateEditRoomModal';
+import { BedForm } from '../beds/BedForm';
+import { BulkAddBedsForm } from '../beds/BulkAddBedsForm';
+import { RoomFormModal } from './CreateEditRoomForm';
 import { showDeleteConfirmation } from '../../../../components/DeleteConfirmationDialog';
 import { Ionicons } from '@expo/vector-icons';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
@@ -804,7 +804,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
      </View>
 
       {/* Bed Form Modal */}
-      <BedFormModal
+      <BedForm
         visible={bedModalVisible}
         onClose={() => setBedModalVisible(false)}
         onSuccess={handleBedFormSuccess}
@@ -815,7 +815,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
       />
 
       {/* Bulk Add Beds Modal */}
-      <BulkAddBedsModal
+      <BulkAddBedsForm
         visible={bulkBedsModalVisible}
         onClose={() => setBulkBedsModalVisible(false)}
         onSuccess={handleBulkBedsSuccess}

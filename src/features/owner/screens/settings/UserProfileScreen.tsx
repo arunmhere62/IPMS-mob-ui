@@ -17,8 +17,8 @@ import { ScreenLayout } from '@/components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 import { SkeletonLoader } from '@/components/SkeletonLoader';
-import { EditProfileModal } from './EditProfileModal';
-import { ChangePasswordModal } from '@/components/ChangePasswordModal';
+import { EditProfileForm } from './EditProfileForm';
+import { ChangePasswordForm } from '@/components/ChangePasswordForm';
 import { updateUser } from '../../store/slices/authSlice';
 import { useLazyGetCitiesQuery, useLazyGetStatesQuery } from '@/features/owner/api/locationApi';
 import { useGetUserProfileQuery, useChangePasswordMutation } from '@/features/owner/api/userApi';
@@ -41,7 +41,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
   const [updateOrganizationMutation] = useUpdateOrganizationMutation();
   const [refreshing, setRefreshing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
   const [showOrgEditModal, setShowOrgEditModal] = useState(false);
   const [orgNameDraft, setOrgNameDraft] = useState('');
   const [orgSaving, setOrgSaving] = useState(false);
@@ -165,7 +165,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
 
       await changePasswordMutation({ userId: user.s_no, data }).unwrap();
 
-      setShowChangePasswordModal(false);
+      setShowChangePasswordForm(false);
     } catch (error: unknown) {
       console.error('Error changing password:', error);
       throw error;
@@ -843,7 +843,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
               padding: 16,
               borderBottomWidth: 1,
               borderBottomColor: Theme.colors.border }}
-            onPress={() => setShowChangePasswordModal(true)}
+            onPress={() => setShowChangePasswordForm(true)}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="lock-closed-outline" size={20} color={Theme.colors.text.secondary} />
@@ -867,7 +867,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
       </ScrollView>
 
       {/* Edit Profile Modal */}
-      <EditProfileModal
+      <EditProfileForm
         visible={showEditModal}
         user={userData}
         onClose={() => setShowEditModal(false)}
@@ -897,9 +897,9 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
       </SlideBottomModal>
 
       {/* Change Password Modal */}
-      <ChangePasswordModal
-        visible={showChangePasswordModal}
-        onClose={() => setShowChangePasswordModal(false)}
+      <ChangePasswordForm
+        visible={showChangePasswordForm}
+        onClose={() => setShowChangePasswordForm(false)}
         onSave={handleChangePassword}
       />
     </ScreenLayout>

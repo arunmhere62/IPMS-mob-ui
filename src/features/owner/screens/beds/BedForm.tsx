@@ -11,7 +11,7 @@ import {
 } from "../../api/roomsApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 
-interface BedFormModalProps {
+interface BedFormProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -23,7 +23,7 @@ interface BedFormModalProps {
   userId?: number;
 }
 
-export const BedFormModal: React.FC<BedFormModalProps> = ({
+export const BedForm: React.FC<BedFormProps> = ({
   visible,
   onClose,
   onSuccess,
@@ -86,7 +86,7 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
 
   const updateField = (field: string, value: string) => {
     if (field === "bed_no") {
-      const numericValue = value.replace(/[^0-9]/g, "");
+      const numericValue = value.replace(/[^0-9]/g, "").slice(0, 3);
       value = "BED" + numericValue;
     }
 
@@ -162,8 +162,8 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
           newErrors.bed_price = "Price must be greater than 0";
         } else if (price < 100) {
           newErrors.bed_price = "Minimum bed price is ₹100";
-        } else if (price > 100000) {
-          newErrors.bed_price = "Maximum bed price is ₹100,000";
+        } else if (price > 50000) {
+          newErrors.bed_price = "Maximum bed price is ₹50,000";
         } else {
           // Check decimal precision (max 2 decimal places)
           const decimalPart = trimmedPrice.split('.')[1];
@@ -435,7 +435,7 @@ export const BedFormModal: React.FC<BedFormModalProps> = ({
             marginTop: 4,
           }}
         >
-          Individual bed price (overrides room price if set)
+          Individual bed price (max ₹50,000, overrides room price if set)
         </Text>
       </View>
 

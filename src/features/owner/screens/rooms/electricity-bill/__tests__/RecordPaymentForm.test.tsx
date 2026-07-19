@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { RecordPaymentModal } from '../RecordPaymentModal';
+import { RecordPaymentForm } from '../RecordPaymentForm';
 
 jest.mock('@/features/owner/api/electricityBillApi', () => ({
   useRecordElectricityBillPaymentMutation: jest.fn(() => [jest.fn(), { isLoading: false }]),
@@ -20,7 +20,7 @@ jest.mock('@/utils/errorHandler', () => ({
   showSuccessAlert: jest.fn(),
 }));
 
-describe('RecordPaymentModal', () => {
+describe('RecordPaymentForm', () => {
   const mockItem = {
     s_no: 1,
     electricity_bill_id: 1,
@@ -51,17 +51,17 @@ describe('RecordPaymentModal', () => {
   });
 
   it('renders correctly when visible with item', () => {
-    const { getByText } = render(<RecordPaymentModal {...defaultProps} />);
+    const { getByText } = render(<RecordPaymentForm {...defaultProps} />);
     expect(getByText('Total Share')).toBeTruthy();
   });
 
   it('does not render when item is null', () => {
-    const { queryByText } = render(<RecordPaymentModal {...defaultProps} item={null} />);
+    const { queryByText } = render(<RecordPaymentForm {...defaultProps} item={null} />);
     expect(queryByText('John Doe')).toBeNull();
   });
 
   it('does not render when not visible', () => {
-    const { queryByText } = render(<RecordPaymentModal {...defaultProps} visible={false} />);
+    const { queryByText } = render(<RecordPaymentForm {...defaultProps} visible={false} />);
     expect(queryByText('John Doe')).toBeNull();
   });
 });

@@ -752,7 +752,17 @@ const RentPaymentForm: React.FC<RentPaymentFormProps> = ({
         <AmountInput
           label="Amount Paid"
           value={formData.amount_paid}
-          onChangeText={(text) => setFormData((prev) => ({ ...prev, amount_paid: text }))}
+          onChangeText={(text) => {
+            setFormData((prev) => ({ ...prev, amount_paid: text }));
+            const entered = parseFloat(text);
+            const rent = parseFloat(formData.actual_rent_amount);
+            if (!isNaN(entered) && !isNaN(rent) && entered > rent) {
+              Alert.alert(
+                'Amount Exceeds Rent',
+                `Amount paid (₹${entered.toLocaleString('en-IN')}) is more than the rent amount (₹${rent.toLocaleString('en-IN')}). Please verify.`
+              );
+            }
+          }}
           error={errors.amount_paid}
           required
           returnKeyType={'done'}

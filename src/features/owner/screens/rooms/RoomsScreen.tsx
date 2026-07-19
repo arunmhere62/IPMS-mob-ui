@@ -24,7 +24,7 @@ import { AnimatedPressableCard } from "../../../../components/AnimatedPressableC
 import { Theme } from "../../../../theme";
 import { ScreenHeader } from "../../../../components/ScreenHeader";
 import { ScreenLayout } from "../../../../components/ScreenLayout";
-import { RoomFormModal } from "./CreateEditRoomModal";
+import { RoomFormModal } from "./CreateEditRoomForm";
 import { showDeleteConfirmation } from "../../../../components/DeleteConfirmationDialog";
 import { showErrorAlert, showSuccessAlert } from "../../../../utils/errorHandler";
 import { CONTENT_COLOR } from "@/constant";

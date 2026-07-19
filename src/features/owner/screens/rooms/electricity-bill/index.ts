@@ -1,3 +1,3 @@
 export * from './RoomElectricityBillsScreen';
-export * from './CreateElectricityBillModal';
-export * from './RecordPaymentModal';
+export * from './CreateElectricityBillForm';
+export * from './RecordPaymentForm';
