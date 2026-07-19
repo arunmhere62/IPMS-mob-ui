@@ -1,3 +1,16 @@
+const API_ENVIRONMENTS = [
+  {
+    label: 'Production',
+    url: 'https://mobapi.indianpgmanagement.com/api/v1',
+    description: 'Live production database',
+  },
+  {
+    label: 'Local Dev',
+    url: 'http://192.168.1.2:3001/api/v1',
+    description: 'Local development database',
+  },
+];
+
 module.exports = ({ config }) => {
   const baseExpoConfig = config ?? {};
 
@@ -55,9 +68,11 @@ module.exports = ({ config }) => {
         projectId: "0f6ecb0b-7511-427b-be33-74a4bd0207fe"
       },
       appEnv: (process.env.APP_ENV || process.env.MODE || 'dev').toLowerCase(),
-      // Production builds must set API_BASE_URL via eas.json env.
-      // Local dev fallback: update this IP if your dev machine changes.
-      apiBaseUrl: process.env.API_BASE_URL || "https://mobapi.indianpgmanagement.com/api/v1",
+      // ── Centralized API config ──
+      // Update LOCAL_DEV_IP here when your dev machine IP changes.
+      // Production builds override via eas.json env: API_BASE_URL
+      apiBaseUrl: process.env.API_BASE_URL || API_ENVIRONMENTS[1].url,
+      apiEnvironments: API_ENVIRONMENTS,
       // Subscription Configuration
       subscriptionMode: process.env.SUBSCRIPTION_MODE === 'true',
       showDevBanner: process.env.SHOW_DEV_BANNER === 'true'

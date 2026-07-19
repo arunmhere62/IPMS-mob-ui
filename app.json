@@ -1,50 +1,50 @@
 {
   "expo": {
-    "name": "IPGMS",
+    "name": "IPGM",
     "slug": "pgmanagement",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/app-icon.png",
     "splash": {
+      "image": "./assets/ball-jump.json",
       "resizeMode": "contain",
       "backgroundColor": "#0F172A"
     },
-    "assetBundlePatterns": [
-      "assets/fonts/**",
-      "assets/app-icon.png",
-      "assets/adaptive-logo.png",
-      "assets/splash-logo.png",
-      "assets/splash-lottie.json",
-      "assets/ball-jump.json"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.pgmanagement.app",
-      "infoPlist": {
-        "UIBackgroundModes": [
-          "remote-notification"
-        ],
-        "ITSAppUsesNonExemptEncryption": false
-      },
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
-    },
     "android": {
       "package": "com.pgmanagement.app",
+      "versionCode": 1,
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-logo.png",
         "backgroundColor": "#0F172A"
       },
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.pgmanagement.app",
       "permissions": [
         "NOTIFICATIONS",
         "POST_NOTIFICATIONS",
-        "INTERNET"
+        "INTERNET",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ],
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "indianpgmanagement.com",
+              "pathPrefix": "/app"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
         {
           "action": "VIEW",
           "data": [
@@ -62,7 +62,8 @@
       "runtimeVersion": "1.0.0"
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/app-icon.png"
     },
     "scheme": "pgapp",
     "plugins": [
@@ -78,6 +79,26 @@
     "extra": {
       "eas": {
         "projectId": "0f6ecb0b-7511-427b-be33-74a4bd0207fe"
+      }
+    },
+    "assetBundlePatterns": [
+      "assets/app-icon.png",
+      "assets/adaptive-logo.png",
+      "assets/splash-logo.png",
+      "assets/splash-lottie.json",
+      "assets/ball-jump.json"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pgmanagement.app",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "runtimeVersion": {
+        "policy": "appVersion"
       }
     },
     "updates": {

@@ -36,6 +36,49 @@ const formatDate = (dateStr: string) => {
   return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+const formatDateTime = (dateStr: string) => {
+  const [datePart, timePart] = dateStr.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = (timePart || '').split(':').map(Number);
+  const date = new Date(year, month - 1, day, hours || 0, minutes || 0);
+  return date.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+const TimestampRow: React.FC<{ createdAt?: string; updatedAt?: string }> = ({ createdAt, updatedAt }) => {
+  if (!createdAt && !updatedAt) return null;
+  const isModified = createdAt && updatedAt && createdAt !== updatedAt;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+      {createdAt && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+          <Ionicons name="create-outline" size={11} color={Theme.colors.text.tertiary} />
+          <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary }}>
+            {formatDateTime(createdAt)}
+          </Text>
+        </View>
+      )}
+      {isModified && updatedAt && (
+        <>
+          <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary }}>·</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+            <Ionicons name="pencil-outline" size={11} color={Theme.colors.text.tertiary} />
+            <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary }}>
+              {formatDateTime(updatedAt)}
+            </Text>
+          </View>
+        </>
+      )}
+    </View>
+  );
+};
+
 export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProps> = ({
   navigation,
   route }) => {
@@ -111,9 +154,19 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
     const remaining = Number(bill.total_amount) - totalPaid;
     const statusColor =
       bill.status === 'PAID' ? '#059669' : bill.status === 'PARTIAL' ? '#D97706' : Theme.colors.primary;
+    const allocationLabel = (basis: string | null | undefined) => {
+      if (!basis) return null;
+      const map: Record<string, string> = {
+        RENT_CYCLE_DAYS: 'Rent Cycle Days',
+        EQUAL_SPLIT: 'Equal Split',
+        CUSTOM: 'Custom',
+      };
+      return map[basis] || basis;
+    };
 
     return (
       <Card style={{ marginHorizontal: 12, marginBottom: 12, padding: 14, borderRadius: 16 }}>
+        {/* Header: Period + Status + Delete */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
@@ -140,80 +193,181 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
           </View>
         </View>
 
-        {bill.meter_reading_start !== undefined && bill.meter_reading_end !== undefined && (
-          <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginTop: 8 }}>
-            Reading: {bill.meter_reading_start} → {bill.meter_reading_end}
-            {bill.rate_per_unit ? ` · Rate: ${formatCurrency(Number(bill.rate_per_unit))}/unit` : ''}
-          </Text>
-        )}
+        {/* Bill meta details */}
+        <View style={{ marginTop: 10, gap: 4 }}>
+          {(bill as any).rooms?.room_no && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="home-outline" size={13} color={Theme.colors.text.tertiary} />
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                Room {(bill as any).rooms.room_no}
+                {(bill as any).pg_locations?.location_name ? ` · ${(bill as any).pg_locations.location_name}` : ''}
+              </Text>
+            </View>
+          )}
+          {bill.due_date && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="calendar-outline" size={13} color={Theme.colors.text.tertiary} />
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                Due: {formatDate(bill.due_date)}
+              </Text>
+            </View>
+          )}
+          {bill.meter_reading_start != null && bill.meter_reading_end != null && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="speedometer-outline" size={13} color={Theme.colors.text.tertiary} />
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                Reading: {bill.meter_reading_start} → {bill.meter_reading_end}
+                {bill.rate_per_unit ? ` · Rate: ${formatCurrency(Number(bill.rate_per_unit))}/unit` : ''}
+              </Text>
+            </View>
+          )}
+          {(bill as any).created_at && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="create-outline" size={13} color={Theme.colors.text.tertiary} />
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                Created: {formatDateTime(bill.created_at)}
+              </Text>
+            </View>
+          )}
+          {bill.updated_at && bill.updated_at !== bill.created_at && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="pencil-outline" size={13} color={Theme.colors.text.tertiary} />
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>
+                Updated: {formatDateTime(bill.updated_at)}
+              </Text>
+            </View>
+          )}
+        </View>
 
-        <View style={{ marginTop: 12, gap: 8 }}>
+        {/* Divider */}
+        <View style={{ height: 1, backgroundColor: Theme.colors.border, marginVertical: 10 }} />
+
+        {/* Tenant breakdown */}
+        <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
+          Tenant Breakdown
+        </Text>
+        <View style={{ gap: 8 }}>
           {items.map((item) => {
             const isPaid = item.status === 'PAID';
             const isPartial = item.status === 'PARTIAL';
+            const itemStatusColor =
+              isPaid ? '#059669' : isPartial ? '#D97706' : Theme.colors.primary;
+            const allocLabel = allocationLabel((item as any).allocation_basis);
             return (
               <View
                 key={item.s_no}
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
                   padding: 10,
                   backgroundColor: '#F9FAFB',
                   borderRadius: 10,
                   borderWidth: 1,
                   borderColor: Theme.colors.border }}
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
-                    {item.tenants?.name ?? 'Tenant'}
-                  </Text>
-                  <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 2 }}>
-                    Share: {formatCurrency(Number(item.share_amount))}
-                    {item.billing_days ? ` · ${item.billing_days} days` : ''}
-                  </Text>
-                  {(isPaid || isPartial) && (
-                    <Text style={{ fontSize: 11, color: '#059669', marginTop: 2 }}>
-                      Paid: {formatCurrency(Number(item.paid_amount))}
+                {/* Row 1: Name + Pay/Paid button */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
+                      {item.tenants?.name ?? 'Tenant'}
                     </Text>
+                    {(item as any).tenants?.phone_no && (
+                      <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 1 }}>
+                        {(item as any).tenants.phone_no}
+                      </Text>
+                    )}
+                  </View>
+                  {!isPaid ? (
+                    <AnimatedPressableCard
+                      onPress={() => {
+                        setSelectedItem(item);
+                        setSelectedBillId(bill.s_no);
+                      }}
+                      style={{
+                        backgroundColor: Theme.colors.primary,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 8 }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Pay</Text>
+                    </AnimatedPressableCard>
+                  ) : (
+                    <View
+                      style={{
+                        backgroundColor: isPartial ? '#FEF3C7' : '#DCFCE7',
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 8 }}
+                    >
+                      <Text style={{ color: itemStatusColor, fontSize: 12, fontWeight: '600' }}>
+                        {isPartial ? 'Partial' : 'Paid'}
+                      </Text>
+                    </View>
                   )}
                 </View>
-                {!isPaid && (
-                  <AnimatedPressableCard
-                    onPress={() => {
-                      setSelectedItem(item);
-                      setSelectedBillId(bill.s_no);
-                    }}
-                    style={{
-                      backgroundColor: Theme.colors.primary,
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 8 }}
-                  >
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Pay</Text>
-                  </AnimatedPressableCard>
-                )}
-                {isPaid && (
-                  <View
-                    style={{
-                      backgroundColor: '#DCFCE7',
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: 8 }}
-                  >
-                    <Text style={{ color: '#059669', fontSize: 12, fontWeight: '600' }}>Paid</Text>
+
+                {/* Row 2: Share details */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                  <View style={{ backgroundColor: '#EEF2FF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 11, color: '#3730A3', fontWeight: '600' }}>
+                      Share: {formatCurrency(Number(item.share_amount))}
+                    </Text>
+                  </View>
+                  {(item as any).share_percentage && (
+                    <View style={{ backgroundColor: '#F0FDF4', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                      <Text style={{ fontSize: 11, color: '#166534', fontWeight: '600' }}>
+                        {(item as any).share_percentage}%
+                      </Text>
+                    </View>
+                  )}
+                  {item.billing_days != null && (
+                    <View style={{ backgroundColor: '#FFF7ED', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                      <Text style={{ fontSize: 11, color: '#9A3412', fontWeight: '600' }}>
+                        {item.billing_days} days
+                      </Text>
+                    </View>
+                  )}
+                  {allocLabel && (
+                    <View style={{ backgroundColor: '#F5F3FF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                      <Text style={{ fontSize: 11, color: '#5B21B6', fontWeight: '600' }}>
+                        {allocLabel}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Row 3: Payment info (if paid/partial) */}
+                {(isPaid || isPartial) && (
+                  <View style={{ marginTop: 6, gap: 2 }}>
+                    <Text style={{ fontSize: 11, color: '#059669' }}>
+                      Paid: {formatCurrency(Number(item.paid_amount))}
+                      {isPartial && ` of ${formatCurrency(Number(item.share_amount))}`}
+                    </Text>
+                    {(item as any).payment_date && (
+                      <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>
+                        Paid on: {formatDate((item as any).payment_date)}
+                        {(item as any).payment_method ? ` · ${(item as any).payment_method}` : ''}
+                      </Text>
+                    )}
                   </View>
                 )}
+
+                {/* Timestamps */}
+                <TimestampRow createdAt={item.created_at} updatedAt={item.updated_at} />
               </View>
             );
           })}
         </View>
 
-        {remaining > 0 && (
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 10, textAlign: 'right' }}>
-            Pending: {formatCurrency(remaining)}
+        {/* Footer: Pending summary */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+            Paid: {formatCurrency(totalPaid)} / {formatCurrency(Number(bill.total_amount))}
           </Text>
-        )}
+          {remaining > 0 && (
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#DC2626' }}>
+              Pending: {formatCurrency(remaining)}
+            </Text>
+          )}
+        </View>
       </Card>
     );
   };

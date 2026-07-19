@@ -20,6 +20,7 @@
     "preview": {
       "distribution": "internal",
       "node": "20.19.4",
+      "channel": "preview",
       "env": {
         "NODE_ENV": "production"
       }
@@ -29,6 +30,7 @@
       "node": "20.19.4",
       "env": {
         "NODE_ENV": "production",
+        "APP_ENV": "production",
         "API_BASE_URL": "https://mobapi.indianpgmanagement.com/api/v1"
       },
       "android": {
@@ -42,7 +44,8 @@
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease",
-        "withoutCredentials": true
+        "withoutCredentials": true,
+        "resourceClass": "medium"
       },
       "distribution": "internal",
       "node": "20.19.4",
@@ -50,8 +53,7 @@
         "NODE_ENV": "production",
         "EXPO_OPTIMIZE_SIZE": "1",
         "EXPO_NO_DEV": "1"
-      },
-      "resourceClass": "medium"
+      }
     },
     "standalone-apk": {
       "android": {
@@ -81,7 +83,8 @@
         "simulator": true
       },
       "distribution": "internal",
-      "developmentClient": false
+      "developmentClient": false,
+      "node": "20.19.4"
     },
     "ios-device": {
       "ios": {
@@ -91,14 +94,16 @@
       "developmentClient": false,
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "APP_ENV": "production"
       }
     },
     "ios-production": {
       "distribution": "store",
       "node": "20.19.4",
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "APP_ENV": "production"
       },
       "ios": {
         "autoIncrement": true

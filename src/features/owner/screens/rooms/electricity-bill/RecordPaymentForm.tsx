@@ -17,7 +17,7 @@ interface RecordPaymentFormProps {
   onSuccess: () => void;
 }
 
-const paymentMethods = ['CASH', 'GPAY', 'PHONEPE', 'BANK_TRANSFER', 'UPI', 'CARD', 'CHEQUE', 'OTHER'];
+const paymentMethods = ['CASH', 'GPAY', 'PHONEPE', 'BANK_TRANSFER', 'UPI', 'OTHER'];
 
 const formatDate = (d: Date) => {
   const year = d.getFullYear();
@@ -32,15 +32,15 @@ export const RecordPaymentForm: React.FC<RecordPaymentFormProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState('CASH');
-  const [paymentDate, setPaymentDate] = useState(formatDate(new Date()));
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentDate, setPaymentDate] = useState('');
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
   const [recordPayment] = useRecordElectricityBillPaymentMutation();
 
   const reset = () => {
-    setPaymentMethod('CASH');
-    setPaymentDate(formatDate(new Date()));
+    setPaymentMethod('');
+    setPaymentDate('');
   };
 
   const handleClose = () => {
@@ -147,7 +147,7 @@ export const RecordPaymentForm: React.FC<RecordPaymentFormProps> = ({
           label="Payment Method"
           options={paymentMethodOptions}
           selectedValue={paymentMethod}
-          onSelect={(value) => setPaymentMethod(value || 'CASH')}
+          onSelect={(value) => setPaymentMethod(value || '')}
           required
         />
 

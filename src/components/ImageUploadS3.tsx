@@ -267,11 +267,26 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
     }
   };
 
+  const requestCameraPermission = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Camera Permission Required',
+        'Please grant camera permission to take photos.'
+      );
+      return false;
+    }
+    return true;
+  };
+
   const takePhoto = async () => {
     if (disabled) return;
 
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) return;
+    const hasCameraPermission = await requestCameraPermission();
+    if (!hasCameraPermission) return;
+
+    const hasMediaPermission = await requestPermissions();
+    if (!hasMediaPermission) return;
 
     if (images.length >= maxImages) {
       Alert.alert('Limit Reached', `You can only upload ${maxImages} images.`);

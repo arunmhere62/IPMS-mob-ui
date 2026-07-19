@@ -28,6 +28,7 @@ import {
 import { useGetPGLocationsQuery } from "@/features/owner/api/pgLocationsApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 import { useOnboardingTour } from "@/context/OnboardingTourContext";
+import { setIsOnboardingComplete } from "@/features/owner/store/slices/rbacSlice";
 import { Ionicons } from "@expo/vector-icons";
 
 interface RoomSetupRow {
@@ -77,7 +78,7 @@ export const QuickSetupScreen: React.FC = () => {
 
   const [createRoom] = useCreateRoomMutation();
   const [bulkCreateBeds] = useBulkCreateBedMutation();
-  const { startRoomsFromDashboardTour } = useOnboardingTour();
+  const { endTour } = useOnboardingTour();
   const isOnboardingComplete = useSelector(
     (state: RootState) => (state as any).rbac?.isOnboardingComplete ?? null
   );
@@ -396,9 +397,10 @@ export const QuickSetupScreen: React.FC = () => {
         ]);
       }
 
+      dispatch(setIsOnboardingComplete(true));
       showSuccessAlert("Rooms and beds created successfully", {
         onOk: () => {
-          startRoomsFromDashboardTour();
+          endTour();
           navigation.navigate("MainTabs", { screen: "Dashboard" });
         },
       });

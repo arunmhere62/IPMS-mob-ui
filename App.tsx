@@ -28,6 +28,7 @@ import * as SplashScreen from "expo-splash-screen";
 import LottieView from "lottie-react-native";
 import { persistor, store } from "@/features/owner/store";
 import { OnboardingTourProvider } from "./src/context/OnboardingTourContext";
+import { initEnvSwitcher } from "./src/utils/envSwitcher";
 
 // CRITICAL: Set notification handler at the TOP LEVEL (outside component)
 // This ensures notifications are handled even when app is in background/killed
@@ -62,6 +63,9 @@ export default function App() {
 
         // Initialize global error handlers
         setupGlobalErrorHandlers();
+
+        // Initialize environment switcher (loads saved API URL from AsyncStorage)
+        await initEnvSwitcher();
 
         // Request notification permission early (Android 13+ requirement)
         // This ensures the permission dialog shows on first app open

@@ -64,10 +64,12 @@ const monthOptions = [
 ];
 
 const currentYear = new Date().getFullYear();
-const yearOptions = Array.from({ length: 5 }, (_, i) => {
+const currentMonth = new Date().getMonth();
+const yearOptions = Array.from({ length: 3 }, (_, i) => {
   const year = currentYear - 2 + i;
+  if (year > currentYear) return null;
   return { label: String(year), value: String(year) };
-});
+}).filter(Boolean) as { label: string; value: string }[];
 
 export const CreateElectricityBillForm: React.FC<CreateElectricityBillFormProps> = ({
   visible,
@@ -109,6 +111,13 @@ export const CreateElectricityBillForm: React.FC<CreateElectricityBillFormProps>
       periodStart: formatDate(start),
       periodEnd: formatDate(end) };
   }, [selectedMonth, selectedYear]);
+
+  // Reset month if it exceeds current month when year is current year
+  useEffect(() => {
+    if (Number(selectedYear) === currentYear && Number(selectedMonth) > currentMonth) {
+      setSelectedMonth(String(currentMonth));
+    }
+  }, [selectedYear, currentYear, currentMonth, selectedMonth]);
 
   // Fetch eligible tenants when period changes
   useEffect(() => {
@@ -400,7 +409,7 @@ export const CreateElectricityBillForm: React.FC<CreateElectricityBillFormProps>
         <View style={{ gap: 12 }}>
           <OptionSelector
             label="Billing Month"
-            options={monthOptions}
+            options={Number(selectedYear) === currentYear ? monthOptions.filter((m) => Number(m.value) <= currentMonth) : monthOptions}
             selectedValue={selectedMonth}
             onSelect={(value) => setSelectedMonth(value || String(today.getMonth()))}
             required

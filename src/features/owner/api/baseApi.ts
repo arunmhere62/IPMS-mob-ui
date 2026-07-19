@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery, type BaseQueryFn, type FetchArgs, type FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '../../../config';
+import { getApiBaseUrl } from '../../../config';
 import type { RootState } from '@/features/owner/store';
 import { networkLogger } from '../../../utils/networkLogger';
 import { setCredentials, logout } from '../store/slices/authSlice';
@@ -56,28 +56,33 @@ const applyAuthAndContextHeaders = (headers: Headers, state: RootState) => {
   }
 };
 
-const rawBaseQuery = fetchBaseQuery({
-  baseUrl: API_BASE_URL,
-  responseHandler: async (response) => {
-    // Prevent RTK Query PARSING_ERROR when server returns non-JSON (e.g. HTML 502/504 pages)
-    // by always reading text and attempting JSON parse.
-    const text = await response.text();
-    if (!text) return null as any;
+let _cachedUrl = '';
+let _cachedBaseQuery: ReturnType<typeof fetchBaseQuery> | null = null;
 
-    try {
-      return JSON.parse(text);
-    } catch {
-      return { rawText: text } as any;
-    }
-  },
-  prepareHeaders: (headers, { getState }) => {
-    const state = getState() as RootState;
-
-    applyAuthAndContextHeaders(headers, state);
-
-    return headers;
-  },
-});
+const getDynamicBaseQuery = () => {
+  const currentUrl = getApiBaseUrl();
+  if (currentUrl !== _cachedUrl || !_cachedBaseQuery) {
+    _cachedUrl = currentUrl;
+    _cachedBaseQuery = fetchBaseQuery({
+      baseUrl: currentUrl,
+      responseHandler: async (response) => {
+        const text = await response.text();
+        if (!text) return null as any;
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { rawText: text } as any;
+        }
+      },
+      prepareHeaders: (headers, { getState }) => {
+        const state = getState() as RootState;
+        applyAuthAndContextHeaders(headers, state);
+        return headers;
+      },
+    });
+  }
+  return _cachedBaseQuery;
+};
 
 let refreshInFlight: Promise<{ accessToken: string; refreshToken?: string } | null> | null = null;
 
@@ -93,7 +98,7 @@ const refreshAccessToken = async (api: any): Promise<{ accessToken: string; refr
   networkLogger.addLog({
     id: logId,
     method: 'POST',
-    url: `${API_BASE_URL}/auth/refresh`,
+    url: `${getApiBaseUrl()}/auth/refresh`,
     headers: { 'content-type': 'application/json' },
     requestData: {
       body: { refreshToken: '***' },
@@ -101,7 +106,7 @@ const refreshAccessToken = async (api: any): Promise<{ accessToken: string; refr
     timestamp: new Date(),
   });
 
-  const refreshResult = await rawBaseQuery(
+  const refreshResult = await getDynamicBaseQuery()(
     {
       url: '/auth/refresh',
       method: 'POST',
@@ -190,7 +195,7 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
   const req: FetchArgs = typeof args === 'string' ? { url: args } : args;
   const method = (req.method || 'GET').toString().toUpperCase();
 
-  const fullUrl = buildUrlWithParams(API_BASE_URL, req.url, (req as any).params);
+  const fullUrl = buildUrlWithParams(getApiBaseUrl(), req.url, (req as any).params);
 
   // Compute *final* outgoing headers (same logic as fetchBaseQuery.prepareHeaders)
   const outgoingHeaders = new Headers((req.headers as any) || undefined);
@@ -209,7 +214,7 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
     timestamp: new Date(),
   });
 
-  let result = await rawBaseQuery(args, api, extraOptions);
+  let result = await getDynamicBaseQuery()(args, api, extraOptions);
 
   if ('error' in result && result.error && (result.error as any).status === 401 && !isAuthRefreshCall(url)) {
     const refreshed = await refreshAccessTokenLocked(api);
@@ -226,7 +231,7 @@ const baseQueryWithPgGuard: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
         );
       }
 
-      result = await rawBaseQuery(args, api, extraOptions);
+      result = await getDynamicBaseQuery()(args, api, extraOptions);
     } else {
       // Clear tenant's lastUserRole so redirect goes to owner login
       api.dispatch(setTenantLastUserRole(null));

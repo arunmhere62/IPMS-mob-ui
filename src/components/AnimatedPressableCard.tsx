@@ -11,6 +11,8 @@ import type { AccessibilityRole } from 'react-native';
 interface AnimatedPressableCardProps {
   children?: React.ReactNode;
   onPress?: () => void;
+  onLongPress?: () => void;
+  delayLongPress?: number;
   onPressIn?: () => void;
   onPressOut?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -26,6 +28,8 @@ interface AnimatedPressableCardProps {
 export const AnimatedPressableCard: React.FC<AnimatedPressableCardProps> = ({
   children,
   onPress,
+  onLongPress,
+  delayLongPress,
   onPressIn,
   onPressOut,
   style,
@@ -72,6 +76,8 @@ export const AnimatedPressableCard: React.FC<AnimatedPressableCardProps> = ({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={handlePress}
+      onLongPress={onLongPress}
+      delayLongPress={delayLongPress}
       disabled={disabled}
       hitSlop={hitSlop}
       accessibilityLabel={accessibilityLabel}

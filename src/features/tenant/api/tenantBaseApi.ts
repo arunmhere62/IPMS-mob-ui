@@ -9,7 +9,7 @@ import { RootState } from '@/features/owner/store';
 import { updateTenantTokens, tenantLogout } from '../store/tenantAuthSlice';
 import { setLastUserRole as setAdminLastUserRole } from '@/features/owner/store/slices/authSlice';
 import { networkLogger } from '../../../utils/networkLogger';
-import { API_BASE_URL } from '../../../config';
+import { getApiBaseUrl } from '../../../config';
 
 // Simple mutex implementation
 let isRefreshing = false;
@@ -33,56 +33,54 @@ const acquireRefreshLock = async (): Promise<() => void> => {
   });
 };
 
-// Raw base query without any enhancements
-const rawBaseQuery = fetchBaseQuery({
-  baseUrl: API_BASE_URL,
-  responseHandler: async (response) => {
-    // Prevent RTK Query PARSING_ERROR when server returns non-JSON
-    const text = await response.text();
-    if (!text) return null as any;
-    try {
-      return JSON.parse(text);
-    } catch {
-      return { rawText: text } as any;
-    }
-  },
-  prepareHeaders: (headers, { getState }) => {
-    const state = getState() as RootState;
-    const tenantToken = state.tenantAuth?.accessToken;
-    const tenant = state.tenantAuth?.tenant;
+// Dynamic base query — recreates when API URL changes at runtime
+let _cachedUrl = '';
+let _cachedBaseQuery: ReturnType<typeof fetchBaseQuery> | null = null;
 
-    console.log('TenantBaseApi - Tenant token:', tenantToken ? 'present' : 'missing');
+const getDynamicBaseQuery = () => {
+  const currentUrl = getApiBaseUrl();
+  if (currentUrl !== _cachedUrl || !_cachedBaseQuery) {
+    _cachedUrl = currentUrl;
+    _cachedBaseQuery = fetchBaseQuery({
+      baseUrl: currentUrl,
+      responseHandler: async (response) => {
+        const text = await response.text();
+        if (!text) return null as any;
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { rawText: text } as any;
+        }
+      },
+      prepareHeaders: (headers, { getState }) => {
+        const state = getState() as RootState;
+        const tenantToken = state.tenantAuth?.accessToken;
+        const tenant = state.tenantAuth?.tenant;
 
-    if (tenantToken) {
-      headers.set('Authorization', `Bearer ${tenantToken}`);
-      console.log('TenantBaseApi - Authorization header set');
-    } else {
-      console.log('TenantBaseApi - No tenant token available!');
-    }
+        if (tenantToken) {
+          headers.set('Authorization', `Bearer ${tenantToken}`);
+        }
 
-    // Set tenant headers from Redux store
-    if (tenant?.tenant_id) {
-      headers.set('x-tenant-id', String(tenant.tenant_id));
-      console.log('TenantBaseApi - x-tenant-id header set:', tenant.tenant_id);
-    }
+        if (tenant?.tenant_id) {
+          headers.set('x-tenant-id', String(tenant.tenant_id));
+        }
 
-    // pg_id from separate pg state
-    const pgId = state.tenantAuth?.pg?.pg_id;
-    if (pgId) {
-      headers.set('x-pg-id', String(pgId));
-      console.log('TenantBaseApi - x-pg-id header set:', pgId);
-    }
+        const pgId = state.tenantAuth?.pg?.pg_id;
+        if (pgId) {
+          headers.set('x-pg-id', String(pgId));
+        }
 
-    // organization_id from tenant data
-    const orgId = tenant?.organization_id;
-    if (orgId) {
-      headers.set('x-organization-id', String(orgId));
-      console.log('TenantBaseApi - x-organization-id header set:', orgId);
-    }
+        const orgId = tenant?.organization_id;
+        if (orgId) {
+          headers.set('x-organization-id', String(orgId));
+        }
 
-    return headers;
-  },
-});
+        return headers;
+      },
+    });
+  }
+  return _cachedBaseQuery;
+};
 
 // Tenant token refresh function
 const refreshTenantToken = async (api: any): Promise<{ accessToken: string; refreshToken: string } | null> => {
@@ -100,14 +98,14 @@ const refreshTenantToken = async (api: any): Promise<{ accessToken: string; refr
   networkLogger.addLog({
     id: logId,
     method: 'POST',
-    url: `${API_BASE_URL}/tenant-auth/refresh`,
+    url: `${getApiBaseUrl()}/tenant-auth/refresh`,
     headers: { 'content-type': 'application/json' },
     requestData: { body: { refreshToken: '***' } },
     timestamp: new Date(),
   });
   
   try {
-    const response = await fetch(`${API_BASE_URL}/tenant-auth/refresh`, {
+    const response = await fetch(`${getApiBaseUrl()}/tenant-auth/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -186,13 +184,11 @@ const baseQueryWithTenantRefresh: BaseQueryFn<string | FetchArgs, unknown, Fetch
   }
   const headersObj = toPlainHeaders(outgoingHeaders);
   
-  // Ensure proper URL construction with slash
-  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const currentApiUrl = getApiBaseUrl();
+  const baseUrl = currentApiUrl.endsWith('/') ? currentApiUrl.slice(0, -1) : currentApiUrl;
   const urlPath = req.url.startsWith('/') ? req.url : `/${req.url}`;
   const fullUrl = `${baseUrl}${urlPath}`;
   console.log('TenantBaseApi - Request URL:', fullUrl);
-  console.log('TenantBaseApi - API_BASE_URL:', API_BASE_URL);
-  console.log('TenantBaseApi - req.url:', req.url);
   
   networkLogger.addLog({
     id: logId,
@@ -203,13 +199,8 @@ const baseQueryWithTenantRefresh: BaseQueryFn<string | FetchArgs, unknown, Fetch
     timestamp: new Date(),
   });
   
-  // Log the actual args being passed to fetchBaseQuery
-  console.log('TenantBaseApi - rawBaseQuery args:', JSON.stringify(args));
-  console.log('TenantBaseApi - API_BASE_URL in use:', API_BASE_URL);
-  
   // First attempt
-  let result = await rawBaseQuery(args, api, extraOptions);
-  console.log('TenantBaseApi - rawBaseQuery result:', result);
+  let result = await getDynamicBaseQuery()(args, api, extraOptions);
   
   // If we get a 401 and it's not a refresh call itself, try to refresh the token
   if (result.error && (result.error as any).status === 401 && !isTenantRefreshCall(url)) {
@@ -227,7 +218,7 @@ const baseQueryWithTenantRefresh: BaseQueryFn<string | FetchArgs, unknown, Fetch
         }));
 
         // Retry the original request with new token
-        result = await rawBaseQuery(args, api, extraOptions);
+        result = await getDynamicBaseQuery()(args, api, extraOptions);
       } else {
         // Refresh failed, logout tenant
         // Clear owner's lastUserRole so redirect goes to tenant login

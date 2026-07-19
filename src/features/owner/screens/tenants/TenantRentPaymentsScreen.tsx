@@ -118,6 +118,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
   const receiptRef = useRef<View>(null);
+  const receiptClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleVoidPayment = (payment: RentPayment) => {
     if (!canDeleteRent) {
@@ -186,6 +187,10 @@ export const TenantRentPaymentsScreen: React.FC = () => {
   };
 
   const handleViewReceipt = (payment: RentPayment) => {
+    if (receiptClearTimer.current) {
+      clearTimeout(receiptClearTimer.current);
+      receiptClearTimer.current = null;
+    }
     const data = prepareReceiptData(payment);
     setReceiptData(data);
     setShowReceiptModal(true);
@@ -592,8 +597,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
         receiptRef={receiptRef}
         onClose={() => {
           setShowReceiptModal(false);
-          // Only clear receipt data after a small delay to ensure sharing is complete
-          setTimeout(() => setReceiptData(null), 1000);
+          receiptClearTimer.current = setTimeout(() => setReceiptData(null), 1000);
         }}
       />
 

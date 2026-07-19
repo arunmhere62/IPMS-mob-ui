@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, FlatList, RefreshControl } from 'react-native';
+import { View, Text, FlatList, RefreshControl, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -9,11 +9,37 @@ import { FullScreenSlideUpModal } from '@/components/FullScreenSlideUpModal';
 import { RequestDetailsComponent } from '@/components/RequestDetailsComponent';
 import { networkLogger, type NetworkLog } from '@/utils/networkLogger';
 import { Theme } from '@/theme';
+import { API_ENVIRONMENTS, getCurrentApiUrl, getCurrentEnvLabel, setApiEnvironment, subscribeEnvChanges } from '@/utils/envSwitcher';
 
 const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [logs, setLogs] = useState<NetworkLog[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLog, setSelectedLog] = useState<NetworkLog | null>(null);
+  const [currentEnvUrl, setCurrentEnvUrl] = useState(getCurrentApiUrl());
+
+  useEffect(() => {
+    const unsub = subscribeEnvChanges((url) => setCurrentEnvUrl(url));
+    return () => { unsub(); };
+  }, []);
+
+  const handleSwitchEnv = (url: string) => {
+    if (url === currentEnvUrl) return;
+    const env = API_ENVIRONMENTS.find((e) => e.url === url);
+    Alert.alert(
+      'Switch Environment',
+      `Switch to ${env?.label || 'this environment'}?\n\n${url}\n\nThe app will use this API for all requests. You may need to re-login.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Switch',
+          onPress: async () => {
+            await setApiEnvironment(url);
+            setCurrentEnvUrl(url);
+          },
+        },
+      ],
+    );
+  };
 
   const countKeys = (obj: any) => {
     if (!obj || typeof obj !== 'object') return 0;
@@ -151,6 +177,42 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         >
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }} numberOfLines={1} adjustsFontSizeToFit>Refresh</Text>
         </AnimatedPressableCard>
+      </View>
+
+      {/* Environment Switcher */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+        <Text style={{ fontSize: 12, fontWeight: '800', color: Theme.colors.text.secondary, marginBottom: 8 }}>
+          🔧 API Environment
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          {API_ENVIRONMENTS.map((env) => {
+            const isActive = env.url === currentEnvUrl;
+            return (
+              <AnimatedPressableCard
+                key={env.url}
+                onPress={() => handleSwitchEnv(env.url)}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  backgroundColor: isActive ? Theme.colors.primary : Theme.colors.background.tertiary,
+                  borderWidth: 1,
+                  borderColor: isActive ? Theme.colors.primary : Theme.colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#fff' : Theme.colors.text.primary }}>
+                  {isActive ? '● ' : ''}{env.label}
+                </Text>
+                <Text style={{ fontSize: 10, color: isActive ? '#ffffffcc' : Theme.colors.text.tertiary, marginTop: 2 }}>
+                  {env.description}
+                </Text>
+              </AnimatedPressableCard>
+            );
+          })}
+        </View>
+        <Text style={{ fontSize: 10, color: Theme.colors.text.tertiary, marginTop: 6 }}>
+          Current: {getCurrentEnvLabel()} — {currentEnvUrl}
+        </Text>
       </View>
 
       <FlatList
