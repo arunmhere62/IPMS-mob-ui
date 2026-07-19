@@ -62,7 +62,7 @@ export const TenantBottomNav: React.FC<TenantBottomNavProps> = ({
               isActive(tab.name) && styles.activeLabel,
             ]}
             numberOfLines={1}
-            adjustsFontSizeToFit
+            adjustsFontSizeToFit minimumFontScale={0.85}
           >
             {tab.label}
           </Text>

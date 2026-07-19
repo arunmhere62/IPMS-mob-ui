@@ -538,7 +538,10 @@ export const QuickSetupScreen: React.FC = () => {
                         flex: 1,
                         paddingVertical: 12,
                         fontSize: 14,
+                        lineHeight: 18,
                         color: Theme.colors.text.primary,
+                        minHeight: 40,
+                        textAlignVertical: 'center',
                       }}
                     />
                   </View>
@@ -611,7 +614,10 @@ export const QuickSetupScreen: React.FC = () => {
                         flex: 1,
                         paddingVertical: 12,
                         fontSize: 14,
+                        lineHeight: 18,
                         color: Theme.colors.text.primary,
+                        minHeight: 40,
+                        textAlignVertical: 'center',
                       }}
                     />
                   </View>
@@ -773,7 +779,10 @@ export const QuickSetupScreen: React.FC = () => {
                                   paddingVertical: 6,
                                   paddingHorizontal: 3,
                                   fontSize: 13,
+                                  lineHeight: 16,
                                   color: Theme.colors.text.primary,
+                                  minHeight: 28,
+                                  textAlignVertical: 'center',
                                 }}
                               />
                             </View>
@@ -785,6 +794,7 @@ export const QuickSetupScreen: React.FC = () => {
                                   marginTop: 2,
                                 }}
                                 numberOfLines={1}
+                                ellipsizeMode="tail"
                               >
                                 {errors[`room_${room.id}_roomNo`]}
                               </Text>
@@ -823,8 +833,11 @@ export const QuickSetupScreen: React.FC = () => {
                                   : Theme.colors.border,
                                 paddingVertical: 6,
                                 fontSize: 13,
+                                lineHeight: 16,
                                 color: Theme.colors.text.primary,
                                 textAlign: "center",
+                                minHeight: 28,
+                                textAlignVertical: 'center',
                               }}
                             />
                             {errors[`room_${room.id}_beds`] && (
@@ -836,6 +849,7 @@ export const QuickSetupScreen: React.FC = () => {
                                   textAlign: "center",
                                 }}
                                 numberOfLines={1}
+                                ellipsizeMode="tail"
                               >
                                 {errors[`room_${room.id}_beds`]}
                               </Text>
@@ -902,6 +916,7 @@ export const QuickSetupScreen: React.FC = () => {
                                   marginTop: 2,
                                 }}
                                 numberOfLines={1}
+                                ellipsizeMode="tail"
                               >
                                 {errors[`room_${room.id}_price`]}
                               </Text>

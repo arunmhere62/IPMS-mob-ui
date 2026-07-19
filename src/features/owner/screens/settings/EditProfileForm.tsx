@@ -281,7 +281,7 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({
       ) : null}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 0, paddingBottom: 20 }}
+        contentContainerStyle={{ padding: 0, paddingBottom: 100 }}
         showsVerticalScrollIndicator={true}
         keyboardShouldPersistTaps="handled"
         bounces={true}

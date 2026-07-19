@@ -112,7 +112,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
             isSelected && styles.selectedItemText,
           ]}
           numberOfLines={1}
-          adjustsFontSizeToFit
+          adjustsFontSizeToFit minimumFontScale={0.85}
         >
           {item.label}
         </Text>
@@ -152,7 +152,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
                   !selectedItem && styles.placeholderText,
                 ]}
                 numberOfLines={1}
-                adjustsFontSizeToFit
+                adjustsFontSizeToFit minimumFontScale={0.85}
               >
                 {selectedItem ? selectedItem.label : placeholder}
               </Text>
@@ -210,7 +210,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 {selectedValue && !disabled && (
                   <AnimatedPressableCard onPress={handleClearSelection} style={styles.clearSelectionButton}>
-                    <Text style={styles.clearSelectionButtonText} numberOfLines={1} adjustsFontSizeToFit>Clear</Text>
+                    <Text style={styles.clearSelectionButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Clear</Text>
                   </AnimatedPressableCard>
                 )}
                 <AnimatedPressableCard onPress={closeModal} style={styles.closeButton}>
@@ -406,7 +406,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     fontSize: 14,
+    lineHeight: 18,
     color: Theme.colors.text.primary,
+    minHeight: 40,
+    textAlignVertical: 'center',
   },
   clearButton: {
     width: 24,

@@ -474,8 +474,8 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
           ref={flatListRef}
           data={organizations}
           renderItem={renderOrganizationCard}
-          keyExtractor={(item) => item.s_no.toString()}
-          contentContainerStyle={{ padding: 16, paddingBottom: 0 }}
+          keyExtractor={(item) => String(item?.s_no ?? Math.random())}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

@@ -612,7 +612,7 @@ export const DashboardScreen: React.FC = () => {
       <TrialBanner />
       <View style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={{ paddingBottom: 80 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
           onScroll={bottomNavOnScroll}
           scrollEventThrottle={bottomNavThrottle}
           onScrollEndDrag={bottomNavOnScrollEndDrag}
@@ -713,7 +713,7 @@ export const DashboardScreen: React.FC = () => {
                       fontWeight: "800",
                     }}
                     numberOfLines={1}
-                    adjustsFontSizeToFit
+                    adjustsFontSizeToFit minimumFontScale={0.85}
                   >
                     TOTAL BEDS
                   </Text>
@@ -736,7 +736,7 @@ export const DashboardScreen: React.FC = () => {
                       fontWeight: "800",
                     }}
                     numberOfLines={1}
-                    adjustsFontSizeToFit
+                    adjustsFontSizeToFit minimumFontScale={0.85}
                   >
                     OCCUPIED
                   </Text>
@@ -759,7 +759,7 @@ export const DashboardScreen: React.FC = () => {
                       fontWeight: "800",
                     }}
                     numberOfLines={1}
-                    adjustsFontSizeToFit
+                    adjustsFontSizeToFit minimumFontScale={0.85}
                   >
                     OCCUPANCY
                   </Text>
@@ -915,6 +915,9 @@ export const DashboardScreen: React.FC = () => {
                     />
                     <Text
                       numberOfLines={1}
+                      ellipsizeMode="tail"
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}
                       style={{
                         color: active ? "#fff" : Theme.colors.text.primary,
                         fontSize: 12,

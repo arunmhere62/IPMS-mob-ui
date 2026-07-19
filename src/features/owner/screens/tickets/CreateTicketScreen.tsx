@@ -127,7 +127,10 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff' }}
+                      lineHeight: 18,
+                      backgroundColor: '#fff',
+                      minHeight: 44,
+                      textAlignVertical: 'center' }}
                     placeholder="Brief description of the issue"
                     value={title}
                     onChangeText={setTitle}
@@ -146,6 +149,7 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
+                      lineHeight: 18,
                       backgroundColor: '#fff',
                       minHeight: 120,
                       textAlignVertical: 'top' }}

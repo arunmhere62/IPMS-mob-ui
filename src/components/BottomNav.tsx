@@ -156,7 +156,7 @@ const TabItem = ({
                   : Theme.colors.text.tertiary },
             ]}
             numberOfLines={1}
-            adjustsFontSizeToFit
+            adjustsFontSizeToFit minimumFontScale={0.85}
           >
             {tab.label}
           </Text>

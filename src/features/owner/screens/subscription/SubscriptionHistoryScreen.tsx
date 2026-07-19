@@ -239,7 +239,7 @@ export const SubscriptionHistoryScreen: React.FC<SubscriptionHistoryScreenProps>
           renderItem={renderHistoryItem}
           keyExtractor={(item) => item.s_no?.toString() || item.id?.toString() || Math.random().toString()}
           style={{ backgroundColor: CONTENT_COLOR }}
-          contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={viewabilityConfig.current}
           refreshControl={

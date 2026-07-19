@@ -100,7 +100,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({ pendin
               borderTopWidth: 1,
               borderTopColor: '#00000020' }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
               Monthly Breakdown
             </Text>
             <Text style={{ fontSize: 14, color: Theme.colors.text.secondary }}>
@@ -138,7 +138,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({ pendin
                       ₹{month.balance}
                     </Text>
                     {month.is_overdue && (
-                      <Text style={{ fontSize: 10, color: '#DC2626' }} numberOfLines={1} adjustsFontSizeToFit>Overdue</Text>
+                      <Text style={{ fontSize: 10, color: '#DC2626' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Overdue</Text>
                     )}
                   </View>
                 </View>

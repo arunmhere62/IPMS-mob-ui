@@ -765,7 +765,10 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
+                      lineHeight: 18,
                       backgroundColor: "#fff",
+                      minHeight: 44,
+                      textAlignVertical: 'center',
                     }}
                     accessibilityLabel="Full name input"
                     accessibilityHint="Enter tenant's full name"
@@ -933,11 +936,14 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                                     paddingHorizontal: 10,
                                     paddingVertical: 7,
                                     fontSize: 16,
+                                    lineHeight: 20,
                                     fontWeight: "700",
                                     letterSpacing: 6,
                                     textAlign: "center",
                                     backgroundColor: "#fff",
                                     color: "#1E3A8A",
+                                    minHeight: 44,
+                                    textAlignVertical: 'center',
                                   }}
                                   accessibilityLabel="OTP input"
                                   accessibilityHint="Enter the 4-digit OTP sent to your phone"
@@ -1124,7 +1130,10 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
+                      lineHeight: 18,
                       backgroundColor: "#fff",
+                      minHeight: 44,
+                      textAlignVertical: 'center',
                     }}
                     accessibilityLabel="Email address input"
                     accessibilityHint="Enter tenant's email address (optional)"
@@ -1164,7 +1173,10 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
+                      lineHeight: 18,
                       backgroundColor: "#fff",
+                      minHeight: 44,
+                      textAlignVertical: 'center',
                     }}
                     accessibilityLabel="Occupation input"
                     accessibilityHint="Enter tenant's occupation (optional)"
@@ -1253,8 +1265,10 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
+                      lineHeight: 18,
                       backgroundColor: "#fff",
                       textAlignVertical: "top",
+                      minHeight: 80,
                     }}
                     accessibilityLabel="Address input"
                     accessibilityHint="Enter tenant's full address (optional)"

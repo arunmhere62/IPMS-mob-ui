@@ -64,7 +64,7 @@ const DetailRow = ({
 );
 
 export default function VisitorDetailsScreen({ route, navigation }: VisitorDetailsScreenProps) {
-  const { visitorId } = route.params;
+  const visitorId = route?.params?.visitorId;
   const { isAdmin, isSuperAdmin } = usePermissions();
   const canManageVisitors = isAdmin || isSuperAdmin;
   const canEditVisitor = canManageVisitors;
@@ -148,7 +148,7 @@ export default function VisitorDetailsScreen({ route, navigation }: VisitorDetai
         ) : (
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           >
             <Card

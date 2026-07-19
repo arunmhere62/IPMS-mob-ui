@@ -267,7 +267,7 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
         )}
 
         {!loading && payments && payments.length > 0 ? (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
             {payments.map((payment) => {
               const statusColor = getStatusColor(payment.status);
 

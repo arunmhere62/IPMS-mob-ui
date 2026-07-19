@@ -273,8 +273,11 @@ export const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
                   paddingHorizontal: 12,
                   paddingVertical: 10,
                   fontSize: 14,
+                  lineHeight: 18,
                   borderWidth: 1,
-                  borderColor: '#E5E7EB' }}
+                  borderColor: '#E5E7EB',
+                  minHeight: 44,
+                  textAlignVertical: 'center' }}
                 placeholder="Search country or code..."
                 placeholderTextColor="#9CA3AF"
                 value={searchText}

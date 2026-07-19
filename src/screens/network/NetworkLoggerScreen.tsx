@@ -162,7 +162,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             borderWidth: 1,
             borderColor: Theme.colors.danger }}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }} numberOfLines={1} adjustsFontSizeToFit>Clear</Text>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Clear</Text>
         </AnimatedPressableCard>
 
         <AnimatedPressableCard
@@ -175,7 +175,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             borderWidth: 1,
             borderColor: Theme.colors.primary }}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }} numberOfLines={1} adjustsFontSizeToFit>Refresh</Text>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Refresh</Text>
         </AnimatedPressableCard>
       </View>
 
@@ -300,7 +300,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               </View>
             </View>
 
-            <Text numberOfLines={2} style={{ marginTop: 6, fontSize: 15, color: Theme.colors.text.secondary, fontWeight: '700', lineHeight: 18 }}>
+            <Text numberOfLines={2} ellipsizeMode="tail" style={{ marginTop: 6, fontSize: 15, color: Theme.colors.text.secondary, fontWeight: '700', lineHeight: 18 }}>
               {item.url}
             </Text>
 
@@ -312,7 +312,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                 borderRadius: 8,
                 borderLeftWidth: 3,
                 borderLeftColor: Theme.colors.danger }}>
-                <Text numberOfLines={2} style={{ fontSize: 12, color: Theme.colors.danger, fontWeight: '700' }}>
+                <Text numberOfLines={2} ellipsizeMode="tail" style={{ fontSize: 12, color: Theme.colors.danger, fontWeight: '700' }}>
                   {item.error}
                 </Text>
               </View>

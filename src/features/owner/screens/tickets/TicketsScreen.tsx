@@ -18,6 +18,7 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
 
 interface TicketsScreenProps {
   navigation: any;
@@ -183,6 +184,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
           <Text
             style={{ fontSize: 14, color: Theme.colors.text.secondary, marginBottom: 12 }}
             numberOfLines={2}
+            ellipsizeMode="tail"
           >
             {item.description}
           </Text>
@@ -230,6 +232,9 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
               paddingHorizontal: 12,
               paddingVertical: 8,
               fontSize: 14,
+              lineHeight: 18,
+              minHeight: 40,
+              textAlignVertical: 'center',
             }}
             placeholder="Search tickets..."
             value={searchQuery}
@@ -287,8 +292,8 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
           ref={flatListRef}
           data={tickets}
           renderItem={renderTicketCard}
-          keyExtractor={(item) => item.s_no.toString()}
-          contentContainerStyle={{ padding: 16, paddingBottom: 0 }}
+          keyExtractor={(item) => String(item?.s_no ?? Math.random())}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -321,27 +326,9 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
       )}
 
       {/* Floating Add Ticket Button */}
-      <AnimatedPressableCard
+      <FloatingActionButton
         onPress={() => navigation.navigate('CreateTicket')}
-        style={{
-          position: 'absolute',
-          right: 20,
-          bottom: 80,
-          width: 60,
-          height: 60,
-          borderRadius: 30,
-          backgroundColor: Theme.colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-        }}
-      >
-        <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>
-      </AnimatedPressableCard>
+      />
       </View>
     </ScreenLayout>
   );

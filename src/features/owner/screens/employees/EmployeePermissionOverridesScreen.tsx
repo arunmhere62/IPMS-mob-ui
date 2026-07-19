@@ -155,7 +155,7 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
             </Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
+          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
             <Card style={{ padding: 14, borderRadius: 16, backgroundColor: '#fff', marginBottom: 12 }}>
               <Text style={{ fontSize: 14, fontWeight: '800', color: Theme.colors.text.primary }}>
                 Manage Employee Access

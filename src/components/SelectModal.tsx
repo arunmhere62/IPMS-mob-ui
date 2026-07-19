@@ -105,9 +105,12 @@ export const SelectModal: React.FC<SelectModalProps> = ({
             paddingHorizontal: 14,
             paddingVertical: 12,
             fontSize: 14,
+            lineHeight: 18,
             color: Theme.colors.text.primary,
             borderWidth: 1,
-            borderColor: '#E5E7EB' }}
+            borderColor: '#E5E7EB',
+            minHeight: 44,
+            textAlignVertical: 'center' }}
           placeholder={searchPlaceholder}
           placeholderTextColor="#9CA3AF"
           value={searchQuery}
@@ -158,7 +161,7 @@ export const SelectModal: React.FC<SelectModalProps> = ({
                       fontWeight: isSelected ? '600' : '500',
                       flex: 1 }}
                     numberOfLines={1}
-                    adjustsFontSizeToFit
+                    adjustsFontSizeToFit minimumFontScale={0.85}
                   >
                     {item.label}
                   </Text>

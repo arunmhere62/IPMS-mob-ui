@@ -48,7 +48,10 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
             flex: 1,
             paddingVertical: 12,
             fontSize: 14,
-            color: Theme.colors.text.primary }}
+            lineHeight: 18,
+            color: Theme.colors.text.primary,
+            minHeight: 44,
+            textAlignVertical: 'center' }}
           placeholder={placeholder}
           placeholderTextColor={placeholderTextColor}
           value={value}

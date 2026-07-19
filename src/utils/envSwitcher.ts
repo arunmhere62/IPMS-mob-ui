@@ -40,6 +40,7 @@ export const getCurrentEnvLabel = (): string => {
 };
 
 export const setApiEnvironment = async (url: string): Promise<void> => {
+  if (!__DEV__) return;
   _currentUrl = url;
   await AsyncStorage.setItem(STORAGE_KEY, url);
   _listeners.forEach((fn) => fn(url));
@@ -48,6 +49,8 @@ export const setApiEnvironment = async (url: string): Promise<void> => {
 export const initEnvSwitcher = async (): Promise<void> => {
   if (_initialized) return;
   _initialized = true;
+  // In production builds, never override the configured API URL with a stored value
+  if (!__DEV__) return;
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
     if (stored) {

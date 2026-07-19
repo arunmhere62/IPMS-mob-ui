@@ -105,7 +105,7 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
               color: Theme.colors.text.primary }}
             numberOfLines={1}
             ellipsizeMode="tail"
-            adjustsFontSizeToFit
+            adjustsFontSizeToFit minimumFontScale={0.85}
           >
             {rentText}
           </Text>
@@ -128,7 +128,7 @@ export const AccommodationDetails: React.FC<AccommodationDetailsProps> = ({
               color: Theme.colors.text.primary }}
             numberOfLines={1}
             ellipsizeMode="tail"
-            adjustsFontSizeToFit
+            adjustsFontSizeToFit minimumFontScale={0.85}
           >
             {bedPriceText}
           </Text>

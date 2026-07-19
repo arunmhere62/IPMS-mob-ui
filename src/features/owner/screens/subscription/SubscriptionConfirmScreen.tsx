@@ -56,7 +56,7 @@ export const SubscriptionConfirmScreen: React.FC<SubscriptionConfirmScreenProps>
         backgroundColor={Theme.colors.background.blue}
       />
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         <Card style={{ padding: 18, marginBottom: 16 }}>
           <Text style={{ fontSize: 16, fontWeight: '800', color: Theme.colors.text.primary, marginBottom: 8 }}>
             Plan Details

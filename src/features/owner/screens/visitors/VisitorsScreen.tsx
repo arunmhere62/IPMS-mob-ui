@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { 
   View, 
   Text, 
@@ -250,7 +250,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       {/* Header */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 4 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 4 }} numberOfLines={1} ellipsizeMode="tail">
             {visitorName}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -344,7 +344,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           borderLeftWidth: 2,
           borderLeftColor: Theme.colors.primary }}>
           <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginBottom: 2 }}>Remarks</Text>
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }} numberOfLines={2}>
+          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }} numberOfLines={2} ellipsizeMode="tail">
             {remarks}
           </Text>
         </View>
@@ -442,8 +442,8 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           ref={flatListRef}
           data={visitors}
           renderItem={renderVisitorCard}
-          keyExtractor={(item: any) => item.s_no.toString()}
-          contentContainerStyle={{ padding: 16, paddingBottom: 0 }}
+          keyExtractor={(item: any) => String(item?.s_no ?? Math.random())}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -478,26 +478,9 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
       )}
 
       {/* Floating Add Visitor Button */}
-      <AnimatedPressableCard
+      <FloatingActionButton
         onPress={handleAddVisitor}
-        style={{
-          position: 'absolute',
-          right: 20,
-          bottom: 80,
-          width: 60,
-          height: 60,
-          borderRadius: 30,
-          backgroundColor: Theme.colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8 }}
-      >
-        <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>
-      </AnimatedPressableCard>
+      />
 
       {/* Visitor Form Modal */}
       <VisitorForm

@@ -303,7 +303,10 @@ export const VisitorForm: React.FC<VisitorFormProps> = ({
                           borderRadius: 8,
                           padding: 12,
                           fontSize: 14,
-                          backgroundColor: '#fff' }}
+                          lineHeight: 18,
+                          backgroundColor: '#fff',
+                          minHeight: 44,
+                          textAlignVertical: 'center' }}
                         placeholder="Enter visitor name"
                         value={visitorName}
                         onChangeText={setVisitorName}
@@ -353,7 +356,10 @@ export const VisitorForm: React.FC<VisitorFormProps> = ({
                             borderRadius: 8,
                             padding: 12,
                             fontSize: 14,
-                            backgroundColor: '#fff' }}
+                            lineHeight: 18,
+                            backgroundColor: '#fff',
+                            minHeight: 44,
+                            textAlignVertical: 'center' }}
                           placeholder="Enter custom purpose"
                           value={customPurpose}
                           onChangeText={setCustomPurpose}
@@ -474,6 +480,7 @@ export const VisitorForm: React.FC<VisitorFormProps> = ({
                           borderRadius: 8,
                           padding: 12,
                           fontSize: 14,
+                          lineHeight: 18,
                           backgroundColor: '#fff',
                           minHeight: 80,
                           textAlignVertical: 'top' }}

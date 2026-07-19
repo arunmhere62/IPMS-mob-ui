@@ -173,7 +173,10 @@ export const EditRefundPaymentForm: React.FC<EditRefundPaymentFormProps> = ({
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     fontSize: 16,
+                    lineHeight: 20,
                     color: Theme.colors.text.primary,
+                    minHeight: 48,
+                    textAlignVertical: 'center',
                   }}
                   placeholder="Enter amount"
                   placeholderTextColor={Theme.colors.input.placeholder}
@@ -241,8 +244,11 @@ export const EditRefundPaymentForm: React.FC<EditRefundPaymentFormProps> = ({
                         }
                       />
                       <Text
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
                         style={{
                           marginLeft: 8,
+                          flexShrink: 1,
                           fontSize: 14,
                           fontWeight: paymentMethod === method.value ? '600' : '400',
                           color:
@@ -329,6 +335,7 @@ export const EditRefundPaymentForm: React.FC<EditRefundPaymentFormProps> = ({
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     fontSize: 16,
+                    lineHeight: 20,
                     color: Theme.colors.text.primary,
                     textAlignVertical: 'top',
                     minHeight: 80,

@@ -51,7 +51,7 @@ export const ActionTile: React.FC<ActionTileProps> = ({
             <Text
               style={{ color: Theme.colors.text.primary, fontSize: 12, fontWeight: '700', marginLeft: 8 }}
               numberOfLines={1}
-              adjustsFontSizeToFit
+              adjustsFontSizeToFit minimumFontScale={0.85}
             >
               {title}
             </Text>

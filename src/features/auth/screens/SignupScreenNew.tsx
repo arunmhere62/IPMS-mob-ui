@@ -441,7 +441,10 @@ export const SignupScreenNew: React.FC = () => {
                 flex: 1,
                 paddingVertical: 12,
                 fontSize: 14,
-                color: Theme.colors.text.primary }}
+                lineHeight: 18,
+                color: Theme.colors.text.primary,
+                minHeight: 44,
+                textAlignVertical: 'center' }}
               placeholder="e.g., Green Valley PG"
               placeholderTextColor="#9CA3AF"
               value={formData.pgName}
@@ -491,7 +494,10 @@ export const SignupScreenNew: React.FC = () => {
                 flex: 1,
                 paddingVertical: 12,
                 fontSize: 14,
-                color: Theme.colors.text.primary }}
+                lineHeight: 18,
+                color: Theme.colors.text.primary,
+                minHeight: 44,
+                textAlignVertical: 'center' }}
               placeholder="e.g., John Doe"
               placeholderTextColor="#9CA3AF"
               value={formData.name}

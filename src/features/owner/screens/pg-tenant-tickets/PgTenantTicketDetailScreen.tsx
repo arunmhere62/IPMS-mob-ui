@@ -270,15 +270,15 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
           <View style={styles.infoStrip}>
             <View style={styles.infoLeftSection}>
               <View style={styles.infoChipRow}>
-                <View style={styles.infoChip}><Text style={styles.infoChipText}>{ticket.category}</Text></View>
-                <View style={styles.infoChip}><Text style={styles.infoChipText}>{ticket.priority}</Text></View>
+                <View style={styles.infoChip}><Text style={styles.infoChipText} numberOfLines={1}>{ticket.category}</Text></View>
+                <View style={styles.infoChip}><Text style={styles.infoChipText} numberOfLines={1}>{ticket.priority}</Text></View>
               </View>
               
               {/* Assigned user */}
               <View style={styles.assignedUserRow}>
                 <Text style={styles.assignedLabel}>Assigned to:</Text>
                 {ticket.users?.name ? (
-                  <Text style={styles.assignedValue}>{ticket.users.name}</Text>
+                  <Text style={styles.assignedValue} numberOfLines={1} ellipsizeMode="tail">{ticket.users.name}</Text>
                 ) : (
                   <View style={styles.unassignedContainer}>
                     <Text style={styles.assignedValue}>Unassigned</Text>
@@ -352,7 +352,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
           <FlatList
             ref={flatListRef}
             data={comments}
-            keyExtractor={(c) => String(c.s_no)}
+            keyExtractor={(c) => String(c?.s_no ?? Math.random())}
             renderItem={renderComment}
             contentContainerStyle={styles.chatContent}
             onContentSizeChange={() => comments.length > 0 && flatListRef.current?.scrollToEnd({ animated: false })}
@@ -470,8 +470,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1, backgroundColor: '#f9fafb', borderRadius: 20, paddingHorizontal: 14,
-    paddingVertical: 8, fontSize: 14, color: '#111827', maxHeight: 100,
-    borderWidth: 1, borderColor: '#e5e7eb',
+    paddingVertical: 8, fontSize: 14, lineHeight: 18, color: '#111827', maxHeight: 100,
+    borderWidth: 1, borderColor: '#e5e7eb', minHeight: 40, textAlignVertical: 'center',
   },
   sendBtn: {
     width: 40, height: 40, borderRadius: 20,

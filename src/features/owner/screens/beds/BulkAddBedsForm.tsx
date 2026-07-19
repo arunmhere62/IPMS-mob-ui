@@ -237,7 +237,10 @@ export const BulkAddBedsForm: React.FC<BulkAddBedsFormProps> = ({
                     borderLeftWidth: 0,
                     padding: 12,
                     fontSize: 14,
-                    backgroundColor: '#fff' }}
+                    lineHeight: 18,
+                    backgroundColor: '#fff',
+                    minHeight: 44,
+                    textAlignVertical: 'center' }}
                 />
               </View>
               {errors[index]?.bed_no && (
@@ -290,7 +293,10 @@ export const BulkAddBedsForm: React.FC<BulkAddBedsFormProps> = ({
                     borderLeftWidth: 0,
                     padding: 12,
                     fontSize: 14,
-                    backgroundColor: '#fff' }}
+                    lineHeight: 18,
+                    backgroundColor: '#fff',
+                    minHeight: 44,
+                    textAlignVertical: 'center' }}
                 />
               </View>
               {errors[index]?.bed_price && (

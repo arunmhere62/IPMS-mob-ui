@@ -156,10 +156,10 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
 
       {/* Ticket info strip */}
       <View style={styles.infoStrip}>
-        <Text style={styles.infoChip}>{ticket?.category}</Text>
-        <Text style={styles.infoChip}>{ticket?.priority}</Text>
+        <Text style={styles.infoChip} numberOfLines={1}>{ticket?.category}</Text>
+        <Text style={styles.infoChip} numberOfLines={1}>{ticket?.priority}</Text>
         {ticket?.users && (
-          <Text style={styles.infoAssigned}>Assigned: {ticket.users.name}</Text>
+          <Text style={styles.infoAssigned} numberOfLines={1} ellipsizeMode="tail">Assigned: {ticket.users.name}</Text>
         )}
       </View>
 
@@ -256,8 +256,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   input: {
     flex: 1, backgroundColor: '#f3f4f6', borderRadius: 22,
-    paddingHorizontal: 14, paddingVertical: 10, fontSize: 14,
-    color: '#111827', maxHeight: 100 },
+    paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, lineHeight: 18,
+    color: '#111827', maxHeight: 100, minHeight: 44, textAlignVertical: 'center' },
   sendBtn: {
     width: 42, height: 42, borderRadius: 21, backgroundColor: C.primary,
     alignItems: 'center', justifyContent: 'center' },

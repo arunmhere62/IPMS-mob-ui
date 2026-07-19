@@ -222,7 +222,7 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
 
         <View style={styles.urlSection}>
           <Text style={styles.summaryLabel}>URL</Text>
-          <Text style={styles.urlText} numberOfLines={2}>
+          <Text style={styles.urlText} numberOfLines={2} ellipsizeMode="tail">
             {log.url}
           </Text>
         </View>

@@ -71,7 +71,7 @@ export const SimpleNetworkLogsViewer: React.FC<SimpleNetworkLogsViewerProps> = (
                   )}
                 </View>
 
-                <Text style={styles.url} numberOfLines={2}>
+                <Text style={styles.url} numberOfLines={2} ellipsizeMode="tail">
                   {log.url}
                 </Text>
 

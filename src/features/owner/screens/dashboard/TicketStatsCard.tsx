@@ -86,7 +86,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
     <View style={{ flex: 1, minWidth: 80, alignItems: 'center', paddingVertical: 8, backgroundColor: Theme.withOpacity(color, 0.08), borderRadius: 8, marginRight: 6, marginBottom: 6 }}>
       <Ionicons name={icon as any} size={14} color={color} />
       <Text style={{ color: color, fontSize: 16, fontWeight: '900', marginTop: 2 }}>{value}</Text>
-      <Text style={{ color: Theme.colors.text.secondary, fontSize: 10, fontWeight: '600', marginTop: 1 }} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
+      <Text style={{ color: Theme.colors.text.secondary, fontSize: 10, fontWeight: '600', marginTop: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{label}</Text>
     </View>
   );
 
@@ -106,7 +106,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }} numberOfLines={1}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }} numberOfLines={1} ellipsizeMode="tail">
               {ticket.title}
             </Text>
             {showTenant && ticket.tenants && (
@@ -122,10 +122,10 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
               <View style={{ paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, backgroundColor: `${getStatusColor(ticket.status)}20` }}>
-                <Text style={{ fontSize: 9, color: getStatusColor(ticket.status), fontWeight: '500' }} numberOfLines={1} adjustsFontSizeToFit>{ticket.status}</Text>
+                <Text style={{ fontSize: 9, color: getStatusColor(ticket.status), fontWeight: '500' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{ticket.status}</Text>
               </View>
               <View style={{ paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, backgroundColor: `${getPriorityColor(ticket.priority)}20` }}>
-                <Text style={{ fontSize: 9, color: getPriorityColor(ticket.priority), fontWeight: '500' }} numberOfLines={1} adjustsFontSizeToFit>{ticket.priority}</Text>
+                <Text style={{ fontSize: 9, color: getPriorityColor(ticket.priority), fontWeight: '500' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{ticket.priority}</Text>
               </View>
             </View>
           </View>
@@ -146,7 +146,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
           </Text>
         </View>
         <AnimatedPressableCard onPress={() => navigation.navigate('PgTenantTickets' as never)}>
-          <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '900' }} numberOfLines={1} adjustsFontSizeToFit>View All</Text>
+          <Text style={{ fontSize: 12, color: Theme.colors.primary, fontWeight: '900' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>View All</Text>
         </AnimatedPressableCard>
       </View>
 
@@ -193,7 +193,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
               alignItems: 'center',
             }}
           >
-            <Text style={{ fontSize: 12, fontWeight: '900', color: activeTab === 'recent' ? '#fff' : Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit>
+            <Text style={{ fontSize: 12, fontWeight: '900', color: activeTab === 'recent' ? '#fff' : Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
               Recent
             </Text>
           </AnimatedPressableCard>
@@ -209,7 +209,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '900', color: activeTab === 'unread' ? '#fff' : Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit>
+              <Text style={{ fontSize: 12, fontWeight: '900', color: activeTab === 'unread' ? '#fff' : Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
                 Unread ({unreadTickets.count})
               </Text>
             </AnimatedPressableCard>

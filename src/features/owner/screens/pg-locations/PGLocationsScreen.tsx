@@ -20,6 +20,7 @@ import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { Card } from '../../../../components/Card';
 import { AnimatedButton } from '../../../../components/AnimatedButton';
 import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
+import { FloatingActionButton } from '../../../../components/FloatingActionButton';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
 import { SearchableDropdown } from '../../../../components/SearchableDropdown';
@@ -382,10 +383,10 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
     <Card key={pg.s_no} className="mb-4">
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: Theme.colors.text.primary, marginBottom: 4 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: Theme.colors.text.primary, marginBottom: 4 }} numberOfLines={1} ellipsizeMode="tail">
             {pg.location_name}
           </Text>
-          <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+          <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginBottom: 8 }} numberOfLines={2} ellipsizeMode="tail">
             {pg.address}
           </Text>
           
@@ -437,7 +438,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
                 color: pg.status === 'ACTIVE' ? '#059669' : '#DC2626',
               }}
               numberOfLines={1}
-              adjustsFontSizeToFit
+              adjustsFontSizeToFit minimumFontScale={0.85}
             >
               {pg.status}
             </Text>
@@ -470,7 +471,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
         />
         <View style={{ flex: 1, backgroundColor: Theme.colors.light }}>
           <ScrollView
-            contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           >
             {loading ? (
@@ -514,29 +515,10 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
           </ScrollView>
 
           {/* Floating Add Button */}
-          <AnimatedPressableCard
-            style={{
-              position: 'absolute',
-              bottom: 90,
-              right: 20,
-              backgroundColor: Theme.colors.primary,
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              justifyContent: 'center',
-              alignItems: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 8,
-              opacity: canCreate ? 1 : 0.45,
-            }}
+          <FloatingActionButton
             onPress={openCreateModal}
             disabled={!canCreate}
-          >
-            <Text style={{ fontSize: 32, color: 'white', lineHeight: 32 }}>+</Text>
-          </AnimatedPressableCard>
+          />
         </View>
       </ScreenLayout>
 
@@ -563,8 +545,11 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
               borderRadius: 12,
               padding: 14,
               fontSize: 15,
+              lineHeight: 19,
               borderWidth: 1,
               borderColor: '#E5E7EB',
+              minHeight: 48,
+              textAlignVertical: 'center',
             }}
             placeholder="Enter PG location name"
             value={formData.locationName}
@@ -657,8 +642,11 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
               borderRadius: 12,
               padding: 14,
               fontSize: 15,
+              lineHeight: 19,
               borderWidth: 1,
               borderColor: '#E5E7EB',
+              minHeight: 48,
+              textAlignVertical: 'center',
             }}
             placeholder="Enter pincode (optional)"
             value={formData.pincode}

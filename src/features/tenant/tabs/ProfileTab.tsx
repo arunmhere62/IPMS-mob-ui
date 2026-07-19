@@ -25,8 +25,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout }) => {
         <View style={styles.profileAvatarLarge}>
           <Text style={styles.profileAvatarText}>{(raw?.name?.[0] ?? 'T').toUpperCase()}</Text>
         </View>
-        <Text style={styles.profileName} numberOfLines={1} adjustsFontSizeToFit>{raw?.name ?? 'N/A'}</Text>
-        <Text style={styles.profilePhone} numberOfLines={1} adjustsFontSizeToFit>{raw?.phone_no ?? 'N/A'}</Text>
+        <Text style={styles.profileName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{raw?.name ?? 'N/A'}</Text>
+        <Text style={styles.profilePhone} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{raw?.phone_no ?? 'N/A'}</Text>
         <StatusBadge status={raw?.status} />
       </LinearGradient>
 
@@ -86,10 +86,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout }) => {
                 <Ionicons name="bed-outline" size={16} color={C.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.allocationTitle} numberOfLines={1} adjustsFontSizeToFit>{a.rooms?.room_no} · {a.beds?.bed_no}</Text>
-                <Text style={styles.allocationMeta} numberOfLines={1} adjustsFontSizeToFit>From {formatDate(a.effective_from)}{a.effective_to ? ` to ${formatDate(a.effective_to)}` : ' (current)'}</Text>
+                <Text style={styles.allocationTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{a.rooms?.room_no} · {a.beds?.bed_no}</Text>
+                <Text style={styles.allocationMeta} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>From {formatDate(a.effective_from)}{a.effective_to ? ` to ${formatDate(a.effective_to)}` : ' (current)'}</Text>
               </View>
-              <Text style={styles.allocationAmount} numberOfLines={1} adjustsFontSizeToFit>{formatAmount(a.bed_price_snapshot)}/mo</Text>
+              <Text style={styles.allocationAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{formatAmount(a.bed_price_snapshot)}/mo</Text>
             </View>
           ))}
         </SectionCard>
@@ -98,7 +98,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout }) => {
       <AnimatedPressableCard style={styles.logoutBtn} onPress={onLogout}>
         <LinearGradient colors={[C.danger, C.dangerDark]} style={styles.logoutGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
           <Ionicons name="log-out-outline" size={20} color="#fff" />
-          <Text style={styles.logoutText} numberOfLines={1} adjustsFontSizeToFit>Logout</Text>
+          <Text style={styles.logoutText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Logout</Text>
         </LinearGradient>
       </AnimatedPressableCard>
     </>

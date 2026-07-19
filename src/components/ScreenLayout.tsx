@@ -29,9 +29,9 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   const effectiveContentBackgroundColor = contentBackgroundColor ?? backgroundColor;
 
   return (
-    <SafeAreaView 
-      style={{ flex: 1, backgroundColor ,}} 
-      edges={['left', 'right', ]}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor }}
+      edges={['left', 'right']}
     >
       <ScreenLayoutContext.Provider
         value={{ backgroundColor, contentBackgroundColor: effectiveContentBackgroundColor }}

@@ -414,7 +414,7 @@ export const TenantRentPaymentsScreen: React.FC = () => {
         {!loading && payments && payments.length > 0 ? (
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ padding: s(16), paddingBottom: s(24), alignItems: 'center' }}
+            contentContainerStyle={{ padding: s(16), paddingBottom: s(100), alignItems: 'center' }}
           >
             <View style={{ width: '100%', maxWidth: maxContentWidth, alignSelf: 'center' }}>
             {groupedPayments.map((group) => {

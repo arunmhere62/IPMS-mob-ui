@@ -48,7 +48,7 @@ interface RoomDetailsScreenProps {
 }
 
 export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation, route }) => {
-  const { roomId } = route.params;
+  const roomId = route?.params?.roomId ?? route?.params?.id;
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const { can } = usePermissions();
   const screenWidth = Dimensions.get('window').width;
@@ -255,7 +255,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
           syncMobileHeaderBg={true}
         />
         <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
             <Card
               style={{
                 marginHorizontal: 12,
@@ -401,9 +401,10 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
         syncMobileHeaderBg={true}
       />
 
-     <View style ={{flex : 1, backgroundColor : CONTENT_COLOR}} >
+     <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
        <ScrollView
         style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing || isBackgroundRefreshing}
@@ -441,7 +442,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                 <Text style={{ fontSize: 20 }}>🏠</Text>
               </View>
               <View>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1} ellipsizeMode="tail">
                   Room {room.room_no}
                 </Text>
                 <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>ID: {room.s_no}</Text>
@@ -534,7 +535,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
         <Card style={{ marginHorizontal: 16, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>TOTAL</Text>
+              <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>TOTAL</Text>
               <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, marginTop: 2 }}>
                 {beds.length}
               </Text>
@@ -543,7 +544,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
             <View style={{ width: 1, height: 26, backgroundColor: Theme.colors.border }} />
 
             <View style={{ alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 11, color: '#059669', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>AVAILABLE</Text>
+              <Text style={{ fontSize: 11, color: '#059669', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>AVAILABLE</Text>
               <Text style={{ fontSize: 16, fontWeight: '700', color: '#059669', marginTop: 2 }}>
                 {beds.filter((b) => !b.is_occupied).length}
               </Text>
@@ -552,7 +553,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
             <View style={{ width: 1, height: 26, backgroundColor: Theme.colors.border }} />
 
             <View style={{ alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>OCCUPIED</Text>
+              <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>OCCUPIED</Text>
               <Text style={{ fontSize: 16, fontWeight: '700', color: '#DC2626', marginTop: 2 }}>
                 {beds.filter((b) => b.is_occupied).length}
               </Text>
@@ -666,7 +667,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                 style={{ backgroundColor: Theme.colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4, opacity: canCreateBed ? 1 : 0.45 }}
               >
                 <Ionicons name="add" size={18} color="#fff" />
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>Add Bed</Text>
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Add Bed</Text>
               </AnimatedPressableCard>
               <AnimatedPressableCard
                 onPress={handleBulkAddBeds}
@@ -674,7 +675,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                 style={{ backgroundColor: '#6366F1', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4, opacity: canCreateBed ? 1 : 0.45 }}
               >
                 <Ionicons name="layers" size={16} color="#fff" />
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>Bulk Add</Text>
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Bulk Add</Text>
               </AnimatedPressableCard>
             </View>
           </View>
@@ -721,7 +722,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                       {occupied && tenant ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <Ionicons name="person" size={12} color="#F59E0B" />
-                          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontWeight: '500' }} numberOfLines={1} adjustsFontSizeToFit>
+                          <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, fontWeight: '500' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
                             {tenant.name}
                           </Text>
                         </View>
@@ -739,7 +740,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                           <View style={{ alignItems: 'center', marginBottom: 4 }}>
                             <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                               <Ionicons name="finger-print" size={11} color="#fff" />
-                              <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>Tap to add tenant</Text>
+                              <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Tap to add tenant</Text>
                             </View>
                             <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
                           </View>
@@ -752,7 +753,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                             disabled={!canCreateTenant}
                             style={{ backgroundColor: '#16A34A', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, opacity: canCreateTenant ? 1 : 0.45 }}
                           >
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>+ Add Tenant</Text>
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>+ Add Tenant</Text>
                           </AnimatedPressableCard>
                         </Animated.View>
                       </>
@@ -761,7 +762,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                         onPress={() => navigation.navigate('TenantDetails', { tenantId: tenant.s_no })}
                         style={{ backgroundColor: '#DC2626', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8 }}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>View Tenant</Text>
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>View Tenant</Text>
                       </AnimatedPressableCard>
                     ) : <View style={{ marginBottom: 8 }} />}
 
@@ -773,7 +774,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                           style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: '#F3F4F6', borderRadius: 6, paddingVertical: 6, borderWidth: 1, borderColor: '#D1D5DB' }}
                         >
                           <Ionicons name="pencil" size={11} color="#374151" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#374151' }} numberOfLines={1} adjustsFontSizeToFit>Edit</Text>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#374151' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Edit</Text>
                         </AnimatedPressableCard>
                       )}
                       {canDeleteBed && (
@@ -782,7 +783,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                           style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: '#FEE2E2', borderRadius: 6, paddingVertical: 6, borderWidth: 1, borderColor: '#FECACA' }}
                         >
                           <Ionicons name="trash" size={11} color="#DC2626" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#DC2626' }} numberOfLines={1} adjustsFontSizeToFit>Delete</Text>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#DC2626' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Delete</Text>
                         </AnimatedPressableCard>
                       )}
                     </View>

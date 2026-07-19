@@ -543,7 +543,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
               color: '#fff',
               textAlign: 'center',
             }}>
-              {visibleItemsCount} of {pagination?.total || payments.length}
+              {visibleItemsCount} of {pagination?.total ?? payments.length ?? 0}
             </Text>
             <Text style={{ 
               fontSize: 10, 
@@ -552,7 +552,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
               textAlign: 'center',
               marginTop: 2,
             }}>
-              {(pagination?.total || payments.length) - visibleItemsCount} remaining
+              {(pagination?.total ?? payments.length ?? 0) - visibleItemsCount} remaining
             </Text>
           </View>
         )}
@@ -561,7 +561,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
           ref={flatListRef}
           data={payments}
           renderItem={renderRentPaymentItem}
-          keyExtractor={(item) => item.s_no.toString()}
+          keyExtractor={(item) => String(item?.s_no ?? Math.random())}
           contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
           refreshControl={
             <RefreshControl

@@ -101,7 +101,7 @@ export const PGLocationSelector: React.FC = () => {
             {selectedLocation?.location_name || 'Select a location'}
           </Text>
           {selectedLocation?.address && (
-            <Text style={styles.selectSubtext} numberOfLines={1}>
+            <Text style={styles.selectSubtext} numberOfLines={1} ellipsizeMode="tail">
               {selectedLocation.address}
             </Text>
           )}
@@ -148,6 +148,7 @@ export const PGLocationSelector: React.FC = () => {
                           selectedPGLocationId === location.s_no && styles.selectedOptionSubtext,
                         ]}
                         numberOfLines={1}
+                        ellipsizeMode="tail"
                       >
                         {location.address}
                       </Text>

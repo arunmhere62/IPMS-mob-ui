@@ -249,7 +249,7 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({
           </View>
         ) : pgDetails ? (
           <ScrollView
-            contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }

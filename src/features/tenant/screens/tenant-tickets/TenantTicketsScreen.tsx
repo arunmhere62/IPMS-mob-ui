@@ -90,7 +90,7 @@ export function TenantTicketsScreen({ navigation }: Props) {
         </View>
 
         {item.description ? (
-          <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+          <Text style={styles.cardDesc} numberOfLines={2} ellipsizeMode="tail">{item.description}</Text>
         ) : null}
 
         <View style={styles.cardFooter}>

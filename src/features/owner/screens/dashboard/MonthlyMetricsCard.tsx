@@ -162,7 +162,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   marginTop: 2,
                 }}
                 numberOfLines={1}
-                adjustsFontSizeToFit
+                adjustsFontSizeToFit minimumFontScale={0.85}
               >
                 {isFetching ? "Loading…" : selectedMonth.label}
               </Text>
@@ -217,7 +217,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   fontWeight: "800",
                 }}
                 numberOfLines={1}
-                adjustsFontSizeToFit
+                adjustsFontSizeToFit minimumFontScale={0.85}
               >
                 {selectedMonth.label}
               </Text>
@@ -307,7 +307,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                               fontWeight: "800",
                             }}
                             numberOfLines={1}
-                            adjustsFontSizeToFit
+                            adjustsFontSizeToFit minimumFontScale={0.85}
                           >
                             {month.label}
                           </Text>
@@ -319,7 +319,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                                 marginTop: 1,
                               }}
                               numberOfLines={1}
-                              adjustsFontSizeToFit
+                              adjustsFontSizeToFit minimumFontScale={0.85}
                             >
                               Current
                             </Text>
@@ -367,7 +367,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     fontWeight: "900",
                   }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   Collected
                 </Text>
@@ -424,7 +424,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     fontWeight: "900",
                   }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   Refunds Paid
                 </Text>
@@ -483,7 +483,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     fontWeight: "900",
                   }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   Advance Paid
                 </Text>
@@ -540,7 +540,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     fontWeight: "900",
                   }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   Expenses
                 </Text>
@@ -623,7 +623,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                     marginTop: 2,
                   }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   Collected ÷ Rent due
                 </Text>

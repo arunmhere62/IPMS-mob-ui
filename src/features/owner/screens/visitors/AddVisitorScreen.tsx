@@ -311,7 +311,10 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                   borderRadius: 8,
                   padding: 12,
                   fontSize: 14,
-                  backgroundColor: '#fff' }}
+                  lineHeight: 18,
+                  backgroundColor: '#fff',
+                  minHeight: 44,
+                  textAlignVertical: 'center' }}
                 placeholder="Enter visitor name"
                 value={visitorName}
                 onChangeText={setVisitorName}
@@ -329,7 +332,10 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                   borderRadius: 8,
                   padding: 12,
                   fontSize: 14,
-                  backgroundColor: '#fff' }}
+                  lineHeight: 18,
+                  backgroundColor: '#fff',
+                  minHeight: 44,
+                  textAlignVertical: 'center' }}
                 placeholder="Enter phone number"
                 value={phoneNo}
                 onChangeText={setPhoneNo}
@@ -367,7 +373,10 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                     borderRadius: 8,
                     padding: 12,
                     fontSize: 14,
-                    backgroundColor: '#fff' }}
+                    lineHeight: 18,
+                    backgroundColor: '#fff',
+                    minHeight: 44,
+                    textAlignVertical: 'center' }}
                   placeholder="Enter custom purpose"
                   value={customPurpose}
                   onChangeText={setCustomPurpose}
@@ -474,6 +483,7 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
                   borderRadius: 8,
                   padding: 12,
                   fontSize: 14,
+                  lineHeight: 18,
                   backgroundColor: '#fff',
                   minHeight: 80,
                   textAlignVertical: 'top' }}

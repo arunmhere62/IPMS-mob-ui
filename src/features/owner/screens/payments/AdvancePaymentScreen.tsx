@@ -520,7 +520,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
               color: '#fff',
               textAlign: 'center',
             }}>
-              {visibleItemsCount} of {pagination?.total || advancePayments.length}
+              {visibleItemsCount} of {pagination?.total ?? advancePayments.length ?? 0}
             </Text>
             <Text style={{ 
               fontSize: 10, 
@@ -529,7 +529,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
               textAlign: 'center',
               marginTop: 2,
             }}>
-              {(pagination?.total || advancePayments.length) - visibleItemsCount} remaining
+              {(pagination?.total ?? advancePayments.length ?? 0) - visibleItemsCount} remaining
             </Text>
           </View>
         )}
@@ -538,7 +538,7 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
           ref={flatListRef}
           data={advancePayments}
           renderItem={renderAdvancePaymentItem}
-          keyExtractor={(item) => item.s_no.toString()}
+          keyExtractor={(item) => String(item?.s_no ?? Math.random())}
           contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
           refreshControl={
             <RefreshControl

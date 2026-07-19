@@ -79,7 +79,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.dark, marginBottom: 4 }} numberOfLines={1}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.dark, marginBottom: 4 }} numberOfLines={1} ellipsizeMode="tail">
             {ticket.title}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

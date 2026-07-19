@@ -63,9 +63,11 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: error ? '#EF4444' : Theme.colors.border,
-        borderRadius: 12,
+        borderRadius: 14,
         backgroundColor: disabled ? '#F9FAFB' : '#fff',
-        paddingHorizontal: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        minHeight: 56,
         opacity: disabled ? 0.6 : 1,
       }}>
         <MaterialIcons
@@ -77,9 +79,11 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         <TextInput
           style={{
             flex: 1,
-            paddingVertical: 14,
+            paddingVertical: 8,
             fontSize: 16,
+            lineHeight: 20,
             color: Theme.colors.text.primary,
+            textAlignVertical: 'center',
           }}
           placeholder={placeholder}
           placeholderTextColor={Theme.colors.text.tertiary}

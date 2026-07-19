@@ -89,7 +89,7 @@ export const NetworkLoggerSlideModal: React.FC<NetworkLoggerSlideModalProps> = (
                   <Text style={styles.duration}>{log.duration}ms</Text>
                 )}
               </View>
-              <Text style={styles.url} numberOfLines={1}>
+              <Text style={styles.url} numberOfLines={1} ellipsizeMode="tail">
                 {log.url}
               </Text>
               <Text style={styles.timestamp}>

@@ -154,8 +154,8 @@ export const ToastHost: React.FC = () => {
             <Text style={[styles.iconText, { color: colors.accent }]}>{glyph}</Text>
           </View>
           <View style={styles.textCol}>
-            {toast.title ? <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{toast.title}</Text> : null}
-            <Text style={[styles.message, { color: toast.title ? colors.subtext : colors.text }]} numberOfLines={3}>
+            {toast.title ? <Text style={[styles.title, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">{toast.title}</Text> : null}
+            <Text style={[styles.message, { color: toast.title ? colors.subtext : colors.text }]} numberOfLines={3} ellipsizeMode="tail">
               {toast.message}
             </Text>
           </View>

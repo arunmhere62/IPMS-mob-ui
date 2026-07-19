@@ -265,7 +265,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
 
       <ScrollView
         style={{ flex: 1, backgroundColor: CONTENT_COLOR }}
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {showSkeleton ? (
@@ -607,6 +607,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                     maxWidth: 100,
                     textAlign: 'center' }}
                   numberOfLines={2}
+                  ellipsizeMode="tail"
                 >
                   {selectedPg?.location_name || '--'}
                 </Text>

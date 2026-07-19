@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
 import {
   View,
   Text,
@@ -149,7 +150,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, flex: 1 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary, flex: 1 }} numberOfLines={1} ellipsizeMode="tail">
               {employee.name}
             </Text>
             <View
@@ -247,7 +248,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
               fontWeight: '700',
               color: '#fff',
               textAlign: 'center' }}>
-              {visibleItemsCount} of {pagination?.total || employees.length}
+              {visibleItemsCount} of {pagination?.total ?? employees?.length ?? 0}
             </Text>
             <Text style={{
               fontSize: 10,
@@ -255,7 +256,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
               opacity: 0.8,
               textAlign: 'center',
               marginTop: 2 }}>
-              {(pagination?.total || employees.length) - visibleItemsCount} remaining
+              {((pagination?.total ?? employees?.length ?? 0) - visibleItemsCount)} remaining
             </Text>
           </View>
         )}
@@ -264,7 +265,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
           ref={flatListRef}
           data={employees}
           renderItem={({ item }) => renderEmployeeCard(item)}
-          keyExtractor={(item) => item.s_no.toString()}
+          keyExtractor={(item) => String(item?.s_no ?? Math.random())}
           contentContainerStyle={{ padding: 16, paddingTop: 8, paddingBottom: 100 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Theme.colors.primary]} />
@@ -326,26 +327,12 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
 
         {/* Add Button - only show if user has CREATE_EMPLOYEE permission */}
         {canCreateEmployee && (
-          <AnimatedPressableCard
+          <FloatingActionButton
             onPress={() => navigation.navigate('AddEmployee')}
-            style={{
-              position: 'absolute',
-              bottom: 80,
-              right: 16,
-              backgroundColor: Theme.colors.primary,
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5 }}
-          >
-            <Ionicons name="add" size={28} color="#fff" />
-          </AnimatedPressableCard>
+            size={56}
+            right={16}
+            bottomOffset={180}
+          />
         )}
       </View>
     </ScreenLayout>

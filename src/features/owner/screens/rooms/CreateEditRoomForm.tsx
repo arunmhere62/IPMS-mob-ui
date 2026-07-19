@@ -75,8 +75,10 @@ export const RoomModal: React.FC<RoomModalProps> = ({
 
     if (roomData) {
       const roomImages = roomData.images || [];
+      const rawRoomNo = roomData.room_no || '';
+      const normalizedRoomNo = rawRoomNo.startsWith('RM') ? rawRoomNo : 'RM' + rawRoomNo;
       setFormData({
-        room_no: roomData.room_no,
+        room_no: normalizedRoomNo,
         images: roomImages,
       });
       setOriginalImages([...roomImages]);
@@ -281,7 +283,10 @@ export const RoomModal: React.FC<RoomModalProps> = ({
                         borderLeftWidth: 0,
                         padding: 12,
                         fontSize: 14,
+                        lineHeight: 18,
                         backgroundColor: isRoomNoLocked ? Theme.colors.border + '30' : '#fff',
+                        minHeight: 44,
+                        textAlignVertical: 'center',
                       }}
                     />
                   </View>

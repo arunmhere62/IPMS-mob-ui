@@ -415,7 +415,10 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff' }}
+                      lineHeight: 18,
+                      backgroundColor: '#fff',
+                      minHeight: 44,
+                      textAlignVertical: 'center' }}
                   />
                   {errors.name && (
                     <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.name}</Text>
@@ -440,7 +443,10 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                         borderRadius: 8,
                         padding: 12,
                         fontSize: 14,
-                        backgroundColor: '#fff' }}
+                        lineHeight: 18,
+                        backgroundColor: '#fff',
+                        minHeight: 44,
+                        textAlignVertical: 'center' }}
                     />
                     {errors.email && (
                       <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.email}</Text>
@@ -464,7 +470,10 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff' }}
+                      lineHeight: 18,
+                      backgroundColor: '#fff',
+                      minHeight: 44,
+                      textAlignVertical: 'center' }}
                   />
                   {errors.password && (
                     <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.password}</Text>
@@ -487,7 +496,10 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff' }}
+                      lineHeight: 18,
+                      backgroundColor: '#fff',
+                      minHeight: 44,
+                      textAlignVertical: 'center' }}
                   />
                   {errors.confirmPassword && (
                     <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{errors.confirmPassword}</Text>
@@ -636,7 +648,9 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
+                      lineHeight: 18,
                       backgroundColor: '#fff',
+                      minHeight: 80,
                       textAlignVertical: 'top' }}
                   />
                 </View>
@@ -658,7 +672,10 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                       borderRadius: 8,
                       padding: 12,
                       fontSize: 14,
-                      backgroundColor: '#fff' }}
+                      lineHeight: 18,
+                      backgroundColor: '#fff',
+                      minHeight: 44,
+                      textAlignVertical: 'center' }}
                   />
                 </View>
               </Card>

@@ -217,6 +217,7 @@ const TenantDetailsContent: React.FC<{
   const {
     data: tenantResponse,
     isLoading: tenantLoading,
+    error: tenantError,
     refetch: refetchTenant,
   } = useGetTenantByIdQuery(tenantId, { skip: !tenantId });
 
@@ -1173,6 +1174,32 @@ const TenantDetailsContent: React.FC<{
     );
   };
 
+  if (tenantError && !currentTenant) {
+    const errorData = (tenantError as any)?.data;
+    const errorMsg = typeof errorData === 'string' ? errorData :
+      (errorData?.message || 'Failed to load tenant details. Please check your connection and try again.');
+    return (
+      <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+        <ScreenHeader title="Tenant Details" showBackButton={true} onBackPress={handleBackPress} />
+        <View style={{ flex: 1, backgroundColor: CONTENT_COLOR, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <Ionicons name="cloud-offline-outline" size={48} color="#9CA3AF" />
+          <Text style={{ fontSize: 16, fontWeight: '600', color: Theme.colors.text.primary, textAlign: 'center', marginTop: 16 }}>
+            {errorMsg}
+          </Text>
+          <AnimatedPressableCard
+            onPress={() => refetchTenant()}
+            style={{ marginTop: 20, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: Theme.colors.primary, borderRadius: 10 }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="refresh" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>Retry</Text>
+            </View>
+          </AnimatedPressableCard>
+        </View>
+      </ScreenLayout>
+    );
+  }
+
   if (tenantLoading || !currentTenant) {
     return (
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
@@ -1180,7 +1207,7 @@ const TenantDetailsContent: React.FC<{
         <View style={{ backgroundColor: CONTENT_COLOR, flex: 1 }}>
           <ScrollView 
             style={{ flex: 1 }} 
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -1398,14 +1425,14 @@ const TenantDetailsContent: React.FC<{
             <View style={{ gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 12, color: '#92400E' }}>Total Advance Paid:</Text>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }} numberOfLines={1}>
                   ₹{(tenant.advance_payment_summary?.total_advance_paid || 
                      tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 12, color: '#92400E' }}>Total Refund Given:</Text>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }} numberOfLines={1}>
                   ₹{(tenant.refund_payment_summary?.total_refund_given || 
                      tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </Text>
@@ -1419,7 +1446,7 @@ const TenantDetailsContent: React.FC<{
               />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 13, fontWeight: '600', color: '#B45309' }}>Net Advance Remaining:</Text>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: '#B45309' }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#B45309' }} numberOfLines={1}>
                   ₹{(tenant.net_advance_remaining !== undefined ? tenant.net_advance_remaining : 
                      (tenant.advance_payment_summary?.total_advance_paid || tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0) - 
                      (tenant.refund_payment_summary?.total_refund_given || tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0)).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
@@ -1881,7 +1908,7 @@ const TenantDetailsContent: React.FC<{
                         }}
                       >
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 13, fontWeight: '800', color: Theme.colors.text.primary }}>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: Theme.colors.text.primary, flex: 1 }} numberOfLines={1} ellipsizeMode="tail">
                             {from} - {to}
                           </Text>
                           {isCurrent && (
@@ -2008,7 +2035,7 @@ const TenantDetailsContent: React.FC<{
         })()}
 
         {/* Bottom Spacing */}
-        <View style={{ height: 32 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* Full Screen Image Viewer Modal */}
@@ -2244,6 +2271,7 @@ const TenantDetailsContent: React.FC<{
                 paddingHorizontal: 12,
                 paddingVertical: 12,
                 fontSize: 14,
+                lineHeight: 18,
                 color: Theme.colors.text.primary,
                 minHeight: 80,
                 textAlignVertical: 'top',

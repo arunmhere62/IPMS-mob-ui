@@ -154,7 +154,7 @@ export function PgTenantTicketsScreen({ navigation }: Props) {
         ) : (
           <FlatList
             data={tickets}
-            keyExtractor={(t) => String(t.s_no)}
+            keyExtractor={(t) => String(t?.s_no ?? Math.random())}
             renderItem={renderItem}
             refreshControl={
               <RefreshControl refreshing={isFetching} onRefresh={refetch} colors={[C.primary]} tintColor={C.primary} />
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: C.primary, borderColor: C.primary },
   chipText: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
   chipTextActive: { color: '#fff' },
-  listContent: { padding: 16, gap: 10, paddingBottom: 24 },
+  listContent: { padding: 16, gap: 10, paddingBottom: 100 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     backgroundColor: '#fff', borderRadius: 14, padding: 14,

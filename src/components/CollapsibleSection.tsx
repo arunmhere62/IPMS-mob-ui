@@ -208,7 +208,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
               titleStyle,
             ]}
             numberOfLines={1}
-            adjustsFontSizeToFit
+            adjustsFontSizeToFit minimumFontScale={0.85}
           >
             {title}
             {itemCount !== undefined && ` (${itemCount})`}

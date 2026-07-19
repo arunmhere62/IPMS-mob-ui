@@ -49,29 +49,39 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
         </Text>
       )}
 
-      <View style={{ flexDirection: 'row', columnGap : 10, rowGap : 8, flexWrap: 'wrap' }}>
+      <View style={{ flexDirection: 'row', columnGap: 10, rowGap: 8, flexWrap: 'wrap' }}>
         {options.map((option) => (
           <AnimatedPressableCard
             key={option.value}
             onPress={() => onSelect(selectedValue === option.value ? null : option.value)}
             style={{
-              paddingVertical: 8,
-              paddingHorizontal: 14,
-              borderRadius: 6,
+              minWidth: 96,
+              minHeight: 52,
+              paddingVertical: 10,
+              paddingHorizontal: 16,
+              borderRadius: 10,
               borderWidth: 1,
               borderColor: selectedValue === option.value ? Theme.colors.primary : '#D1D5DB',
               backgroundColor: selectedValue === option.value ? 'rgba(59, 130, 246, 0.1)' : '#F9FAFB',
               alignItems: 'center',
-              justifyContent: 'center' }}
+              justifyContent: 'center',
+              flexShrink: 1,
+            }}
             disabled={disabled}
           >
             <Text
               style={{
                 fontSize: 12,
+                lineHeight: 16,
                 fontWeight: selectedValue === option.value ? '600' : '500',
-                color: selectedValue === option.value ? Theme.colors.primary : Theme.colors.text.primary }}
-              numberOfLines={1}
+                color: selectedValue === option.value ? Theme.colors.primary : Theme.colors.text.primary,
+                textAlign: 'center',
+                flexShrink: 1,
+              }}
+              numberOfLines={2}
+              ellipsizeMode="tail"
               adjustsFontSizeToFit
+              minimumFontScale={0.85}
             >
               {option.icon && `${option.icon} `}
               {option.label}

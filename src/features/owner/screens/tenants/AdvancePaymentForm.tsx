@@ -492,6 +492,7 @@ const AdvancePaymentForm: React.FC<AdvancePaymentFormProps> = ({
               paddingHorizontal: 12,
               paddingVertical: 12,
               fontSize: 14,
+              lineHeight: 18,
               color: Theme.colors.text.primary,
               minHeight: 80,
               textAlignVertical: "top",

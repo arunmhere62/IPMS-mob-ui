@@ -21,6 +21,7 @@ import { Card } from "../../../../components/Card";
 import { ActionButtons } from "../../../../components/ActionButtons";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
 import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
+import { FloatingActionButton } from "../../../../components/FloatingActionButton";
 import { Theme } from "../../../../theme";
 import { ScreenHeader } from "../../../../components/ScreenHeader";
 import { ScreenLayout } from "../../../../components/ScreenLayout";
@@ -224,7 +225,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
             <View style={{ alignItems: 'center', marginBottom: 4 }}>
               <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Ionicons name="finger-print" size={11} color="#fff" />
-                <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>Tap to open room</Text>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Tap to open room</Text>
               </View>
               <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
             </View>
@@ -264,6 +265,8 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
                       fontWeight: "700",
                       color: Theme.colors.text.primary,
                     }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
                     {item.room_no}
                   </Text>
@@ -294,15 +297,15 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3F4F6', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
                 <Ionicons name="bed-outline" size={13} color="#6B7280" />
-                <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>{totalBeds} Total</Text>
+                <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{totalBeds} Total</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#DCFCE7', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
                 <Ionicons name="bed-outline" size={13} color="#16A34A" />
-                <Text style={{ fontSize: 12, color: '#16A34A', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>{typeof availableBeds === 'number' ? availableBeds : '—'} Free</Text>
+                <Text style={{ fontSize: 12, color: '#16A34A', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{typeof availableBeds === 'number' ? availableBeds : '—'} Free</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEE2E2', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
                 <Ionicons name="bed-outline" size={13} color="#DC2626" />
-                <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit>{typeof occupiedBeds === 'number' ? occupiedBeds : '—'} Taken</Text>
+                <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{typeof occupiedBeds === 'number' ? occupiedBeds : '—'} Taken</Text>
               </View>
             </View>
 
@@ -354,6 +357,9 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
               paddingHorizontal: 12,
               paddingVertical: 8,
               fontSize: 14,
+              lineHeight: 18,
+              minHeight: 40,
+              textAlignVertical: 'center',
             }}
             placeholder="Search by room number..."
             value={searchQuery}
@@ -466,14 +472,14 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
             ref={flatListRef}
             data={rooms}
             renderItem={renderRoomCard}
-            keyExtractor={(item) => item.s_no.toString()}
+            keyExtractor={(item) => String(item?.s_no ?? Math.random())}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
               />
             }
-            contentContainerStyle={{ paddingBottom: 80, paddingTop: 8 }}
+            contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
             onScroll={(event) => {
               scrollPositionRef.current = event.nativeEvent.contentOffset.y;
             }}
@@ -483,35 +489,17 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
       </View>
 
       {/* FAB: Add Room */}
-      <View style={{ position: 'absolute', right: 20, bottom: 80 }}>
-        <AnimatedPressableCard
-          onPress={() => {
-            if (!canCreateRoom) {
-              Alert.alert('Access Denied', "You don't have permission to create rooms");
-              return;
-            }
-            setEditingRoomId(null);
-            setEditModalVisible(true);
-          }}
-          disabled={!canCreateRoom}
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            backgroundColor: Theme.colors.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-            elevation: 8,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            opacity: canCreateRoom ? 1 : 0.45,
-          }}
-        >
-          <Text style={{ color: '#fff', fontSize: 32, fontWeight: '300' }}>+</Text>
-        </AnimatedPressableCard>
-      </View>
+      <FloatingActionButton
+        onPress={() => {
+          if (!canCreateRoom) {
+            Alert.alert('Access Denied', "You don't have permission to create rooms");
+            return;
+          }
+          setEditingRoomId(null);
+          setEditModalVisible(true);
+        }}
+        disabled={!canCreateRoom}
+      />
 
       {/* Room Form Modal */}
       <RoomFormModal

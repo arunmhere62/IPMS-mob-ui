@@ -169,11 +169,11 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                       <Text style={{ fontSize: 24, marginRight: 8 }}>{categoryIcon}</Text>
-                      <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, fontWeight: '600' }}>
+                      <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, fontWeight: '600' }} numberOfLines={1} ellipsizeMode="tail">
                         {currentTicket.category.replace('_', ' ')}
                       </Text>
                     </View>
-                    <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }}>
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: Theme.colors.text.primary, marginBottom: 8 }} numberOfLines={2} ellipsizeMode="tail">
                       {currentTicket.title}
                     </Text>
                   </View>
@@ -226,13 +226,13 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                     <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>Reported By</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }} numberOfLines={1} ellipsizeMode="tail">
                       {currentTicket.users_issue_tickets_reported_byTousers?.name || 'Unknown'}
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>Created</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }} numberOfLines={1} ellipsizeMode="tail">
                       {new Date(currentTicket.created_at).toLocaleString()}
                     </Text>
                   </View>
@@ -315,6 +315,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                         borderRadius: 8,
                         padding: 12,
                         fontSize: 14,
+                        lineHeight: 18,
                         backgroundColor: '#fff',
                         minHeight: 80,
                         textAlignVertical: 'top',

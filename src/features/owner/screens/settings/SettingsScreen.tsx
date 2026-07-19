@@ -227,7 +227,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
       <ScreenHeader title="Settings" showBackButton onBackPress={() => navigation.goBack()} />
 
       <View style={{ flex: 1, backgroundColor: Theme.colors.light }}>
-        <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 80 }}>
+        <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 100 }}>
           {/* User Info Card */}
           <Card className="mb-4">
             <View className="items-center py-4">

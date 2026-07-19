@@ -102,7 +102,10 @@ export const AddCurrentBillForm: React.FC<CurrentBillFormProps> = ({
                   borderRadius: 8,
                   padding: 12,
                   fontSize: 14,
+                  lineHeight: 18,
                   backgroundColor: '#fff',
+                  minHeight: 44,
+                  textAlignVertical: 'center',
                 }}
               />
             </View>
@@ -134,8 +137,10 @@ export const AddCurrentBillForm: React.FC<CurrentBillFormProps> = ({
                   borderRadius: 8,
                   padding: 12,
                   fontSize: 14,
+                  lineHeight: 18,
                   backgroundColor: '#fff',
                   textAlignVertical: 'top',
+                  minHeight: 80,
                 }}
               />
             </View>

@@ -479,6 +479,9 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
               paddingHorizontal: 12,
               paddingVertical: 8,
               fontSize: 14,
+              lineHeight: 18,
+              minHeight: 40,
+              textAlignVertical: 'center',
             }}
             placeholder="Search by bed number..."
             value={searchQuery}
@@ -648,14 +651,14 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
           <FlatList
             data={beds}
             renderItem={renderBedCard}
-            keyExtractor={(item) => item.s_no.toString()}
+            keyExtractor={(item) => String(item?.s_no ?? Math.random())}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
               />
             }
-            contentContainerStyle={{ paddingBottom: 80 }}
+            contentContainerStyle={{ paddingBottom: 100 }}
           />
         )}
 

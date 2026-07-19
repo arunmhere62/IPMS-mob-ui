@@ -213,9 +213,10 @@ const styles = StyleSheet.create({
   categoryHintText: { flex: 1, fontSize: 12, color: '#6b7280', lineHeight: 18 },
   input: {
     backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb',
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#111827',
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, lineHeight: 18, color: '#111827',
+    minHeight: 44, textAlignVertical: 'center',
   },
-  textArea: { minHeight: 110 },
+  textArea: { minHeight: 110, lineHeight: 18, textAlignVertical: 'top' },
   submitBtn: {
     backgroundColor: C.primary, borderRadius: 14, paddingVertical: 15,
     alignItems: 'center', marginTop: 24,

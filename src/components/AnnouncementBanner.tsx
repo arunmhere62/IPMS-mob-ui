@@ -63,7 +63,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ title, m
           <Ionicons name="megaphone" size={12} color="#F59E0B" />
         </View>
 
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
           {title}
         </Text>
 

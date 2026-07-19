@@ -134,7 +134,7 @@ export const LegalDocumentsScreen: React.FC<LegalDocumentsScreenProps> = ({ navi
         syncMobileHeaderBg={true}
       />
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
         <Card>
           <Text style={{ fontSize: 14, color: Theme.colors.text.secondary, marginBottom: 12 }}>
             You must accept the latest required legal documents before continuing.

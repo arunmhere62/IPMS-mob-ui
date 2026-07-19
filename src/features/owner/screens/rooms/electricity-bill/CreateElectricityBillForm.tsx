@@ -344,7 +344,10 @@ export const CreateElectricityBillForm: React.FC<CreateElectricityBillFormProps>
                 borderLeftWidth: 0,
                 padding: 12,
                 fontSize: 14,
-                backgroundColor: '#fff' }}
+                lineHeight: 18,
+                backgroundColor: '#fff',
+                minHeight: 44,
+                textAlignVertical: 'center' }}
             />
           </View>
         </View>
@@ -485,7 +488,10 @@ export const CreateElectricityBillForm: React.FC<CreateElectricityBillFormProps>
                 borderLeftWidth: 0,
                 padding: 12,
                 fontSize: 14,
-                backgroundColor: '#fff' }}
+                lineHeight: 18,
+                backgroundColor: '#fff',
+                minHeight: 44,
+                textAlignVertical: 'center' }}
             />
           </View>
         </View>

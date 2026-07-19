@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
 import {
   View,
   Text,
@@ -410,7 +411,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.primary }}>
         <FlatList
           data={bills}
-          keyExtractor={(item) => String(item.s_no)}
+          keyExtractor={(item) => String(item?.s_no ?? Math.random())}
           contentContainerStyle={{ paddingTop: 16, paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           renderItem={renderBillItem}
@@ -418,26 +419,10 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
           ListFooterComponent={isFetching ? <ActivityIndicator style={{ margin: 20 }} /> : null}
         />
 
-        <AnimatedPressableCard
+        <FloatingActionButton
           onPress={() => setCreateModalVisible(true)}
-          style={{
-            position: 'absolute',
-            bottom: 80,
-            right: 20,
-            backgroundColor: Theme.colors.primary,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            elevation: 5 }}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </AnimatedPressableCard>
+          size={56}
+        />
       </View>
 
       <CreateElectricityBillForm

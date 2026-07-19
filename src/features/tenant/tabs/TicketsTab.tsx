@@ -36,7 +36,7 @@ export const TicketsTab: React.FC<TicketsTabProps> = ({ tickets, isLoading, navi
           onPress={() => navigation.navigate('TenantCreateTicket')}
         >
           <Ionicons name="add" size={18} color="#fff" />
-          <Text style={styles.ticketsAddText} numberOfLines={1} adjustsFontSizeToFit>New</Text>
+          <Text style={styles.ticketsAddText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>New</Text>
         </AnimatedPressableCard>
       </View>
 
@@ -49,7 +49,7 @@ export const TicketsTab: React.FC<TicketsTabProps> = ({ tickets, isLoading, navi
             style={[styles.ticketsAddBtn, { marginTop: 16 }]}
             onPress={() => navigation.navigate('TenantCreateTicket')}
           >
-            <Text style={styles.ticketsAddText} numberOfLines={1} adjustsFontSizeToFit>Raise a Ticket</Text>
+            <Text style={styles.ticketsAddText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Raise a Ticket</Text>
           </AnimatedPressableCard>
         </View>
       ) : (
@@ -67,12 +67,12 @@ export const TicketsTab: React.FC<TicketsTabProps> = ({ tickets, isLoading, navi
                   <Ionicons name={icon as any} size={18} color={sc.text} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.ticketTitle} numberOfLines={1}>{item.title}</Text>
+                  <Text style={styles.ticketTitle} numberOfLines={1} ellipsizeMode="tail">{item.title}</Text>
                   <Text style={styles.ticketCategory}>{item.category}</Text>
                 </View>
                 <View style={[styles.ticketBadge, { backgroundColor: sc.bg }]}>
                   <View style={[styles.ticketDot, { backgroundColor: sc.dot }]} />
-                  <Text style={[styles.ticketBadgeText, { color: sc.text }]} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={[styles.ticketBadgeText, { color: sc.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
                     {item.status.replace('_', ' ')}
                   </Text>
                 </View>

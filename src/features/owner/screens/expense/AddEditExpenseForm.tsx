@@ -308,13 +308,16 @@ export const AddEditExpenseForm: React.FC<AddEditExpenseFormProps> = ({
               paddingVertical: 12,
               paddingHorizontal: 16,
               fontSize: 16,
+              lineHeight: 20,
               color: Theme.colors.text.primary,
               backgroundColor: Theme.colors.input.background,
               borderWidth: 1,
               borderColor: errors.expenseType
                 ? Theme.colors.danger
                 : Theme.colors.input.border,
-              borderRadius: 8 }}
+              borderRadius: 8,
+              minHeight: 48,
+              textAlignVertical: 'center' }}
             placeholder="Enter custom expense type (e.g., Gas Bill, Pest Control)"
             placeholderTextColor={Theme.colors.input.placeholder}
             value={customExpenseType}
@@ -379,7 +382,10 @@ export const AddEditExpenseForm: React.FC<AddEditExpenseFormProps> = ({
               paddingVertical: 12,
               paddingHorizontal: 12,
               fontSize: 16,
-              color: Theme.colors.text.primary }}
+              lineHeight: 20,
+              color: Theme.colors.text.primary,
+              minHeight: 48,
+              textAlignVertical: 'center' }}
             placeholder="Enter person or company name"
             placeholderTextColor={Theme.colors.input.placeholder}
             value={paidTo}
@@ -450,6 +456,7 @@ export const AddEditExpenseForm: React.FC<AddEditExpenseFormProps> = ({
             paddingVertical: 12,
             paddingHorizontal: 16,
             fontSize: 16,
+            lineHeight: 20,
             color: Theme.colors.text.primary,
             backgroundColor: Theme.colors.input.background,
             borderWidth: 1,

@@ -27,6 +27,7 @@ import { ActionButtons } from "../../../../components/ActionButtons";
 import { SlideBottomModal } from "../../../../components/SlideBottomModal";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
 import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
+import { FloatingActionButton } from "../../../../components/FloatingActionButton";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 import { RootState } from "../../store";
@@ -483,7 +484,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                   fontWeight: "600",
                 }}
                 numberOfLines={1}
-                adjustsFontSizeToFit
+                adjustsFontSizeToFit minimumFontScale={0.85}
               >
                 Filters
               </Text>
@@ -494,7 +495,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 <Text
                   style={{ fontSize: 12, color: Theme.colors.text.secondary }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   {appliedMonth
                     ? getSelectedMonthLabel(appliedMonth)
@@ -503,7 +504,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 </Text>
               </View>
             ) : (
-              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }} numberOfLines={1} adjustsFontSizeToFit>
+              <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
                 No filters
               </Text>
             )}
@@ -537,7 +538,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 textAlign: "center",
               }}
               numberOfLines={1}
-              adjustsFontSizeToFit
+              adjustsFontSizeToFit minimumFontScale={0.85}
             >
               {visibleItemsCount} of {pagination?.total || expenses.length}
             </Text>
@@ -550,9 +551,9 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 marginTop: 2,
               }}
               numberOfLines={1}
-              adjustsFontSizeToFit
+              adjustsFontSizeToFit minimumFontScale={0.85}
             >
-              {(pagination?.total || expenses.length) - visibleItemsCount}{" "}
+              {(pagination?.total ?? expenses.length ?? 0) - visibleItemsCount}{" "}
               remaining
             </Text>
           </View>
@@ -561,7 +562,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
         <FlatList
           ref={flatListRef}
           data={expenses}
-          keyExtractor={(item) => item.s_no.toString()}
+          keyExtractor={(item) => String(item?.s_no ?? Math.random())}
           contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           refreshControl={
             <RefreshControl
@@ -619,14 +620,14 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                       marginBottom: 2,
                     }}
                     numberOfLines={1}
-                    adjustsFontSizeToFit
+                    adjustsFontSizeToFit minimumFontScale={0.85}
                   >
                     {expense.expense_type}
                   </Text>
                   <Text
                     style={{ fontSize: 12, color: Theme.colors.text.secondary }}
                     numberOfLines={1}
-                    adjustsFontSizeToFit
+                    adjustsFontSizeToFit minimumFontScale={0.85}
                   >
                     Paid to: {expense.paid_to}
                   </Text>
@@ -661,7 +662,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                     marginLeft: 6,
                   }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   {expense.payment_method}
                 </Text>
@@ -672,7 +673,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                     marginLeft: 10,
                   }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   • {formatDate(expense.paid_date)}
                 </Text>
@@ -686,7 +687,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                     fontStyle: "italic",
                   }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   {expense.remarks}
                 </Text>
@@ -719,7 +720,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                     color: Theme.colors.text.secondary,
                   }}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                 >
                   Loading more...
                 </Text>
@@ -737,29 +738,10 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
         />
 
         {/* Floating Add Button */}
-        <AnimatedPressableCard
+        <FloatingActionButton
           onPress={handleAddExpense}
           disabled={!canCreateExpense}
-          style={{
-            position: "absolute",
-            bottom: 80,
-            right: 20,
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            backgroundColor: Theme.colors.primary,
-            justifyContent: "center",
-            alignItems: "center",
-            elevation: 5,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            opacity: canCreateExpense ? 1 : 0.45,
-          }}
-        >
-          <Ionicons name="add" size={32} color="#fff" />
-        </AnimatedPressableCard>
+        />
       </View>
 
       {/* Add Modal */}
@@ -819,7 +801,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 color: draftMonth === null ? "#fff" : Theme.colors.text.primary,
               }}
               numberOfLines={1}
-              adjustsFontSizeToFit
+              adjustsFontSizeToFit minimumFontScale={0.85}
             >
               All
             </Text>
@@ -845,7 +827,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                     draftMonth === m.value ? "#fff" : Theme.colors.text.primary,
                 }}
                 numberOfLines={1}
-                adjustsFontSizeToFit
+                adjustsFontSizeToFit minimumFontScale={0.85}
               >
                 {m.label}
               </Text>
@@ -881,7 +863,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                 color: draftYear === null ? "#fff" : Theme.colors.text.primary,
               }}
               numberOfLines={1}
-              adjustsFontSizeToFit
+              adjustsFontSizeToFit minimumFontScale={0.85}
             >
               All
             </Text>
@@ -906,7 +888,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
                   color: draftYear === y ? "#fff" : Theme.colors.text.primary,
                 }}
                 numberOfLines={1}
-                adjustsFontSizeToFit
+                adjustsFontSizeToFit minimumFontScale={0.85}
               >
                 {y}
               </Text>

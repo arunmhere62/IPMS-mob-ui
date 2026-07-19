@@ -283,7 +283,10 @@ export const EditRentPaymentForm: React.FC<EditRentPaymentFormProps> = ({
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     fontSize: 16,
-                    color: Theme.colors.text.primary }}
+                    lineHeight: 20,
+                    color: Theme.colors.text.primary,
+                    minHeight: 48,
+                    textAlignVertical: 'center' }}
                   placeholder="Enter amount"
                   placeholderTextColor={Theme.colors.input.placeholder}
                   keyboardType="numeric"
@@ -317,7 +320,10 @@ export const EditRentPaymentForm: React.FC<EditRentPaymentFormProps> = ({
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     fontSize: 16,
-                    color: Theme.colors.text.primary }}
+                    lineHeight: 20,
+                    color: Theme.colors.text.primary,
+                    minHeight: 48,
+                    textAlignVertical: 'center' }}
                   placeholder="Enter actual rent"
                   placeholderTextColor={Theme.colors.input.placeholder}
                   keyboardType="numeric"
@@ -415,8 +421,11 @@ export const EditRentPaymentForm: React.FC<EditRentPaymentFormProps> = ({
                         }
                       />
                       <Text
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
                         style={{
                           marginLeft: 8,
+                          flexShrink: 1,
                           fontSize: 14,
                           fontWeight: paymentMethod === method.value ? '600' : '400',
                           color:
@@ -473,6 +482,7 @@ export const EditRentPaymentForm: React.FC<EditRentPaymentFormProps> = ({
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     fontSize: 16,
+                    lineHeight: 20,
                     color: Theme.colors.text.primary,
                     minHeight: 80,
                     textAlignVertical: 'top' }}

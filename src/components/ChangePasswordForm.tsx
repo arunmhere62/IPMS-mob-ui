@@ -164,7 +164,10 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                       paddingVertical: 12,
                       paddingHorizontal: 12,
                       fontSize: 16,
+                      lineHeight: 20,
                       color: Theme.colors.text.primary,
+                      minHeight: 48,
+                      textAlignVertical: 'center',
                     }}
                     placeholder="Enter current password"
                     placeholderTextColor={Theme.colors.input.placeholder}
@@ -217,7 +220,10 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                       paddingVertical: 12,
                       paddingHorizontal: 12,
                       fontSize: 16,
+                      lineHeight: 20,
                       color: Theme.colors.text.primary,
+                      minHeight: 48,
+                      textAlignVertical: 'center',
                     }}
                     placeholder="Enter new password"
                     placeholderTextColor={Theme.colors.input.placeholder}
@@ -270,7 +276,10 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                       paddingVertical: 12,
                       paddingHorizontal: 12,
                       fontSize: 16,
+                      lineHeight: 20,
                       color: Theme.colors.text.primary,
+                      minHeight: 48,
+                      textAlignVertical: 'center',
                     }}
                     placeholder="Confirm new password"
                     placeholderTextColor={Theme.colors.input.placeholder}

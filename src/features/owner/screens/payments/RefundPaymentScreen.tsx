@@ -482,7 +482,7 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
           ref={flatListRef}
           data={refundPayments}
           renderItem={renderRefundPaymentItem}
-          keyExtractor={(item) => item.s_no.toString()}
+          keyExtractor={(item) => String(item?.s_no ?? Math.random())}
           contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
           refreshControl={
             <RefreshControl

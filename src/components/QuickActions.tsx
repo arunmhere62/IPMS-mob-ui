@@ -66,7 +66,7 @@ const QuickActionItem = memo<{ item: MenuItem; onNavigate: (screen: string) => v
           <View style={{ alignItems: 'center', marginBottom: 4 }}>
             <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="finger-print" size={11} color="#fff" />
-              <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit>
+              <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
                 {item.screen === 'QuickSetup' ? 'Tap here to start' : 'Tap to view rooms'}
               </Text>
             </View>
@@ -106,7 +106,7 @@ const QuickActionItem = memo<{ item: MenuItem; onNavigate: (screen: string) => v
             <View style={{ flex: 1 }}>
               <Text
                 numberOfLines={1}
-                adjustsFontSizeToFit
+                adjustsFontSizeToFit minimumFontScale={0.85}
                 style={{
                   color: "#111827",
                   fontWeight: "700",
@@ -118,7 +118,7 @@ const QuickActionItem = memo<{ item: MenuItem; onNavigate: (screen: string) => v
               {subtitle ? (
                 <Text
                   numberOfLines={1}
-                  adjustsFontSizeToFit
+                  adjustsFontSizeToFit minimumFontScale={0.85}
                   style={{
                     color: "#6B7280",
                     fontSize: 11,

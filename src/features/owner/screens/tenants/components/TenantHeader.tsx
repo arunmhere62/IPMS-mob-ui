@@ -53,7 +53,7 @@ const RentTourHintTile: React.FC<{ onPress: () => void; disabled?: boolean }> = 
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="wallet" size={16} color="#fff" />
-            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginLeft: 8 }} numberOfLines={1} adjustsFontSizeToFit>Add Rent</Text>
+            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginLeft: 8 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Add Rent</Text>
           </View>
         </AnimatedPressableCard>
       </Animated.View>
@@ -152,7 +152,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
                 : { color: "#DC2626" },
           ]}
           numberOfLines={1}
-          adjustsFontSizeToFit
+          adjustsFontSizeToFit minimumFontScale={0.85}
         >
           {tenant.status}
         </Text>
@@ -168,7 +168,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
             style={styles.contactButton}
           >
             <Ionicons name="call" size={16} color="#333" />
-            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit>Call</Text>
+            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Call</Text>
           </AnimatedPressableCard>
         )}
 
@@ -180,7 +180,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
             style={styles.contactButton}
           >
             <Ionicons name="logo-whatsapp" size={16} color="#333" />
-            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit>WhatsApp</Text>
+            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>WhatsApp</Text>
           </AnimatedPressableCard>
         )}
       </View>
@@ -195,7 +195,7 @@ export const TenantHeader: React.FC<TenantHeaderProps> = ({
         >
           <View style={styles.emailButton}>
             <Ionicons name="mail" size={16} color="#333" />
-            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit>Email</Text>
+            <Text style={styles.contactText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Email</Text>
           </View>
         </AnimatedPressableCard>
       )}

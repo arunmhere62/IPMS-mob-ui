@@ -58,8 +58,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Theme.spacing.md,
     paddingVertical: Theme.spacing.md,
     fontSize: Theme.typography.fontSize.base,
+    lineHeight: 20,
     color: Theme.colors.text.primary,
     backgroundColor: 'transparent',
+    minHeight: 48,
     textAlignVertical: 'center', // Fixes Android text alignment
   },
   inputError: {

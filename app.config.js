@@ -71,7 +71,8 @@ module.exports = ({ config }) => {
       // ── Centralized API config ──
       // Update LOCAL_DEV_IP here when your dev machine IP changes.
       // Production builds override via eas.json env: API_BASE_URL
-      apiBaseUrl: process.env.API_BASE_URL || API_ENVIRONMENTS[1].url,
+      apiBaseUrl: 'https://mobapi.indianpgmanagement.com/api/v1',
+      // apiBaseUrl: process.env.API_BASE_URL || API_ENVIRONMENTS[1].url,
       apiEnvironments: API_ENVIRONMENTS,
       // Subscription Configuration
       subscriptionMode: process.env.SUBSCRIPTION_MODE === 'true',

@@ -63,10 +63,11 @@ export const InputField: React.FC<InputFieldProps> = ({
           backgroundColor: disabled ? '#F9FAFB' : Theme.colors.input.background,
           borderWidth: 1,
           borderColor: error ? '#EF4444' : Theme.colors.input.border,
-          borderRadius: 8,
-          paddingHorizontal: 16,
+          borderRadius: 10,
+          paddingHorizontal: 18,
+          paddingVertical: multiline ? 12 : 10,
           opacity: disabled ? 0.6 : 1,
-          minHeight: multiline ? 80 : 48,
+          minHeight: multiline ? 100 : 52,
         }}
       >
         {prefixIcon && (
@@ -80,12 +81,13 @@ export const InputField: React.FC<InputFieldProps> = ({
         <TextInput
           style={{
             flex: 1,
-            paddingVertical: multiline ? 12 : 12,
-            paddingHorizontal: prefixIcon ? 0 : 12,
+            paddingVertical: multiline ? 0 : 2,
+            paddingHorizontal: prefixIcon ? 0 : 4,
             fontSize: 16,
+            lineHeight: 20,
             color: Theme.colors.text.primary,
             textAlignVertical: multiline ? 'top' : 'center',
-            minHeight: multiline ? 56 : 24,
+            minHeight: multiline ? 64 : 32,
           }}
           placeholder={placeholder || `Enter ${label.toLowerCase()}`}
           placeholderTextColor={Theme.colors.input.placeholder}

@@ -92,7 +92,7 @@ export const UpcomingVacanciesScreen: React.FC<UpcomingVacanciesScreenProps> = (
         </View>
 
         <ScrollView
-          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} />}
           showsVerticalScrollIndicator={false}
         >

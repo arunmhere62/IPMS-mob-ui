@@ -128,7 +128,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
               style={{ color: textColor, fontSize: 20, fontWeight: 'bold' }}
               numberOfLines={2}
               ellipsizeMode="tail"
-              adjustsFontSizeToFit
+              adjustsFontSizeToFit minimumFontScale={0.85}
             >
               {title}
             </Text>
@@ -137,7 +137,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
                 style={{ color: Theme.withOpacity(textColor, 0.8), fontSize: 13, marginTop: 2 }}
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                adjustsFontSizeToFit
+                adjustsFontSizeToFit minimumFontScale={0.85}
               >
                 {subtitle}
               </Text>

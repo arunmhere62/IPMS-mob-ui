@@ -293,7 +293,7 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
         )}
 
         {!loading && visiblePayments && visiblePayments.length > 0 ? (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
             {visiblePayments.map((payment) => {
               const statusColor = getStatusColor(payment.status);
 

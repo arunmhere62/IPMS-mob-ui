@@ -144,7 +144,7 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                         <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, width: 80 }}>
                           Method:
                         </Text>
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary, flex: 1 }} numberOfLines={1} ellipsizeMode="tail">
                           {payment.payment_method}
                         </Text>
                       </View>
@@ -156,7 +156,7 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                         <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, width: 80 }}>
                           Location:
                         </Text>
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary }}>
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.text.primary, flex: 1 }} numberOfLines={1} ellipsizeMode="tail">
                           {(payment as any).rooms?.room_no && `Room ${(payment as any).rooms.room_no}`}
                           {(payment as any).rooms?.room_no && (payment as any).beds?.bed_no && ' • '}
                           {(payment as any).beds?.bed_no && `Bed ${(payment as any).beds.bed_no}`}

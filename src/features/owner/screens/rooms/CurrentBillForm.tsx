@@ -278,7 +278,10 @@ export const CurrentBillForm: React.FC<CurrentBillFormProps> = ({
                     borderRadius: 8,
                     padding: 12,
                     fontSize: 14,
+                    lineHeight: 18,
                     backgroundColor: '#fff',
+                    minHeight: 44,
+                    textAlignVertical: 'center',
                   }}
                 />
                 {errors.billAmount && (
@@ -341,8 +344,10 @@ export const CurrentBillForm: React.FC<CurrentBillFormProps> = ({
                     borderRadius: 8,
                     padding: 12,
                     fontSize: 14,
+                    lineHeight: 18,
                     backgroundColor: '#fff',
                     textAlignVertical: 'top',
+                    minHeight: 80,
                   }}
                 />
               </View>

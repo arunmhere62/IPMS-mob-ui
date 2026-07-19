@@ -94,7 +94,7 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="images-outline" size={16} color={Theme.colors.text.secondary} />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
                   Tenant Image & Proof Documents
                 </Text>
               </View>

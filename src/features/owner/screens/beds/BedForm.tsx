@@ -325,9 +325,12 @@ export const BedForm: React.FC<BedFormProps> = ({
               borderLeftWidth: 0,
               padding: 12,
               fontSize: 14,
+              lineHeight: 18,
               backgroundColor: isBedNoLocked
                 ? Theme.colors.border + "30"
                 : "#fff",
+              minHeight: 44,
+              textAlignVertical: 'center',
             }}
           />
         </View>
@@ -417,7 +420,10 @@ export const BedForm: React.FC<BedFormProps> = ({
               borderLeftWidth: 0,
               padding: 12,
               fontSize: 14,
+              lineHeight: 18,
               backgroundColor: "#fff",
+              minHeight: 44,
+              textAlignVertical: 'center',
             }}
           />
         </View>

@@ -29,7 +29,9 @@ const toPlainHeaders = (headers: any): Record<string, any> => {
 const needsPgHeader = (url?: string) => {
   if (!url) return false;
   const path = (url.split('?')[0] || '').toString();
-  return /^\/(tenants|rooms|beds|rent-payments|advance-payments|refund-payments|payments|pending-payments|payroll|dashboard)(\/|$)/.test(path);
+  // Only require PG header for list endpoints, not individual entity queries (e.g. /tenants/123)
+  return /^\/(tenants|rooms|beds|rent-payments|advance-payments|refund-payments|payments|pending-payments|payroll|dashboard)$/.test(path) ||
+         /^\/(tenants|rooms|beds|rent-payments|advance-payments|refund-payments|payments|pending-payments|payroll|dashboard)\?/.test(path);
 };
 
 const applyAuthAndContextHeaders = (headers: Headers, state: RootState) => {
