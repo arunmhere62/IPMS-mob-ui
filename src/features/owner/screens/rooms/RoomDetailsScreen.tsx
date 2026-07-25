@@ -443,7 +443,7 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
               </View>
               <View>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1} ellipsizeMode="tail">
-                  Room {room.room_no}
+                  Room {room.room_no?.startsWith('RM-') ? room.room_no : room.room_no?.startsWith('RM') ? `RM-${room.room_no.slice(2)}` : `RM-${room.room_no}`}
                 </Text>
                 <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>ID: {room.s_no}</Text>
               </View>
@@ -682,7 +682,11 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
 
           {beds && beds.length > 0 ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              {beds.map((bed, index) => {
+              {[...beds].sort((a, b) => {
+                const numA = parseInt(a.bed_no?.replace(/\D/g, '') || '0', 10);
+                const numB = parseInt(b.bed_no?.replace(/\D/g, '') || '0', 10);
+                return numA - numB;
+              }).map((bed, index) => {
                 const occupied = bed.is_occupied;
                 const tenant = bed.tenants?.[0];
                 return (

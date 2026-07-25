@@ -1,18 +1,33 @@
-const API_ENVIRONMENTS = [
-  {
-    label: 'Production',
-    url: 'https://mobapi.indianpgmanagement.com/api/v1',
-    description: 'Live production database',
+require('dotenv').config();
+
+console.log('[app.config.js] dotenv loaded:');
+console.log('[app.config.js] APP_ENV =', process.env.APP_ENV);
+console.log('[app.config.js] API_BASE_URL =', process.env.API_BASE_URL);
+console.log('[app.config.js] MODE =', process.env.MODE);
+
+const ENVIRONMENTS = {
+  local: {
+    apiBaseUrl: 'http://192.168.1.10:3001/api/v1',
+    subscriptionMode: false,
+    showDevBanner: true,
   },
-  {
-    label: 'Local Dev',
-    url: 'http://192.168.1.2:3001/api/v1',
-    description: 'Local development database',
+  development: {
+    apiBaseUrl: 'https://dev-api.indianpgmanagement.com/api/v1',
+    subscriptionMode: true,
+    showDevBanner: true,
   },
-];
+  production: {
+    apiBaseUrl: 'https://mobapi.indianpgmanagement.com/api/v1',
+    subscriptionMode: true,
+    showDevBanner: false,
+  },
+};
 
 module.exports = ({ config }) => {
   const baseExpoConfig = config ?? {};
+
+  const appEnv = (process.env.APP_ENV || 'local').toLowerCase();
+  const envConfig = ENVIRONMENTS[appEnv] || ENVIRONMENTS.local;
 
   const paymentResultIntentFilter = {
     action: "VIEW",
@@ -67,16 +82,14 @@ module.exports = ({ config }) => {
         ...(baseExpoConfig.extra?.eas ?? {}),
         projectId: "0f6ecb0b-7511-427b-be33-74a4bd0207fe"
       },
-      appEnv: (process.env.APP_ENV || process.env.MODE || 'dev').toLowerCase(),
-      // ── Centralized API config ──
-      // Update LOCAL_DEV_IP here when your dev machine IP changes.
-      // Production builds override via eas.json env: API_BASE_URL
-      apiBaseUrl: 'https://mobapi.indianpgmanagement.com/api/v1',
-      // apiBaseUrl: process.env.API_BASE_URL || API_ENVIRONMENTS[1].url,
-      apiEnvironments: API_ENVIRONMENTS,
-      // Subscription Configuration
-      subscriptionMode: process.env.SUBSCRIPTION_MODE === 'true',
-      showDevBanner: process.env.SHOW_DEV_BANNER === 'true'
+      appEnv,
+      apiBaseUrl: process.env.API_BASE_URL || envConfig.apiBaseUrl,
+      subscriptionMode: process.env.SUBSCRIPTION_MODE
+        ? process.env.SUBSCRIPTION_MODE === 'true'
+        : envConfig.subscriptionMode,
+      showDevBanner: process.env.SHOW_DEV_BANNER
+        ? process.env.SHOW_DEV_BANNER === 'true'
+        : envConfig.showDevBanner,
     }
   };
 };

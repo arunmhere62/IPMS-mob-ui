@@ -78,6 +78,34 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
         <View
           style={{
             marginTop: 4,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: Theme.colors.border,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+          }}
+        >
+          <View>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Created</Text>
+            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+              {tenant.created_at
+                ? new Date(tenant.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : 'N/A'}
+            </Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Updated</Text>
+            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+              {tenant.updated_at
+                ? new Date(tenant.updated_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : 'N/A'}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            marginTop: 4,
             paddingTop: 14,
             borderTopWidth: 1,
             borderTopColor: Theme.colors.border,

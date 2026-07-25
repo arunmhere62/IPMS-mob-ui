@@ -182,6 +182,22 @@ export const AdvancePaymentsSection: React.FC<AdvancePaymentsSectionProps> = ({
                         </Text>
                       </View>
                     )}
+
+                    {/* Audit Dates */}
+                    {(payment as any).created_at || (payment as any).updated_at ? (
+                      <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: '#D1FAE5', flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 9, color: Theme.colors.text.tertiary }}>
+                          {(payment as any).created_at
+                            ? `Created: ${new Date((payment as any).created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                            : ''}
+                        </Text>
+                        <Text style={{ fontSize: 9, color: Theme.colors.text.tertiary }}>
+                          {(payment as any).updated_at
+                            ? `Updated: ${new Date((payment as any).updated_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                            : ''}
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
 
                   {/* Receipt Buttons - Only show for PAID status */}

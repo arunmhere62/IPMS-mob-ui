@@ -160,6 +160,35 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [pgDetails, setPgDetails] = useState<PGDetails | null>(null);
 
+  const formatDateTime = (value?: string) => {
+    if (!value) return "N/A";
+    try {
+      return new Date(value).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return value;
+    }
+  };
+
+  const formatCurrency = (value?: number | string) => {
+    if (value === null || value === undefined) return "—";
+    const num = typeof value === "number" ? value : Number(value);
+    if (Number.isNaN(num)) return String(value);
+    return `₹${num.toLocaleString("en-IN")}`;
+  };
+
+  const formatRoomNumber = (roomNo?: string) => {
+    if (!roomNo) return "N/A";
+    if (roomNo.startsWith("RM-")) return roomNo;
+    if (roomNo.startsWith("RM")) return `RM-${roomNo.slice(2)}`;
+    return `RM-${roomNo}`;
+  };
+
   const {
     data: pgDetailsResponse,
     isFetching,
@@ -582,6 +611,56 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({
               </View>
             </Card>
 
+            {/* Audit Trail */}
+            <Card style={{ padding: 16, marginBottom: 16, backgroundColor: "#fff" }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "600",
+                  color: Theme.colors.text.primary,
+                  marginBottom: 12,
+                }}
+              >
+                Audit Trail
+              </Text>
+              <View style={{ gap: 10 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    borderBottomWidth: 1,
+                    borderBottomColor: "#F3F4F6",
+                    paddingBottom: 10,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: Theme.colors.text.secondary }}>PG ID</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: Theme.colors.text.primary }}>
+                    #{pgDetails.s_no}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    borderBottomWidth: 1,
+                    borderBottomColor: "#F3F4F6",
+                    paddingBottom: 10,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: Theme.colors.text.secondary }}>Created On</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: Theme.colors.text.primary }}>
+                    {formatDateTime(pgDetails.created_at)}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text style={{ fontSize: 13, color: Theme.colors.text.secondary }}>Updated On</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: Theme.colors.text.primary }}>
+                    {formatDateTime(pgDetails.updated_at)}
+                  </Text>
+                </View>
+              </View>
+            </Card>
+
             {/* Room Statistics Overview */}
             <View
               style={{
@@ -689,6 +768,7 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({
                 </Text>
               </View>
             </View>
+
           </ScrollView>
         ) : (
           <View

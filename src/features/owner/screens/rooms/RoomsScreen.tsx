@@ -268,7 +268,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
-                    {item.room_no}
+                    {item.room_no?.startsWith('RM-') ? item.room_no : item.room_no?.startsWith('RM') ? `RM-${item.room_no.slice(2)}` : `RM-${item.room_no}`}
                   </Text>
                   <Text
                     style={{ fontSize: 11, color: Theme.colors.text.tertiary }}
@@ -470,7 +470,11 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         ) : (
           <FlatList
             ref={flatListRef}
-            data={rooms}
+            data={[...rooms].sort((a, b) => {
+              const numA = parseInt(a.room_no?.replace(/\D/g, '') || '0', 10);
+              const numB = parseInt(b.room_no?.replace(/\D/g, '') || '0', 10);
+              return numA - numB;
+            })}
             renderItem={renderRoomCard}
             keyExtractor={(item) => String(item?.s_no ?? Math.random())}
             refreshControl={

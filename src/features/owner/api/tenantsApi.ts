@@ -22,6 +22,8 @@ export interface TenantPayment {
   payment_method?: string;
   status?: string;
   remarks?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AdvancePayment {
@@ -32,6 +34,8 @@ export interface AdvancePayment {
   payment_method?: string;
   status?: string;
   remarks?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface RefundPayment {
@@ -42,6 +46,8 @@ export interface RefundPayment {
   status?: string;
   remarks?: string;
   actual_rent_amount?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CurrentBill {

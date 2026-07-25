@@ -649,7 +649,11 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
           </View>
         ) : (
           <FlatList
-            data={beds}
+            data={[...beds].sort((a, b) => {
+              const numA = parseInt(a.bed_no?.replace(/\D/g, '') || '0', 10);
+              const numB = parseInt(b.bed_no?.replace(/\D/g, '') || '0', 10);
+              return numA - numB;
+            })}
             renderItem={renderBedCard}
             keyExtractor={(item) => String(item?.s_no ?? Math.random())}
             refreshControl={
