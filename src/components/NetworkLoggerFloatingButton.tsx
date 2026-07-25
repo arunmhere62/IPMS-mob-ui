@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatedPressableCard } from './AnimatedPressableCard';
-import { Animated, Dimensions, PanResponder, StyleSheet, Text, View, Alert } from 'react-native';
+import { Animated, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { Theme } from '../theme';
 import { networkLogger } from '../utils/networkLogger';
 import { NetworkLoggerModal } from '../screens/network/NetworkLoggerScreen';
-import { API_ENVIRONMENTS, getCurrentApiUrl, getCurrentEnvLabel, setApiEnvironment, subscribeEnvChanges } from '../utils/envSwitcher';
+import { ENV, getCurrentEnv } from '../config';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -20,34 +20,16 @@ interface NetworkLoggerFloatingButtonProps {
 export const NetworkLoggerFloatingButton: React.FC<NetworkLoggerFloatingButtonProps> = ({ enabled = true }) => {
   const [count, setCount] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
-  const [envLabel, setEnvLabel] = useState(getCurrentEnvLabel());
+  const [, setEnvTick] = useState(0);
   const pan = useState(new Animated.ValueXY({ x: 20, y: 140 }))[0];
 
   useEffect(() => {
     if (!enabled) return;
-    const unsub = subscribeEnvChanges(() => setEnvLabel(getCurrentEnvLabel()));
-    return () => { unsub(); };
-  }, [enabled]);
 
-  const handleLongPress = () => {
-    const currentUrl = getCurrentApiUrl();
-    const currentIndex = API_ENVIRONMENTS.findIndex((e) => e.url === currentUrl);
-    const nextIndex = (currentIndex + 1) % API_ENVIRONMENTS.length;
-    const nextEnv = API_ENVIRONMENTS[nextIndex];
-    Alert.alert(
-      'Switch Environment',
-      `Switch to ${nextEnv.label}?\n\n${nextEnv.url}\n\nYou may need to re-login.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Switch', onPress: () => setApiEnvironment(nextEnv.url) },
-      ],
-    );
-  };
-
-  useEffect(() => {
-    if (!enabled) return;
-
-    const update = () => setCount(networkLogger.getLogs().length);
+    const update = () => {
+      setCount(networkLogger.getLogs().length);
+      setEnvTick((t) => t + 1);
+    };
     update();
 
     const t = setInterval(update, 800);
@@ -108,12 +90,10 @@ export const NetworkLoggerFloatingButton: React.FC<NetworkLoggerFloatingButtonPr
       >
         <AnimatedPressableCard
           onPress={() => setModalVisible(true)}
-          onLongPress={handleLongPress}
-          delayLongPress={600}
           style={styles.floatingButtonInner}
         >
           <Text style={styles.floatingButtonText}>🔍</Text>
-          <Text style={styles.envLabel}>{envLabel}</Text>
+          <Text style={[styles.envLabel, { color: ENV.ENV_COLOR }]}>{ENV.ENV_LABEL}</Text>
           {count > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{count}</Text>
@@ -150,8 +130,7 @@ const styles = StyleSheet.create({
     fontSize: 24 },
   envLabel: {
     fontSize: 8,
-    fontWeight: '700',
-    color: '#ffffffcc',
+    fontWeight: '800',
     marginTop: 2,
   },
   badge: {

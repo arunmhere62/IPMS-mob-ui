@@ -1,8 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { ENV } from '../config';
-
-const WS_BASE = ENV.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+import { getApiBaseUrl } from '../config';
 
 interface UseTicketSocketOptions {
   token: string | null;
@@ -22,7 +20,8 @@ export function useTicketSocket({
   const connect = useCallback(() => {
     if (!token || !ticketId) return;
 
-    const socket = io(`${WS_BASE}/tickets`, {
+    const wsBase = getApiBaseUrl().replace(/\/api\/v\d+\/?$/, '');
+    const socket = io(`${wsBase}/tickets`, {
       auth: { token },
       transports: ['websocket'],
       reconnectionAttempts: 5,

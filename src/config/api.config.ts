@@ -1,8 +1,7 @@
 import { ENV } from './environment';
 
 export const API_CONFIG = {
-  // Uses centralized environment configuration
-  BASE_URL: ENV.API_BASE_URL,
+  get BASE_URL() { return ENV.API_BASE_URL; },
   TIMEOUT: 30000,
   HEADERS: {
     'Content-Type': 'application/json',

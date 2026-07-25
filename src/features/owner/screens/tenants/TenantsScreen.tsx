@@ -5,7 +5,6 @@ import {
   FlatList,
   RefreshControl,
   TextInput,
-  Image,
   ActivityIndicator,
   Animated,
   Easing,
@@ -13,7 +12,6 @@ import {
 import { useSelector } from "react-redux";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import { Card } from "../../../../components/Card";
-import { AnimatedButton } from "../../../../components/AnimatedButton";
 import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
 import { Theme } from "../../../../theme";
@@ -26,6 +24,7 @@ import { TenantsFilterModal } from "./TenantsFilterModal";
 import { Tenant, useLazyGetTenantsQuery } from "../../api";
 import { RootState } from "../../store";
 import { useOnboardingTour } from "../../../../context/OnboardingTourContext";
+import { TenantCard } from "./TenantCard";
 
 interface TenantsScreenProps {
   navigation: any;
@@ -61,7 +60,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [visibleItemsCount, setVisibleItemsCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<
     "ALL" | "ACTIVE" | "INACTIVE" | "CHECKED_OUT"
   >("ALL");
@@ -71,28 +69,10 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
   const [pendingAdvanceFilter, setPendingAdvanceFilter] = useState(false);
   const [partialRentFilter, setPartialRentFilter] = useState(false);
 
-  const [expandedPaymentCards, setExpandedPaymentCards] = useState<Set<number>>(
-    new Set()
-  );
   const flatListRef = React.useRef<any>(null);
   const scrollPositionRef = React.useRef(0);
   const hasLoadedOnceRef = React.useRef(false);
   const forceRefreshRef = React.useRef(false);
-
-  // Checkout modal state
-
-  // Toggle payment details for a tenant
-  const togglePaymentDetails = (tenantId: number) => {
-    setExpandedPaymentCards((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(tenantId)) {
-        newSet.delete(tenantId);
-      } else {
-        newSet.add(tenantId);
-      }
-      return newSet;
-    });
-  };
 
   // Rooms list for filter (independent of tenant list filters)
   const rooms = React.useMemo(() => {
@@ -110,8 +90,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     setPendingAdvanceFilter(false);
     setPartialRentFilter(false);
     setShowFilters(false);
-    setExpandedPaymentCards(new Set());
-
     scrollPositionRef.current = 0;
     setCurrentPage(1);
     setHasMore(true);
@@ -319,70 +297,26 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     loadTenants(nextPage, false);
   };
 
-  const handleViewableItemsChanged = React.useCallback(
-    ({ viewableItems }: any) => {
-      if (viewableItems && viewableItems.length > 0) {
-        const lastVisibleIndex =
-          viewableItems[viewableItems.length - 1]?.index || 0;
-        setVisibleItemsCount(lastVisibleIndex + 1);
-      }
-    },
-    []
-  );
-
-  const viewabilityConfig = React.useRef({
-    itemVisiblePercentThreshold: 50,
-    minimumViewTime: 100,
-  }).current;
-
   const TenantsListSkeleton = React.useCallback(() => {
-    const items = Array.from({ length: 6 });
+    const items = Array.from({ length: 8 });
     return (
       <View style={{ padding: 16 }}>
         {items.map((_, idx) => (
-          <View key={idx} style={{ marginBottom: 12 }}>
-            <Card style={{ padding: 12 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: 12,
-                }}
-              >
-                <SkeletonLoader
-                  width={60}
-                  height={60}
-                  borderRadius={30}
-                  style={{ marginRight: 12 }}
-                />
+          <View key={idx} style={{ marginBottom: 8 }}>
+            <Card style={{ padding: 10 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <SkeletonLoader width={40} height={40} borderRadius={20} />
                 <View style={{ flex: 1 }}>
-                  <SkeletonLoader
-                    width="70%"
-                    height={16}
-                    style={{ marginBottom: 8 }}
-                  />
-                  <SkeletonLoader width="45%" height={12} />
+                  <SkeletonLoader width="60%" height={14} style={{ marginBottom: 6 }} />
+                  <SkeletonLoader width="40%" height={11} />
                 </View>
+                <SkeletonLoader width={36} height={16} borderRadius={8} />
               </View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  marginBottom: 12,
-                }}
-              >
-                <SkeletonLoader width={72} height={24} borderRadius={12} />
-                <SkeletonLoader width={90} height={24} borderRadius={12} />
-                <SkeletonLoader width={84} height={24} borderRadius={12} />
+              <View style={{ flexDirection: "row", gap: 5, marginTop: 8 }}>
+                <SkeletonLoader width={50} height={16} borderRadius={8} />
+                <SkeletonLoader width={60} height={16} borderRadius={8} />
+                <SkeletonLoader width={55} height={16} borderRadius={8} />
               </View>
-              <SkeletonLoader
-                width="100%"
-                height={44}
-                borderRadius={10}
-                style={{ marginBottom: 12 }}
-              />
-              <SkeletonLoader width="40%" height={12} />
             </Card>
           </View>
         ))}
@@ -433,623 +367,16 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     return count;
   };
 
-  const renderTenantCard = ({ item, index }: any) => {
-    // Get tenant image
-    const tenantImage =
-      item.images && Array.isArray(item.images) && item.images.length > 0
-        ? item.images[0]
-        : null;
-
-    const _showPaymentDetails = expandedPaymentCards.has(item.s_no);
-
-    // Use new API enriched status fields
-    const isRentPaid = item.is_rent_paid || false;
-    const isRentPartial = item.is_rent_partial || false;
-    const rentDueAmount = item.rent_due_amount || 0;
-    const partialDueAmount = item.partial_due_amount || 0;
-    const pendingDueAmount = item.pending_due_amount || 0;
-    const isAdvancePaid = item.is_advance_paid || false;
-    const _pendingMonths = item.pending_months || 0;
-
-    // Check if tenant has refund payments
-    const hasRefundPayments =
-      item.refund_payments &&
-      Array.isArray(item.refund_payments) &&
-      item.refund_payments.length > 0;
-
-    // Get new rent cycle information
-    const _rentCycle = item.rent_cycle;
-    const _paymentStatus = item.payment_status || "NO_PAYMENT";
-    const unpaidMonths = item.unpaid_months || [];
-
-    // Get partial payments information
-    const _partialPayments = item.partial_payments || [];
-    const _totalPartialDue = item.total_partial_due || 0;
-
-    // Determine payment status for display
-    const hasOutstandingAmount = rentDueAmount > 0;
-    const hasBothPartialAndPending =
-      partialDueAmount > 0 && pendingDueAmount > 0;
-    const hasPendingRent =
-      pendingDueAmount > 0 ||
-      (Array.isArray(unpaidMonths) && unpaidMonths.length > 0);
-
-    return (
-      <AnimatedPressableCard
-        onPress={undefined}
-        scaleValue={0.97}
-        duration={120}
-        style={{ marginBottom: 12 }}
-      >
-        <Card
-          style={{
-            padding: 12,
-            borderLeftWidth: hasOutstandingAmount ? 4 : 0,
-            borderLeftColor: isRentPartial ? "#F97316" : "#F59E0B",
-          }}
-        >
-          {/* Header with Image */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              marginBottom: 12,
-            }}
-          >
-            {/* Tenant Image/Avatar */}
-            <View
-              style={{
-                width: 60,
-                height: 60,
-                borderRadius: 30,
-                backgroundColor: Theme.colors.primary,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-                overflow: "hidden",
-              }}
-            >
-              {tenantImage ? (
-                <Image
-                  source={{ uri: tenantImage }}
-                  style={{ width: 60, height: 60 }}
-                  resizeMode="cover"
-                />
-              ) : (
-                <Text
-                  style={{ color: "#fff", fontSize: 24, fontWeight: "bold" }}
-                >
-                  {item.name.charAt(0).toUpperCase()}
-                </Text>
-              )}
-            </View>
-
-            {/* Name and ID */}
-            <View style={{ flex: 1 }}>
-              {/* Name Row */}
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  color: Theme.colors.text.primary,
-                  marginBottom: 4,
-                }}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.name}
-              </Text>
-
-              {/* Room & Bed Info Row */}
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-              >
-                {item.rooms && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: Theme.colors.text.tertiary,
-                      }}
-                    >
-                      🏠
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: Theme.colors.text.secondary,
-                        fontWeight: "500",
-                      }}
-                    >
-                      {item.rooms.room_no}
-                    </Text>
-                  </View>
-                )}
-                {item.beds && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: Theme.colors.text.tertiary,
-                      }}
-                    >
-                      🛏️
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: Theme.colors.text.secondary,
-                        fontWeight: "500",
-                      }}
-                    >
-                      {item.beds.bed_no}
-                    </Text>
-                  </View>
-                )}
-                {item.rooms?.rent_price && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: Theme.colors.text.tertiary,
-                      }}
-                    >
-                      💰
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: Theme.colors.primary,
-                        fontWeight: "600",
-                      }}
-                    >
-                      ₹{item.rooms.rent_price}/mo
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Tenant Status Badge */}
-            <View
-              style={{
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderRadius: 10,
-                backgroundColor:
-                  item.status === "ACTIVE"
-                    ? "#10B98120"
-                    : item.status === "CHECKED_OUT"
-                    ? "#F59E0B20"
-                    : "#EF444420",
-                alignSelf: "flex-start",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 10,
-                  fontWeight: "600",
-                  color:
-                    item.status === "ACTIVE"
-                      ? "#10B981"
-                      : item.status === "CHECKED_OUT"
-                      ? "#F59E0B"
-                      : "#EF4444",
-                }}
-                numberOfLines={1}
-                adjustsFontSizeToFit minimumFontScale={0.85}
-              >
-                {item.status}
-              </Text>
-            </View>
-          </View>
-
-          {/* Contact Info */}
-          <View style={{ marginBottom: 12 }}>
-            {item.occupation && (
-              <Text
-                style={{ fontSize: 13, color: Theme.colors.text.secondary }}
-              >
-                💼 {item.occupation}
-              </Text>
-            )}
-          </View>
-
-          {/* Payment Status Section - Medium Badges */}
-          <View style={{ marginBottom: 12 }}>
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: "600",
-                color: Theme.colors.text.secondary,
-                marginBottom: 6,
-              }}
-            >
-              Payment Status
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: 7,
-                alignItems: "center",
-              }}
-            >
-              {/* Paid Status Badge */}
-              {isRentPaid && (
-                <View
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 11,
-                    backgroundColor: "#10B981",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: "700",
-                      color: "#fff",
-                    }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit minimumFontScale={0.85}
-                  >
-                    ✅ Rent PAID
-                  </Text>
-                </View>
-              )}
-              {isAdvancePaid && (
-                <View
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 11,
-                    backgroundColor: "#10B981",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: "700",
-                      color: "#fff",
-                    }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit minimumFontScale={0.85}
-                  >
-                    ✅ Advance Paid
-                  </Text>
-                </View>
-              )}
-              {/* Refund Paid Badge */}
-              {hasRefundPayments && (
-                <View
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 11,
-                    backgroundColor: Theme.colors.warning,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: "700",
-                      color: "#fff",
-                    }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit minimumFontScale={0.85}
-                  >
-                    💰 Refund Paid
-                  </Text>
-                </View>
-              )}
-              {/* Partial Status Badge */}
-              {isRentPartial && (
-                <View
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 11,
-                    backgroundColor: "#F97316",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: "700",
-                      color: "#fff",
-                    }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit minimumFontScale={0.85}
-                  >
-                    ⏳ PARTIAL
-                  </Text>
-                </View>
-              )}
-
-              {/* Pending Status Badge */}
-              {hasPendingRent && (
-                <View
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 11,
-                    backgroundColor: "#F59E0B",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: "700",
-                      color: "#fff",
-                    }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit minimumFontScale={0.85}
-                  >
-                    📅 PENDING RENT
-                  </Text>
-                </View>
-              )}
-
-              {/* Due Amount Badge */}
-              {hasOutstandingAmount && (
-                <View
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderRadius: 11,
-                    backgroundColor: "#EF4444",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: "700",
-                      color: "#fff",
-                    }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit minimumFontScale={0.85}
-                  >
-                    ₹{rentDueAmount} DUE
-                  </Text>
-                </View>
-              )}
-
-              {/* No Advance Badge */}
-              {!isAdvancePaid && (
-                <View
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderRadius: 11,
-                    backgroundColor: "#F59E0B",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: "700",
-                      color: "#fff",
-                    }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit minimumFontScale={0.85}
-                  >
-                    💰 NO ADVANCE
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Pending Payment Alert - Using enriched API fields */}
-          {hasOutstandingAmount && (
-            <View
-              style={{
-                backgroundColor: isRentPartial ? "#FFF7ED" : "#FEF3C7",
-                borderWidth: 1,
-                borderColor: isRentPartial ? "#FED7AA" : "#FDE68A",
-                borderRadius: 10,
-                marginBottom: 12,
-                overflow: "hidden",
-              }}
-            >
-              <AnimatedPressableCard
-                onPress={() => togglePaymentDetails(item.s_no)}
-                style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View style={{ flex: 1, paddingRight: 10 }}>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "700",
-                      color: isRentPartial ? "#EA580C" : "#B45309",
-                    }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit minimumFontScale={0.85}
-                  >
-                    {hasBothPartialAndPending
-                      ? "Partial + Pending"
-                      : isRentPartial
-                      ? "Partial Payment"
-                      : "Pending Payment"}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      color: Theme.colors.text.secondary,
-                      marginTop: 2,
-                    }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit minimumFontScale={0.85}
-                  >
-                    Due ₹{rentDueAmount}
-                    {unpaidMonths.length > 0
-                      ? ` · ${unpaidMonths.length} month(s)`
-                      : ""}
-                    {!isAdvancePaid ? " · No advance" : ""}
-                  </Text>
-                </View>
-
-                <Ionicons
-                  name={
-                    expandedPaymentCards.has(item.s_no)
-                      ? "chevron-up"
-                      : "chevron-down"
-                  }
-                  size={18}
-                  color={isRentPartial ? "#EA580C" : "#B45309"}
-                />
-              </AnimatedPressableCard>
-
-              {expandedPaymentCards.has(item.s_no) && (
-                <View
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingBottom: 12,
-                  }}
-                >
-                  {/* Show breakdown if both partial and pending amounts exist */}
-                  {partialDueAmount > 0 && pendingDueAmount > 0 && (
-                    <View style={{ marginTop: 4 }}>
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          color: Theme.colors.text.secondary,
-                        }}
-                      >
-                        Partial: ₹{partialDueAmount} • Pending: ₹
-                        {pendingDueAmount}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Show unpaid months info if available */}
-                  {unpaidMonths.length > 0 && (
-                    <View style={{ marginTop: 10 }}>
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: "700",
-                          color: isRentPartial ? "#EA580C" : "#B45309",
-                        }}
-                      >
-                        Unpaid months
-                      </Text>
-                      {unpaidMonths
-                        .slice(0, 2)
-                        .map((month: any, index: number) => (
-                          <Text
-                            key={index}
-                            style={{
-                              fontSize: 10,
-                              color: Theme.colors.text.secondary,
-                              marginTop: 4,
-                            }}
-                          >
-                            {month.month_name} ({month.cycle_start} to{" "}
-                            {month.cycle_end})
-                          </Text>
-                        ))}
-                      {unpaidMonths.length > 2 && (
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            color: Theme.colors.text.secondary,
-                            marginTop: 4,
-                          }}
-                        >
-                          +{unpaidMonths.length - 2} more
-                        </Text>
-                      )}
-                    </View>
-                  )}
-
-                  {!isAdvancePaid && (
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        color: Theme.colors.text.secondary,
-                        marginTop: 10,
-                      }}
-                    >
-                      No advance payment
-                    </Text>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Check-in Date */}
-          <Text
-            style={{
-              fontSize: 11,
-              color: Theme.colors.text.tertiary,
-              marginBottom: 12,
-            }}
-          >
-            Check-in: {new Date(item.check_in_date).toLocaleDateString()}
-          </Text>
-
-          {/* Action Buttons */}
-          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-            {tourStep === 'tap_tenant' && index === 0 ? (
-              <View style={{ flex: 1, alignItems: 'center' }}>
-                <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Ionicons name="finger-print" size={11} color="#fff" />
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Tap to open tenant</Text>
-                </View>
-                <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginBottom: 2 }} />
-                <Animated.View style={{ transform: [{ scale: tenantPulse }], width: '100%' }}>
-                  <AnimatedButton
-                    onPress={() => { advanceTour(); navigation.navigate("TenantDetails", { tenantId: item.s_no }); }}
-                    scaleValue={0.94}
-                    duration={120}
-                    style={{ paddingVertical: 10, paddingHorizontal: 16, backgroundColor: '#1E3A8A', borderRadius: 8, alignItems: 'center', shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 6 }}
-                  >
-                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>View Details</Text>
-                  </AnimatedButton>
-                </Animated.View>
-              </View>
-            ) : (
-              <AnimatedButton
-                onPress={() => navigation.navigate("TenantDetails", { tenantId: item.s_no })}
-                scaleValue={0.94}
-                duration={120}
-                style={{ flex: 1, minWidth: 100, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: Theme.colors.primary, borderRadius: 8, alignItems: "center" }}
-              >
-                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>View Details</Text>
-              </AnimatedButton>
-            )}
-          </View>
-        </Card>
-      </AnimatedPressableCard>
-    );
-  };
+  const renderTenantCard = ({ item, index }: any) => (
+    <TenantCard
+      tenant={item}
+      index={index}
+      onPress={(id) => navigation.navigate("TenantDetails", { tenantId: id })}
+      tourStep={tourStep}
+      advanceTour={advanceTour}
+      tenantPulse={tenantPulse}
+    />
+  );
 
   return (
     <ScreenLayout
@@ -1211,50 +538,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
           </View>
         )}
 
-        {/* Scroll Position Indicator */}
-        {visibleItemsCount > 0 && (
-          <View
-            style={{
-              position: "absolute",
-              bottom: 160,
-              right: 16,
-              backgroundColor: "rgba(0, 0, 0, 0.75)",
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 20,
-              zIndex: 1000,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 4,
-              elevation: 5,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "700",
-                color: "#fff",
-                textAlign: "center",
-              }}
-            >
-              {visibleItemsCount} of {pagination?.total || tenants.length}
-            </Text>
-            <Text
-              style={{
-                fontSize: 10,
-                color: "#fff",
-                opacity: 0.8,
-                textAlign: "center",
-                marginTop: 2,
-              }}
-            >
-              {(pagination?.total || tenants.length) - visibleItemsCount}{" "}
-              remaining
-            </Text>
-          </View>
-        )}
-
         {/* Tenants List */}
         {(tenantsQuery.isUninitialized || tenantsQuery.isFetching) &&
         tenants.length === 0 ? (
@@ -1375,8 +658,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
               }
               onEndReached={loadMoreTenants}
               onEndReachedThreshold={0.5}
-              onViewableItemsChanged={handleViewableItemsChanged}
-              viewabilityConfig={viewabilityConfig}
               onScroll={(event) => {
                 scrollPositionRef.current = event.nativeEvent.contentOffset.y;
                 bottomNavOnScroll(event);

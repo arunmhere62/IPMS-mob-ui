@@ -245,7 +245,8 @@ class NotificationService {
       this.lastTestSentTimestamp = now;
       
       // Get API base URL from config
-      const API_BASE_URL = (await import('../../config')).API_BASE_URL;
+      const { getApiBaseUrl } = await import('../../config');
+      const API_BASE_URL = getApiBaseUrl();
       
       console.log('[TEST] 🧪 Sending test notification to user:', userId);
       
@@ -509,7 +510,8 @@ class NotificationService {
       } catch (e) {
         // If endpoint doesn't exist or fails, try direct API call
         try {
-          const API_BASE_URL = (await import('../../config')).API_BASE_URL;
+          const { getApiBaseUrl } = await import('../../config');
+          const API_BASE_URL = getApiBaseUrl();
           await fetch(`${API_BASE_URL}/notifications/unregister-token`, {
             method: 'POST',
             headers: {

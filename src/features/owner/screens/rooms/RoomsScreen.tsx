@@ -2,12 +2,13 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TextInput,
   RefreshControl,
   Alert,
   Animated,
   Easing,
+  useWindowDimensions,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
@@ -18,7 +19,6 @@ import {
   useGetAllRoomsQuery,
 } from "../../api/roomsApi";
 import { Card } from "../../../../components/Card";
-import { ActionButtons } from "../../../../components/ActionButtons";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
 import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 import { FloatingActionButton } from "../../../../components/FloatingActionButton";
@@ -47,6 +47,8 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const canCreateRoom = can(Permission.CREATE_ROOM);
   const canEditRoom = can(Permission.EDIT_ROOM);
   const canDeleteRoom = can(Permission.DELETE_ROOM);
+
+  const { width: screenWidth } = useWindowDimensions();
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
@@ -108,8 +110,8 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   // Reset scroll position when PG location changes
   useEffect(() => {
     scrollPositionRef.current = 0;
-    if (flatListRef.current) {
-      flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+    if (flatListRef.current?.scrollTo) {
+      flatListRef.current.scrollTo({ y: 0, animated: false });
     }
   }, [selectedPGLocationId]);
 
@@ -121,9 +123,9 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       setTimeout(() => {
-        if (flatListRef.current && scrollPositionRef.current > 0) {
-          flatListRef.current.scrollToOffset({
-            offset: scrollPositionRef.current,
+        if (flatListRef.current?.scrollTo && scrollPositionRef.current > 0) {
+          flatListRef.current.scrollTo({
+            y: scrollPositionRef.current,
             animated: true,
           });
         }
@@ -145,6 +147,70 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
     setAppliedSearch(searchQuery);
   };
+
+  const getSharingType = (room: Room) => {
+    const total = room.total_beds ?? room.beds?.length ?? 0;
+    if (total === 1) return "Single Sharing";
+    if (total === 2) return "Double Sharing";
+    if (total === 3) return "Triple Sharing";
+    return `${total} Bed Sharing`;
+  };
+
+  const getRoomPrice = (room: Room) => {
+    const prices = (room.beds || [])
+      .map((b) => Number(b.bed_price) || 0)
+      .filter((p) => p > 0);
+    if (prices.length === 0) return { min: 0, max: 0 };
+    return { min: Math.min(...prices), max: Math.max(...prices) };
+  };
+
+  const getAvailability = (room: Room) => {
+    const total = room.total_beds ?? room.beds?.length ?? 0;
+    const occupied =
+      typeof room.occupied_beds === "number"
+        ? room.occupied_beds
+        : (room.beds || []).filter((b) => Boolean(b.is_occupied)).length;
+    const available =
+      typeof room.available_beds === "number"
+        ? room.available_beds
+        : Math.max(total - occupied, 0);
+    return { total, occupied, available };
+  };
+
+  const groupedRooms = useMemo(() => {
+    let list = rooms.filter((r) => {
+      if (!appliedSearch) return true;
+      const q = appliedSearch.toLowerCase();
+      return r.room_no?.toLowerCase().includes(q);
+    });
+
+    const groups: Record<string, Room[]> = {};
+    list.forEach((room) => {
+      const key = getSharingType(room);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(room);
+    });
+
+    // Sort groups by desired order and rooms within group by room number
+    const order = ["Single Sharing", "Double Sharing", "Triple Sharing"];
+    const entries = Object.entries(groups).sort(([a], [b]) => {
+      const idxA = order.indexOf(a);
+      const idxB = order.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+
+    return entries.map(([title, data]) => ({
+      title,
+      data: [...data].sort((a, b) => {
+        const numA = parseInt(a.room_no?.replace(/\D/g, "") || "0", 10);
+        const numB = parseInt(b.room_no?.replace(/\D/g, "") || "0", 10);
+        return numA - numB;
+      }),
+    }));
+  }, [rooms, appliedSearch]);
 
   const handleOpenEditModal = (roomId: number) => {
     if (!canEditRoom) {
@@ -193,143 +259,134 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     });
   };
 
-  const renderRoomCard = ({ item, index }: { item: Room; index: number }) => {
-      const totalBeds = item.total_beds ?? item.beds?.length ?? 0;
-      const hasOccupancyFlag = (item.beds || []).some(
-        (b) => typeof (b as any)?.is_occupied === "boolean"
-      );
-      const occupiedBeds =
-        typeof (item as any)?.occupied_beds === "number"
-          ? (item as any).occupied_beds
-          : hasOccupancyFlag
-          ? (item.beds || []).filter((b) => Boolean((b as any)?.is_occupied))
-              .length
-          : undefined;
-      const availableBeds =
-        typeof (item as any)?.available_beds === "number"
-          ? (item as any).available_beds
-          : typeof occupiedBeds === "number"
-          ? Math.max(totalBeds - occupiedBeds, 0)
-          : undefined;
+  const formatPrice = (price: number) => (price > 0 ? `₹${price.toLocaleString('en-IN')}` : '—');
 
-      const showTourHint = tourStep === 'tap_room_for_tenant' && index === 0;
+  const getChipLayout = () => {
+    const columns = screenWidth < 360 ? 2 : screenWidth < 480 ? 3 : screenWidth < 720 ? 4 : 5;
+    const gap = 8;
+    const padding = 24; // 12px horizontal padding each side
+    const chipWidth = Math.floor((screenWidth - padding - gap * (columns - 1)) / columns);
+    return { columns, gap, chipWidth };
+  };
 
-      return (
-        <AnimatedPressableCard
-          onPress={() => {
-            if (showTourHint) advanceTour();
-            navigation.navigate("RoomDetails", { roomId: item.s_no });
-          }}
-        >
-          {showTourHint && (
-            <View style={{ alignItems: 'center', marginBottom: 4 }}>
-              <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Ionicons name="finger-print" size={11} color="#fff" />
-                <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Tap to open room</Text>
-              </View>
-              <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
+  const renderRoomChip = ({ item, index }: { item: Room; index: number }) => {
+    const { total, available } = getAvailability(item);
+    const { min, max } = getRoomPrice(item);
+    const isFull = available === 0;
+    const isAvailable = available === total;
+    const showTourHint = tourStep === 'tap_room_for_tenant' && index === 0;
+    const roomNo = item.room_no?.startsWith('RM-') ? item.room_no : item.room_no?.startsWith('RM') ? `RM-${item.room_no.slice(2)}` : `RM-${item.room_no}`;
+    const cardBg = isAvailable ? '#ECFDF5' : isFull ? '#FEF2F2' : '#FFFBEB';
+    const borderColor = isAvailable ? '#A7F3D0' : isFull ? '#FECACA' : '#FDE68A';
+
+    return (
+      <AnimatedPressableCard
+        onPress={() => {
+          if (showTourHint) advanceTour();
+          navigation.navigate("RoomDetails", { roomId: item.s_no });
+        }}
+      >
+        {showTourHint && (
+          <View style={{ alignItems: 'center', marginBottom: 4 }}>
+            <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="finger-print" size={11} color="#fff" />
+              <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Tap to open room</Text>
             </View>
-          )}
-          <Animated.View style={{ transform: [{ scale: showTourHint ? roomPulse : 1 }] }}>
-          <Card
-            className=""
-            style={{ marginHorizontal: 10, marginVertical: 4, padding: 12 }}
-          >
+            <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
+          </View>
+        )}
+        <Animated.View style={{ transform: [{ scale: showTourHint ? roomPulse : 1 }] }}>
+          <Card style={{
+            padding: 10,
+            margin: 0,
+            alignItems: 'flex-start',
+            backgroundColor: cardBg,
+            borderWidth: 1,
+            borderColor: borderColor,
+          }}>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "800",
+                color: Theme.colors.text.primary,
+                marginBottom: 2,
+              }}
+              numberOfLines={1}
+            >
+              {roomNo}
+            </Text>
+
+            <Text style={{ fontSize: 10, color: Theme.colors.text.secondary, marginBottom: 6 }}>
+              {total} beds
+            </Text>
+
             <View
               style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 4,
+                backgroundColor: isAvailable ? '#10B981' : isFull ? '#EF4444' : '#F59E0B',
+                borderRadius: 6,
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+                marginBottom: 6,
               }}
             >
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-              >
-                <View
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
-                    backgroundColor: Theme.colors.primary + "20",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ fontSize: 16 }}>🏠</Text>
-                </View>
-                <View>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: "700",
-                      color: Theme.colors.text.primary,
-                    }}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {item.room_no?.startsWith('RM-') ? item.room_no : item.room_no?.startsWith('RM') ? `RM-${item.room_no.slice(2)}` : `RM-${item.room_no}`}
-                  </Text>
-                  <Text
-                    style={{ fontSize: 11, color: Theme.colors.text.tertiary }}
-                  >
-                    ID: {item.s_no}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-                <ActionButtons
-                  onView={() => {
-                    navigation.navigate("RoomDetails", { roomId: item.s_no });
-                  }}
-                  onEdit={() => handleOpenEditModal(item.s_no)}
-                  onDelete={() => handleDeleteRoom(item.s_no, item.room_no)}
-                  disableEdit={!canEditRoom}
-                  disableDelete={!canDeleteRoom}
-                  blockPressWhenDisabled
-                  showView
-                  containerStyle={{ gap: 6 }}
-                />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3F4F6', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <Ionicons name="bed-outline" size={13} color="#6B7280" />
-                <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{totalBeds} Total</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#DCFCE7', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <Ionicons name="bed-outline" size={13} color="#16A34A" />
-                <Text style={{ fontSize: 12, color: '#16A34A', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{typeof availableBeds === 'number' ? availableBeds : '—'} Free</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEE2E2', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <Ionicons name="bed-outline" size={13} color="#DC2626" />
-                <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{typeof occupiedBeds === 'number' ? occupiedBeds : '—'} Taken</Text>
-              </View>
-            </View>
-
-            {item.pg_locations && (
-              <View
+              <Text
                 style={{
-                  marginTop: 8,
-                  paddingTop: 8,
-                  borderTopWidth: 1,
-                  borderTopColor: Theme.colors.border,
+                  fontSize: 9,
+                  fontWeight: '800',
+                  color: '#fff',
+                  letterSpacing: 0.3,
                 }}
               >
-                <Text
-                  style={{ fontSize: 10, color: Theme.colors.text.tertiary }}
-                >
-                  📍 {item.pg_locations.location_name}
-                </Text>
-              </View>
-            )}
+                {isAvailable ? 'AVAILABLE' : isFull ? 'NOT AVAILABLE' : `${available} LEFT`}
+              </Text>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '700',
+                color: Theme.colors.primary,
+              }}
+            >
+              {min === max ? formatPrice(min) : `${formatPrice(min)} - ${formatPrice(max)}`}
+            </Text>
           </Card>
-          </Animated.View>
-        </AnimatedPressableCard>
-      );
+        </Animated.View>
+      </AnimatedPressableCard>
+    );
   };
+
+  const renderSection = ({ item }: { item: { title: string; data: Room[] } }) => (
+    <View style={{ marginBottom: 16 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 10, marginTop: 8 }}>
+        <Text style={{ flex: 1, fontSize: 14, fontWeight: '800', color: Theme.colors.text.primary }}>
+          {item.title}
+        </Text>
+        <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, fontWeight: '600' }}>
+          {item.data.length} rooms
+        </Text>
+      </View>
+      {(() => {
+        const { chipWidth, gap } = getChipLayout();
+        return (
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              paddingHorizontal: 12,
+              gap,
+            }}
+          >
+            {item.data.map((room, idx) => (
+              <View key={room.s_no} style={{ width: chipWidth }}>
+                {renderRoomChip({ item: room, index: idx })}
+              </View>
+            ))}
+          </View>
+        );
+      })()}
+    </View>
+  );
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
@@ -346,13 +403,14 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           padding: 12,
           borderBottomWidth: 1,
           borderBottomColor: Theme.colors.border,
+          backgroundColor: Theme.colors.background.secondary,
         }}
       >
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TextInput
             style={{
               flex: 1,
-              backgroundColor: Theme.colors.background.secondary,
+              backgroundColor: Theme.colors.background.primary,
               borderRadius: 8,
               paddingHorizontal: 12,
               paddingVertical: 8,
@@ -384,57 +442,24 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
         {loading && !refreshing ? (
-          <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-            {Array.from({ length: 6 }).map((_, idx) => (
-              <Card key={idx} style={{ marginBottom: 10, padding: 12 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      flex: 1,
-                    }}
-                  >
-                    <SkeletonLoader
-                      width={32}
-                      height={32}
-                      borderRadius={16}
-                      style={{ marginRight: 10 }}
-                    />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <SkeletonLoader
-                        width={100}
-                        height={14}
-                        style={{ marginBottom: 6 }}
-                      />
-                      <SkeletonLoader width={140} height={10} />
-                    </View>
-                  </View>
-                  <View style={{ flexDirection: "row", gap: 6 }}>
-                    <SkeletonLoader width={28} height={28} borderRadius={8} />
-                    <SkeletonLoader width={28} height={28} borderRadius={8} />
-                  </View>
+          (() => {
+            const { chipWidth, gap } = getChipLayout();
+            return (
+              <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+                <SkeletonLoader width={120} height={14} style={{ marginBottom: 12 }} />
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
+                  {Array.from({ length: getChipLayout().columns * 2 }).map((_, idx) => (
+                    <Card key={idx} style={{ padding: 10, width: chipWidth }}>
+                      <SkeletonLoader width={50} height={11} style={{ marginBottom: 6 }} />
+                      <SkeletonLoader width={35} height={9} style={{ marginBottom: 8 }} />
+                      <SkeletonLoader width={55} height={12} style={{ marginBottom: 6 }} borderRadius={6} />
+                      <SkeletonLoader width={60} height={11} />
+                    </Card>
+                  ))}
                 </View>
-
-                <View
-                  style={{
-                    marginTop: 10,
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <SkeletonLoader width={90} height={10} />
-                  <SkeletonLoader width={70} height={10} />
-                </View>
-              </Card>
-            ))}
-          </View>
+              </View>
+            );
+          })()
         ) : rooms.length === 0 ? (
           <View
             style={{
@@ -468,15 +493,8 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
             </Text>
           </View>
         ) : (
-          <FlatList
-            ref={flatListRef}
-            data={[...rooms].sort((a, b) => {
-              const numA = parseInt(a.room_no?.replace(/\D/g, '') || '0', 10);
-              const numB = parseInt(b.room_no?.replace(/\D/g, '') || '0', 10);
-              return numA - numB;
-            })}
-            renderItem={renderRoomCard}
-            keyExtractor={(item) => String(item?.s_no ?? Math.random())}
+          <ScrollView
+            ref={flatListRef as any}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -488,7 +506,13 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
               scrollPositionRef.current = event.nativeEvent.contentOffset.y;
             }}
             scrollEventThrottle={16}
-          />
+          >
+            {groupedRooms.map((section) => (
+              <View key={section.title}>
+                {renderSection({ item: section })}
+              </View>
+            ))}
+          </ScrollView>
         )}
       </View>
 

@@ -26,20 +26,25 @@ describe('environment config', () => {
   });
 
   describe('ENV defaults', () => {
-    it('APP_ENV defaults to dev when not specified', () => {
+    it('APP_ENV defaults to local when not specified', () => {
       const appEnv = undefined as string | undefined;
-      const result = (appEnv || 'dev') as 'dev' | 'preprod';
-      expect(result).toBe('dev');
+      const result = (appEnv || 'local') as 'local' | 'development' | 'production';
+      expect(result).toBe('local');
     });
 
-    it('IS_DEV_ENV is true when APP_ENV is dev', () => {
-      const appEnv = 'dev';
-      expect(appEnv === 'dev').toBe(true);
+    it('IS_LOCAL is true when APP_ENV is local', () => {
+      const appEnv = 'local';
+      expect(appEnv === 'local').toBe(true);
     });
 
-    it('IS_PREPROD_ENV is true when APP_ENV is preprod', () => {
-      const appEnv = 'preprod';
-      expect(appEnv === 'preprod').toBe(true);
+    it('IS_DEVELOPMENT is true when APP_ENV is development', () => {
+      const appEnv = 'development';
+      expect(appEnv === 'development').toBe(true);
+    });
+
+    it('IS_PRODUCTION is true when APP_ENV is production', () => {
+      const appEnv = 'production';
+      expect(appEnv === 'production').toBe(true);
     });
 
     it('SUBSCRIPTION_MODE defaults to true', () => {

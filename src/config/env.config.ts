@@ -9,9 +9,10 @@ import { ENV } from './environment';
 // Check if running in development mode
 export const IS_DEV = __DEV__;
 
-// Explicit runtime environment (dev/preprod) from app.config.js -> expo.extra
-export const IS_DEV_ENV = ENV.APP_ENV === 'dev';
-export const IS_PREPROD_ENV = ENV.APP_ENV === 'preprod';
+// Explicit runtime environment (local/development/production) from app.config.js -> expo.extra
+export const IS_LOCAL = ENV.APP_ENV === 'local';
+export const IS_DEVELOPMENT = ENV.APP_ENV === 'development';
+export const IS_PRODUCTION_ENV = ENV.APP_ENV === 'production';
 
 // Check if running in Expo Go (for development)
 // Expo Go doesn't support native modules like Firebase
@@ -37,8 +38,9 @@ export const FEATURES = {
 console.log('🔧 Environment Configuration:');
 console.log('  - IS_DEV:', IS_DEV);
 console.log('  - APP_ENV:', ENV.APP_ENV);
-console.log('  - IS_DEV_ENV:', IS_DEV_ENV);
-console.log('  - IS_PREPROD_ENV:', IS_PREPROD_ENV);
+console.log('  - IS_LOCAL:', IS_LOCAL);
+console.log('  - IS_DEVELOPMENT:', IS_DEVELOPMENT);
+console.log('  - IS_PRODUCTION_ENV:', IS_PRODUCTION_ENV);
 console.log('  - IS_EXPO_GO:', IS_EXPO_GO);
 console.log('  - PUSH_NOTIFICATIONS_ENABLED:', FEATURES.PUSH_NOTIFICATIONS_ENABLED);
 console.log('  - PUSH_NOTIFICATIONS_DEBUG:', FEATURES.PUSH_NOTIFICATIONS_DEBUG);

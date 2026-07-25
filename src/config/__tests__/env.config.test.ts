@@ -41,27 +41,39 @@ describe('env.config', () => {
     });
   });
 
-  describe('IS_DEV_ENV', () => {
-    it('is true when APP_ENV is dev', () => {
-      const APP_ENV = 'dev';
-      expect(APP_ENV === 'dev').toBe(true);
+  describe('IS_LOCAL', () => {
+    it('is true when APP_ENV is local', () => {
+      const APP_ENV = 'local';
+      expect(APP_ENV === 'local').toBe(true);
     });
 
-    it('is false when APP_ENV is preprod', () => {
-      const APP_ENV = 'preprod' as string;
-      expect(APP_ENV === 'dev').toBe(false);
+    it('is false when APP_ENV is development', () => {
+      const APP_ENV = 'development' as string;
+      expect(APP_ENV === 'local').toBe(false);
     });
   });
 
-  describe('IS_PREPROD_ENV', () => {
-    it('is true when APP_ENV is preprod', () => {
-      const APP_ENV = 'preprod';
-      expect(APP_ENV === 'preprod').toBe(true);
+  describe('IS_DEVELOPMENT', () => {
+    it('is true when APP_ENV is development', () => {
+      const APP_ENV = 'development';
+      expect(APP_ENV === 'development').toBe(true);
     });
 
-    it('is false when APP_ENV is dev', () => {
-      const APP_ENV = 'dev' as string;
-      expect(APP_ENV === 'preprod').toBe(false);
+    it('is false when APP_ENV is local', () => {
+      const APP_ENV = 'local' as string;
+      expect(APP_ENV === 'development').toBe(false);
+    });
+  });
+
+  describe('IS_PRODUCTION_ENV', () => {
+    it('is true when APP_ENV is production', () => {
+      const APP_ENV = 'production';
+      expect(APP_ENV === 'production').toBe(true);
+    });
+
+    it('is false when APP_ENV is local', () => {
+      const APP_ENV = 'local' as string;
+      expect(APP_ENV === 'production').toBe(false);
     });
   });
 });
