@@ -456,6 +456,7 @@ export const BedForm: React.FC<BedFormProps> = ({
           folder={getFolderConfig().beds.images}
           useS3={true}
           entityId={isEditMode ? bed?.s_no?.toString() : undefined}
+          usageHint="Add photos of the bed to showcase it to prospective tenants."
         />
         {errors.images && (
           <Text

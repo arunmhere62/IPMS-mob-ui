@@ -24,6 +24,7 @@ interface ImageUploadS3Props {
   entityId?: string; // Entity ID for unique file naming
   autoSave?: boolean; // Auto-save to database when images change
   onAutoSave?: (images: string[]) => Promise<void>; // Callback for auto-save
+  usageHint?: string; // Short sentence describing purpose shown in UI prompts
 }
 
 export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
@@ -36,7 +37,8 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
   useS3 = true,
   entityId,
   autoSave = false,
-  onAutoSave }) => {
+  onAutoSave,
+  usageHint = 'Add a clear photo relevant to this section.' }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
   const [uploadToS3Mutation] = useUploadToS3Mutation();
@@ -148,7 +150,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
     if (status !== 'granted') {
       Alert.alert(
         'Permission Required',
-        'Please grant camera roll permissions to upload images.'
+        'Please allow photo library access to select existing images such as tenant ID proofs, tenant photos, property images, bills, and receipts.'
       );
       return false;
     }
@@ -208,7 +210,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
       setUploading(true);
       const remainingSlots = maxImages - images.length;
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: remainingSlots > 1,
         quality: 1,
         base64: false });
@@ -272,7 +274,7 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
     if (status !== 'granted') {
       Alert.alert(
         'Camera Permission Required',
-        'Please grant camera permission to take photos.'
+        'Please allow camera access to capture tenant photos, ID proofs, and property images.'
       );
       return false;
     }
@@ -384,8 +386,8 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
 
   const showImageOptions = () => {
     Alert.alert(
-      'Add Image',
-      'Choose an option',
+      `Add ${label}`,
+      `${usageHint}\n\nChoose an option:`,
       [
         {
           text: 'Take Photo',
@@ -501,9 +503,10 @@ export const ImageUploadS3: React.FC<ImageUploadS3Props> = ({
           </Text>
           {useS3 && (
             <Text style={styles.helpSubtext}>
-              Images will be uploaded to cloud storage
+              Images will be uploaded to secure cloud storage.
             </Text>
           )}
+          <Text style={styles.helpSubtext}>{usageHint}</Text>
         </View>
       )}
     </View>

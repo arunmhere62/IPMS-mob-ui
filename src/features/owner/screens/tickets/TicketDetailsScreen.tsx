@@ -332,6 +332,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                       onImagesChange={setCommentImages}
                       maxImages={3}
                       folder="tickets/images"
+                      usageHint="Attach photos to support your comment on this maintenance ticket."
                     />
                     <AnimatedPressableCard
                       onPress={handleAddComment}

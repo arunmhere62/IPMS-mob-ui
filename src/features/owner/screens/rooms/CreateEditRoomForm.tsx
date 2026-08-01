@@ -318,6 +318,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
                     entityId={roomId?.toString()}
                     autoSave={false} // Disable auto-save - only update on manual save
                     onAutoSave={handleAutoSaveImages}
+                    usageHint="Add photos of the room to showcase it to prospective tenants."
                   />
                 </View>
 

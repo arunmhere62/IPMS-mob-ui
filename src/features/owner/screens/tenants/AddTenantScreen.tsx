@@ -1482,6 +1482,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                   useS3={true}
                   entityId={isEditMode ? tenantId?.toString() : undefined}
                   autoSave={false}
+                  usageHint="Add a clear photo of the tenant for identification and record-keeping."
                 />
               </Card>
 
@@ -1506,6 +1507,7 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
                   useS3={true}
                   entityId={isEditMode ? tenantId?.toString() : undefined}
                   autoSave={false}
+                  usageHint="Upload proof documents such as Aadhaar, PAN, or other ID for tenant verification."
                 />
                 <Text
                   style={{

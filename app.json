@@ -95,7 +95,10 @@
         "UIBackgroundModes": [
           "remote-notification"
         ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Capture photos of maintenance issues and tenant ID proofs to attach to tickets and check‑ins.",
+        "NSPhotoLibraryUsageDescription": "Select existing photos (maintenance issues, tenant ID proofs, bills) to attach to tickets, check‑ins, and payments.",
+        "NSPhotoLibraryAddUsageDescription": "Save exported images (e.g., invoices or reports) to your photo library when you choose Save."
       },
       "runtimeVersion": {
         "policy": "appVersion"

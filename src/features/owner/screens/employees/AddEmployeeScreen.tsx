@@ -695,6 +695,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   useS3={true}
                   entityId={employeeId?.toString()}
                   autoSave={false}
+                  usageHint="Add a profile photo of the employee for identification."
                 />
               </Card>
 
@@ -713,6 +714,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
                   useS3={true}
                   entityId={employeeId?.toString()}
                   autoSave={false}
+                  usageHint="Upload Aadhaar, PAN, Driving License, or other ID proofs for employee verification."
                 />
                 <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 8 }}>
                   Upload Aadhaar, PAN, Driving License, or other ID proofs (max 3 documents)

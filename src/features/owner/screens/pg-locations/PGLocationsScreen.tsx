@@ -777,6 +777,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
             useS3={true}
             entityId={selectedPG?.s_no?.toString()}
             autoSave={false}
+            usageHint="Add photos of the PG property to showcase it to prospective tenants."
           />
         </View>
       </SlideBottomModal>

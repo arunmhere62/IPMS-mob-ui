@@ -165,6 +165,7 @@ export function TenantCreateTicketScreen({ navigation }: Props) {
           folder="tickets/attachments"
           useS3={true}
           disabled={isLoading}
+          usageHint="Attach photos of the issue you're reporting so our support team can understand and resolve it faster."
         />
 
         <AnimatedPressableCard

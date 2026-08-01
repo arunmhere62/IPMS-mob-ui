@@ -437,6 +437,7 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({
             onImagesChange={setProfileImages}
             maxImages={1}
             disabled={loading}
+            usageHint="Add a profile photo to personalize your account."
           />
         </View>
       </ScrollView>

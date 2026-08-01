@@ -123,7 +123,7 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
 
     switch (activeTab) {
       case 'home':
-        return raw ? <HomeTab raw={raw} isPaid={isPaid} isPending={isPending} ticketStats={ticketStats} refetchProfile={refetchProfile} /> : null;
+        return raw ? <HomeTab raw={raw} isPaid={isPaid} isPending={isPending} ticketStats={ticketStats} refetchProfile={refetchProfile} onViewPayments={() => setActiveTab('payments')} /> : null;
       case 'payments':
         return raw ? <PaymentsTab raw={raw} /> : null;
       case 'tickets':

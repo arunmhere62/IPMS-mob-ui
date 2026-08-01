@@ -195,6 +195,7 @@ export const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({ navigati
                     onImagesChange={setScreenshots}
                     maxImages={5}
                     folder="tickets/images"
+                    usageHint="Attach screenshots or photos showing the issue to help resolve this ticket faster."
                   />
                   <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 4 }}>
                     Add screenshots to help us understand the issue better
