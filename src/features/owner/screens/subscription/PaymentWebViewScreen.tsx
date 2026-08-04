@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, ActivityIndicator, Alert, StyleSheet, BackHandler, Linking } from 'react-native';
+import { View, ActivityIndicator, Alert, StyleSheet, BackHandler, Linking, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -69,6 +69,72 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
   const [loading, setLoading] = useState(true);
   const webViewRef = useRef<WebView>(null);
   const paymentFormHtml = useMemo(() => buildPaymentFormHtml(paymentUrl), [paymentUrl]);
+
+  const openExternalPaymentUrl = async (url: string) => {
+    console.log('💳 openExternalPaymentUrl:', url);
+
+    // Android intent:// URLs need special handling
+    if (Platform.OS === 'android' && url.startsWith('intent://')) {
+      try {
+        // Parse intent://host/path#Intent;scheme=...;package=...;end
+        const intentMatch = url.match(/intent:\/\/([^#]*)#Intent;(.*);end$/i);
+        if (intentMatch) {
+          const path = intentMatch[1];
+          const params = intentMatch[2].split(';').reduce((acc, pair) => {
+            const [key, value] = pair.split('=');
+            if (key && value) acc[key] = decodeURIComponent(value);
+            return acc;
+          }, {} as Record<string, string>);
+
+          const scheme = params.scheme || 'upi';
+          const packageName = params.package;
+          const fallbackUrl = params['S.browser_fallback_url'];
+          const constructedUrl = `${scheme}://${path}`;
+
+          console.log('💳 Android intent parsed:', { scheme, packageName, constructedUrl, fallbackUrl });
+
+          // Try sending an explicit Android intent
+          try {
+            await Linking.sendIntent('android.intent.action.VIEW', [
+              { key: 'data', value: constructedUrl },
+              ...(packageName ? [{ key: 'package', value: packageName }] : []),
+            ]);
+            return;
+          } catch (sendIntentErr) {
+            console.log('💳 sendIntent failed, trying openURL:', sendIntentErr);
+          }
+
+          // Fallback to openURL on the constructed URL
+          const canOpen = await Linking.canOpenURL(constructedUrl);
+          if (canOpen) {
+            await Linking.openURL(constructedUrl);
+            return;
+          }
+
+          // Fallback to browser URL if provided
+          if (fallbackUrl) {
+            await Linking.openURL(fallbackUrl);
+            return;
+          }
+        }
+      } catch (parseErr) {
+        console.error('💳 Failed to parse Android intent URL:', parseErr);
+      }
+    }
+
+    // Generic handling for iOS and Android
+    const canOpen = await Linking.canOpenURL(url);
+    console.log('💳 canOpenURL result for', url, ':', canOpen);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert(
+        'App Not Found',
+        'Please install the required payment app or try another payment method.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
 
   const handleDeepLink = (url: string) => {
     console.log('� Deep link received:', url);
@@ -154,7 +220,7 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
         
         <WebView
           ref={webViewRef}
-          source={{ uri: paymentUrl }}
+          source={{ html: paymentFormHtml }}
           onLoadStart={() => setLoading(true)}
           onLoadEnd={() => setLoading(false)}
           onNavigationStateChange={handleNavigationStateChange}
@@ -172,34 +238,44 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           mediaPlaybackRequiresUserAction={false}
           // User agent to help with UPI detection
           userAgent="Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
-          // Handle external links (UPI apps)
+          // Handle external links (UPI apps and common payment deep links)
           onShouldStartLoadWithRequest={(request) => {
+            const url = request.url;
+            console.log('🌐 onShouldStartLoadWithRequest:', url);
+
             // Handle deep link payment result
-            if (request.url.startsWith('pgapp://payment-result')) {
-              handleDeepLink(request.url);
+            if (url.startsWith('pgapp://payment-result')) {
+              handleDeepLink(url);
               return false;
             }
+
             // Allow UPI intent URLs to open in external apps
-            if (request.url.startsWith('upi://') || 
-                request.url.startsWith('tez://') || 
-                request.url.startsWith('phonepe://') ||
-                request.url.startsWith('paytm://') ||
-                request.url.startsWith('gpay://') ||
-                request.url.includes('intent://')) {
-              // Try to open in external app
-              Linking.canOpenURL(request.url)
-                .then((supported) => {
-                  if (supported) {
-                    Linking.openURL(request.url);
-                  } else {
-                    Alert.alert(
-                      'App Not Found',
-                      'Please install the required payment app or try another payment method.',
-                      [{ text: 'OK' }]
-                    );
-                  }
-                })
-                .catch((err) => console.error('Error opening UPI app:', err));
+            const isUPIIntent = url.startsWith('upi://') ||
+              url.startsWith('tez://') ||
+              url.startsWith('phonepe://') ||
+              url.startsWith('paytm://') ||
+              url.startsWith('paytmmp://') ||
+              url.startsWith('gpay://') ||
+              url.startsWith('credpay://') ||
+              url.startsWith('amazonpay://') ||
+              url.startsWith('payzapp://') ||
+              url.startsWith('mipay://') ||
+              url.startsWith('freecharge://') ||
+              url.startsWith('airtelmoney://') ||
+              url.startsWith('mobikwik://') ||
+              url.startsWith('olamoney://') ||
+              url.startsWith('jiomoney://') ||
+              url.includes('intent://');
+
+            if (isUPIIntent) {
+              openExternalPaymentUrl(url).catch((err) => {
+                console.error('💳 Error opening external payment URL:', err);
+                Alert.alert(
+                  'Payment App Error',
+                  'Could not open the selected payment app. Please try another method.',
+                  [{ text: 'OK' }]
+                );
+              });
               return false;
             }
             return true;

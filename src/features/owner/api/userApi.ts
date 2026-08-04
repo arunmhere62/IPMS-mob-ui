@@ -78,6 +78,11 @@ export const userApi = baseApi.injectEndpoints({
       query: ({ userId, data }) => ({ url: `/auth/change-password/${userId}`, method: 'POST', body: data }),
       transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
     }),
+
+    deleteAccount: build.mutation<{ success: boolean; message: string }, { reason?: string }>({
+      query: (body) => ({ url: '/auth/delete-account', method: 'POST', body }),
+      transformResponse: (response: ApiEnvelope<any> | any) => (response as any)?.data ?? response,
+    }),
   }),
   overrideExisting: true,
 });
@@ -89,4 +94,5 @@ export const {
   useLazyGetUserProfileQuery,
   useUpdateUserProfileMutation,
   useChangePasswordMutation,
+  useDeleteAccountMutation,
 } = userApi;

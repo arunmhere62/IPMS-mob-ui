@@ -14,7 +14,6 @@
       "env": {
         "NODE_ENV": "development",
         "APP_ENV": "local",
-        "API_BASE_URL": "http://192.168.1.10:3001/api/v1",
         "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       },
       "channel": "local"
@@ -29,7 +28,6 @@
       "env": {
         "NODE_ENV": "development",
         "APP_ENV": "development",
-        "API_BASE_URL": "https://dev-api.indianpgmanagement.com/api/v1",
         "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       },
       "channel": "development"
@@ -40,8 +38,7 @@
       "channel": "preview",
       "env": {
         "NODE_ENV": "production",
-        "APP_ENV": "development",
-        "API_BASE_URL": "https://dev-api.indianpgmanagement.com/api/v1"
+        "APP_ENV": "development"
       }
     },
     "production": {
@@ -49,8 +46,7 @@
       "node": "20.19.4",
       "env": {
         "NODE_ENV": "production",
-        "APP_ENV": "production",
-        "API_BASE_URL": "https://mobapi.indianpgmanagement.com/api/v1"
+        "APP_ENV": "production"
       },
       "android": {
         "buildType": "app-bundle"
@@ -71,7 +67,6 @@
       "env": {
         "NODE_ENV": "production",
         "APP_ENV": "production",
-        "API_BASE_URL": "https://mobapi.indianpgmanagement.com/api/v1",
         "EXPO_OPTIMIZE_SIZE": "1",
         "EXPO_NO_DEV": "1"
       }
@@ -86,7 +81,6 @@
       "env": {
         "NODE_ENV": "production",
         "APP_ENV": "production",
-        "API_BASE_URL": "https://mobapi.indianpgmanagement.com/api/v1",
         "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
       }
     },
@@ -99,8 +93,7 @@
       "node": "20.19.4",
       "env": {
         "NODE_ENV": "production",
-        "APP_ENV": "production",
-        "API_BASE_URL": "https://mobapi.indianpgmanagement.com/api/v1"
+        "APP_ENV": "production"
       }
     },
     "ios-simulator": {

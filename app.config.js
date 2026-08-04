@@ -7,7 +7,7 @@ console.log('[app.config.js] MODE =', process.env.MODE);
 
 const ENVIRONMENTS = {
   local: {
-    apiBaseUrl: 'http://192.168.1.10:3001/api/v1',
+    apiBaseUrl: 'http://192.168.1.6:3001/api/v1',
     subscriptionMode: false,
     showDevBanner: true,
   },

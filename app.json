@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "IPGM",
+    "name": "IPGM - Indian PG Management",
     "slug": "pgmanagement",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -98,7 +98,23 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Capture photos of maintenance issues and tenant ID proofs to attach to tickets and check‑ins.",
         "NSPhotoLibraryUsageDescription": "Select existing photos (maintenance issues, tenant ID proofs, bills) to attach to tickets, check‑ins, and payments.",
-        "NSPhotoLibraryAddUsageDescription": "Save exported images (e.g., invoices or reports) to your photo library when you choose Save."
+        "NSPhotoLibraryAddUsageDescription": "Save exported images (e.g., invoices or reports) to your photo library when you choose Save.",
+        "LSApplicationQueriesSchemes": [
+          "upi",
+          "tez",
+          "phonepe",
+          "paytm",
+          "gpay",
+          "credpay",
+          "amazonpay",
+          "payzapp",
+          "mipay",
+          "freecharge",
+          "airtelmoney",
+          "mobikwik",
+          "olamoney",
+          "jiomoney"
+        ]
       },
       "runtimeVersion": {
         "policy": "appVersion"

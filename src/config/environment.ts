@@ -19,7 +19,7 @@ const ENVIRONMENTS: Record<AppEnv, { label: string; color: string }> = {
 };
 
 const ENV_URLS: Record<AppEnv, string> = {
-  local: 'http://192.168.1.10:3001/api/v1',
+  local: 'http://192.168.1.6:3001/api/v1',
   development: 'https://dev-api.indianpgmanagement.com/api/v1',
   production: 'https://mobapi.indianpgmanagement.com/api/v1',
 };

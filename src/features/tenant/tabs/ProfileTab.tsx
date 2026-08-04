@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBadge, InfoRow, SectionCard, CardHeader } from '../components';
@@ -17,6 +17,10 @@ interface ProfileTabProps {
 
 export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout }) => {
   const { formatDate, formatAmount } = useFormatters();
+  const [deleteInfoVisible, setDeleteInfoVisible] = useState(false);
+
+  const handleOpenDeleteInfo = () => setDeleteInfoVisible(true);
+  const handleCloseDeleteInfo = () => setDeleteInfoVisible(false);
 
   return (
     <>
@@ -96,11 +100,44 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout }) => {
       ) : null}
 
       <AnimatedPressableCard style={styles.logoutBtn} onPress={onLogout}>
-        <LinearGradient colors={[C.danger, C.dangerDark]} style={styles.logoutGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+        <LinearGradient colors={[C.primary, C.primaryDark]} style={styles.logoutGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
           <Ionicons name="log-out-outline" size={20} color="#fff" />
           <Text style={styles.logoutText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Logout</Text>
         </LinearGradient>
       </AnimatedPressableCard>
+
+      <AnimatedPressableCard style={styles.deleteBtn} onPress={handleOpenDeleteInfo}>
+        <View style={styles.deleteInner}>
+          <Ionicons name="trash-outline" size={20} color={C.danger} />
+          <Text style={styles.deleteText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Delete Account</Text>
+        </View>
+      </AnimatedPressableCard>
+
+      <Modal
+        visible={deleteInfoVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseDeleteInfo}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleCloseDeleteInfo} />
+          <View style={styles.modalCard}>
+            <View style={styles.modalCardInner}>
+              <Text style={styles.modalTitle}>Delete Account?</Text>
+              <Text style={styles.modalText}>
+                Account deletion must be done by your PG owner because your profile, payments, dues, tickets and other records are linked to this PG.
+              </Text>
+              <Text style={styles.modalText}>
+                Please ask the owner to remove you from this PG, or proceed with checkout. After checkout, the owner can permanently delete your account from the owner app.
+              </Text>
+              <AnimatedPressableCard style={styles.modalCloseBtn} onPress={handleCloseDeleteInfo}>
+                <Text style={styles.modalCloseText}>Got it</Text>
+              </AnimatedPressableCard>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </>
   );
 };
@@ -120,6 +157,18 @@ const styles = StyleSheet.create({
   allocationMeta: { fontSize: 11, color: C.darkTertiary, marginTop: 2 },
   allocationAmount: { fontSize: 14, fontWeight: '800', color: C.dark },
 
-  logoutBtn: { borderRadius: 16, overflow: 'hidden', marginTop: 8, marginBottom: 24 },
+  logoutBtn: { borderRadius: 16, overflow: 'hidden', marginTop: 8, marginBottom: 12 },
   logoutGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 8 },
-  logoutText: { color: '#fff', fontSize: 16, fontWeight: '700' } });
+  logoutText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  deleteBtn: { borderRadius: 16, marginTop: 8, marginBottom: 24, borderWidth: 1.5, borderColor: C.danger, backgroundColor: C.canvas, overflow: 'hidden' },
+  deleteInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 8 },
+  deleteText: { color: C.danger, fontSize: 16, fontWeight: '700' },
+
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+  modalCard: { width: '85%', maxWidth: 360, backgroundColor: C.canvas, borderRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
+  modalCardInner: { padding: 24 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: C.dark, marginBottom: 12 },
+  modalText: { fontSize: 14, color: C.darkSecondary, marginBottom: 8, lineHeight: 20 },
+  modalCloseBtn: { marginTop: 12, paddingVertical: 14, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  modalCloseText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+});

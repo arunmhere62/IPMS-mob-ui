@@ -270,6 +270,14 @@ export const tenantPortalApi = tenantBaseApi.injectEndpoints({
         body: data,
       }),
     }),
+
+    // Logout current tenant and revoke server tokens
+    tenantLogout: build.mutation<{ success: boolean; message: string }, void>({
+      query: () => ({
+        url: '/tenant-auth/logout',
+        method: 'POST',
+      }),
+    }),
   }),
 });
 
@@ -280,4 +288,5 @@ export const {
   useGetTenantDuesQuery,
   useGetTenantTicketStatsQuery,
   useUpdateExpectedVacateDateMutation,
+  useTenantLogoutMutation,
 } = tenantPortalApi;

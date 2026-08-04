@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, Text, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Alert, ActivityIndicator, TextInput, Platform } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { clearOrganizations } from '../../store/slices/organizationSlice';
 import { clearPermissions } from '../../store/slices/rbacSlice';
 import { baseApi } from '@/features/owner/api/baseApi';
 import { useLogoutMutation } from '@/features/auth/api/authApi';
+import { useDeleteAccountMutation } from '@/features/owner/api/userApi';
 import { persistor } from '../../store';
 import { Card } from '@/components/Card';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
@@ -22,8 +23,8 @@ import notificationService from '@/services/notifications/notificationService';
 import { useGetSubscriptionStatusQuery } from '@/features/owner/api/subscriptionApi';
 import { useLazyGetRequiredLegalDocumentsStatusQuery } from '@/features/owner/api/legalDocumentsApi';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Platform } from 'react-native';
 import { showErrorAlert } from '@/utils/errorHandler';
+import { SlideBottomModal } from '@/components/SlideBottomModal';
 
 interface SettingsScreenProps {
   navigation: NavigationProp<ParamListBase>;
@@ -42,7 +43,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
 
   const [serverLogout] = useLogoutMutation();
+  const [deleteAccount] = useDeleteAccountMutation();
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     data: subscriptionStatus,
@@ -154,6 +160,72 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
 
   // Removed test notification function - now handled only in LoginScreen
 
+  const performLocalLogout = async () => {
+    try {
+      try {
+        await serverLogout().unwrap();
+      } catch (e) {
+        console.warn('⚠️ Server logout failed (continuing local logout):', e);
+      }
+
+      try {
+        await notificationService.unregisterToken();
+        notificationService.cleanup();
+        console.log('✅ Notification service cleaned up');
+      } catch (error) {
+        console.warn('⚠️ Failed to cleanup notifications:', error);
+      }
+
+      dispatch(baseApi.util.resetApiState());
+      dispatch(clearOrganizations());
+      dispatch(clearPermissions());
+      dispatch(setSelectedPGLocation(null));
+      dispatch(setTenantLastUserRole(null));
+      dispatch(logout());
+
+      try {
+        await persistor.purge();
+      } catch (e) {
+        console.warn('⚠️ Failed to purge persisted store:', e);
+      }
+
+      console.log('✅ User logged out successfully');
+    } finally {
+      setLoggingOut(false);
+      setIsDeleting(false);
+    }
+  };
+
+  const handleOpenDeleteAccount = () => {
+    setDeleteConfirmText('');
+    setDeleteModalVisible(true);
+  };
+
+  const handleCloseDeleteAccount = () => {
+    if (isDeleting) return;
+    setDeleteModalVisible(false);
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    if (deleteConfirmText.trim() !== 'DELETE') {
+      Alert.alert('Error', 'Please type DELETE to confirm');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await deleteAccount({ reason: 'User-initiated in-app deletion' }).unwrap();
+      setDeleteModalVisible(false);
+      Alert.alert('Deleted', response?.message || 'Your account has been deleted.', [
+        { text: 'OK', onPress: () => performLocalLogout() },
+      ]);
+    } catch (err: any) {
+      Alert.alert('Error', err?.data?.message || err?.message || 'Could not delete account. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleLogout = () => {
     Alert.alert(
       'Logout',
@@ -164,46 +236,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
-            if (loggingOut) return;
+            if (loggingOut || isDeleting) return;
             setLoggingOut(true);
-            try {
-              try {
-                // Best-effort server-side logout (revokes tokens)
-                try {
-                  await serverLogout().unwrap();
-                } catch (e) {
-                  console.warn('⚠️ Server logout failed (continuing local logout):', e);
-                }
-
-                // Unregister FCM token and cleanup notification service
-                await notificationService.unregisterToken();
-                notificationService.cleanup();
-                console.log('✅ Notification service cleaned up');
-              } catch (error) {
-                console.warn('⚠️ Failed to cleanup notifications:', error);
-              }
-
-              // Clear RTK Query cache + all redux slice state
-              dispatch(baseApi.util.resetApiState());
-              dispatch(clearOrganizations());
-              dispatch(clearPermissions());
-              dispatch(setSelectedPGLocation(null));
-              // Clear tenant's lastUserRole so next redirect goes to owner login
-              dispatch(setTenantLastUserRole(null));
-              dispatch(logout());
-
-              // Remove persisted redux state from disk
-              try {
-                await persistor.purge();
-              } catch (e) {
-                console.warn('⚠️ Failed to purge persisted store:', e);
-              }
-
-              console.log('✅ User logged out successfully');
-              // Navigation is handled automatically by AppNavigator based on auth state
-            } finally {
-              setLoggingOut(false);
-            }
+            await performLocalLogout();
           },
         },
       ]
@@ -450,13 +485,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           {/* Logout Button */}
           <AnimatedPressableCard
             onPress={handleLogout}
-            disabled={loggingOut}
+            disabled={loggingOut || isDeleting}
             style={{
               backgroundColor: '#EF4444',
               borderRadius: 8,
               paddingVertical: 16,
-              marginBottom: 24,
-              opacity: loggingOut ? 0.75 : 1,
+              marginBottom: 16,
+              opacity: loggingOut || isDeleting ? 0.75 : 1,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
@@ -464,6 +499,68 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               <Text className="text-white text-center font-bold text-lg">Logout</Text>
             </View>
           </AnimatedPressableCard>
+
+          {/* Delete Account Button (Super Admin only) */}
+          {isSuperAdmin && (
+            <AnimatedPressableCard
+              onPress={handleOpenDeleteAccount}
+              disabled={loggingOut || isDeleting}
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 8,
+                borderWidth: 2,
+                borderColor: '#EF4444',
+                paddingVertical: 16,
+                marginBottom: 24,
+                opacity: isDeleting ? 0.75 : 1,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                {isDeleting ? <ActivityIndicator size="small" color="#EF4444" style={{ marginRight: 10 }} /> : null}
+                <Ionicons name="trash-outline" size={20} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 16 }}>
+                  {isDeleting ? 'Deleting Account...' : 'Delete Account'}
+                </Text>
+              </View>
+            </AnimatedPressableCard>
+          )}
+
+          {/* Delete Account Confirmation Modal */}
+          <SlideBottomModal
+            visible={deleteModalVisible}
+            onClose={handleCloseDeleteAccount}
+            onCancel={handleCloseDeleteAccount}
+            title="Delete Account?"
+            subtitle="This will deactivate and delete your owner account and the organization. All employee access will be suspended. This action cannot be undone."
+            onSubmit={handleConfirmDeleteAccount}
+            submitLabel="Delete"
+            cancelLabel="Cancel"
+            isLoading={isDeleting}
+          >
+            <View>
+              <Text style={{ fontSize: 14, color: Theme.colors.text.primary, marginBottom: 8, fontWeight: '600' }}>
+                Type DELETE to confirm:
+              </Text>
+              <TextInput
+                value={deleteConfirmText}
+                onChangeText={setDeleteConfirmText}
+                placeholder="DELETE"
+                placeholderTextColor={Theme.colors.text.tertiary}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                editable={!isDeleting}
+                style={{
+                  height: 50,
+                  borderWidth: 1,
+                  borderColor: deleteConfirmText.trim() === 'DELETE' ? '#10B981' : Theme.colors.border,
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  fontSize: 16,
+                  color: Theme.colors.text.primary,
+                }}
+              />
+            </View>
+          </SlideBottomModal>
 
           {/* App Version */}
           <Text className="text-center text-gray-500 text-sm mb-4">

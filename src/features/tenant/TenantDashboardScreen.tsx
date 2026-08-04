@@ -8,7 +8,8 @@ import {
   RefreshControl,
   Platform,
   StatusBar,
-  ActivityIndicator } from 'react-native';
+  ActivityIndicator,
+} from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,7 +18,11 @@ import Theme from '@/theme';
 import { setTenantData, tenantLogout } from '@/features/tenant/store/tenantAuthSlice';
 import { setLastUserRole as setAdminLastUserRole } from '@/features/owner/store/slices/authSlice';
 import { BottomNav } from '@/components/BottomNav';
-import { useGetTenantProfileQuery, useGetTenantTicketStatsQuery } from '@/features/tenant/api/tenantPortalApi';
+import {
+  useGetTenantProfileQuery,
+  useGetTenantTicketStatsQuery,
+  useTenantLogoutMutation,
+} from '@/features/tenant/api/tenantPortalApi';
 import { useGetTenantTicketsQuery } from '@/features/tenant/api/tenantTicketsApi';
 import { RootState } from '../owner/store';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
@@ -60,6 +65,8 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
     { skip: activeTab !== 'tickets', refetchOnMountOrArgChange: true },
   );
   const tickets = ticketsData?.tickets ?? [];
+
+  const [tenantLogoutApi] = useTenantLogoutMutation();
 
   // Sync profile to Redux
   useEffect(() => {
@@ -108,7 +115,12 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
   const isPaid = raw?.payment_status === 'PAID';
   const isPending = raw?.payment_status === 'PENDING';
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await tenantLogoutApi().unwrap();
+    } catch {
+      // Ignore server errors; still clear local state
+    }
     // Clear owner's lastUserRole so next redirect goes to tenant login
     dispatch(setAdminLastUserRole(null));
     dispatch(tenantLogout());
@@ -178,6 +190,7 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
       </ScrollView>
 
       <BottomNav tabs={tenantTabs} activeTab={activeTab} onTabPress={setActiveTab} />
+
     </View>
   );
 };
@@ -194,4 +207,6 @@ const styles = StyleSheet.create({
 
   // Error
   errorBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef2f2', borderRadius: 12, padding: 12, marginBottom: 12, gap: 8, borderWidth: 1, borderColor: '#fecaca' },
-  errorText: { fontSize: 13, color: '#dc2626', flex: 1, fontWeight: '500' } });
+  errorText: { fontSize: 13, color: '#dc2626', flex: 1, fontWeight: '500' },
+
+});
