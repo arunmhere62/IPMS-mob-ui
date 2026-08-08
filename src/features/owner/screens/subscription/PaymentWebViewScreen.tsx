@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, ActivityIndicator, Alert, StyleSheet, BackHandler, Linking, Platform } from 'react-native';
+import { View, ActivityIndicator, Alert, StyleSheet, BackHandler, Linking, Platform, NativeModules } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Theme } from '@/theme';
 import { showErrorAlert } from '@/utils/errorHandler';
+
+const { UPIChooser } = NativeModules;
 
 interface PaymentWebViewScreenProps {
   navigation: any;
@@ -93,15 +95,68 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
 
           console.log('💳 Android intent parsed:', { scheme, packageName, constructedUrl, fallbackUrl });
 
-          // Try sending an explicit Android intent
-          try {
-            await Linking.sendIntent('android.intent.action.VIEW', [
-              { key: 'data', value: constructedUrl },
-              ...(packageName ? [{ key: 'package', value: packageName }] : []),
-            ]);
-            return;
-          } catch (sendIntentErr) {
-            console.log('💳 sendIntent failed, trying openURL:', sendIntentErr);
+          // For UPI intents, use custom native module to force app chooser
+          // This bypasses any default app settings and always shows the picker
+          if (scheme === 'upi' || constructedUrl.startsWith('upi://')) {
+            try {
+              // Try using custom native module first (forces chooser dialog)
+              // This only works in development builds, not Expo Go
+              if (UPIChooser && typeof UPIChooser.openUPIChooser === 'function') {
+                console.log('💳 Using native UPIChooser module');
+                await UPIChooser.openUPIChooser(constructedUrl);
+                console.log('💳 UPI chooser opened successfully');
+                return;
+              } else {
+                console.log('💳 UPIChooser module not available (using Expo Go?), falling back to Linking');
+              }
+            } catch (chooserErr) {
+              console.log('💳 UPIChooser module failed, falling back to Linking:', chooserErr);
+            }
+
+            // Fallback to standard Linking (will use default app if set)
+            // In Expo Go or when native module is unavailable
+            try {
+              console.log('💳 Attempting to open UPI URL:', constructedUrl);
+              console.log('💳 Platform:', Platform.OS);
+              
+              const canOpen = await Linking.canOpenURL(constructedUrl);
+              console.log('💳 canOpenURL result:', canOpen);
+              
+              if (canOpen) {
+                await Linking.openURL(constructedUrl);
+                console.log('💳 UPI URL opened successfully');
+                return;
+              } else {
+                console.warn('💳 Cannot open UPI URL - no handler found');
+                
+                Alert.alert(
+                  'No UPI App Found',
+                  'Please install a UPI app like GPay, PhonePe, or BHIM to continue.',
+                  [{ text: 'OK' }]
+                );
+                return;
+              }
+            } catch (openErr) {
+              console.error('💳 openURL failed for UPI:', openErr);
+              Alert.alert(
+                'Error Opening UPI App',
+                'Could not open UPI payment app. Please try another payment method.',
+                [{ text: 'OK' }]
+              );
+            }
+          }
+
+          // For non-UPI intents with a specific package, use the package
+          if (packageName && scheme !== 'upi') {
+            try {
+              await Linking.sendIntent('android.intent.action.VIEW', [
+                { key: 'data', value: constructedUrl },
+                { key: 'package', value: packageName },
+              ]);
+              return;
+            } catch (sendIntentErr) {
+              console.log('💳 sendIntent with package failed:', sendIntentErr);
+            }
           }
 
           // Fallback to openURL on the constructed URL
@@ -128,11 +183,19 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
     if (canOpen) {
       await Linking.openURL(url);
     } else {
-      Alert.alert(
-        'App Not Found',
-        'Please install the required payment app or try another payment method.',
-        [{ text: 'OK' }]
-      );
+      if (Platform.OS === 'ios' && (url.startsWith('upi://') || url.includes('upi'))) {
+        Alert.alert(
+          'UPI Not Available',
+          'UPI payments require a development build or production app. Please use another payment method or test on Android.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'App Not Found',
+          'Please install the required payment app or try another payment method.',
+          [{ text: 'OK' }]
+        );
+      }
     }
   };
 
@@ -236,9 +299,9 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           mixedContentMode="always"
           allowsInlineMediaPlayback={true}
           mediaPlaybackRequiresUserAction={false}
-          // User agent to help with UPI detection
-          userAgent="Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
-          // Handle external links (UPI apps and common payment deep links)
+          userAgent={Platform.OS === 'ios'
+            ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+            : 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'}
           onShouldStartLoadWithRequest={(request) => {
             const url = request.url;
             console.log('🌐 onShouldStartLoadWithRequest:', url);
@@ -249,25 +312,37 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
               return false;
             }
 
-            // Allow UPI intent URLs to open in external apps
-            const isUPIIntent = url.startsWith('upi://') ||
-              url.startsWith('tez://') ||
-              url.startsWith('phonepe://') ||
-              url.startsWith('paytm://') ||
-              url.startsWith('paytmmp://') ||
-              url.startsWith('gpay://') ||
-              url.startsWith('credpay://') ||
-              url.startsWith('amazonpay://') ||
-              url.startsWith('payzapp://') ||
-              url.startsWith('mipay://') ||
-              url.startsWith('freecharge://') ||
-              url.startsWith('airtelmoney://') ||
-              url.startsWith('mobikwik://') ||
-              url.startsWith('olamoney://') ||
-              url.startsWith('jiomoney://') ||
-              url.includes('intent://');
+            // Allow http(s) URLs to load in WebView (CCAvenue pages)
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+              return true;
+            }
 
-            if (isUPIIntent) {
+            // Allow about:blank (used by WebView internally)
+            if (url === 'about:blank') {
+              return true;
+            }
+
+            // Known payment app schemes that are safe to open externally
+            const PAYMENT_SCHEMES = [
+              'upi://', 'tez://', 'phonepe://', 'paytm://', 'paytmmp://',
+              'gpay://', 'credpay://', 'amazonpay://', 'payzapp://',
+              'mipay://', 'freecharge://', 'airtelmoney://', 'mobikwik://',
+              'olamoney://', 'jiomoney://',
+            ];
+
+            // Check if it's a known payment deep link
+            const isPaymentDeepLink = PAYMENT_SCHEMES.some(scheme => url.startsWith(scheme));
+
+            // For intent:// URLs (Android), check if it's payment-related
+            const isPaymentIntent = url.startsWith('intent://') &&
+              (url.includes('scheme=upi') ||
+               url.includes('scheme=tez') ||
+               url.includes('scheme=phonepe') ||
+               url.includes('scheme=paytm') ||
+               url.includes('scheme=gpay'));
+
+            if (isPaymentDeepLink || isPaymentIntent) {
+              console.log('💳 Payment URL detected, opening externally:', url);
               openExternalPaymentUrl(url).catch((err) => {
                 console.error('💳 Error opening external payment URL:', err);
                 Alert.alert(
@@ -278,7 +353,11 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
               });
               return false;
             }
-            return true;
+
+            // Block all other non-http schemes (whatsapp://, tel://, mailto://, etc.)
+            // These should never be opened from within the payment WebView
+            console.warn('🚫 Blocked non-payment scheme in WebView:', url);
+            return false;
           }}
           onError={(syntheticEvent) => {
             const { nativeEvent } = syntheticEvent;

@@ -13,14 +13,25 @@ const C = Theme.colors;
 interface ProfileTabProps {
   raw: TenantProfileData;
   onLogout: () => void;
+  onDeleteAccount?: () => void;
 }
 
-export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout }) => {
+export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout, onDeleteAccount }) => {
   const { formatDate, formatAmount } = useFormatters();
   const [deleteInfoVisible, setDeleteInfoVisible] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
 
   const handleOpenDeleteInfo = () => setDeleteInfoVisible(true);
   const handleCloseDeleteInfo = () => setDeleteInfoVisible(false);
+  const handleOpenDeleteConfirm = () => {
+    setDeleteInfoVisible(false);
+    setDeleteConfirmVisible(true);
+  };
+  const handleCloseDeleteConfirm = () => setDeleteConfirmVisible(false);
+  const handleConfirmDelete = () => {
+    onDeleteAccount?.();
+    handleCloseDeleteConfirm();
+  };
 
   return (
     <>
@@ -125,14 +136,49 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout }) => {
             <View style={styles.modalCardInner}>
               <Text style={styles.modalTitle}>Delete Account?</Text>
               <Text style={styles.modalText}>
-                Account deletion must be done by your PG owner because your profile, payments, dues, tickets and other records are linked to this PG.
+                Your account is linked to your PG profile, payments, dues, and support tickets. Account deletion requires verification from your PG owner.
               </Text>
               <Text style={styles.modalText}>
-                Please ask the owner to remove you from this PG, or proceed with checkout. After checkout, the owner can permanently delete your account from the owner app.
+                We will send a deletion request to your PG owner. They will review and confirm the deletion. This helps us maintain data integrity and prevent unauthorized account removal.
               </Text>
-              <AnimatedPressableCard style={styles.modalCloseBtn} onPress={handleCloseDeleteInfo}>
-                <Text style={styles.modalCloseText}>Got it</Text>
-              </AnimatedPressableCard>
+              <View style={styles.modalButtonGroup}>
+                <AnimatedPressableCard style={styles.modalSecondaryBtn} onPress={handleCloseDeleteInfo}>
+                  <Text style={styles.modalSecondaryText}>Cancel</Text>
+                </AnimatedPressableCard>
+                <AnimatedPressableCard style={styles.modalPrimaryBtn} onPress={handleOpenDeleteConfirm}>
+                  <Text style={styles.modalPrimaryText}>Request Deletion</Text>
+                </AnimatedPressableCard>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={deleteConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseDeleteConfirm}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleCloseDeleteConfirm} />
+          <View style={styles.modalCard}>
+            <View style={styles.modalCardInner}>
+              <Text style={styles.modalTitle}>Confirm Deletion Request</Text>
+              <Text style={styles.modalText}>
+                Are you sure you want to request account deletion? Your PG owner will be notified and must approve this request.
+              </Text>
+              <Text style={styles.modalWarning}>
+                ⚠️ This action cannot be undone once approved by the owner.
+              </Text>
+              <View style={styles.modalButtonGroup}>
+                <AnimatedPressableCard style={styles.modalSecondaryBtn} onPress={handleCloseDeleteConfirm}>
+                  <Text style={styles.modalSecondaryText}>Cancel</Text>
+                </AnimatedPressableCard>
+                <AnimatedPressableCard style={styles.modalDangerBtn} onPress={handleConfirmDelete}>
+                  <Text style={styles.modalDangerText}>Request Deletion</Text>
+                </AnimatedPressableCard>
+              </View>
             </View>
           </View>
         </View>
@@ -169,6 +215,12 @@ const styles = StyleSheet.create({
   modalCardInner: { padding: 24 },
   modalTitle: { fontSize: 20, fontWeight: '800', color: C.dark, marginBottom: 12 },
   modalText: { fontSize: 14, color: C.darkSecondary, marginBottom: 8, lineHeight: 20 },
-  modalCloseBtn: { marginTop: 12, paddingVertical: 14, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  modalCloseText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  modalWarning: { fontSize: 13, color: C.danger, marginBottom: 16, lineHeight: 18, fontWeight: '500' },
+  modalButtonGroup: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  modalSecondaryBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: C.lightSecondary, alignItems: 'center', justifyContent: 'center' },
+  modalSecondaryText: { color: C.dark, fontSize: 14, fontWeight: '700' },
+  modalPrimaryBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  modalPrimaryText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  modalDangerBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: C.danger, alignItems: 'center', justifyContent: 'center' },
+  modalDangerText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

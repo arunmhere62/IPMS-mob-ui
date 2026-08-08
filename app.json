@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "IPGM - Indian PG Management",
+    "name": "IPGM",
     "slug": "pgmanagement",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -28,6 +28,24 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ],
+      "queries": {
+        "schemes": [
+          "upi",
+          "tez",
+          "phonepe",
+          "paytm",
+          "gpay",
+          "credpay",
+          "amazonpay",
+          "payzapp",
+          "mipay",
+          "freecharge",
+          "airtelmoney",
+          "mobikwik",
+          "olamoney",
+          "jiomoney"
+        ]
+      },
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
