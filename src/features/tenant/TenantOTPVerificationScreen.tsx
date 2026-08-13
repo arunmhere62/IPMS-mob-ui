@@ -17,6 +17,7 @@ import { Card } from '@/components/Card';
 import { OTPInput } from '@/components/OTPInput';
 import { Button } from '@/components/Button';
 import notificationService from '@/services/notifications/notificationService';
+import { activityTrackingService } from '@/services/activity/activityTrackingService';
 
 interface TenantOTPVerificationScreenProps {
   navigation: any;
@@ -93,6 +94,11 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
 
       console.log('OTP Verify - Credentials dispatched to Redux');
       console.log('OTP Verify - Token should now be in memory (not persisted due to blacklist)');
+
+      // Log APP_OPEN with tenant_id now that we have it from login
+      if (actualData?.tenant?.tenant_id) {
+        activityTrackingService.trackAppOpenWithUser(undefined, actualData.tenant.tenant_id);
+      }
 
       showSuccessAlert('Login successful!');
 

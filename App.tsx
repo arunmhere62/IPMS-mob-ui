@@ -29,6 +29,7 @@ import LottieView from "lottie-react-native";
 import { persistor, store } from "@/features/owner/store";
 import { OnboardingTourProvider } from "./src/context/OnboardingTourContext";
 import { initEnvironmentOverride } from "./src/config";
+import { useActivityTracking } from "./src/services/activity/useActivityTracking";
 
 // CRITICAL: Set notification handler at the TOP LEVEL (outside component)
 // This ensures notifications are handled even when app is in background/killed
@@ -42,6 +43,8 @@ Notifications.setNotificationHandler({
 });
 
 export default function App() {
+  useActivityTracking();
+
   const [appError, setAppError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [persistReady, setPersistReady] = useState(false);

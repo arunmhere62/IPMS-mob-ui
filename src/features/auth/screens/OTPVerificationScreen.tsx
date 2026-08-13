@@ -20,6 +20,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import notificationService from '../../../services/notifications/notificationService';
+import { activityTrackingService } from '../../../services/activity/activityTrackingService';
 
 interface OTPVerificationScreenProps {
   navigation: any;
@@ -86,6 +87,9 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
           accessToken: result.accessToken,
           refreshToken: result.refreshToken })
       );
+
+      // Log APP_OPEN with user_id now that we have it from login
+      activityTrackingService.trackAppOpenWithUser(result.user.s_no);
 
       // Register push notification token after successful login
       await registerPushToken();
