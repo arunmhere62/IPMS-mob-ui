@@ -1,6 +1,6 @@
 // Re-export from centralized environment configuration
 import { ENV } from './environment';
-export { ENV, getApiUrl, logConfig, setEnvironment, clearEnvironmentOverride, initEnvironmentOverride, getCurrentEnv } from './environment';
+export { ENV, getApiUrl, logConfig, setEnvironment, clearEnvironmentOverride, initEnvironmentOverride, getCurrentEnv, ENV_URLS, ENVIRONMENTS, getDisplayUrl } from './environment';
 export type { AppEnv } from './environment';
 
 // Getter for all consumers — returns the current API URL (may change at runtime)

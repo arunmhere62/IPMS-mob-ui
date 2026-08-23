@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -5,23 +6,49 @@ export type AppEnv = 'local' | 'development' | 'production';
 
 interface AppConfig {
   apiBaseUrl?: string;
+  localApiBaseUrl?: string;
+  useIapForIos?: boolean;
   subscriptionMode?: boolean;
   showDevBanner?: boolean;
   appEnv?: string;
+  webSignupUrl?: string;
 }
 
 const appConfig = (Constants.expoConfig?.extra as AppConfig) || {};
 
-const ENVIRONMENTS: Record<AppEnv, { label: string; color: string }> = {
+export const ENVIRONMENTS: Record<AppEnv, { label: string; color: string }> = {
   local: { label: 'Local', color: '#6B7280' },
   development: { label: 'Development', color: '#F59E0B' },
   production: { label: 'Production', color: '#10B981' },
 };
 
-const ENV_URLS: Record<AppEnv, string> = {
-  local: 'http://192.168.1.7:3001/api/v1',
+// Single source of truth for the local API URL: read from app.config.js extra
+// (which itself reads LOCAL_API_BASE_URL from .env). Change the IP in .env once.
+const LOCAL_API_BASE_URL = appConfig.localApiBaseUrl || 'http://192.168.1.5:3001/api/v1';
+
+export const ENV_URLS: Record<AppEnv, string> = {
+  local: LOCAL_API_BASE_URL,
   development: 'https://dev-api.indianpgmanagement.com/api/v1',
   production: 'https://mobapi.indianpgmanagement.com/api/v1',
+};
+
+/**
+ * Strips protocol and API path from a full URL for compact display in the UI.
+ * e.g. "http://192.168.1.5:3001/api/v1" -> "192.168.1.5:3001"
+ *      "https://mobapi.indianpgmanagement.com/api/v1" -> "mobapi"
+ */
+export const getDisplayUrl = (url: string): string => {
+  try {
+    const u = new URL(url);
+    // For known cloud hosts, show the subdomain only (cleaner in the UI).
+    const host = u.hostname;
+    if (host.endsWith('.indianpgmanagement.com')) {
+      return host.split('.')[0];
+    }
+    return u.host; // includes port
+  } catch {
+    return url;
+  }
 };
 
 const ENV_OVERRIDE_KEY = 'ENV_OVERRIDE';
@@ -46,8 +73,10 @@ export const ENV: {
   ENV_LABEL: string;
   ENV_COLOR: string;
   API_BASE_URL: string;
+  USE_IAP: boolean;
   SUBSCRIPTION_MODE: boolean;
   SHOW_DEV_BANNER: boolean;
+  WEB_SIGNUP_URL: string;
   IS_DEV: boolean;
   IS_PROD: boolean;
   IS_LOCAL: boolean;
@@ -60,8 +89,16 @@ export const ENV: {
 
   API_BASE_URL: appConfig.apiBaseUrl!,
 
+  // iOS: use Apple IAP by default. Set USE_IAP_FOR_IOS=false in .env to use CCAvenue instead.
+  USE_IAP: Platform.OS === 'ios' && (appConfig.useIapForIos ?? true),
+
   SUBSCRIPTION_MODE: appConfig.subscriptionMode ?? true,
   SHOW_DEV_BANNER: appConfig.showDevBanner ?? false,
+
+  // External website where new PG owners/businesses register.
+  // On iOS, in-app org/business signup is disabled (App Store Guideline 3.1.1)
+  // and the "Sign Up" button opens this URL in Safari via Linking.openURL.
+  WEB_SIGNUP_URL: appConfig.webSignupUrl ?? 'https://www.indianpgmanagement.com',
 
   IS_DEV: __DEV__,
   IS_PROD: !__DEV__,

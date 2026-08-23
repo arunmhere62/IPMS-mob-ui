@@ -10,7 +10,7 @@ import { FullScreenSlideUpModal } from '@/components/FullScreenSlideUpModal';
 import { RequestDetailsComponent } from '@/components/RequestDetailsComponent';
 import { networkLogger, type NetworkLog } from '@/utils/networkLogger';
 import { Theme } from '@/theme';
-import { ENV, setEnvironment, getCurrentEnv, type AppEnv } from '@/config';
+import { ENV, setEnvironment, getCurrentEnv, ENV_URLS, ENVIRONMENTS, getDisplayUrl, type AppEnv } from '@/config';
 import { store } from '@/features/owner/store';
 import { baseApi } from '@/features/owner/api/baseApi';
 import { tenantBaseApi } from '@/features/tenant/api/tenantBaseApi';
@@ -125,11 +125,15 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     );
   }, [currentEnv, loadLogs, isLoggedIn]);
 
-  const ENV_OPTIONS: { env: AppEnv; label: string; color: string; url: string }[] = [
-    { env: 'local', label: 'Local', color: '#6B7280', url: '192.168.1.10:3001' },
-    { env: 'development', label: 'Dev', color: '#F59E0B', url: 'dev-api' },
-    { env: 'production', label: 'Prod', color: '#10B981', url: 'mobapi' },
-  ];
+  // Derive env options from the centralized config so the local IP only
+  // needs to be changed in one place (.env -> app.config.js -> environment.ts).
+  const ENV_OPTIONS: { env: AppEnv; label: string; color: string; url: string }[] =
+    (['local', 'development', 'production'] as AppEnv[]).map((env) => ({
+      env,
+      label: ENVIRONMENTS[env].label,
+      color: ENVIRONMENTS[env].color,
+      url: getDisplayUrl(ENV_URLS[env]),
+    }));
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue} contentBackgroundColor={Theme.colors.background.secondary}>

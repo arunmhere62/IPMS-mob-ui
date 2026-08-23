@@ -167,6 +167,24 @@ export type PreparePaymentResponse = {
   };
 };
 
+export type PaymentStatusResponse = {
+  success: boolean;
+  data: {
+    order_id: string;
+    payment_status: 'INITIATED' | 'PENDING' | 'SUCCESS' | 'FAILURE' | 'ABORTED';
+    order_status: 'Pending' | 'Success' | 'Failure' | 'Aborted';
+    tracking_id?: string | null;
+    bank_ref_no?: string | null;
+    payment_mode?: string | null;
+    status_code?: string | null;
+    status_message?: string | null;
+    amount?: string;
+    currency?: string;
+    subscription_id?: number | null;
+    subscription_status?: UserSubscription['status'] | null;
+  };
+};
+
 export type RenewSubscriptionResponse = {
   success: boolean;
   data: {
@@ -176,6 +194,84 @@ export type RenewSubscriptionResponse = {
 };
 
 export type CancelSubscriptionResponse = { success: boolean; message: string };
+
+/**
+ * Request body for the Apple IAP receipt validation endpoint.
+ * The client sends the StoreKit 2 JWS transaction (purchaseToken) and the
+ * productId purchased. The backend verifies with Apple's App Store Server
+ * API, maps productId -> plan_id, and creates/activates the subscription.
+ */
+export interface ValidateIapReceiptRequest {
+  /** StoreKit 2 JWS transaction token (Purchase.purchaseToken on iOS) */
+  transactionToken: string;
+  /** Apple IAP product id, e.g. com.indianpgmanagement.sub.monthly */
+  productId: string;
+  /** Transaction id from StoreKit (PurchaseIOS.transactionId) */
+  transactionId?: string;
+  /** Original transaction id for renewals */
+  originalTransactionId?: string;
+}
+
+export interface ValidateIapReceiptResponse {
+  success: boolean;
+  data?: {
+    subscription: UserSubscription;
+    plan?: SubscriptionPlan;
+  };
+  message?: string;
+}
+
+export interface SubscriptionInvoice {
+  s_no: number;
+  invoice_number: string;
+  payment_id: number;
+  user_id: number;
+  organization_id: number;
+  subscription_id: number;
+  plan_id: number;
+  invoice_date: string;
+  seller_legal_name: string;
+  seller_trade_name: string;
+  seller_gstin: string;
+  seller_address: string;
+  seller_state_code: string;
+  seller_duns_number: string | null;
+  buyer_name: string;
+  buyer_gstin: string | null;
+  buyer_address: string;
+  buyer_state_code: string;
+  place_of_supply: string;
+  service_description: string;
+  hsn_sac_code: string;
+  taxable_value: string | number;
+  cgst_rate: string | number | null;
+  cgst_amount: string | number | null;
+  sgst_rate: string | number | null;
+  sgst_amount: string | number | null;
+  igst_rate: string | number | null;
+  igst_amount: string | number | null;
+  total_amount: string | number;
+  gst_number: string | null;
+  billing_address: string | null;
+  is_reverse_charge: boolean;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  subscription_payments?: {
+    s_no: number;
+    order_id: string;
+    status: string;
+    payment_mode: string | null;
+    tracking_id: string | null;
+    bank_ref_no: string | null;
+    amount: string;
+    currency: string;
+    created_at: string;
+  };
+}
+
+export type GetInvoicesResponse = { success: boolean; data: SubscriptionInvoice[] };
+export type GetInvoiceResponse = { success: boolean; data: SubscriptionInvoice };
 
 export const subscriptionApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -274,6 +370,19 @@ export const subscriptionApi = baseApi.injectEndpoints({
       ],
     }),
 
+    checkPaymentStatus: build.mutation<PaymentStatusResponse, { orderId: string }>({
+      query: ({ orderId }) => ({
+        url: '/subscription/payment/status',
+        method: 'GET',
+        params: { order_id: orderId },
+      }),
+      transformResponse: (response: ApiEnvelope<PaymentStatusResponse> | any) => {
+        const unwrapped = unwrapCentralData<any>(response);
+        const nested = unwrapNestedData(unwrapped);
+        return nested as any;
+      },
+    }),
+
     renewSubscription: build.mutation<RenewSubscriptionResponse, { subscriptionId: number }>({
       query: ({ subscriptionId }) => ({
         url: `/subscription/${subscriptionId}/renew`,
@@ -288,6 +397,45 @@ export const subscriptionApi = baseApi.injectEndpoints({
         { type: 'SubscriptionStatus', id: 'SINGLE' },
         { type: 'SubscriptionHistory', id: 'LIST' },
       ],
+    }),
+
+    /**
+     * Apple IAP receipt validation (iOS only).
+     * Sends the StoreKit 2 JWS transaction to the backend, which verifies it
+     * with Apple's App Store Server API and grants the subscription entitlement.
+     * On success, the active subscription is created/updated server-side.
+     */
+    validateIapReceipt: build.mutation<ValidateIapReceiptResponse, ValidateIapReceiptRequest>({
+      query: (body) => ({
+        url: '/subscription/iap/validate',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: ApiEnvelope<ValidateIapReceiptResponse> | any) => {
+        const unwrapped = unwrapCentralData<any>(response);
+        return (unwrapped as any)?.data ?? unwrapped;
+      },
+      invalidatesTags: [
+        { type: 'CurrentSubscription', id: 'SINGLE' },
+        { type: 'SubscriptionStatus', id: 'SINGLE' },
+        { type: 'SubscriptionHistory', id: 'LIST' },
+      ],
+    }),
+
+    getInvoices: build.query<GetInvoicesResponse, void>({
+      query: () => ({ url: '/subscription/invoices', method: 'GET' }),
+      transformResponse: (response: ApiEnvelope<GetInvoicesResponse> | any) =>
+        normalizeListResponse<SubscriptionInvoice[]>(response),
+      providesTags: [{ type: 'SubscriptionInvoices' as const, id: 'LIST' }],
+    }),
+
+    getInvoiceById: build.query<GetInvoiceResponse, { invoiceId: number }>({
+      query: ({ invoiceId }) => ({ url: `/subscription/invoices/${invoiceId}`, method: 'GET' }),
+      transformResponse: (response: ApiEnvelope<GetInvoiceResponse> | any) => {
+        const unwrapped = unwrapCentralData<any>(response);
+        return { success: true, data: unwrapped };
+      },
+      providesTags: (_res, _err, arg) => [{ type: 'SubscriptionInvoices' as const, id: arg.invoiceId }],
     }),
 
   }),
@@ -308,4 +456,10 @@ export const {
   useCancelSubscriptionMutation,
   useRenewSubscriptionMutation,
   usePreparePaymentMutation,
+  useCheckPaymentStatusMutation,
+  useValidateIapReceiptMutation,
+  useGetInvoicesQuery,
+  useLazyGetInvoicesQuery,
+  useGetInvoiceByIdQuery,
+  useLazyGetInvoiceByIdQuery,
 } = subscriptionApi;

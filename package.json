@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "postinstall": "node scripts/patch-webview-upi.js",
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
     "test": "jest",
@@ -45,6 +46,7 @@
     "expo-device": "~8.0.10",
     "expo-file-system": "^19.0.17",
     "expo-font": "~14.0.10",
+    "expo-iap": "^5.3.1",
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.10",
     "expo-linear-gradient": "~15.0.8",

@@ -308,6 +308,7 @@ export const baseApi = createApi({
     'CurrentSubscription',
     'SubscriptionStatus',
     'SubscriptionHistory',
+    'SubscriptionInvoices',
     'Users',
     'User',
     'Tickets',

@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -24,10 +25,16 @@ import { AuthRedirectHandler, MainTabs } from './components';
 import { RoleSelectionScreen } from '@/features/auth/screens/RoleSelectionScreen';
 import { LoginScreen } from '@/features/auth/screens/LoginScreen';
 import { OTPVerificationScreen } from '@/features/auth/screens/OTPVerificationScreen';
+// In-app business/organization signup is disabled on iOS per App Store
+// Guideline 3.1.1. iOS users register on the website instead.
+// See: LoginScreen "Sign Up" button -> Linking.openURL(WEB_SIGNUP_URL).
 import { SignupScreenNew } from '@/features/auth/screens/SignupScreenNew';
 import { SignupOtpScreen } from '@/features/auth/screens/SignupOtpScreen';
 import { LegalDocumentsScreen } from '@/features/owner/screens/legal/LegalDocumentsScreen';
 import { LegalWebViewScreen } from '@/features/owner/screens/legal/LegalWebViewScreen';
+
+// Only register in-app signup routes on non-iOS platforms.
+const showInAppSignup = Platform.OS !== 'ios';
 
 // ==================== TENANT SCREENS ====================
 import { TenantLoginScreen } from '@/features/tenant/TenantLoginScreen';
@@ -74,6 +81,7 @@ import { SubscriptionPlansScreen } from '@/features/owner/screens/subscription/S
 import { SubscriptionHistoryScreen } from '@/features/owner/screens/subscription/SubscriptionHistoryScreen';
 import { SubscriptionConfirmScreen } from '@/features/owner/screens/subscription/SubscriptionConfirmScreen';
 import { PaymentWebViewScreen } from '@/features/owner/screens/subscription/PaymentWebViewScreen';
+import { InvoiceViewerScreen } from '@/features/owner/screens/subscription/InvoiceViewerScreen';
 import { NetworkLoggerScreen } from '@/screens/network/NetworkLoggerScreen';
 
 const Stack = createNativeStackNavigator();
@@ -155,8 +163,12 @@ export const AppNavigator = () => {
             <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="TenantLogin" component={TenantLoginScreen} />
-            <Stack.Screen name="Signup" component={SignupScreenNew} />
-            <Stack.Screen name="SignupOtp" component={SignupOtpScreen} />
+            {showInAppSignup && (
+              <>
+                <Stack.Screen name="Signup" component={SignupScreenNew} />
+                <Stack.Screen name="SignupOtp" component={SignupOtpScreen} />
+              </>
+            )}
             <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
             <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen as unknown as React.ComponentType<unknown>} />
             <Stack.Screen name="LegalWebView" component={LegalWebViewScreen} />
@@ -206,6 +218,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="SubscriptionHistory" component={SubscriptionHistoryScreen} />
             <Stack.Screen name="SubscriptionConfirm" component={SubscriptionConfirmScreen} />
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} />
+            <Stack.Screen name="InvoiceViewer" component={InvoiceViewerScreen} />
             <Stack.Screen name="TenantRentPaymentsScreen" component={TenantRentPaymentsScreen} />
             <Stack.Screen name="TenantAdvancePaymentsScreen" component={TenantAdvancePaymentsScreen} />
             <Stack.Screen name="TenantRefundPaymentsScreen" component={TenantRefundPaymentsScreen} />

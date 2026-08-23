@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
@@ -15,6 +15,7 @@ import { Card } from '@/components/Card';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { Theme } from '@/theme';
 import { CONTENT_COLOR } from '@/constant';
+import { ENV } from '@/config';
 import { showSuccessAlert, showErrorAlert } from '@/utils/errorHandler';
 import {
   SubscriptionPlan,
@@ -22,6 +23,11 @@ import {
   useGetSubscriptionStatusQuery,
   useSubscribeToPlanMutation,
   useUpgradePlanMutation } from '@/features/owner/api/subscriptionApi';
+import { getIapProductIdForDuration } from '@/config/iapProducts';
+import { useIAPSubscription } from '@/hooks/useIAPSubscription';
+
+// iOS uses Apple In-App Purchase by default (App Store Guideline 3.1.1).
+// Set USE_IAP_FOR_IOS=false in .env to route iOS paid plans through CCAvenue.
 
 interface SubscriptionPlansScreenProps {
   navigation: any;
@@ -47,6 +53,16 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
 
   const [subscribeToPlan, { isLoading: subscribing }] = useSubscribeToPlanMutation();
   const [upgradePlan, { isLoading: upgrading }] = useUpgradePlanMutation();
+
+  // iOS In-App Purchase path. On Android this hook is never used for checkout
+  // (CCAvenue flow runs instead), but it's cheap to keep mounted.
+  const iap = useIAPSubscription({
+    onEntitlementGranted: () => {
+      showSuccessAlert('Subscription activated!');
+      refetchStatus();
+      refetchPlans();
+    },
+  });
 
   const plans = plansResponse?.data || [];
 
@@ -181,6 +197,34 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     }
   };
 
+  /**
+   * Unified subscribe/upgrade entry point used by plan card CTAs.
+   *
+   * On iOS, paid plans go through Apple In-App Purchase (StoreKit 2) per
+   * App Store Guideline 3.1.1. Free / trial plans (which have no IAP
+   * counterpart) and all Android purchases keep the legacy CCAvenue flow.
+   */
+  const handleSubscribeOrUpgrade = (plan: SubscriptionPlan, isExpiredFreePlanCard: boolean, hasActiveSubscription: boolean) => {
+    if (isExpiredFreePlanCard) return;
+
+    const iapProductId = getIapProductIdForDuration(plan.duration);
+    const isPaidPlan = !plan.is_free && iapProductId !== null;
+
+    // Do nothing if StoreKit is still connecting; the CTA is already disabled.
+    if (ENV.USE_IAP && isPaidPlan) {
+      if (iap.isReady && iapProductId) {
+        iap.purchaseSubscription(iapProductId);
+      }
+      return;
+    }
+
+    if (hasActiveSubscription) {
+      handleUpgrade(plan.s_no);
+    } else {
+      handleSubscribe(plan.s_no);
+    }
+  };
+
   const formatPrice = (price: string | number, currency?: string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
 
@@ -255,6 +299,10 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     
     const isFreePlan = Boolean(plan.is_free);
     const isExpiredFreePlanCard = isFreePlan && isFreePlanExpired;
+    const iapProductId = getIapProductIdForDuration(plan.duration);
+    const isIapPlan = ENV.USE_IAP && !isFreePlan && iapProductId !== null;
+    const iapNotReady = isIapPlan && !iap.isReady;
+    const isIapPurchasing = isIapPlan && iap.purchasingProductIds.includes(iapProductId ?? '');
 
     const isFullyUnlimited = (() => {
       const limits = plan.limits;
@@ -503,13 +551,17 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
         ) : (
           <AnimatedPressableCard
             onPress={() => {
-              if (isExpiredFreePlanCard) return;
-              if (hasActiveSubscription) { handleUpgrade(plan.s_no); return; }
-              handleSubscribe(plan.s_no);
+              handleSubscribeOrUpgrade(plan, isExpiredFreePlanCard, hasActiveSubscription);
             }}
-            disabled={subscribing || upgrading || isExpiredFreePlanCard}
+            disabled={
+              subscribing ||
+              upgrading ||
+              isExpiredFreePlanCard ||
+              iapNotReady ||
+              isIapPurchasing
+            }
             style={{
-              backgroundColor: isExpiredFreePlanCard ? '#9CA3AF' : '#0F172A',
+              backgroundColor: isExpiredFreePlanCard ? '#9CA3AF' : iapNotReady ? '#6B7280' : '#0F172A',
               paddingVertical: 16,
               flexDirection: 'row',
               alignItems: 'center',
@@ -517,6 +569,15 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
               gap: 10 }}
           >
             {(subscribing || upgrading) && selectedPlan === plan.s_no ? (
+              <ActivityIndicator color="#fff" />
+            ) : iapNotReady ? (
+              <>
+                <ActivityIndicator color="#fff" size="small" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: 0.4 }}>
+                  Connecting to Store...
+                </Text>
+              </>
+            ) : isIapPurchasing ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <>
@@ -720,6 +781,38 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
 
             {plans.map((plan, index) => renderPlanCard(plan, index))}
           </>
+        )}
+
+        {/* Restore Purchases — required by Apple for IAP-enabled apps (iOS only). */}
+        {ENV.USE_IAP && (
+          <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 24 }}>
+            <AnimatedPressableCard
+              onPress={() => iap.restorePurchases()}
+              disabled={iap.isRestoring}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: Theme.colors.primary,
+              }}
+            >
+              {iap.isRestoring ? (
+                <ActivityIndicator size="small" color={Theme.colors.primary} />
+              ) : (
+                <Ionicons name="refresh-circle-outline" size={18} color={Theme.colors.primary} />
+              )}
+              <Text style={{ fontSize: 14, fontWeight: '600', color: Theme.colors.primary }}>
+                {iap.isRestoring ? 'Restoring...' : 'Restore Purchases'}
+              </Text>
+            </AnimatedPressableCard>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 8, textAlign: 'center' }}>
+              Restore subscriptions purchased with this Apple ID.
+            </Text>
+          </View>
         )}
         </ScrollView>
       </View>

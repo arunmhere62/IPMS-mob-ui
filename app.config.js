@@ -1,13 +1,19 @@
 require('dotenv').config();
+const withWebViewUpiInterceptor = require('./plugins/withWebViewUpiInterceptor');
 
 console.log('[app.config.js] dotenv loaded:');
 console.log('[app.config.js] APP_ENV =', process.env.APP_ENV);
 console.log('[app.config.js] API_BASE_URL =', process.env.API_BASE_URL);
+console.log('[app.config.js] LOCAL_API_BASE_URL =', process.env.LOCAL_API_BASE_URL);
 console.log('[app.config.js] MODE =', process.env.MODE);
+
+// Single source of truth for the local API URL: the LOCAL_API_BASE_URL env var
+// (see .env / .env.example). Change it there once and it propagates everywhere.
+const LOCAL_API_BASE_URL = process.env.LOCAL_API_BASE_URL || 'http://192.168.1.4:3001/api/v1';
 
 const ENVIRONMENTS = {
   local: {
-    apiBaseUrl: 'http://192.168.1.7:3001/api/v1',
+    apiBaseUrl: LOCAL_API_BASE_URL,
     subscriptionMode: false,
     showDevBanner: true,
   },
@@ -67,6 +73,11 @@ module.exports = ({ config }) => {
     plugins: [
       ...pluginsWithoutNotifications,
       "expo-font",
+      "expo-iap",
+      // Patches react-native-webview's iOS native code to route custom URL
+      // schemes (upi://, gpay://, etc.) through onShouldStartLoadWithRequest
+      // instead of auto-opening them. Required for UPI app chooser on iOS.
+      withWebViewUpiInterceptor,
       [
         "expo-notifications",
         {
@@ -83,6 +94,11 @@ module.exports = ({ config }) => {
         projectId: "0f6ecb0b-7511-427b-be33-74a4bd0207fe"
       },
       appEnv,
+      // Expose the local API URL so environment.ts can use it as the single
+      // source of truth for runtime env switching (NetworkLoggerScreen, etc.).
+      localApiBaseUrl: LOCAL_API_BASE_URL,
+      // Allow forcing iOS to use CCAvenue instead of Apple IAP for testing/merchant needs.
+      useIapForIos: process.env.USE_IAP_FOR_IOS !== 'false',
       apiBaseUrl: process.env.API_BASE_URL || envConfig.apiBaseUrl,
       subscriptionMode: process.env.SUBSCRIPTION_MODE
         ? process.env.SUBSCRIPTION_MODE === 'true'
@@ -90,6 +106,9 @@ module.exports = ({ config }) => {
       showDevBanner: process.env.SHOW_DEV_BANNER
         ? process.env.SHOW_DEV_BANNER === 'true'
         : envConfig.showDevBanner,
+      // External website where iOS users register (App Store Guideline 3.1.1
+      // requires business/org signup to happen outside the iOS app).
+      webSignupUrl: process.env.WEB_SIGNUP_URL || 'https://www.indianpgmanagement.com',
     }
   };
 };
