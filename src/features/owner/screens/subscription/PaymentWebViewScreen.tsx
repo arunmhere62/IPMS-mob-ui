@@ -1,8 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { View, Text, ActivityIndicator, Alert, StyleSheet, BackHandler, Linking, Platform, NativeModules, ActionSheetIOS, AppState } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { SlideBottomModal } from '@/components/SlideBottomModal';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { Theme } from '@/theme';
 import { showErrorAlert } from '@/utils/errorHandler';
 import { useCheckPaymentStatusMutation } from '@/features/owner/api/subscriptionApi';
@@ -349,9 +352,9 @@ const UPI_INTERCEPT_JS = `
   // window.__CCAV_REQUEST_UPI_APP_LINK(appKey), which fetches the exact app-specific
   // deeplink from CCAvenue's own getPaymentLink flow.
   //
-  // NOTE: This interception is iOS-only. On Android, CCAvenue's own UPI launch
-  // works natively (Android WebView handles upi:// and intent:// URLs properly),
-  // so we let CCAvenue's JS handle it and our generic upi:// interceptor catches it.
+  // This interception runs on BOTH iOS and Android. On Android, CCAvenue's own
+  // UPI launch often fails or opens the wrong app, so we intercept here too and
+  // show our own chooser.
   var ccavOtherUpiBusy = false;
 
   function closestOtherUpiLink(target) {
@@ -673,12 +676,10 @@ const UPI_INTERCEPT_JS = `
       return;
     }
 
-    // On Android, let CCAvenue's own JS handle UPI launch natively.
-    // Android WebView properly handles upi:// and intent:// URLs.
-    if (window.__UPI_PLATFORM__ === 'android') {
-      return;
-    }
-
+    // Intercept "Pay By Any UPI App" on BOTH iOS and Android.
+    // We show our own UPI app chooser in React Native instead of letting
+    // CCAvenue's JS auto-launch a default UPI app (which often fails or
+    // opens the wrong app on Android).
     log('CCAV OTHERUPI: intercepting Pay By Any UPI App');
     e.preventDefault();
     e.stopPropagation();
@@ -818,13 +819,28 @@ const parseIntentUrl = (url: string): { scheme: string; constructedUrl: string; 
 // UPI apps for iOS ActionSheet chooser.
 // For CCAvenue hosted UPI flow we should request the exact app-specific link from
 // the page itself using upiApp keys, instead of rewriting a generic upi:// URL.
-const UPI_APPS_IOS: { name: string; appKey: string }[] = [
-  { name: 'GPay', appKey: 'googlepay' },
-  { name: 'PhonePe', appKey: 'phonepe' },
-  { name: 'Paytm', appKey: 'paytm' },
-  { name: 'BHIM', appKey: 'bhim' },
-  { name: 'CRED', appKey: 'cred' },
-  { name: 'Any UPI App', appKey: 'upi' },
+// UPI apps for iOS ActionSheet chooser.
+// For CCAvenue hosted UPI flow we should request the exact app-specific link from
+// the page itself using upiApp keys, instead of rewriting a generic upi:// URL.
+const UPI_APPS_IOS: { name: string; appKey: string; icon: string }[] = [
+  { name: 'GPay', appKey: 'googlepay', icon: 'logo-google' },
+  { name: 'PhonePe', appKey: 'phonepe', icon: 'phone-portrait-outline' },
+  { name: 'Paytm', appKey: 'paytm', icon: 'wallet-outline' },
+  { name: 'BHIM', appKey: 'bhim', icon: 'card-outline' },
+  { name: 'CRED', appKey: 'cred', icon: 'card-outline' },
+  { name: 'Any UPI App', appKey: 'upi', icon: 'apps-outline' },
+];
+
+// Android UPI apps — same appKey values as iOS so CCAvenue's getPaymentLink
+// returns the correct app-specific deeplink for each platform.
+const UPI_APPS_ANDROID: { name: string; appKey: string; icon: string }[] = [
+  { name: 'GPay', appKey: 'googlepay', icon: 'logo-google' },
+  { name: 'PhonePe', appKey: 'phonepe', icon: 'phone-portrait-outline' },
+  { name: 'Paytm', appKey: 'paytm', icon: 'wallet-outline' },
+  { name: 'BHIM', appKey: 'bhim', icon: 'card-outline' },
+  { name: 'CRED', appKey: 'cred', icon: 'card-outline' },
+  { name: 'Amazon Pay', appKey: 'amazonpay', icon: 'cart-outline' },
+  { name: 'Any UPI App', appKey: 'upi', icon: 'apps-outline' },
 ];
 
 const PAYMENT_CALLBACK_PATH = '/subscription/payment/callback';
@@ -851,15 +867,27 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
   const appStateRef = useRef(AppState.currentState);
   const allowedPageLaunchUrlRef = useRef<string | null>(null);
 
+  // Android UPI app chooser bottom sheet state
+  const [upiChooserVisible, setUpiChooserVisible] = useState(false);
+  const [upiChooserUrl, setUpiChooserUrl] = useState<string>('');
+  const upiChooserUrlRef = useRef<string>('');
+
   const resetPaymentTracking = useCallback(() => {
     paymentVerificationStartedRef.current = false;
     paymentFlowStartedAtRef.current = null;
     paymentPendingAlertShownRef.current = false;
     paymentCallbackSeenRef.current = false;
-    paymentStatusHandledRef.current = false;
     openedPaymentUrlsRef.current.clear();
     setVerificationMessage('Waiting for payment confirmation...');
   }, []);
+
+  // Full reset including the "handled" flag — only used when starting a fresh
+  // payment flow or navigating away, NOT from handlePaymentOutcome (which needs
+  // the flag to stay true to prevent duplicate alerts).
+  const fullResetPaymentTracking = useCallback(() => {
+    resetPaymentTracking();
+    paymentStatusHandledRef.current = false;
+  }, [resetPaymentTracking]);
 
   const markPaymentFlowStarted = useCallback((message?: string) => {
     paymentVerificationStartedRef.current = true;
@@ -882,11 +910,52 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
     return '';
   }, []);
 
+  const handleUpiAppSelection = useCallback(async (upiUrl: string, app: { name: string; appKey: string }) => {
+    const isCcavChooser = upiUrl === 'ccavenues://chooser' || upiUrl.includes('ccavenues%40icici');
+
+    // For CCAvenue-hosted UPI flows, ask the page JS to fetch the exact
+    // app-specific deeplink via getPaymentLink instead of rewriting the URL.
+    if (webViewRef.current && isCcavChooser) {
+      console.log('💳 Requesting CCAvenue app link:', app.appKey);
+      webViewRef.current.injectJavaScript(
+        `window.__CCAV_REQUEST_UPI_APP_LINK && window.__CCAV_REQUEST_UPI_APP_LINK(${JSON.stringify(app.appKey)}); true;`,
+      );
+      return;
+    }
+
+    // Fallback for generic non-CCAvenue upi:// links.
+    const urlPath = upiUrl.replace(/^upi:\/\/pay\?/, '');
+    const prefixMap: Record<string, string> = {
+      googlepay: 'tez://upi/pay?',
+      phonepe: 'phonepe://pay?',
+      paytm: 'paytmmp://pay?',
+      bhim: 'bhim://upi/pay?',
+      cred: 'credpay://upi/pay?',
+      amazonpay: 'upi://pay?',
+      upi: 'upi://pay?',
+    };
+    const appUrl = `${prefixMap[app.appKey] || 'upi://pay?'}${urlPath}`;
+    console.log('💳 Opening UPI app:', app.name, appUrl);
+    try {
+      startPaymentStatusPollingRef.current();
+      await Linking.openURL(appUrl);
+    } catch (err) {
+      console.error('💳 Failed to open', app.name, ':', err);
+      Alert.alert(
+        `${app.name} Not Installed`,
+        `Please install ${app.name} from the ${Platform.OS === 'ios' ? 'App Store' : 'Play Store'} to use this payment method.`,
+        [{ text: 'OK' }],
+      );
+    }
+  }, []);
+
   const showUpiAppChooser = useCallback(async (upiUrl: string) => {
-    console.log('💳 showUpiAppChooser');
+    console.log('💳 showUpiAppChooser', { platform: Platform.OS, upiUrl });
+
+    const apps = Platform.OS === 'ios' ? UPI_APPS_IOS : UPI_APPS_ANDROID;
 
     if (Platform.OS === 'ios') {
-      const options = UPI_APPS_IOS.map(app => app.name);
+      const options = apps.map(app => app.name);
       options.push('Cancel');
 
       ActionSheetIOS.showActionSheetWithOptions(
@@ -898,62 +967,17 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
         },
         async (buttonIndex: number) => {
           if (buttonIndex === options.length - 1) return;
-          const app = UPI_APPS_IOS[buttonIndex];
-
-          // For CCAvenue-hosted UPI flows, ask the page JS to fetch the exact
-          // app-specific deeplink via getPaymentLink instead of rewriting the URL.
-          if (webViewRef.current && (upiUrl === 'ccavenues://chooser' || upiUrl.includes('ccavenues%40icici'))) {
-    console.log('💳 Requesting CCAvenue app link:', app.appKey);
-            webViewRef.current.injectJavaScript(`window.__CCAV_REQUEST_UPI_APP_LINK && window.__CCAV_REQUEST_UPI_APP_LINK(${JSON.stringify(app.appKey)}); true;`);
-            return;
-          }
-
-          // Fallback for generic non-CCAvenue upi:// links.
-          const urlPath = upiUrl.replace(/^upi:\/\/pay\?/, '');
-          const prefixMap: Record<string, string> = {
-            googlepay: 'tez://upi/pay?',
-            phonepe: 'phonepe://pay?',
-            paytm: 'paytmmp://pay?',
-            bhim: 'bhim://upi/pay?',
-            cred: 'credpay://upi/pay?',
-            upi: 'upi://pay?',
-          };
-          const appUrl = `${prefixMap[app.appKey] || 'upi://pay?'}${urlPath}`;
-          console.log('💳 Opening UPI app:', app.name);
-          try {
-            startPaymentStatusPollingRef.current();
-            await Linking.openURL(appUrl);
-          } catch (err) {
-            console.error('💳 Failed to open', app.name, ':', err);
-            Alert.alert(
-              `${app.name} Not Installed`,
-              `Please install ${app.name} from the App Store to use this payment method.`,
-              [{ text: 'OK' }]
-            );
-          }
-        }
+          const app = apps[buttonIndex];
+          await handleUpiAppSelection(upiUrl, app);
+        },
       );
     } else {
-      // Android: CCAvenue's own JS handles UPI launch natively.
-      // Our generic upi:// interceptor will catch the URL and route it here.
-      // ccavenues://chooser should never reach this branch on Android because
-      // the otherupi click interception is skipped for Android.
-      if (upiUrl === 'ccavenues://chooser' || upiUrl.includes('ccavenues%40icici')) {
-        console.log('💳 CCAvenue chooser on Android - should not happen, ignoring');
-        return;
-      }
-      try {
-        startPaymentStatusPollingRef.current();
-        if (UPIChooser && typeof UPIChooser.openUPIChooser === 'function') {
-          await UPIChooser.openUPIChooser(upiUrl);
-        } else {
-          await Linking.openURL(upiUrl);
-        }
-      } catch (err) {
-        console.error('💳 Failed to open UPI app:', err);
-      }
+      // Android: show a proper bottom sheet modal with all UPI apps listed.
+      upiChooserUrlRef.current = upiUrl;
+      setUpiChooserUrl(upiUrl);
+      setUpiChooserVisible(true);
     }
-  }, []);
+  }, [handleUpiAppSelection]);
 
   const openExternalPaymentUrl = useCallback(async (url: string) => {
     if (openedPaymentUrlsRef.current.has(url)) return;
@@ -1115,7 +1139,7 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
               text: 'Check Later',
               style: 'cancel',
               onPress: () => {
-                resetPaymentTracking();
+                fullResetPaymentTracking();
                 navigation.reset({
                   index: 0,
                   routes: [{ name: 'SubscriptionPlans' }],
@@ -1128,7 +1152,7 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
     } catch (error) {
       console.error('💳 Payment status check failed:', error);
     }
-  }, [checkPaymentStatus, handlePaymentOutcome, navigation, normalizePaymentOutcome, orderId, resetPaymentTracking, stopPaymentStatusPolling]);
+  }, [checkPaymentStatus, handlePaymentOutcome, navigation, normalizePaymentOutcome, orderId, fullResetPaymentTracking, stopPaymentStatusPolling]);
 
   const startPaymentStatusPolling = useCallback(() => {
     if (!orderId || paymentStatusHandledRef.current) return;
@@ -1182,7 +1206,7 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
         style: 'destructive',
         onPress: () => {
           stopPaymentStatusPolling();
-          resetPaymentTracking();
+          fullResetPaymentTracking();
           navigation.reset({
             index: 0,
             routes: [{ name: 'SubscriptionPlans' }],
@@ -1191,12 +1215,12 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
       },
     ]);
     return true;
-  }, [navigation, resetPaymentTracking, stopPaymentStatusPolling]);
+  }, [navigation, fullResetPaymentTracking, stopPaymentStatusPolling]);
 
   useEffect(() => {
     // Reset all tracking on mount to ensure clean state for each payment attempt
-    resetPaymentTracking();
-  }, [resetPaymentTracking]);
+    fullResetPaymentTracking();
+  }, [fullResetPaymentTracking]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
@@ -1242,7 +1266,7 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
       linkingSubscription.remove();
       appStateSubscription.remove();
       stopPaymentStatusPolling();
-      resetPaymentTracking();
+      fullResetPaymentTracking();
       // Clean up WebView-side intervals to prevent orphaned polls
       if (webViewRef.current) {
         webViewRef.current.injectJavaScript(
@@ -1250,7 +1274,7 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
         );
       }
     };
-  }, [handleDeepLink, resetPaymentTracking, startPaymentStatusPolling, stopPaymentStatusPolling]);
+  }, [handleDeepLink, fullResetPaymentTracking, startPaymentStatusPolling, stopPaymentStatusPolling]);
 
   // Handle messages from injected JS (upi:// URL interception)
   const handleMessage = useCallback((event: any) => {
@@ -1397,6 +1421,60 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
             showErrorAlert(null, 'Payment Page Error');
           }}
         />
+
+        {/* Android UPI App Chooser Bottom Sheet */}
+        <SlideBottomModal
+          visible={upiChooserVisible}
+          onClose={() => setUpiChooserVisible(false)}
+          title="Pay with UPI App"
+          subtitle="Select a UPI app to complete your payment"
+          cancelLabel="Cancel"
+          onCancel={() => setUpiChooserVisible(false)}
+          enableFlexibleHeightDrag
+          minHeightPercent={0.5}
+        >
+          <View style={{ paddingHorizontal: 4, paddingTop: 4 }}>
+            {UPI_APPS_ANDROID.map((item) => (
+              <AnimatedPressableCard
+                key={item.appKey}
+                onPress={() => {
+                  setUpiChooserVisible(false);
+                  handleUpiAppSelection(upiChooserUrlRef.current, item);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  marginBottom: 8,
+                  backgroundColor: Theme.colors.background.secondary,
+                  gap: 14,
+                }}
+              >
+                <View style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: Theme.colors.background.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Ionicons name={item.icon as any} size={22} color={Theme.colors.primary} />
+                </View>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '600',
+                  color: Theme.colors.text.primary,
+                  flex: 1,
+                }}>
+                  {item.name}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color={Theme.colors.text.tertiary} />
+              </AnimatedPressableCard>
+            ))}
+          </View>
+        </SlideBottomModal>
       </View>
     </ScreenLayout>
   );

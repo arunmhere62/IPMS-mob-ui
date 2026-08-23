@@ -335,7 +335,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                 style={{ flex: 1 }}
                 contentContainerStyle={{
                   padding: 20,
-                  paddingBottom: 20,
+                  paddingBottom: 20 + (insets.bottom || 0),
                   flexGrow: 1 }}
                 showsVerticalScrollIndicator={true}
                 keyboardShouldPersistTaps="handled"
@@ -350,7 +350,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
                     gap: 12,
                     marginTop: 20,
                     paddingTop: 20,
-                    paddingBottom: 70,
+                    paddingBottom: 20 + (insets.bottom || 0),
                     borderTopWidth: 1,
                     borderTopColor: Theme.colors.border }}
                 >

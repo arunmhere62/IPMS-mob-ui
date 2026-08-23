@@ -207,7 +207,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
           }}
           style={[
             styles.container,
-            { paddingBottom: Math.max(insets.bottom + -2, 10) },
+            { paddingBottom: Math.max(insets.bottom, 10) },
             { transform: [{ translateY }] },
           ]}
         >
@@ -239,7 +239,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
             style={styles.modalOverlay}
             onPress={() => setMoreModalVisible(false)}
           >
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
               <ScrollView
                 style={styles.menuScrollView}
                 showsVerticalScrollIndicator={false}

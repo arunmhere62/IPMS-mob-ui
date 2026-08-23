@@ -3,6 +3,7 @@ import { View, ActivityIndicator, Text, Platform, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { ScreenLayout } from '@/components/ScreenLayout';
@@ -18,6 +19,7 @@ interface InvoiceViewerScreenProps {
 export const InvoiceViewerScreen: React.FC<InvoiceViewerScreenProps> = ({ navigation, route }) => {
   const html = route.params?.html || '';
   const invoiceNumber = route.params?.invoiceNumber || 'Invoice';
+  const insets = useSafeAreaInsets();
 
   const [pdfUri, setPdfUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,7 +79,7 @@ export const InvoiceViewerScreen: React.FC<InvoiceViewerScreenProps> = ({ naviga
         subtitle="Invoice PDF"
         backgroundColor={Theme.colors.background.blue}
       />
-      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
+      <View style={{ flex: 1, backgroundColor: CONTENT_COLOR, paddingBottom: insets.bottom }}>
         {loading && (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator size="large" color={Theme.colors.primary} />
