@@ -164,8 +164,8 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
       {/* Modern Header - colored on all tabs */}
       <LinearGradient colors={[C.primary, C.primaryDark]} style={[styles.header, { paddingTop: ST + 16 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.headerTitle}>{activeTab === 'home' ? `Hello, ${raw?.name?.split(' ')[0] ?? tenant?.name ?? 'Tenant'}` : tenantTabs.find(t => t.name === activeTab)?.label ?? 'Tenant'}</Text>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={styles.headerTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{activeTab === 'home' ? `Hello, ${raw?.name?.split(' ')[0] ?? tenant?.name ?? 'Tenant'}` : tenantTabs.find(t => t.name === activeTab)?.label ?? 'Tenant'}</Text>
             {activeTab === 'home' && <Text style={styles.headerSub}>Welcome to your dashboard</Text>}
           </View>
           <AnimatedPressableCard style={styles.headerAvatar}>

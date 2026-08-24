@@ -34,7 +34,6 @@ import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 import { useCreateTenantMutation, useGetTenantByIdQuery, useUpdateTenantMutation, useSendPhoneOtpMutation, useVerifyPhoneOtpMutation } from "../../api";
-import { useOnboardingTour } from '../../../../context/OnboardingTourContext';
 import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 
 interface AddTenantScreenProps {
@@ -71,7 +70,6 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
   const [verifyPhoneOtp] = useVerifyPhoneOtpMutation();
   const [loading, setLoading] = useState(false);
   const { can } = usePermissions();
-  const { tourStep, endTour } = useOnboardingTour();
 
   // Phone verification state
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -632,13 +630,8 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
         const res = await createTenantMutation(tenantData as any).unwrap();
 
         showSuccessAlert(res);
-        if (tourStep === 'tap_add_tenant' && (res as any)?.data?.s_no) {
-          endTour();
-          navigation.navigate('TenantDetails', { tenantId: (res as any).data.s_no });
-        } else {
-          navigation.navigate("Tenants", { refresh: Date.now() });
-        }
-        
+        navigation.navigate("Tenants", { refresh: Date.now() });
+
         // Reset form after successful creation
         resetForm();
       }

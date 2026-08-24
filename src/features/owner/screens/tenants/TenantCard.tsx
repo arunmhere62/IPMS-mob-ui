@@ -1,28 +1,20 @@
 import React from "react";
-import { View, Text, Image, Animated, useWindowDimensions } from "react-native";
+import { View, Text, Image, useWindowDimensions } from "react-native";
 import { Card } from "../../../../components/Card";
 import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 import { Theme } from "../../../../theme";
-import { Ionicons } from "@expo/vector-icons";
 import { Tenant } from "../../api";
-import { TourStep } from "../../../../context/OnboardingTourContext";
 
 interface TenantCardProps {
   tenant: Tenant;
   index: number;
   onPress: (tenantId: number) => void;
-  tourStep?: TourStep;
-  advanceTour?: () => void;
-  tenantPulse: Animated.Value;
 }
 
 export const TenantCard: React.FC<TenantCardProps> = ({
   tenant,
   index,
   onPress,
-  tourStep,
-  advanceTour,
-  tenantPulse,
 }) => {
   const { width: screenWidth } = useWindowDimensions();
   const isSmallScreen = screenWidth < 380;
@@ -61,10 +53,7 @@ export const TenantCard: React.FC<TenantCardProps> = ({
       ? "#F59E0B"
       : "#EF4444";
 
-  const isTourTarget = tourStep === "tap_tenant" && index === 0;
-
   const handlePress = () => {
-    if (isTourTarget && advanceTour) advanceTour();
     onPress(tenant.s_no);
   };
 
@@ -245,52 +234,6 @@ export const TenantCard: React.FC<TenantCardProps> = ({
           </Text>
         </View>
 
-        {/* Tour hint overlay */}
-        {isTourTarget && (
-          <View
-            style={{
-              position: "absolute",
-              top: -28,
-              left: 0,
-              right: 0,
-              alignItems: "center",
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "#1E3A8A",
-                borderRadius: 8,
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              <Ionicons name="finger-print" size={11} color="#fff" />
-              <Text
-                style={{ fontSize: 10, fontWeight: "800", color: "#fff" }}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.85}
-              >
-                Tap to open tenant
-              </Text>
-            </View>
-            <View
-              style={{
-                width: 0,
-                height: 0,
-                borderLeftWidth: 5,
-                borderRightWidth: 5,
-                borderTopWidth: 6,
-                borderLeftColor: "transparent",
-                borderRightColor: "transparent",
-                borderTopColor: "#1E3A8A",
-              }}
-            />
-          </View>
-        )}
       </Card>
     </AnimatedPressableCard>
   );

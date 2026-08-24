@@ -36,7 +36,6 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 import { BedsFilterModal } from "./BedsFilterModal";
 import { RootState } from "../../store";
-import { useOnboardingTour } from "../../../../context/OnboardingTourContext";
 
 interface BedsScreenProps {
   navigation: any;

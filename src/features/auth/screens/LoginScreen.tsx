@@ -164,11 +164,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
             <View style={{ marginTop: Theme.spacing.lg }}>
               <Button
-                title={Platform.OS === 'ios' ? 'Sign Up on Website' : 'Sign Up'}
+                title={Platform.OS === 'ios' && !ENV.IS_LOCAL && !ENV.IS_DEVELOPMENT ? 'Sign Up on Website' : 'Sign Up'}
                 onPress={() => {
-                  if (Platform.OS === 'ios') {
+                  if (Platform.OS === 'ios' && !ENV.IS_LOCAL && !ENV.IS_DEVELOPMENT) {
                     // App Store Guideline 3.1.1: in-app business/organization
                     // registration is not allowed on iOS. Redirect to website.
+                    // Exception: local/development builds allow in-app signup.
                     Linking.openURL(ENV.WEB_SIGNUP_URL);
                   } else {
                     navigation.navigate('Signup');

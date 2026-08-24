@@ -27,8 +27,7 @@ import { Animated, Easing } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import LottieView from "lottie-react-native";
 import { persistor, store } from "@/features/owner/store";
-import { OnboardingTourProvider } from "./src/context/OnboardingTourContext";
-import { initEnvironmentOverride } from "./src/config";
+import { ENV } from "@/config/environment";
 import { useActivityTracking } from "./src/services/activity/useActivityTracking";
 
 // CRITICAL: Set notification handler at the TOP LEVEL (outside component)
@@ -66,9 +65,6 @@ export default function App() {
 
         // Initialize global error handlers
         setupGlobalErrorHandlers();
-
-        // Load any persisted environment override (local/dev/prod switch)
-        await initEnvironmentOverride();
 
         // Request notification permission early (Android 13+ requirement)
         // This ensures the permission dialog shows on first app open
@@ -179,7 +175,6 @@ export default function App() {
               persistor={persistor}
             >
               <ErrorProvider>
-                <OnboardingTourProvider>
                 <ToastProvider>
                   {appError ? (
                     <View
@@ -239,7 +234,6 @@ export default function App() {
                     <AppContent />
                   )}
                 </ToastProvider>
-                </OnboardingTourProvider>
               </ErrorProvider>
             </PersistGate>
           </Provider>
@@ -297,7 +291,7 @@ function AppContent() {
       <AppStatusGate>
         <AppNavigator />
       </AppStatusGate>
-      <NetworkLoggerFloatingButton enabled={__DEV__} />
+      <NetworkLoggerFloatingButton enabled={ENV.IS_LOCAL || ENV.IS_DEVELOPMENT} />
     </NetworkStatusProvider>
   );
 }

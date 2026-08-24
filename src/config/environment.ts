@@ -1,6 +1,5 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type AppEnv = 'local' | 'development' | 'production';
 
@@ -8,8 +7,6 @@ interface AppConfig {
   apiBaseUrl?: string;
   localApiBaseUrl?: string;
   useIapForIos?: boolean;
-  subscriptionMode?: boolean;
-  showDevBanner?: boolean;
   appEnv?: string;
   webSignupUrl?: string;
 }
@@ -24,7 +21,7 @@ export const ENVIRONMENTS: Record<AppEnv, { label: string; color: string }> = {
 
 // Single source of truth for the local API URL: read from app.config.js extra
 // (which itself reads LOCAL_API_BASE_URL from .env). Change the IP in .env once.
-const LOCAL_API_BASE_URL = appConfig.localApiBaseUrl || 'http://192.168.1.5:3001/api/v1';
+const LOCAL_API_BASE_URL = appConfig.localApiBaseUrl || 'http://192.168.1.2:3001/api/v1';
 
 export const ENV_URLS: Record<AppEnv, string> = {
   local: LOCAL_API_BASE_URL,
@@ -51,7 +48,6 @@ export const getDisplayUrl = (url: string): string => {
   }
 };
 
-const ENV_OVERRIDE_KEY = 'ENV_OVERRIDE';
 
 const rawEnv = (appConfig.appEnv || 'local').toLowerCase();
 const resolvedEnv: AppEnv = (['local', 'development', 'production'].includes(rawEnv) ? rawEnv : 'local') as AppEnv;
@@ -74,11 +70,7 @@ export const ENV: {
   ENV_COLOR: string;
   API_BASE_URL: string;
   USE_IAP: boolean;
-  SUBSCRIPTION_MODE: boolean;
-  SHOW_DEV_BANNER: boolean;
   WEB_SIGNUP_URL: string;
-  IS_DEV: boolean;
-  IS_PROD: boolean;
   IS_LOCAL: boolean;
   IS_DEVELOPMENT: boolean;
   IS_PRODUCTION: boolean;
@@ -92,16 +84,11 @@ export const ENV: {
   // iOS: use Apple IAP by default. Set USE_IAP_FOR_IOS=false in .env to use CCAvenue instead.
   USE_IAP: Platform.OS === 'ios' && (appConfig.useIapForIos ?? true),
 
-  SUBSCRIPTION_MODE: appConfig.subscriptionMode ?? true,
-  SHOW_DEV_BANNER: appConfig.showDevBanner ?? false,
-
   // External website where new PG owners/businesses register.
-  // On iOS, in-app org/business signup is disabled (App Store Guideline 3.1.1)
+  // On iOS production, in-app org/business signup is disabled (App Store Guideline 3.1.1)
   // and the "Sign Up" button opens this URL in Safari via Linking.openURL.
   WEB_SIGNUP_URL: appConfig.webSignupUrl ?? 'https://www.indianpgmanagement.com',
 
-  IS_DEV: __DEV__,
-  IS_PROD: !__DEV__,
   IS_LOCAL: resolvedEnv === 'local',
   IS_DEVELOPMENT: resolvedEnv === 'development',
   IS_PRODUCTION: resolvedEnv === 'production',
@@ -109,6 +96,11 @@ export const ENV: {
 
 export const getCurrentEnv = (): AppEnv => ENV.APP_ENV;
 
+/**
+ * Switch environment at runtime (in-memory only). Does NOT persist to AsyncStorage.
+ * On next app restart, .env (APP_ENV) is the single source of truth again.
+ * Useful for quick testing during development via the Network Logger screen.
+ */
 export async function setEnvironment(env: AppEnv): Promise<void> {
   const url = ENV_URLS[env];
   ENV.API_BASE_URL = url;
@@ -118,31 +110,7 @@ export async function setEnvironment(env: AppEnv): Promise<void> {
   ENV.IS_LOCAL = env === 'local';
   ENV.IS_DEVELOPMENT = env === 'development';
   ENV.IS_PRODUCTION = env === 'production';
-  await AsyncStorage.setItem(ENV_OVERRIDE_KEY, env);
-  console.log(`🔄 Environment switched to ${env} (${url})`);
-}
-
-export async function clearEnvironmentOverride(): Promise<void> {
-  await AsyncStorage.removeItem(ENV_OVERRIDE_KEY);
-}
-
-export async function initEnvironmentOverride(): Promise<void> {
-  try {
-    const override = await AsyncStorage.getItem(ENV_OVERRIDE_KEY);
-    if (override && ['local', 'development', 'production'].includes(override)) {
-      const env = override as AppEnv;
-      ENV.API_BASE_URL = ENV_URLS[env];
-      ENV.APP_ENV = env;
-      ENV.ENV_LABEL = ENVIRONMENTS[env]?.label ?? 'Unknown';
-      ENV.ENV_COLOR = ENVIRONMENTS[env]?.color ?? '#6B7280';
-      ENV.IS_LOCAL = env === 'local';
-      ENV.IS_DEVELOPMENT = env === 'development';
-      ENV.IS_PRODUCTION = env === 'production';
-      console.log(`🔄 Environment override loaded: ${env} (${ENV_URLS[env]})`);
-    }
-  } catch (e) {
-    console.warn('Failed to load environment override:', e);
-  }
+  console.log(`🔄 Environment switched to ${env} (${url}) [runtime only — .env wins on restart]`);
 }
 
 export const getApiUrl = (endpoint: string = '') => {
@@ -154,9 +122,6 @@ export const logConfig = () => {
   console.log('🔧 App Configuration');
   console.log('- Environment:', ENV.ENV_LABEL);
   console.log('- API Base URL:', ENV.API_BASE_URL);
-  console.log('- Subscription Mode:', ENV.SUBSCRIPTION_MODE);
-  console.log('- Show Dev Banner:', ENV.SHOW_DEV_BANNER);
-  console.log('- Dev Mode:', ENV.IS_DEV);
   console.log('============================================');
 };
 

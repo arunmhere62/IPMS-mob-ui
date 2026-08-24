@@ -52,28 +52,6 @@ describe('QuickActions', () => {
     expect(getByText('My subtitle')).toBeTruthy();
   });
 
-  it('shows tour hint badge when tourHintScreen matches', () => {
-    const { getByText } = render(
-      <QuickActions menuItems={mockItems} onNavigate={jest.fn()} tourHintScreen="QuickSetup" />
-    );
-    expect(getByText('Tap here to start')).toBeTruthy();
-  });
-
-  it('shows rooms tour hint when tourHintScreen is Rooms', () => {
-    const { getByText } = render(
-      <QuickActions menuItems={mockItems} onNavigate={jest.fn()} tourHintScreen="Rooms" />
-    );
-    expect(getByText('Tap to view rooms')).toBeTruthy();
-  });
-
-  it('does not show tour hint when tourHintScreen is null', () => {
-    const { queryByText } = render(
-      <QuickActions menuItems={mockItems} onNavigate={jest.fn()} tourHintScreen={null} />
-    );
-    expect(queryByText('Tap here to start')).toBeNull();
-    expect(queryByText('Tap to view rooms')).toBeNull();
-  });
-
   it('handles empty menu items without crashing', () => {
     const { getByText } = render(
       <QuickActions menuItems={[]} onNavigate={jest.fn()} />

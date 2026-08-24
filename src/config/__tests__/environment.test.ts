@@ -46,15 +46,5 @@ describe('environment config', () => {
       const appEnv = 'production';
       expect(appEnv === 'production').toBe(true);
     });
-
-    it('SUBSCRIPTION_MODE defaults to true', () => {
-      const subscriptionMode = undefined as boolean | undefined;
-      expect(subscriptionMode ?? true).toBe(true);
-    });
-
-    it('SHOW_DEV_BANNER defaults to false', () => {
-      const showDevBanner = undefined as boolean | undefined;
-      expect(showDevBanner ?? false).toBe(false);
-    });
   });
 });

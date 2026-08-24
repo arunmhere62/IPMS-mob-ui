@@ -24,7 +24,6 @@ interface HomeTabProps {
 export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticketStats, refetchProfile, onViewPayments }) => {
   const { formatDate, formatAmount } = useFormatters();
 
-  // Expected vacate date modal state
   const [vacateDateModalVisible, setVacateDateModalVisible] = useState(false);
   const [newVacateDate, setNewVacateDate] = useState('');
   const [vacateLoading, setVacateLoading] = useState(false);
@@ -40,8 +39,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
   const handleSaveVacateDate = async () => {
     try {
       setVacateLoading(true);
-      await updateExpectedVacateDate({
-        expected_vacate_date: newVacateDate || null }).unwrap();
+      await updateExpectedVacateDate({ expected_vacate_date: newVacateDate || null }).unwrap();
       Alert.alert('Success', newVacateDate ? 'Expected vacate date saved' : 'Expected vacate date cleared');
       setVacateDateModalVisible(false);
       refetchProfile?.();
@@ -51,6 +49,13 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
       setVacateLoading(false);
     }
   };
+
+  const pgName = raw?.pg_locations?.location_name || 'N/A';
+  const pgAddress = [
+    raw?.pg_locations?.address,
+    raw?.pg_locations?.city?.name,
+    raw?.pg_locations?.state?.name,
+  ].filter(Boolean).join(', ') || 'N/A';
 
   return (
     <>
@@ -62,7 +67,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
             <Text style={styles.heroAmount}>{formatAmount(raw?.rent_due_amount ?? 0)}</Text>
           </View>
           <View style={[styles.heroBadge, isPaid ? styles.badgePaid : isPending ? styles.badgePending : styles.badgeOverdue]}>
-            <Ionicons name={isPaid ? 'checkmark-circle' : 'time'} size={14} color={isPaid ? '#059669' : isPending ? '#ea580c' : '#dc2626'} />
+            <Ionicons name={isPaid ? 'checkmark-circle' : 'time'} size={14} color={isPaid ? C.secondaryDark : isPending ? C.warningDark : C.dangerDark} />
             <Text style={[styles.heroBadgeText, isPaid ? styles.textPaid : isPending ? styles.textPending : styles.textOverdue]}>
               {raw?.payment_status ?? 'N/A'}
             </Text>
@@ -73,7 +78,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
           <>
             <View style={styles.heroDivider} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="alert-circle" size={14} color="#dc2626" />
+              <Ionicons name="alert-circle" size={14} color={C.danger} />
               <Text style={styles.heroUnpaidText} numberOfLines={1}>
                 {raw.unpaid_months.length} unpaid month{raw.unpaid_months.length > 1 ? 's' : ''} pending
               </Text>
@@ -89,30 +94,44 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
         )}
       </View>
 
-      {/* Room / Bed / Rent — stacked for clear visibility */}
+      {/* PG & Room Details */}
       <SectionCard>
-        <InfoRow icon="bed-outline" label="Room" value={raw?.rooms?.room_no ?? 'N/A'} />
-        <InfoRow icon="key-outline" label="Bed" value={raw?.beds?.bed_no ?? 'N/A'} />
-        <InfoRow icon="cash-outline" label="Monthly Rent" value={formatAmount(raw?.beds?.bed_price)} />
+        <CardHeader icon="home-outline" title="PG & Room" />
+        <InfoRow label="PG Name" value={pgName} />
+        <InfoRow label="Address" value={pgAddress} />
+        <InfoRow label="Room" value={raw?.rooms?.room_no ?? 'N/A'} />
+        <InfoRow label="Bed" value={raw?.beds?.bed_no ?? 'N/A'} />
+        <InfoRow label="Check-in" value={raw?.check_in_date ? formatDate(raw.check_in_date) : 'N/A'} />
       </SectionCard>
 
-      {/* Expected Vacate Date */}
+      {/* Rent Summary */}
       <SectionCard>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-            <Ionicons name="calendar-outline" size={16} color={C.darkTertiary} style={{ marginRight: 8 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, color: C.darkTertiary }}>Expected Vacate Date</Text>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: raw?.expected_vacate_date ? C.primary : C.dark, marginTop: 2 }}>
-                {raw?.expected_vacate_date ? formatDate(raw.expected_vacate_date) : 'Not set'}
-              </Text>
-            </View>
-          </View>
-          <AnimatedPressableCard onPress={handleOpenVacateModal} style={styles.vacateEditBtn}>
-            <Text style={styles.vacateEditBtnText}>{raw?.expected_vacate_date ? 'Edit' : 'Set'}</Text>
-          </AnimatedPressableCard>
-        </View>
+        <CardHeader icon="cash-outline" title="Rent Summary" />
+        <InfoRow label="Monthly Rent" value={formatAmount(raw?.beds?.bed_price)} valueColor={C.primary} />
+        <InfoRow label="Due Amount" value={formatAmount(raw?.rent_due_amount ?? 0)} valueColor={C.dangerDark} />
+        <InfoRow label="Advance Paid" value={raw?.is_advance_paid ? 'Yes' : 'No'} valueColor={raw?.is_advance_paid ? C.secondaryDark : C.warningDark} />
+        <InfoRow label="Partial Due" value={formatAmount(raw?.partial_due_amount ?? 0)} valueColor={C.warningDark} />
       </SectionCard>
+
+      {/* Expected Vacate Date — full-width prominent card */}
+      <View style={styles.vacateCard}>
+        <View style={styles.vacateIconWrap}>
+          <Ionicons name="calendar-outline" size={24} color={C.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.vacateLabel}>Expected Vacate Date</Text>
+          <Text style={[styles.vacateValue, { color: raw?.expected_vacate_date ? C.primary : C.dark }]}>
+            {raw?.expected_vacate_date ? formatDate(raw.expected_vacate_date) : 'Not set yet'}
+          </Text>
+          <Text style={styles.vacateHint}>
+            {raw?.expected_vacate_date ? 'Tap below to update your planned move-out date' : 'Let your PG owner know when you plan to leave'}
+          </Text>
+        </View>
+        <AnimatedPressableCard onPress={handleOpenVacateModal} style={styles.vacateBtn}>
+          <Ionicons name={raw?.expected_vacate_date ? 'create-outline' : 'add-circle-outline'} size={16} color="#fff" />
+          <Text style={styles.vacateBtnText}>{raw?.expected_vacate_date ? 'Update Date' : 'Set Date'}</Text>
+        </AnimatedPressableCard>
+      </View>
 
       {/* Ticket Stats */}
       {ticketStats?.overview && (
@@ -124,15 +143,15 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
               <Text style={styles.ticketStatLabel}>Total</Text>
             </View>
             <View style={styles.ticketStatItem}>
-              <Text style={[styles.ticketStatValue, { color: '#f59e0b' }]}>{ticketStats.overview.open}</Text>
+              <Text style={[styles.ticketStatValue, { color: C.warning }]}>{ticketStats.overview.open}</Text>
               <Text style={styles.ticketStatLabel}>Open</Text>
             </View>
             <View style={styles.ticketStatItem}>
-              <Text style={[styles.ticketStatValue, { color: '#3b82f6' }]}>{ticketStats.overview.inProgress}</Text>
+              <Text style={[styles.ticketStatValue, { color: C.primary }]}>{ticketStats.overview.inProgress}</Text>
               <Text style={styles.ticketStatLabel}>In Progress</Text>
             </View>
             <View style={styles.ticketStatItem}>
-              <Text style={[styles.ticketStatValue, { color: '#10b981' }]}>{ticketStats.overview.resolved}</Text>
+              <Text style={[styles.ticketStatValue, { color: C.secondary }]}>{ticketStats.overview.resolved}</Text>
               <Text style={styles.ticketStatLabel}>Resolved</Text>
             </View>
           </View>
@@ -150,8 +169,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
         onClose={() => setVacateDateModalVisible(false)}
         onSubmit={handleSaveVacateDate}
       >
-        <View style={{ marginBottom: 10, padding: 10, backgroundColor: Theme.colors.background.blueLight, borderRadius: 10, borderWidth: 1, borderColor: Theme.colors.border }}>
-          <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
+        <View style={{ marginBottom: 10, padding: 10, backgroundColor: C.background.blueLight, borderRadius: 10, borderWidth: 1, borderColor: C.border }}>
+          <Text style={{ fontSize: 12, color: C.text.secondary, lineHeight: 16 }}>
             Select the date you plan to leave. This is different from the actual checkout date — it's for planning purposes only.
           </Text>
         </View>
@@ -166,7 +185,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
             onPress={() => setNewVacateDate('')}
             style={{ marginTop: 12, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', alignItems: 'center' }}
           >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Clear Date</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: C.dangerDark }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Clear Date</Text>
           </AnimatedPressableCard>
         )}
       </SlideBottomModal>
@@ -178,25 +197,30 @@ const styles = StyleSheet.create({
   heroCard: { borderRadius: 16, padding: 20, marginBottom: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0' },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroDivider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 14 },
-  heroAmountLabel: { fontSize: 12, color: '#64748b', marginBottom: 3 },
-  heroAmount: { fontSize: 28, fontWeight: '800', color: '#1e293b' },
+  heroAmountLabel: { fontSize: 12, color: C.darkTertiary, marginBottom: 3 },
+  heroAmount: { fontSize: 28, fontWeight: '800', color: C.dark },
   heroBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, gap: 5 },
   badgePaid: { backgroundColor: '#d1fae5' },
   badgePending: { backgroundColor: '#fef3c7' },
   badgeOverdue: { backgroundColor: '#fee2e2' },
   heroBadgeText: { fontSize: 12, fontWeight: '600' },
-  textPaid: { color: '#059669' },
-  textPending: { color: '#d97706' },
-  textOverdue: { color: '#dc2626' },
-  heroUnpaidText: { fontSize: 12, fontWeight: '600', color: '#dc2626' },
+  textPaid: { color: C.secondaryDark },
+  textPending: { color: C.warningDark },
+  textOverdue: { color: C.dangerDark },
+  heroUnpaidText: { fontSize: 12, fontWeight: '600', color: C.danger },
   heroLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: C.background.blueLight },
   heroLinkText: { fontSize: 13, fontWeight: '700', color: C.primary },
 
   ticketStatsRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 4 },
   ticketStatItem: { alignItems: 'center' },
-  ticketStatValue: { fontSize: 20, fontWeight: '800', color: '#1e293b' },
-  ticketStatLabel: { fontSize: 11, color: '#64748b', marginTop: 2 },
+  ticketStatValue: { fontSize: 20, fontWeight: '800', color: C.dark },
+  ticketStatLabel: { fontSize: 11, color: C.darkTertiary, marginTop: 2 },
 
-  vacateEditBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: C.background.blueLight },
-  vacateEditBtnText: { fontSize: 11, fontWeight: '700', color: C.primary },
+  vacateCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0' },
+  vacateIconWrap: { width: 48, height: 48, borderRadius: 14, backgroundColor: C.background.blueLight, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  vacateLabel: { fontSize: 12, color: C.darkTertiary, fontWeight: '600', letterSpacing: 0.3 },
+  vacateValue: { fontSize: 20, fontWeight: '800', color: C.dark, marginTop: 4 },
+  vacateHint: { fontSize: 12, color: C.darkTertiary, marginTop: 6, lineHeight: 16 },
+  vacateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14, paddingVertical: 14, borderRadius: 12, backgroundColor: C.primary },
+  vacateBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

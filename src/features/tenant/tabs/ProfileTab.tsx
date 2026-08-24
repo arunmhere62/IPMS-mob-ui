@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   deleteText: { color: C.danger, fontSize: 16, fontWeight: '700' },
 
   modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-  modalCard: { width: '85%', maxWidth: 360, backgroundColor: C.canvas, borderRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
+  modalCard: { width: '88%', maxWidth: 400, backgroundColor: C.canvas, borderRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
   modalCardInner: { padding: 24 },
   modalTitle: { fontSize: 20, fontWeight: '800', color: C.dark, marginBottom: 12 },
   modalText: { fontSize: 14, color: C.darkSecondary, marginBottom: 8, lineHeight: 20 },

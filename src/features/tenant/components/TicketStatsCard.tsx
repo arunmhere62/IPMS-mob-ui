@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Theme from '@/theme';
 import { Card } from '@/components/Card';
@@ -131,7 +131,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
             {unreadTickets.tickets.slice(0, 5).map((ticket) => (
-              <View key={ticket.s_no} style={{ marginRight: 12, width: 200 }}>
+              <View key={ticket.s_no} style={{ marginRight: 12, width: Dimensions.get('window').width * 0.7 }}>
                 <TicketItem ticket={ticket} />
               </View>
             ))}

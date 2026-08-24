@@ -61,10 +61,6 @@ jest.mock('@/features/owner/api/pgLocationsApi', () => ({
   useGetPGLocationDetailsQuery: jest.fn(() => ({ data: null })),
 }));
 
-jest.mock('@/context/OnboardingTourContext', () => ({
-  useOnboardingTour: jest.fn(() => ({ tourStep: null, endTour: jest.fn() })),
-}));
-
 jest.mock('@/hooks/usePermissions', () => ({
   usePermissions: jest.fn(() => ({
     can: jest.fn(() => true),

@@ -59,7 +59,6 @@ import type {
   RefundPayment as PaymentsRefundPayment,
 } from '@/features/owner/api/paymentsApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
-import { useOnboardingTour } from '@/context/OnboardingTourContext';
 import AdvancePaymentForm from './AdvancePaymentForm';
 import { useGetAllBedsQuery, useGetAllRoomsQuery } from '@/features/owner/api/roomsApi';
 import type { Bed, GetBedsParams, GetRoomsParams, Room } from '@/features/owner/api/roomsApi';
@@ -656,11 +655,9 @@ const TenantDetailsContent: React.FC<{
   };
 
   const dispatch = useDispatch();
-  const { tourStep, endTour } = useOnboardingTour();
 
   const handleAddRentPayment = () => {
     if (!canCreateRent) return;
-    if (tourStep === 'tap_add_rent') endTour();
     setRentPaymentFormVisible(true);
   };
 
@@ -1399,7 +1396,6 @@ const TenantDetailsContent: React.FC<{
           canAddPayment={canCreateRent && isTenantActive}
           canAddAdvance={canCreateAdvance && isTenantActive}
           canAddRefund={canCreateRefund && isTenantActive}
-          showRentTourHint={tourStep === 'tap_add_rent'}
         />
 
         {/* Pending Payment Alert */}

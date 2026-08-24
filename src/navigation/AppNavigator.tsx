@@ -20,6 +20,7 @@ import { usePermissionsPolling } from '@/hooks/usePermissionsPolling';
 import { useAppSettingsPolling } from '@/hooks/useAppSettingsPolling';
 import { navigationRef } from './navigationRef';
 import { AuthRedirectHandler, MainTabs } from './components';
+import { ENV } from '@/config/environment';
 
 // ==================== AUTH SCREENS ====================
 import { RoleSelectionScreen } from '@/features/auth/screens/RoleSelectionScreen';
@@ -34,7 +35,10 @@ import { LegalDocumentsScreen } from '@/features/owner/screens/legal/LegalDocume
 import { LegalWebViewScreen } from '@/features/owner/screens/legal/LegalWebViewScreen';
 
 // Only register in-app signup routes on non-iOS platforms.
-const showInAppSignup = Platform.OS !== 'ios';
+// Exception: when APP_ENV is local or development, allow in-app signup on iOS
+// too (useful for testing). Production iOS still redirects to the website
+// per App Store Guideline 3.1.1.
+const showInAppSignup = Platform.OS !== 'ios' || ENV.IS_LOCAL || ENV.IS_DEVELOPMENT;
 
 // ==================== TENANT SCREENS ====================
 import { TenantLoginScreen } from '@/features/tenant/TenantLoginScreen';
@@ -109,7 +113,6 @@ const stackScreenOptions = {
 export const AppNavigator = () => {
   const { isAuthenticated, lastUserRole: adminLastRole } = useSelector((state: RootState) => state.auth);
   const { isAuthenticated: isTenantAuthenticated, lastUserRole: tenantLastRole } = useSelector((state: RootState) => state.tenantAuth);
-  const isOnboardingComplete = useSelector((state: RootState) => (state as any).rbac?.isOnboardingComplete ?? null);
   const dispatch = useDispatch();
 
   // Determine which login screen to show based on last user role
@@ -133,19 +136,6 @@ export const AppNavigator = () => {
       dispatch(clearPermissions());
     }
   }, [isAuthenticated, dispatch]);
-
-  // Onboarding: user lands on Dashboard. DashboardScreen auto-starts the tour
-  // (arrow on Quick Setup) when isOnboardingComplete is false.
-  // After QuickSetup completes, it navigates back to Dashboard with the rooms tour.
-  useEffect(() => {
-    if (!isAuthenticated || isTenantAuthenticated) return;
-    if (isOnboardingComplete === null) return;
-
-    const currentRoute = navigationRef.current?.getCurrentRoute()?.name;
-    if (isOnboardingComplete === true && currentRoute === 'QuickSetup') {
-      navigationRef.current?.navigate('MainTabs', { screen: 'Dashboard' });
-    }
-  }, [isAuthenticated, isTenantAuthenticated, isOnboardingComplete]);
 
   // Determine which screens to show based on auth state
   const isUnauthenticated = !isAuthenticated && !isTenantAuthenticated;

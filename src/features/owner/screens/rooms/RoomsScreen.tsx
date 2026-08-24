@@ -10,6 +10,7 @@ import {
   Easing,
   useWindowDimensions,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
 import { RootState } from "../../store";
@@ -31,8 +32,8 @@ import { showErrorAlert, showSuccessAlert } from "../../../../utils/errorHandler
 import { CONTENT_COLOR } from "@/constant";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
-import { Ionicons } from "@expo/vector-icons";
-import { useOnboardingTour } from "@/context/OnboardingTourContext";
+import { useOnboardingState, OnboardingStep } from "@/features/onboarding";
+
 
 interface RoomsScreenProps {
   navigation: any;
@@ -43,6 +44,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     (state: RootState) => state.pgLocations
   );
   const { can } = usePermissions();
+  const { step: onboardingStep } = useOnboardingState();
 
   const canCreateRoom = can(Permission.CREATE_ROOM);
   const canEditRoom = can(Permission.EDIT_ROOM);
@@ -78,22 +80,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
   const [deleteRoomMutation] = useDeleteRoomMutation();
 
-  const { tourStep, advanceTour } = useOnboardingTour();
-
-  const roomPulse = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (tourStep === 'tap_room_for_tenant') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(roomPulse, { toValue: 1.08, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-          Animated.timing(roomPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        ])
-      ).start();
-    } else {
-      roomPulse.setValue(1);
-    }
-  }, [tourStep, roomPulse]);
-
   // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<number | null>(null);
@@ -101,6 +87,24 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   // Scroll position tracking
   const flatListRef = useRef<any>(null);
   const scrollPositionRef = useRef(0);
+
+  // Onboarding: pulse animation for first room hint
+  const roomPulse = useRef(new Animated.Value(1)).current;
+  const showRoomHint = onboardingStep === OnboardingStep.ROOMS;
+  useEffect(() => {
+    if (!showRoomHint) {
+      roomPulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(roomPulse, { toValue: 1.08, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(roomPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [showRoomHint, roomPulse]);
 
   useEffect(() => {
     setRooms(((roomsResponse as any)?.data || []) as Room[]);
@@ -178,7 +182,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   };
 
   const groupedRooms = useMemo(() => {
-    let list = rooms.filter((r) => {
+    const list = rooms.filter((r) => {
       if (!appliedSearch) return true;
       const q = appliedSearch.toLowerCase();
       return r.room_no?.toLowerCase().includes(q);
@@ -274,19 +278,18 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     const { min, max } = getRoomPrice(item);
     const isFull = available === 0;
     const isAvailable = available === total;
-    const showTourHint = tourStep === 'tap_room_for_tenant' && index === 0;
     const roomNo = item.room_no?.startsWith('RM-') ? item.room_no : item.room_no?.startsWith('RM') ? `RM-${item.room_no.slice(2)}` : `RM-${item.room_no}`;
     const cardBg = isAvailable ? '#ECFDF5' : isFull ? '#FEF2F2' : '#FFFBEB';
     const borderColor = isAvailable ? '#A7F3D0' : isFull ? '#FECACA' : '#FDE68A';
+    const isFirstRoomHint = showRoomHint && index === 0;
 
     return (
       <AnimatedPressableCard
         onPress={() => {
-          if (showTourHint) advanceTour();
           navigation.navigate("RoomDetails", { roomId: item.s_no });
         }}
       >
-        {showTourHint && (
+        {isFirstRoomHint && (
           <View style={{ alignItems: 'center', marginBottom: 4 }}>
             <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="finger-print" size={11} color="#fff" />
@@ -295,68 +298,70 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
             <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
           </View>
         )}
-        <Animated.View style={{ transform: [{ scale: showTourHint ? roomPulse : 1 }] }}>
-          <Card style={{
-            padding: 10,
-            margin: 0,
-            alignItems: 'flex-start',
-            backgroundColor: cardBg,
-            borderWidth: 1,
-            borderColor: borderColor,
-          }}>
+        <Animated.View style={{ transform: [{ scale: isFirstRoomHint ? roomPulse : 1 }] }}>
+        <Card style={{
+          padding: 10,
+          margin: 0,
+          alignItems: 'flex-start',
+          backgroundColor: cardBg,
+          borderWidth: 1,
+          borderColor: borderColor,
+        }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "800",
+              color: Theme.colors.text.primary,
+              marginBottom: 2,
+            }}
+            numberOfLines={1}
+          >
+            {roomNo}
+          </Text>
+
+          <Text style={{ fontSize: 10, color: Theme.colors.text.secondary, marginBottom: 6 }}>
+            {total} beds
+          </Text>
+
+          <View
+            style={{
+              backgroundColor: isAvailable ? '#10B981' : isFull ? '#EF4444' : '#F59E0B',
+              borderRadius: 6,
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+              marginBottom: 6,
+            }}
+          >
             <Text
               style={{
-                fontSize: 13,
-                fontWeight: "800",
-                color: Theme.colors.text.primary,
-                marginBottom: 2,
-              }}
-              numberOfLines={1}
-            >
-              {roomNo}
-            </Text>
-
-            <Text style={{ fontSize: 10, color: Theme.colors.text.secondary, marginBottom: 6 }}>
-              {total} beds
-            </Text>
-
-            <View
-              style={{
-                backgroundColor: isAvailable ? '#10B981' : isFull ? '#EF4444' : '#F59E0B',
-                borderRadius: 6,
-                paddingHorizontal: 6,
-                paddingVertical: 2,
-                marginBottom: 6,
+                fontSize: 9,
+                fontWeight: '800',
+                color: '#fff',
+                letterSpacing: 0.3,
               }}
             >
-              <Text
-                style={{
-                  fontSize: 9,
-                  fontWeight: '800',
-                  color: '#fff',
-                  letterSpacing: 0.3,
-                }}
-              >
-                {isAvailable ? 'AVAILABLE' : isFull ? 'NOT AVAILABLE' : `${available} LEFT`}
-              </Text>
-            </View>
-
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: '700',
-                color: Theme.colors.primary,
-              }}
-            >
-              {min === max ? formatPrice(min) : `${formatPrice(min)} - ${formatPrice(max)}`}
+              {isAvailable ? 'AVAILABLE' : isFull ? 'NOT AVAILABLE' : `${available} LEFT`}
             </Text>
-          </Card>
+          </View>
+
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: Theme.colors.primary,
+            }}
+          >
+            {min === max ? formatPrice(min) : `${formatPrice(min)} - ${formatPrice(max)}`}
+          </Text>
+        </Card>
         </Animated.View>
       </AnimatedPressableCard>
     );
   };
 
-  const renderSection = ({ item }: { item: { title: string; data: Room[] } }) => (
+  const renderSection = ({ item, startIndex = 0, onIndexAdvance }: { item: { title: string; data: Room[] }; startIndex?: number; onIndexAdvance?: (count: number) => void }) => {
+    if (onIndexAdvance) onIndexAdvance(item.data.length);
+    return (
     <View style={{ marginBottom: 16 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 10, marginTop: 8 }}>
         <Text style={{ flex: 1, fontSize: 14, fontWeight: '800', color: Theme.colors.text.primary }}>
@@ -379,14 +384,15 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           >
             {item.data.map((room, idx) => (
               <View key={room.s_no} style={{ width: chipWidth }}>
-                {renderRoomChip({ item: room, index: idx })}
+                {renderRoomChip({ item: room, index: startIndex + idx })}
               </View>
             ))}
           </View>
         );
       })()}
     </View>
-  );
+    );
+  };
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
@@ -507,11 +513,14 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
             }}
             scrollEventThrottle={16}
           >
-            {groupedRooms.map((section) => (
-              <View key={section.title}>
-                {renderSection({ item: section })}
-              </View>
-            ))}
+            {(() => {
+              let globalIndex = 0;
+              return groupedRooms.map((section) => (
+                <View key={section.title}>
+                  {renderSection({ item: section, startIndex: globalIndex, onIndexAdvance: (count: number) => { globalIndex += count; } })}
+                </View>
+              ));
+            })()}
           </ScrollView>
         )}
       </View>

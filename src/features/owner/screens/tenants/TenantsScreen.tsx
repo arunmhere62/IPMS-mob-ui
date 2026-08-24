@@ -6,8 +6,6 @@ import {
   RefreshControl,
   TextInput,
   ActivityIndicator,
-  Animated,
-  Easing,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
@@ -23,7 +21,6 @@ import { useBottomNavScrollHandler } from "../../../../components/BottomNavVisib
 import { TenantsFilterModal } from "./TenantsFilterModal";
 import { Tenant, useLazyGetTenantsQuery } from "../../api";
 import { RootState } from "../../store";
-import { useOnboardingTour } from "../../../../context/OnboardingTourContext";
 import { TenantCard } from "./TenantCard";
 
 interface TenantsScreenProps {
@@ -341,22 +338,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
     });
   };
 
-  const { tourStep, advanceTour } = useOnboardingTour();
-
-  const tenantPulse = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (tourStep === 'tap_tenant') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(tenantPulse, { toValue: 1.15, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-          Animated.timing(tenantPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        ])
-      ).start();
-    } else {
-      tenantPulse.setValue(1);
-    }
-  }, [tourStep]);
-
   const getFilterCount = () => {
     let count = 0;
     if (statusFilter !== "ALL") count++;
@@ -372,9 +353,6 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
       tenant={item}
       index={index}
       onPress={(id) => navigation.navigate("TenantDetails", { tenantId: id })}
-      tourStep={tourStep}
-      advanceTour={advanceTour}
-      tenantPulse={tenantPulse}
     />
   );
 
