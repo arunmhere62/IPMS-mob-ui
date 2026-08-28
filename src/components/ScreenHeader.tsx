@@ -21,6 +21,8 @@ interface ScreenHeaderProps {
   syncMobileHeaderBg?: boolean;
   /** Custom color for notification bar (status bar) - overrides syncMobileHeaderBg */
   notificationBarColor?: string;
+  /** Optional element rendered on the right side of the title row */
+  rightAction?: React.ReactNode;
 }
 
 export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ 
@@ -34,7 +36,8 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   textColor = Theme.colors.text.inverse,
   statusBarStyle = 'auto',
   syncMobileHeaderBg = false,
-  notificationBarColor
+  notificationBarColor,
+  rightAction
 }) => {
   const layout = useContext(ScreenLayoutContext);
   const insets = useSafeAreaInsets();
@@ -143,6 +146,9 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
               </Text>
             )}
           </View>
+
+          {/* Right Action */}
+          {rightAction}
         </View>
       </View>
       {showPGSelector && <PGLocationSelector />}

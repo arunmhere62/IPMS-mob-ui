@@ -1,80 +1,114 @@
-import React from 'react'
-import { View, Text } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-import { ScreenLayout } from '../../../../components/ScreenLayout'
-import { ScreenHeader } from '../../../../components/ScreenHeader'
-import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard'
-import { Theme } from '../../../../theme'
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { ScreenLayout } from '../../../../components/ScreenLayout';
+import { ScreenHeader } from '../../../../components/ScreenHeader';
+import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
+import { Theme } from '../../../../theme';
+import { RentPaymentsScreen } from './RentPaymentsScreen';
+import { AdvancePaymentsScreen } from './AdvancePaymentsScreen';
+import { RefundPaymentsScreen } from './RefundPaymentsScreen';
 
 interface PaymentsScreenProps {
-  navigation: any
+  navigation: any;
 }
+
+const TABS = [
+  { key: 'rent', label: 'Rent', icon: 'card-outline' as const },
+  { key: 'advance', label: 'Advance', icon: 'arrow-up-circle-outline' as const },
+  { key: 'refund', label: 'Refund', icon: 'return-down-back-outline' as const },
+];
 
 export const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ navigation }) => {
-  const items = [
-    {
-      title: 'Rent Payments',
-      subtitle: 'Track monthly rent payments and statuses',
-      icon: 'card',
-      screen: 'RentPayments' },
-    {
-      title: 'Advance Payments',
-      subtitle: 'Manage advances paid by tenants',
-      icon: 'arrow-up',
-      screen: 'AdvancePayments' },
-    {
-      title: 'Refund Payments',
-      subtitle: 'Manage refunds and settlement entries',
-      icon: 'arrow-down',
-      screen: 'RefundPayments' },
-  ]
+  const [activeTab, setActiveTab] = useState('rent');
 
   return (
-    <ScreenLayout backgroundColor={Theme.colors.background.primary}>
-      <ScreenHeader showBackButton onBackPress={() => navigation.goBack()} title='Payments' />
+    <ScreenLayout backgroundColor={Theme.colors.background.blue}>
+      <ScreenHeader
+        showBackButton
+        onBackPress={() => navigation.goBack()}
+        title="Payments"
+        subtitle="Rent, Advance & Refunds"
+        syncMobileHeaderBg
+      />
 
-      <View style={{ flex: 1, padding: 16, gap: 12 }}>
-        {items.map((it) => (
-          <AnimatedPressableCard
-            key={it.screen}
-            onPress={() => navigation.navigate(it.screen)}
-            style={{
-              borderWidth: 1,
-              borderColor: Theme.colors.border,
-              backgroundColor: '#fff',
-              borderRadius: 16,
-              padding: 16,
-              flexDirection: 'row',
-              alignItems: 'center',
-              borderLeftWidth: 4,
-              borderLeftColor: Theme.colors.primary }}
-          >
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                backgroundColor: Theme.withOpacity(Theme.colors.primary, 0.1),
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12 }}
-            >
-              <Ionicons name={it.icon as any} size={20} color={Theme.colors.primary} />
-            </View>
+      {/* Compact tab bar */}
+      <View style={styles.tabBar}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}
+        >
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <AnimatedPressableCard
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={[
+                  styles.tab,
+                  isActive && styles.tabActive,
+                ]}
+              >
+                <Ionicons
+                  name={tab.icon}
+                  size={14}
+                  color={isActive ? '#fff' : Theme.colors.text.secondary}
+                />
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    { color: isActive ? '#fff' : Theme.colors.text.secondary },
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </AnimatedPressableCard>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: Theme.colors.text.primary }}>
-                {it.title}
-              </Text>
-              <Text style={{ marginTop: 4, fontSize: 12, color: Theme.colors.text.secondary }}>
-                {it.subtitle}
-              </Text>
-            </View>
-
-            <Ionicons name='chevron-forward' size={18} color={Theme.colors.text.tertiary} />
-          </AnimatedPressableCard>
-        ))}
+      {/* Tab content */}
+      <View style={{ flex: 1 }}>
+        {activeTab === 'rent' && (
+          <RentPaymentsScreen navigation={navigation} embedded />
+        )}
+        {activeTab === 'advance' && (
+          <AdvancePaymentsScreen navigation={navigation} embedded />
+        )}
+        {activeTab === 'refund' && (
+          <RefundPaymentsScreen navigation={navigation} embedded />
+        )}
       </View>
     </ScreenLayout>
-  )
-}
+  );
+};
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: Theme.colors.background.secondary,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
+    paddingVertical: 8,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: Theme.colors.background.primary,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+  tabActive: {
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
+  },
+  tabLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+});

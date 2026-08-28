@@ -18,7 +18,6 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { FloatingActionButton } from '@/components/FloatingActionButton';
 
 interface TicketsScreenProps {
   navigation: any;
@@ -218,6 +217,23 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
         subtitle={`${pagination?.total || 0} total`}
         showPGSelector={false}
         showBackButton={true}
+        rightAction={
+          <AnimatedPressableCard
+            onPress={() => navigation.navigate('CreateTicket')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: Theme.withOpacity('#000000', 0.4),
+            }}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
+          </AnimatedPressableCard>
+        }
       />
 
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
@@ -325,10 +341,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
         />
       )}
 
-      {/* Floating Add Ticket Button */}
-      <FloatingActionButton
-        onPress={() => navigation.navigate('CreateTicket')}
-      />
+      {/* Floating Add Ticket Button removed - now in header */}
       </View>
     </ScreenLayout>
   );

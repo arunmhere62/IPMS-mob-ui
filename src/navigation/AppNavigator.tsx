@@ -52,6 +52,7 @@ import { TenantTicketDetailScreen } from '@/features/tenant/screens/tenant-ticke
 import { RentPaymentsScreen } from '@/features/owner/screens/payments/RentPaymentsScreen';
 import { AdvancePaymentsScreen } from '@/features/owner/screens/payments/AdvancePaymentsScreen';
 import { RefundPaymentsScreen } from '@/features/owner/screens/payments/RefundPaymentsScreen';
+import { PaymentsScreen } from '@/features/owner/screens/payments/PaymentsScreen';
 import { PGLocationsScreen } from '@/features/owner/screens/pg-locations/PGLocationsScreen';
 import { PGDetailsScreen } from '@/features/owner/screens/pg-locations/PGDetailsScreen';
 import { OrganizationsScreen } from '@/features/owner/screens/organizations/OrganizationsScreen';
@@ -179,6 +180,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="RentPayments" component={RentPaymentsScreen} />
             <Stack.Screen name="AdvancePayments" component={AdvancePaymentsScreen} />
             <Stack.Screen name="RefundPayments" component={RefundPaymentsScreen} />
+            <Stack.Screen name="Payments" component={PaymentsScreen} />
             <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen as unknown as React.ComponentType<unknown>} />
             <Stack.Screen name="LegalWebView" component={LegalWebViewScreen} />
             <Stack.Screen name="PGLocations" component={PGLocationsScreen} />

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { FloatingActionButton } from '@/components/FloatingActionButton';
 import {
   View,
   Text,
@@ -223,6 +222,25 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
         onBackPress={() => navigation.goBack()}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
+        rightAction={
+          canCreateEmployee ? (
+            <AnimatedPressableCard
+              onPress={() => navigation.navigate('AddEmployee')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor: Theme.withOpacity('#000000', 0.4),
+              }}
+            >
+              <Ionicons name="add" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
+            </AnimatedPressableCard>
+          ) : null
+        }
       />
 
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
@@ -325,15 +343,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
           scrollEventThrottle={16}
         />
 
-        {/* Add Button - only show if user has CREATE_EMPLOYEE permission */}
-        {canCreateEmployee && (
-          <FloatingActionButton
-            onPress={() => navigation.navigate('AddEmployee')}
-            size={56}
-            right={16}
-            bottomOffset={180}
-          />
-        )}
+        {/* Add Button removed - now in header */}
       </View>
     </ScreenLayout>
   );

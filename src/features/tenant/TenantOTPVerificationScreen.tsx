@@ -109,9 +109,10 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
         }
       });
 
-      // Initialize notification service to set up tap listeners
+      // Initialize notification service for tenant (sets up listeners, does NOT call owner register-token endpoint)
+      // Token registration is handled above via registerPushToken (tenant API)
       if (actualData?.tenant?.tenant_id) {
-        void notificationService.initialize(actualData.tenant.tenant_id);
+        void notificationService.initializeForTenant(actualData.tenant.tenant_id);
       }
 
       // Navigate to Tenant Dashboard

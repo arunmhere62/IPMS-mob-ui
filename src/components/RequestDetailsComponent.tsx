@@ -39,8 +39,9 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
   }>({
     request: true,
     response: true,
-    outgoingHeaders: false,
-    incomingHeaders: false,
+    // Auto-expand headers in dev mode for easier debugging
+    outgoingHeaders: __DEV__,
+    incomingHeaders: __DEV__,
     curl: false,
   });
 
@@ -107,6 +108,28 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
     }
 
     return curl;
+  };
+
+  // Extract auth-relevant headers for quick copy (useful for curl testing)
+  const AUTH_HEADER_KEYS = [
+    'authorization', 'x-user-id', 'x-organization-id',
+    'x-pg-location-id', 'x-tenant-id', 'content-type',
+  ];
+
+  const generateAuthHeaders = () => {
+    if (!outgoingHeaders || typeof outgoingHeaders !== 'object') return '';
+    const entries = Object.entries(outgoingHeaders as Record<string, string>);
+    const authEntries = entries.filter(([k]) =>
+      AUTH_HEADER_KEYS.some(ak => k.toLowerCase() === ak.toLowerCase())
+    );
+    return authEntries.map(([k, v]) => `-H "${k}: ${v}"`).join(' \\\n  ');
+  };
+
+  const hasAuthHeaders = () => {
+    if (!outgoingHeaders || typeof outgoingHeaders !== 'object') return false;
+    return Object.keys(outgoingHeaders as Record<string, string>).some(k =>
+      k.toLowerCase() === 'authorization' || k.toLowerCase() === 'x-user-id'
+    );
   };
 
   const copyToClipboard = (value: string, label: string) => {
@@ -239,6 +262,14 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
         >
           <Text style={styles.topActionText}>Copy CURL</Text>
         </AnimatedPressableCard>
+        {hasAuthHeaders() && (
+          <AnimatedPressableCard
+            onPress={() => copyToClipboard(generateAuthHeaders(), 'Auth Headers')}
+            style={[styles.topActionButton, styles.buttonAuth]}
+          >
+            <Text style={styles.topActionText}>Copy Auth</Text>
+          </AnimatedPressableCard>
+        )}
         <AnimatedPressableCard
           onPress={() => shareText(generateCurl(), 'CURL')}
           style={[styles.topActionButton, styles.buttonNeutral]}
@@ -276,12 +307,13 @@ export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = (
       {/* Headers */}
       {outgoingHeaders &&
         renderCollapsibleSection(
-          '📤 Outgoing Headers',
+          `📤 Outgoing Headers (${Object.keys(outgoingHeaders as Record<string, unknown>).length})`,
           'outgoingHeaders',
           formatJson(outgoingHeaders),
           '#60A5FA',
           [
             { label: 'Copy', variant: 'primary', onPress: () => handleCopyData(outgoingHeaders, 'Outgoing Headers') },
+            ...(hasAuthHeaders() ? [{ label: 'Copy Auth', variant: 'primary' as const, onPress: () => copyToClipboard(generateAuthHeaders(), 'Auth Headers') }] : []),
             { label: 'Share', variant: 'neutral', onPress: () => shareText(formatJson(outgoingHeaders), 'Outgoing Headers') },
           ]
         )}
@@ -463,6 +495,10 @@ const styles = StyleSheet.create({
   buttonPrimary: {
     backgroundColor: Theme.colors.primary,
     borderColor: Theme.colors.primary,
+  },
+  buttonAuth: {
+    backgroundColor: '#7C3AED',
+    borderColor: '#7C3AED',
   },
   buttonNeutral: {
     backgroundColor: Theme.colors.background.tertiary,

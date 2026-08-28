@@ -27,7 +27,6 @@ import { ActionButtons } from "../../../../components/ActionButtons";
 import { SlideBottomModal } from "../../../../components/SlideBottomModal";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
 import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
-import { FloatingActionButton } from "../../../../components/FloatingActionButton";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
 import { RootState } from "../../store";
@@ -445,6 +444,25 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
         showBackButton
         onBackPress={() => navigation.goBack()}
         syncMobileHeaderBg={true}
+        rightAction={
+          <AnimatedPressableCard
+            onPress={handleAddExpense}
+            disabled={!canCreateExpense}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: Theme.withOpacity('#000000', 0.4),
+              opacity: canCreateExpense ? 1 : 0.5,
+            }}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
+          </AnimatedPressableCard>
+        }
       />
 
       <View style={{ flex: 1 }}>
@@ -737,11 +755,7 @@ export const ExpenseScreen: React.FC<ExpenseScreenProps> = ({ navigation }) => {
           scrollEventThrottle={16}
         />
 
-        {/* Floating Add Button */}
-        <FloatingActionButton
-          onPress={handleAddExpense}
-          disabled={!canCreateExpense}
-        />
+        {/* Floating Add Button removed - now in header */}
       </View>
 
       {/* Add Modal */}

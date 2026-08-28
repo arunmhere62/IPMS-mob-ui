@@ -23,9 +23,10 @@ const ADVANCE_PAYMENTS_PAGE_LIMIT = 50;
 
 interface AdvancePaymentScreenProps {
   navigation: any;
+  embedded?: boolean;
 }
 
-export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navigation }) => {
+export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navigation, embedded }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
 
   const [triggerGetAdvancePayments, advancePaymentsQuery] = useLazyGetAdvancePaymentsQuery();
@@ -480,14 +481,16 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
-      <ScreenHeader
-        title="Advance Payments"
-        subtitle={`${pagination?.total || 0} payments`}
-        backgroundColor={Theme.colors.background.blue}
-        syncMobileHeaderBg={true}
-        showBackButton={true}
-        onBackPress={handleBack}
-      />
+      {!embedded && (
+        <ScreenHeader
+          title="Advance Payments"
+          subtitle={`${pagination?.total || 0} payments`}
+          backgroundColor={Theme.colors.background.blue}
+          syncMobileHeaderBg={true}
+          showBackButton={true}
+          onBackPress={handleBack}
+        />
+      )}
 
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>
         <ErrorBanner

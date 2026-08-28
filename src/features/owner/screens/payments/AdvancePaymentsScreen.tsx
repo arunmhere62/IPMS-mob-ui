@@ -3,8 +3,9 @@ import { AdvancePaymentScreen } from './AdvancePaymentScreen';
 
 interface AdvancePaymentsScreenProps {
   navigation: any;
+  embedded?: boolean;
 }
 
-export const AdvancePaymentsScreen: React.FC<AdvancePaymentsScreenProps> = ({ navigation }) => {
-  return <AdvancePaymentScreen navigation={navigation} />;
+export const AdvancePaymentsScreen: React.FC<AdvancePaymentsScreenProps> = ({ navigation, embedded }) => {
+  return <AdvancePaymentScreen navigation={navigation} embedded={embedded} />;
 };

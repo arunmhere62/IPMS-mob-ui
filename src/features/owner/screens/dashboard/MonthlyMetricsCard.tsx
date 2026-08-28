@@ -5,7 +5,6 @@ import { Theme } from "../../../../theme";
 import { Card } from "../../../../components/Card";
 import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
 import type { DashboardMonthlyMetricsResponse } from "../../api/dashboardApi";
-import { SlideBottomModal } from "../../../../components/SlideBottomModal";
 
 interface MonthlyMetricsCardProps {
   monthlyMetrics?: DashboardMonthlyMetricsResponse["data"];
@@ -28,7 +27,6 @@ const getLast6Months = () => {
     });
 
     const firstDay = new Date(year, month, 1).toISOString().split("T")[0];
-    // Important: backend expects an exclusive end date (first day of next month)
     const nextMonthFirstDay = new Date(year, month + 1, 1)
       .toISOString()
       .split("T")[0];
@@ -52,7 +50,6 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(getLast6Months()[0]);
-  const [showInfo, setShowInfo] = useState(false);
 
   const months = getLast6Months();
 
@@ -62,12 +59,11 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
     onDateRangeChange(month.monthStart, month.monthEnd);
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     if (showDropdown) {
       const timeout = setTimeout(() => {
         setShowDropdown(false);
-      }, 5000); // Auto-close after 5 seconds
+      }, 5000);
       return () => clearTimeout(timeout);
     }
   }, [showDropdown]);
@@ -75,26 +71,11 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
   const mm = monthlyMetrics?.monthly_metrics;
   const hasData = !!mm;
   const cashReceived = mm?.cash_received ?? 0;
-  const rentEarned = mm?.rent_earned ?? 0;
   const refundsPaid = mm?.refunds_paid ?? 0;
   const advancePaid = mm?.advance_paid ?? 0;
   const expensesPaid = mm?.expenses_paid ?? 0;
   const displayCurrency = (value: number) =>
     hasData ? formatCurrency(value) : isFetching ? "—" : formatCurrency(0);
-  const computedRate =
-    hasData && rentEarned > 0 ? cashReceived / rentEarned : 0;
-  const collectionRateText = hasData
-    ? `${(computedRate * 100).toFixed(1)}%`
-    : isFetching
-    ? "—"
-    : "0%";
-  const collectionRateColor = hasData
-    ? computedRate >= 0.9
-      ? "#10B981"
-      : computedRate >= 0.7
-      ? "#F59E0B"
-      : "#EF4444"
-    : Theme.colors.text.secondary;
 
   const tileBg = Theme.colors.light;
   const tileBorder = Theme.colors.border;
@@ -102,7 +83,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
   const tilePad = 12;
 
   return (
-    <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+    <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
       <Card
         style={{
           padding: 14,
@@ -111,6 +92,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
           backgroundColor: Theme.colors.background.secondary,
         }}
       >
+        {/* Header */}
         <View
           style={{
             flexDirection: "row",
@@ -153,7 +135,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                   fontWeight: "900",
                 }}
               >
-                Monthly Metrics
+                PG Overview
               </Text>
               <Text
                 style={{
@@ -169,27 +151,7 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
             </View>
           </View>
 
-          <AnimatedPressableCard
-            onPress={() => setShowInfo(true)}
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 17,
-              backgroundColor: Theme.colors.light,
-              borderWidth: 1,
-              borderColor: Theme.colors.border,
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: 10,
-            }}
-          >
-            <Ionicons
-              name="help-circle-outline"
-              size={18}
-              color={Theme.colors.text.secondary}
-            />
-          </AnimatedPressableCard>
-
+          {/* Month picker */}
           <View style={{ position: "relative" }}>
             <AnimatedPressableCard
               onPress={() => setShowDropdown(!showDropdown)}
@@ -282,12 +244,12 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                             borderRadius: 14,
                             backgroundColor: Theme.withOpacity(
                               Theme.colors.primary,
-                              active ? 0.14 : 0.08
+                              active ? 0.14 : 0.08,
                             ),
                             borderWidth: 1,
                             borderColor: Theme.withOpacity(
                               Theme.colors.primary,
-                              active ? 0.2 : 0.12
+                              active ? 0.2 : 0.12,
                             ),
                             alignItems: "center",
                             justifyContent: "center",
@@ -341,8 +303,10 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
           </View>
         </View>
 
-        <View style={{ marginTop: 12 }}>
+        {/* Metrics grid — 2x2 */}
+        <View style={{ marginTop: 14 }}>
           <View style={{ flexDirection: "row", gap: 10 }}>
+            {/* Collected */}
             <View
               style={{
                 flex: 1,
@@ -353,53 +317,30 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                 borderColor: tileBorder,
               }}
             >
-              <View
+              <Text
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  color: Theme.colors.text.secondary,
+                  fontSize: 11,
+                  fontWeight: "800",
                 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit minimumFontScale={0.85}
               >
-                <Text
-                  style={{
-                    color: Theme.colors.text.secondary,
-                    fontSize: 11,
-                    fontWeight: "900",
-                  }}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit minimumFontScale={0.85}
-                >
-                  Collected
-                </Text>
-                <View
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 13,
-                    backgroundColor: Theme.withOpacity("#10B981", 0.1),
-                    borderWidth: 1,
-                    borderColor: Theme.withOpacity("#10B981", 0.16),
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Ionicons name="cash" size={14} color={"#10B981"} />
-                </View>
-              </View>
+                Collected
+              </Text>
               <Text
                 style={{
                   color: Theme.colors.text.primary,
                   fontSize: 16,
                   fontWeight: "900",
-                  marginTop: 10,
+                  marginTop: 6,
                 }}
               >
                 {displayCurrency(cashReceived)}
               </Text>
             </View>
-          </View>
 
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+            {/* Expenses */}
             <View
               style={{
                 flex: 1,
@@ -410,161 +351,23 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
                 borderColor: tileBorder,
               }}
             >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text
-                  style={{
-                    color: Theme.colors.text.secondary,
-                    fontSize: 11,
-                    fontWeight: "900",
-                  }}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit minimumFontScale={0.85}
-                >
-                  Refunds Paid
-                </Text>
-                <View
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 13,
-                    backgroundColor: Theme.withOpacity("#EF4444", 0.1),
-                    borderWidth: 1,
-                    borderColor: Theme.withOpacity("#EF4444", 0.16),
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Ionicons
-                    name="return-down-back"
-                    size={14}
-                    color={"#EF4444"}
-                  />
-                </View>
-              </View>
               <Text
                 style={{
-                  color: Theme.colors.text.primary,
-                  fontSize: 16,
-                  fontWeight: "900",
-                  marginTop: 10,
+                  color: Theme.colors.text.secondary,
+                  fontSize: 11,
+                  fontWeight: "800",
                 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit minimumFontScale={0.85}
               >
-                {displayCurrency(refundsPaid)}
+                Expenses
               </Text>
-            </View>
-
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: tileBg,
-                borderRadius: tileRadius,
-                padding: tilePad,
-                borderWidth: 1,
-                borderColor: tileBorder,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text
-                  style={{
-                    color: Theme.colors.text.secondary,
-                    fontSize: 11,
-                    fontWeight: "900",
-                  }}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit minimumFontScale={0.85}
-                >
-                  Advance Paid
-                </Text>
-                <View
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 13,
-                    backgroundColor: Theme.withOpacity("#8B5CF6", 0.1),
-                    borderWidth: 1,
-                    borderColor: Theme.withOpacity("#8B5CF6", 0.16),
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Ionicons name="wallet" size={14} color={"#8B5CF6"} />
-                </View>
-              </View>
               <Text
                 style={{
                   color: Theme.colors.text.primary,
                   fontSize: 16,
                   fontWeight: "900",
-                  marginTop: 10,
-                }}
-              >
-                {displayCurrency(advancePaid)}
-              </Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: tileBg,
-                borderRadius: tileRadius,
-                padding: tilePad,
-                borderWidth: 1,
-                borderColor: tileBorder,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text
-                  style={{
-                    color: Theme.colors.text.secondary,
-                    fontSize: 11,
-                    fontWeight: "900",
-                  }}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit minimumFontScale={0.85}
-                >
-                  Expenses
-                </Text>
-                <View
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 13,
-                    backgroundColor: Theme.withOpacity("#F97316", 0.1),
-                    borderWidth: 1,
-                    borderColor: Theme.withOpacity("#F97316", 0.16),
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Ionicons name="card" size={14} color={"#F97316"} />
-                </View>
-              </View>
-              <Text
-                style={{
-                  color: Theme.colors.text.primary,
-                  fontSize: 16,
-                  fontWeight: "900",
-                  marginTop: 10,
+                  marginTop: 6,
                 }}
               >
                 {displayCurrency(expensesPaid)}
@@ -572,216 +375,77 @@ export const MonthlyMetricsCard: React.FC<MonthlyMetricsCardProps> = ({
             </View>
           </View>
 
-          <View
-            style={{
-              marginTop: 10,
-              backgroundColor: Theme.withOpacity(collectionRateColor, 0.08),
-              borderRadius: tileRadius,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: Theme.withOpacity(collectionRateColor, 0.16),
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+            {/* Refunds Paid */}
             <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-            >
-              <View
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 14,
-                  backgroundColor: Theme.withOpacity(collectionRateColor, 0.12),
-                  borderWidth: 1,
-                  borderColor: Theme.withOpacity(collectionRateColor, 0.18),
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Ionicons
-                  name="pie-chart"
-                  size={14}
-                  color={collectionRateColor}
-                />
-              </View>
-              <View>
-                <Text
-                  style={{
-                    color: Theme.colors.text.primary,
-                    fontSize: 12,
-                    fontWeight: "900",
-                  }}
-                >
-                  Collected %
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.text.secondary,
-                    fontSize: 10,
-                    marginTop: 2,
-                  }}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit minimumFontScale={0.85}
-                >
-                  Collected ÷ Rent due
-                </Text>
-              </View>
-            </View>
-
-            <Text
               style={{
-                color: collectionRateColor,
-                fontSize: 16,
-                fontWeight: "900",
+                flex: 1,
+                backgroundColor: tileBg,
+                borderRadius: tileRadius,
+                padding: tilePad,
+                borderWidth: 1,
+                borderColor: tileBorder,
               }}
             >
-              {collectionRateText}
-            </Text>
+              <Text
+                style={{
+                  color: Theme.colors.text.secondary,
+                  fontSize: 11,
+                  fontWeight: "800",
+                }}
+                numberOfLines={1}
+                adjustsFontSizeToFit minimumFontScale={0.85}
+              >
+                Refunds
+              </Text>
+              <Text
+                style={{
+                  color: Theme.colors.text.primary,
+                  fontSize: 16,
+                  fontWeight: "900",
+                  marginTop: 6,
+                }}
+              >
+                {displayCurrency(refundsPaid)}
+              </Text>
+            </View>
+
+            {/* Advance Paid */}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: tileBg,
+                borderRadius: tileRadius,
+                padding: tilePad,
+                borderWidth: 1,
+                borderColor: tileBorder,
+              }}
+            >
+              <Text
+                style={{
+                  color: Theme.colors.text.secondary,
+                  fontSize: 11,
+                  fontWeight: "800",
+                }}
+                numberOfLines={1}
+                adjustsFontSizeToFit minimumFontScale={0.85}
+              >
+                Advance
+              </Text>
+              <Text
+                style={{
+                  color: Theme.colors.text.primary,
+                  fontSize: 16,
+                  fontWeight: "900",
+                  marginTop: 6,
+                }}
+              >
+                {displayCurrency(advancePaid)}
+              </Text>
+            </View>
           </View>
         </View>
       </Card>
-
-      <SlideBottomModal
-        visible={showInfo}
-        onClose={() => setShowInfo(false)}
-        title="Monthly metrics explained"
-        subtitle={
-          selectedMonth?.label ? `For ${selectedMonth.label}` : undefined
-        }
-        submitLabel="Got it"
-        onSubmit={() => setShowInfo(false)}
-      >
-        <View style={{ gap: 14 }}>
-          <View>
-            <Text
-              style={{
-                color: Theme.colors.text.primary,
-                fontSize: 13,
-                fontWeight: "900",
-              }}
-            >
-              Collected
-            </Text>
-            <Text
-              style={{
-                color: Theme.colors.text.secondary,
-                fontSize: 12,
-                marginTop: 4,
-              }}
-            >
-              Money that actually came in during this month.
-            </Text>
-          </View>
-
-          <View>
-            <Text
-              style={{
-                color: Theme.colors.text.primary,
-                fontSize: 13,
-                fontWeight: "900",
-              }}
-            >
-              Rent Due
-            </Text>
-            <Text
-              style={{
-                color: Theme.colors.text.secondary,
-                fontSize: 12,
-                marginTop: 4,
-              }}
-            >
-              Rent that belongs to this month based on the tenant’s stay (even
-              if paid later).
-            </Text>
-          </View>
-
-          <View>
-            <Text
-              style={{
-                color: Theme.colors.text.primary,
-                fontSize: 13,
-                fontWeight: "900",
-              }}
-            >
-              Refunds Paid
-            </Text>
-            <Text
-              style={{
-                color: Theme.colors.text.secondary,
-                fontSize: 12,
-                marginTop: 4,
-              }}
-            >
-              Total refunds paid to tenants inside this month (cash-out).
-            </Text>
-          </View>
-
-          <View>
-            <Text
-              style={{
-                color: Theme.colors.text.primary,
-                fontSize: 13,
-                fontWeight: "900",
-              }}
-            >
-              Advance Paid
-            </Text>
-            <Text
-              style={{
-                color: Theme.colors.text.secondary,
-                fontSize: 12,
-                marginTop: 4,
-              }}
-            >
-              Total advance payments received during this month.
-            </Text>
-          </View>
-
-          <View>
-            <Text
-              style={{
-                color: Theme.colors.text.primary,
-                fontSize: 13,
-                fontWeight: "900",
-              }}
-            >
-              Expenses
-            </Text>
-            <Text
-              style={{
-                color: Theme.colors.text.secondary,
-                fontSize: 12,
-                marginTop: 4,
-              }}
-            >
-              Total expenses recorded for this month.
-            </Text>
-          </View>
-
-          <View>
-            <Text
-              style={{
-                color: Theme.colors.text.primary,
-                fontSize: 13,
-                fontWeight: "900",
-              }}
-            >
-              Collected %
-            </Text>
-            <Text
-              style={{
-                color: Theme.colors.text.secondary,
-                fontSize: 12,
-                marginTop: 4,
-              }}
-            >
-              Shows how much of the month’s rent due was collected.
-            </Text>
-          </View>
-        </View>
-      </SlideBottomModal>
     </View>
   );
 };

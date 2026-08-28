@@ -85,6 +85,7 @@ jest.mock('../components', () => ({
   PendingPaymentAlert: () => null,
   AccommodationDetails: () => null,
   PersonalInformation: () => null,
+  TenantDocuments: () => null,
   ImageViewerModal: () => null,
   ReceiptViewModal: () => null,
 }));
@@ -93,7 +94,9 @@ jest.mock('../RentPaymentForm', () => 'RentPaymentForm');
 jest.mock('../AddRefundPaymentForm', () => 'AddRefundPaymentForm');
 jest.mock('../CheckoutTenantForm', () => 'CheckoutTenantForm');
 jest.mock('../AdvancePaymentForm', () => 'AdvancePaymentForm');
-jest.mock('../../../../components/EditRefundPaymentForm', () => 'EditRefundPaymentForm');
+jest.mock('../../../../../components/EditRefundPaymentForm', () => ({
+  EditRefundPaymentForm: () => null,
+}));
 
 describe('TenantDetailsScreen', () => {
   const mockStore = configureStore({

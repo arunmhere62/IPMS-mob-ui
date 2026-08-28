@@ -193,25 +193,25 @@ export const TenantCard: React.FC<TenantCardProps> = ({
           }}
         >
           {isRentPaid && (
-            <Badge color="#10B981" text="✅ Rent Paid" fontSize={badgeFontSize} />
+            <Badge color="#10B981" text="Rent Paid" fontSize={badgeFontSize} />
           )}
           {isAdvancePaid && (
-            <Badge color="#10B981" text="✅ Advance Paid" fontSize={badgeFontSize} />
+            <Badge color="#10B981" text="Advance Paid" fontSize={badgeFontSize} />
           )}
           {hasRefundPayments && (
-            <Badge color={Theme.colors.warning} text="💰 Refund Paid" fontSize={badgeFontSize} />
+            <Badge color="#10B981" text="Refund Paid" fontSize={badgeFontSize} />
           )}
           {isRentPartial && (
-            <Badge color="#F97316" text="⏳ Partial Payment" fontSize={badgeFontSize} />
+            <Badge color="#F97316" text="Partial Payment" fontSize={badgeFontSize} />
           )}
           {hasPendingRent && (
-            <Badge color="#F59E0B" text="📅 Pending Rent" fontSize={badgeFontSize} />
+            <Badge color="#F59E0B" text="Pending Rent" fontSize={badgeFontSize} />
           )}
           {hasOutstandingAmount && (
             <Badge color="#EF4444" text={`₹${rentDueAmount} Due`} fontSize={badgeFontSize} />
           )}
           {!isAdvancePaid && (
-            <Badge color="#F59E0B" text="💰 No Advance" fontSize={badgeFontSize} />
+            <Badge color="#F59E0B" text="No Advance" fontSize={badgeFontSize} />
           )}
         </View>
 

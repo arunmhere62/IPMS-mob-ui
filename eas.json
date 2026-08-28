@@ -13,8 +13,7 @@
       "node": "20.19.4",
       "env": {
         "NODE_ENV": "development",
-        "APP_ENV": "local",
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
+        "APP_ENV": "local"
       },
       "channel": "local"
     },
@@ -27,8 +26,7 @@
       "node": "20.19.4",
       "env": {
         "NODE_ENV": "development",
-        "APP_ENV": "development",
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
+        "APP_ENV": "development"
       },
       "channel": "development"
     },
@@ -80,8 +78,7 @@
       "node": "20.19.4",
       "env": {
         "NODE_ENV": "production",
-        "APP_ENV": "production",
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
+        "APP_ENV": "production"
       }
     },
     "minimal-apk": {

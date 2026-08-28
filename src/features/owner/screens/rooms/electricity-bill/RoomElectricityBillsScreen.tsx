@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { FloatingActionButton } from '@/components/FloatingActionButton';
 import {
   View,
   Text,
@@ -407,6 +406,23 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
         onBackPress={() => navigation.goBack()}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg
+        rightAction={
+          <AnimatedPressableCard
+            onPress={() => setCreateModalVisible(true)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: Theme.withOpacity('#000000', 0.4),
+            }}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
+          </AnimatedPressableCard>
+        }
       />
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.primary }}>
         <FlatList
@@ -419,10 +435,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
           ListFooterComponent={isFetching ? <ActivityIndicator style={{ margin: 20 }} /> : null}
         />
 
-        <FloatingActionButton
-          onPress={() => setCreateModalVisible(true)}
-          size={56}
-        />
+        {/* Floating Add Button removed - now in header */}
       </View>
 
       <CreateElectricityBillForm

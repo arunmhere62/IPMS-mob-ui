@@ -25,9 +25,10 @@ const PAYMENTS_PAGE_LIMIT = 50;
 
 interface RentPaymentsScreenProps {
   navigation: any;
+  embedded?: boolean;
 }
 
-export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigation }) => {
+export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigation, embedded }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const [updatePaymentStatus] = useUpdatePaymentStatusMutation();
   const [triggerGetPayments, paymentsQuery] = useLazyGetTenantPaymentsQuery();
@@ -504,13 +505,15 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
       backgroundColor={Theme.colors.background.blue}
       contentBackgroundColor={Theme.colors.background.secondary}
     >
-      <ScreenHeader
-        title="Rent Payments"
-        subtitle={`${pagination?.total || 0} payments`}
-        syncMobileHeaderBg={true}
-        showBackButton={true}
-        onBackPress={handleBack}
-      />
+      {!embedded && (
+        <ScreenHeader
+          title="Rent Payments"
+          subtitle={`${pagination?.total || 0} payments`}
+          syncMobileHeaderBg={true}
+          showBackButton={true}
+          onBackPress={handleBack}
+        />
+      )}
 
       <View style={{ flex: 1 }}>
         <ErrorBanner

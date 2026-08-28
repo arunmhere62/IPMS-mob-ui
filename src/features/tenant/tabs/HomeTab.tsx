@@ -7,7 +7,7 @@ import { TenantProfileData, TenantTicketStatsData } from '@/features/tenant/api/
 import { useUpdateExpectedVacateDateMutation } from '@/features/tenant/api/tenantPortalApi';
 import { SlideBottomModal } from '@/components/SlideBottomModal';
 import { DatePicker } from '@/components/DatePicker';
-import { SectionCard, CardHeader, InfoRow } from '../components';
+import { SectionCard, CardHeader } from '../components';
 import Theme from '@/theme';
 
 const C = Theme.colors;
@@ -50,13 +50,6 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
     }
   };
 
-  const pgName = raw?.pg_locations?.location_name || 'N/A';
-  const pgAddress = [
-    raw?.pg_locations?.address,
-    raw?.pg_locations?.city?.name,
-    raw?.pg_locations?.state?.name,
-  ].filter(Boolean).join(', ') || 'N/A';
-
   return (
     <>
       {/* Hero: Due amount + status */}
@@ -93,25 +86,6 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
           </AnimatedPressableCard>
         )}
       </View>
-
-      {/* PG & Room Details */}
-      <SectionCard>
-        <CardHeader icon="home-outline" title="PG & Room" />
-        <InfoRow label="PG Name" value={pgName} />
-        <InfoRow label="Address" value={pgAddress} />
-        <InfoRow label="Room" value={raw?.rooms?.room_no ?? 'N/A'} />
-        <InfoRow label="Bed" value={raw?.beds?.bed_no ?? 'N/A'} />
-        <InfoRow label="Check-in" value={raw?.check_in_date ? formatDate(raw.check_in_date) : 'N/A'} />
-      </SectionCard>
-
-      {/* Rent Summary */}
-      <SectionCard>
-        <CardHeader icon="cash-outline" title="Rent Summary" />
-        <InfoRow label="Monthly Rent" value={formatAmount(raw?.beds?.bed_price)} valueColor={C.primary} />
-        <InfoRow label="Due Amount" value={formatAmount(raw?.rent_due_amount ?? 0)} valueColor={C.dangerDark} />
-        <InfoRow label="Advance Paid" value={raw?.is_advance_paid ? 'Yes' : 'No'} valueColor={raw?.is_advance_paid ? C.secondaryDark : C.warningDark} />
-        <InfoRow label="Partial Due" value={formatAmount(raw?.partial_due_amount ?? 0)} valueColor={C.warningDark} />
-      </SectionCard>
 
       {/* Expected Vacate Date — full-width prominent card */}
       <View style={styles.vacateCard}>

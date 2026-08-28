@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FloatingActionButton } from '@/components/FloatingActionButton';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { 
   View, 
   Text, 
@@ -355,12 +355,29 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}  contentBackgroundColor ={ CONTENT_COLOR}>
-      <ScreenHeader 
-        title="Visitors" 
+      <ScreenHeader
+        title="Visitors"
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
         subtitle={`${pagination?.total || 0} total`}
         showPGSelector={false}
+        rightAction={
+          <AnimatedPressableCard
+            onPress={handleAddVisitor}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: Theme.withOpacity('#000000', 0.4),
+            }}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
+          </AnimatedPressableCard>
+        }
       />
 
       {/* Scroll Position Indicator */}
@@ -477,10 +494,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
         />
       )}
 
-      {/* Floating Add Visitor Button */}
-      <FloatingActionButton
-        onPress={handleAddVisitor}
-      />
+      {/* Floating Add Visitor Button removed - now in header */}
 
       {/* Visitor Form Modal */}
       <VisitorForm

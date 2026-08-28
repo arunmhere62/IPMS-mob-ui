@@ -103,7 +103,6 @@ export const DashboardHeaderSkeleton: React.FC = () => {
         padding: 16,
         borderWidth: 1,
         borderColor: '#E5E7EB',
-        marginTop: 20,
       }}
     >
       <View
@@ -248,7 +247,7 @@ export const DashboardAttentionSkeleton: React.FC = () => {
 
 export const DashboardMonthlyMetricsSkeleton: React.FC = () => {
   return (
-    <View style={{ marginTop: 20 }}>
+    <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
       <SkeletonLoader width="50%" height={18} style={{ marginBottom: 6 }} />
       <SkeletonLoader width="40%" height={14} style={{ marginBottom: 12 }} />
 

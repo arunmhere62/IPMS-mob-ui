@@ -23,9 +23,10 @@ const REFUNDS_PAGE_LIMIT = 50;
 
 interface RefundPaymentScreenProps {
   navigation: any;
+  embedded?: boolean;
 }
 
-export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ navigation }) => {
+export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ navigation, embedded }) => {
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
 
   const [triggerGetRefundPayments, refundPaymentsQuery] = useLazyGetRefundPaymentsQuery();
@@ -425,13 +426,15 @@ export const RefundPaymentScreen: React.FC<RefundPaymentScreenProps> = ({ naviga
 
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue}>
-      <ScreenHeader
-        title="Refund Payments"
-        subtitle={`${pagination?.total || 0} refunds`}
-        backgroundColor={Theme.colors.background.blue}
-         showBackButton={true}
-        onBackPress={handleBack}
-      />
+      {!embedded && (
+        <ScreenHeader
+          title="Refund Payments"
+          subtitle={`${pagination?.total || 0} refunds`}
+          backgroundColor={Theme.colors.background.blue}
+           showBackButton={true}
+          onBackPress={handleBack}
+        />
+      )}
 
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.secondary }}>
         {visibleItemsCount > 0 && (

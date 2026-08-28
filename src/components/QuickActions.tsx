@@ -162,7 +162,7 @@ export const QuickActions = memo<QuickActionsProps>(
     const bottomRow = menuItems.slice(3);
 
     return (
-      <View style={{ marginBottom: 12, paddingHorizontal: 16, marginTop: 10 }}>
+      <View style={{ marginBottom: 12, paddingHorizontal: 16, marginTop: 24 }}>
         <View
           style={{
             flexDirection: "row",

@@ -22,7 +22,6 @@ import {
 import { Card } from "../../../../components/Card";
 import { SkeletonLoader } from "../../../../components/SkeletonLoader";
 import { AnimatedPressableCard } from "../../../../components/AnimatedPressableCard";
-import { FloatingActionButton } from "../../../../components/FloatingActionButton";
 import { Theme } from "../../../../theme";
 import { ScreenHeader } from "../../../../components/ScreenHeader";
 import { ScreenLayout } from "../../../../components/ScreenLayout";
@@ -59,6 +58,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const [pagination, setPagination] = useState<any>(null);
 
   const [appliedSearch, setAppliedSearch] = useState("");
+  const [sharingFilter, setSharingFilter] = useState<string>("All");
 
   const roomsQueryArgs = useMemo(() => {
     if (!selectedPGLocationId) return undefined as any;
@@ -206,7 +206,7 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
       return a.localeCompare(b);
     });
 
-    return entries.map(([title, data]) => ({
+    let result = entries.map(([title, data]) => ({
       title,
       data: [...data].sort((a, b) => {
         const numA = parseInt(a.room_no?.replace(/\D/g, "") || "0", 10);
@@ -214,7 +214,30 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         return numA - numB;
       }),
     }));
-  }, [rooms, appliedSearch]);
+
+    // Apply sharing filter
+    if (sharingFilter !== "All") {
+      result = result.filter((g) => g.title === sharingFilter);
+    }
+
+    return result;
+  }, [rooms, appliedSearch, sharingFilter]);
+
+  // Available filter tabs derived from data
+  const filterTabs = useMemo(() => {
+    const types = new Set<string>();
+    rooms.forEach((r) => types.add(getSharingType(r)));
+    const order = ["Single Sharing", "Double Sharing", "Triple Sharing"];
+    const sorted = Array.from(types).sort((a, b) => {
+      const idxA = order.indexOf(a);
+      const idxB = order.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+    return ["All", ...sorted];
+  }, [rooms]);
 
   const handleOpenEditModal = (roomId: number) => {
     if (!canEditRoom) {
@@ -403,6 +426,32 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
         subtitle={`${pagination?.total || 0} total`}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
+        rightAction={
+          <AnimatedPressableCard
+            onPress={() => {
+              if (!canCreateRoom) {
+                Alert.alert('Access Denied', "You don't have permission to create rooms");
+                return;
+              }
+              setEditingRoomId(null);
+              setEditModalVisible(true);
+            }}
+            disabled={!canCreateRoom}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: Theme.withOpacity('#000000', 0.4),
+              opacity: canCreateRoom ? 1 : 0.5,
+            }}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
+          </AnimatedPressableCard>
+        }
       />
       <View
         style={{
@@ -445,6 +494,46 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           </AnimatedPressableCard>
         </View>
       </View>
+
+      {/* Sharing filter tabs */}
+      {filterTabs.length > 1 && (
+        <View style={{ height: 44, backgroundColor: Theme.colors.background.secondary, borderBottomWidth: 1, borderBottomColor: Theme.colors.border }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 8, alignItems: 'center' }}
+            style={{ flex: 1 }}
+          >
+            {filterTabs.map((tab) => {
+              const isActive = sharingFilter === tab;
+              return (
+                <AnimatedPressableCard
+                  key={tab}
+                  onPress={() => setSharingFilter(tab)}
+                  style={{
+                    paddingVertical: 6,
+                    paddingHorizontal: 14,
+                    borderRadius: 16,
+                    backgroundColor: isActive ? Theme.colors.primary : Theme.colors.background.primary,
+                    borderWidth: 1,
+                    borderColor: isActive ? Theme.colors.primary : Theme.colors.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '700',
+                      color: isActive ? '#fff' : Theme.colors.text.secondary,
+                    }}
+                  >
+                    {tab === 'All' ? 'All' : tab.replace(' Sharing', '')}
+                  </Text>
+                </AnimatedPressableCard>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>
         {loading && !refreshing ? (
@@ -524,19 +613,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           </ScrollView>
         )}
       </View>
-
-      {/* FAB: Add Room */}
-      <FloatingActionButton
-        onPress={() => {
-          if (!canCreateRoom) {
-            Alert.alert('Access Denied', "You don't have permission to create rooms");
-            return;
-          }
-          setEditingRoomId(null);
-          setEditModalVisible(true);
-        }}
-        disabled={!canCreateRoom}
-      />
 
       {/* Room Form Modal */}
       <RoomFormModal

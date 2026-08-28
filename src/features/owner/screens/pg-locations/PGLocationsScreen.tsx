@@ -20,7 +20,6 @@ import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { Card } from '../../../../components/Card';
 import { AnimatedButton } from '../../../../components/AnimatedButton';
 import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
-import { FloatingActionButton } from '../../../../components/FloatingActionButton';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
 import { SearchableDropdown } from '../../../../components/SearchableDropdown';
@@ -463,11 +462,30 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
   return (
     <>
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
-        <ScreenHeader 
-          title="PG Locations" 
+        <ScreenHeader
+          title="PG Locations"
           subtitle="Manage your PG locations"
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
+          rightAction={
+            <AnimatedPressableCard
+              onPress={openCreateModal}
+              disabled={!canCreate}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor: Theme.withOpacity('#000000', 0.4),
+                opacity: canCreate ? 1 : 0.5,
+              }}
+            >
+              <Ionicons name="add" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
+            </AnimatedPressableCard>
+          }
         />
         <View style={{ flex: 1, backgroundColor: Theme.colors.light }}>
           <ScrollView
@@ -514,11 +532,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
             )}
           </ScrollView>
 
-          {/* Floating Add Button */}
-          <FloatingActionButton
-            onPress={openCreateModal}
-            disabled={!canCreate}
-          />
+          {/* Floating Add Button removed - now in header */}
         </View>
       </ScreenLayout>
 

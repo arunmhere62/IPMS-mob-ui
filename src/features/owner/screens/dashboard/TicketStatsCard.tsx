@@ -25,7 +25,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
 
   if (isLoading) {
     return (
-      <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+      <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
         <Card
           style={{
             padding: 14,
@@ -135,7 +135,7 @@ export const TicketStatsCard: React.FC<TicketStatsCardProps> = ({
   );
 
   return (
-    <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+    <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <View>
           <Text style={{ color: Theme.colors.text.primary, fontSize: 16, fontWeight: '800' }}>

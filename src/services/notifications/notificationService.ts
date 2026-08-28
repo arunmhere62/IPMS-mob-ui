@@ -224,6 +224,98 @@ class NotificationService {
   }
 
   /**
+   * Initialize notification service for tenant mode
+   *
+   * Unlike initialize(), this does NOT register the token with the owner
+   * endpoint (/notifications/register-token which requires x-user-id).
+   * Token registration for tenants is handled separately via the tenant API
+   * (POST /tenant/tickets/notifications/token which uses x-tenant-id).
+   *
+   * This method only handles:
+   * - Notification handler setup
+   * - Permission requests
+   * - Android notification channels
+   * - Notification listeners (tap/cold-start handling)
+   */
+  async initializeForTenant(tenantId: number, force = false) {
+    try {
+      console.log('[PUSH] 🚀 initializeForTenant called for tenantId:', tenantId, 'force:', force);
+
+      // Guard: Prevent multiple simultaneous initializations
+      if (this.isInitializing) {
+        console.log('[PUSH] ⚠️ Initialization already in progress, skipping');
+        return false;
+      }
+
+      // Guard: Prevent re-initialization for same tenant (unless forced)
+      if (!force && this.isInitialized && this.lastInitializedUserId === tenantId) {
+        console.log('[PUSH] ℹ️ Already initialized for tenant', tenantId, '- skipping');
+        return true;
+      }
+
+      // Cleanup existing listeners
+      console.log('[PUSH] 🧹 Cleaning up existing listeners before tenant initialization...');
+      this.cleanup();
+
+      this.isInitializing = true;
+
+      // Check if running on physical device
+      if (!Device.isDevice) {
+        console.log('⚠️ Push notifications only work on physical devices');
+        this.isInitializing = false;
+        return false;
+      }
+
+      // Configure notification handler
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+        }),
+      });
+
+      // Request permissions
+      const hasPermission = await this.requestPermissions();
+      if (!hasPermission) {
+        console.log('❌ Notification permission denied (tenant)');
+        this.isInitializing = false;
+        return false;
+      }
+
+      // Setup Android notification channels
+      if (Platform.OS === 'android') {
+        console.log('[PUSH] setting up android channels (tenant)');
+        await this.setupAndroidChannels();
+      }
+
+      // Get Expo Push Token (store it for unregister later, but don't register with owner backend)
+      console.log('[PUSH] fetching expo push token (tenant)');
+      const token = await this.getExpoPushToken();
+      if (token) {
+        this.expoPushToken = token;
+        console.log('[PUSH] ✅ Token obtained for tenant (registration handled by tenant API)');
+      }
+
+      // Setup notification listeners (role-aware navigation)
+      this.setupNotificationListeners();
+
+      // Mark as initialized
+      this.isInitialized = true;
+      this.lastInitializedUserId = tenantId;
+      this.isInitializing = false;
+
+      console.log('✅ Tenant notification service initialized');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to initialize tenant notifications:', error);
+      this.isInitializing = false;
+      return false;
+    }
+  }
+
+  /**
    * Send a test notification via backend API
    * This method prevents notification loops by using rate limiting
    */

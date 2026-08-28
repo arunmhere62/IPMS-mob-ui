@@ -2,6 +2,7 @@ export { TenantHeader } from './TenantHeader';
 export { PendingPaymentAlert } from './PendingPaymentAlert';
 export { AccommodationDetails } from './AccommodationDetails';
 export { PersonalInformation } from './PersonalInformation';
+export { TenantDocuments } from './TenantDocuments';
 export { AddCurrentBillForm } from './CurrentBillForm';
 export { ImageViewerModal } from './ImageViewerModal';
 export { ReceiptViewModal } from './ReceiptViewModal';

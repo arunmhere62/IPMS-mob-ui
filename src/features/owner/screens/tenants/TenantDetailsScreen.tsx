@@ -37,6 +37,7 @@ import {
   PendingPaymentAlert,
   AccommodationDetails,
   PersonalInformation,
+  TenantDocuments,
   ImageViewerModal,
   ReceiptViewModal,
   ExpectedVacateDateForm,
@@ -454,6 +455,8 @@ const TenantDetailsContent: React.FC<{
     refundPayments: false,
     transferHistory: false,
   });
+
+  const [activeTab, setActiveTab] = useState<'details' | 'payments' | 'documents'>('payments');
 
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -1403,73 +1406,45 @@ const TenantDetailsContent: React.FC<{
           <PendingPaymentAlert pendingPayment={tenant.pending_payment} />
         )}
 
-        {/* Advance/Refund Summary */}
-        {((tenant.advance_payments?.length || 0) > 0 || (tenant.refund_payments?.length || 0) > 0) ? (
-          <Card
-            style={{
-              marginHorizontal: 16,
-              marginBottom: 12,
-              padding: 14,
-              backgroundColor: '#F59E0B20',
-              borderWidth: 0.5,
-              borderColor: '#F59E0B',
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#B45309', marginBottom: 8 }}>
-              💰 Advance & Refund Summary
-            </Text>
-            <View style={{ gap: 6 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: '#92400E' }}>Total Advance Paid:</Text>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }} numberOfLines={1}>
-                  ₹{(tenant.advance_payment_summary?.total_advance_paid || 
-                     tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: '#92400E' }}>Total Refund Given:</Text>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }} numberOfLines={1}>
-                  ₹{(tenant.refund_payment_summary?.total_refund_given || 
-                     tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </Text>
-              </View>
-              <View
+        {/* Tab Bar */}
+        <View style={{ flexDirection: 'row', marginHorizontal: 16, marginTop: 4, marginBottom: 12, gap: 8 }}>
+          {([
+            { key: 'payments', label: 'Payments', icon: 'card-outline' as const },
+            { key: 'details', label: 'Details', icon: 'person-outline' as const },
+            { key: 'documents', label: 'Documents', icon: 'document-text-outline' as const },
+          ]).map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <AnimatedPressableCard
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key as 'details' | 'payments' | 'documents')}
                 style={{
-                  height: 1,
-                  backgroundColor: '#F59E0B',
-                  marginVertical: 4,
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 5,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  backgroundColor: isActive ? Theme.colors.primary : Theme.colors.light,
+                  borderWidth: 1,
+                  borderColor: isActive ? Theme.colors.primary : Theme.colors.border,
                 }}
-              />
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#B45309' }}>Net Advance Remaining:</Text>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: '#B45309' }} numberOfLines={1}>
-                  ₹{(tenant.net_advance_remaining !== undefined ? tenant.net_advance_remaining : 
-                     (tenant.advance_payment_summary?.total_advance_paid || tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0) - 
-                     (tenant.refund_payment_summary?.total_refund_given || tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0)).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              >
+                <Ionicons name={tab.icon} size={14} color={isActive ? '#fff' : Theme.colors.text.secondary} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#fff' : Theme.colors.text.secondary }}>
+                  {tab.label}
                 </Text>
-              </View>
-            </View>
-          </Card>
-        ) : (
-          <Card
-            style={{
-              marginHorizontal: 16,
-              marginBottom: 12,
-              padding: 14,
-              backgroundColor: '#F59E0B20',
-              borderWidth: 0.5,
-              borderColor: '#F59E0B',
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#B45309', marginBottom: 4 }}>
-              💰 Advance & Refund
-            </Text>
-            <Text style={{ fontSize: 12, color: '#92400E' }}>
-              No advance or refund payments recorded
-            </Text>
-          </Card>
-        )}
+              </AnimatedPressableCard>
+            );
+          })}
+        </View>
 
+        {/* ===== PAYMENTS TAB ===== */}
+        {activeTab === 'payments' && (
+        <>
+
+        {/* Rent Status Summary */}
         {!tenant.pending_payment && derivedRentStatus.rentDue <= 0 && derivedRentStatus.partialDue <= 0 && derivedRentStatus.pendingDue <= 0 && (
           <>
             <Card
@@ -1548,6 +1523,73 @@ const TenantDetailsContent: React.FC<{
           </Card>
         )}
 
+        {/* Advance/Refund Summary */}
+        {((tenant.advance_payments?.length || 0) > 0 || (tenant.refund_payments?.length || 0) > 0) ? (
+          <Card
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 12,
+              padding: 14,
+              backgroundColor: '#F59E0B20',
+              borderWidth: 0.5,
+              borderColor: '#F59E0B',
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#B45309', marginBottom: 8 }}>
+              💰 Advance & Refund Summary
+            </Text>
+            <View style={{ gap: 6 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 12, color: '#92400E' }}>Total Advance Paid:</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }} numberOfLines={1}>
+                  ₹{(tenant.advance_payment_summary?.total_advance_paid ||
+                     tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 12, color: '#92400E' }}>Total Refund Given:</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }} numberOfLines={1}>
+                  ₹{(tenant.refund_payment_summary?.total_refund_given ||
+                     tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </Text>
+              </View>
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: '#F59E0B',
+                  marginVertical: 4,
+                }}
+              />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#B45309' }}>Net Advance Remaining:</Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#B45309' }} numberOfLines={1}>
+                  ₹{(tenant.net_advance_remaining !== undefined ? tenant.net_advance_remaining :
+                     (tenant.advance_payment_summary?.total_advance_paid || tenant.advance_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0) -
+                     (tenant.refund_payment_summary?.total_refund_given || tenant.refund_payments?.reduce((sum: number, p: any) => sum + (p.amount_paid || 0), 0) || 0)).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        ) : (
+          <Card
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 12,
+              padding: 14,
+              backgroundColor: '#F59E0B20',
+              borderWidth: 0.5,
+              borderColor: '#F59E0B',
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#B45309', marginBottom: 4 }}>
+              💰 Advance & Refund
+            </Text>
+            <Text style={{ fontSize: 12, color: '#92400E' }}>
+              No advance or refund payments recorded
+            </Text>
+          </Card>
+        )}
+
         {activeTransferDiffCycle && (
           <Card style={{ marginHorizontal: 16, marginBottom: 12, padding: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
@@ -1579,52 +1621,6 @@ const TenantDetailsContent: React.FC<{
             >
               <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Collect Transfer Difference</Text>
             </AnimatedPressableCard>
-          </Card>
-        )}
-
-
-
-
-
-        {/* Expected Vacate Date */}
-        {canEditTenant && (
-          <Card style={{ marginHorizontal: 16, marginBottom: 12, padding: 14 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <View style={{
-                  width: 34, height: 34, borderRadius: 10,
-                  backgroundColor: '#F3E8FF',
-                  alignItems: 'center', justifyContent: 'center', marginRight: 10,
-                }}>
-                  <Ionicons name="calendar-outline" size={18} color="#8B5CF6" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }}>
-                    Expected Vacate Date
-                  </Text>
-                  <Text style={{ fontSize: 12, color: tenant?.expected_vacate_date ? '#8B5CF6' : Theme.colors.text.secondary, marginTop: 2, fontWeight: tenant?.expected_vacate_date ? '700' : '400' }}>
-                    {tenant?.expected_vacate_date
-                      ? new Date(tenant.expected_vacate_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                      : 'Not set'}
-                  </Text>
-                </View>
-              </View>
-              <AnimatedPressableCard
-                onPress={() => {
-                  console.log('Set/Edit button pressed');
-                  handleOpenVacateModal();
-                }}
-                style={{
-                  paddingHorizontal: 12, paddingVertical: 6,
-                  borderRadius: 8, backgroundColor: '#F3E8FF',
-                  borderWidth: 1, borderColor: '#DDD6FE',
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#8B5CF6' }}>
-                  {tenant?.expected_vacate_date ? 'Edit' : 'Set'}
-                </Text>
-              </AnimatedPressableCard>
-            </View>
           </Card>
         )}
 
@@ -1813,6 +1809,13 @@ const TenantDetailsContent: React.FC<{
           </View>
         </AnimatedPressableCard>
 
+        </>
+        )}
+
+        {/* ===== DETAILS TAB ===== */}
+        {activeTab === 'details' && (
+        <>
+
         {transferHistory.length > 0 && (
           <View style={{ marginBottom: 12 }}>
             <AnimatedPressableCard
@@ -1957,8 +1960,57 @@ const TenantDetailsContent: React.FC<{
         />
 
                 {/* Personal Information */}
-        <PersonalInformation tenant={tenant} onOpenMedia={openImageViewer} />
+        <PersonalInformation tenant={tenant} />
 
+        </>
+        )}
+
+        {/* ===== DOCUMENTS TAB ===== */}
+        {activeTab === 'documents' && (
+          <TenantDocuments tenant={tenant} onOpenMedia={openImageViewer} />
+        )}
+
+        {/* Expected Vacate Date */}
+        {canEditTenant && (
+          <Card style={{ marginHorizontal: 16, marginBottom: 12, padding: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <View style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  backgroundColor: '#F3E8FF',
+                  alignItems: 'center', justifyContent: 'center', marginRight: 10,
+                }}>
+                  <Ionicons name="calendar-outline" size={18} color="#8B5CF6" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: Theme.colors.text.primary }}>
+                    Expected Vacate Date
+                  </Text>
+                  <Text style={{ fontSize: 12, color: tenant?.expected_vacate_date ? '#8B5CF6' : Theme.colors.text.secondary, marginTop: 2, fontWeight: tenant?.expected_vacate_date ? '700' : '400' }}>
+                    {tenant?.expected_vacate_date
+                      ? new Date(tenant.expected_vacate_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                      : 'Not set'}
+                  </Text>
+                </View>
+              </View>
+              <AnimatedPressableCard
+                onPress={() => {
+                  console.log('Set/Edit button pressed');
+                  handleOpenVacateModal();
+                }}
+                style={{
+                  paddingHorizontal: 12, paddingVertical: 6,
+                  borderRadius: 8, backgroundColor: '#F3E8FF',
+                  borderWidth: 1, borderColor: '#DDD6FE',
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#8B5CF6' }}>
+                  {tenant?.expected_vacate_date ? 'Edit' : 'Set'}
+                </Text>
+              </AnimatedPressableCard>
+            </View>
+          </Card>
+        )}
 
         {/* Checkout Actions - Only show if there's a checkout date */}
         {(() => {
