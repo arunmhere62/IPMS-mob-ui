@@ -139,7 +139,8 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           orderId,
           subscriptionId,
           plan: responsePlan,
-          pricing: responsePricing });
+          pricing: responsePricing,
+          isUpgrade: false });
       } else {
         showSuccessAlert('Subscription initiated successfully!');
       }
@@ -187,7 +188,8 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           orderId,
           subscriptionId,
           plan: responsePlan,
-          pricing: responsePricing });
+          pricing: responsePricing,
+          isUpgrade: true });
       } else {
         showSuccessAlert('Upgrade initiated successfully!');
       }

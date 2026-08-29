@@ -273,6 +273,29 @@ export interface SubscriptionInvoice {
 export type GetInvoicesResponse = { success: boolean; data: SubscriptionInvoice[] };
 export type GetInvoiceResponse = { success: boolean; data: SubscriptionInvoice };
 
+export type CouponValidationResponse = {
+  valid: boolean;
+  error_code?: string;
+  message?: string;
+  coupon?: {
+    s_no: number;
+    code: string;
+    description: string | null;
+    discount_type: 'PERCENTAGE' | 'FLAT_AMOUNT';
+    discount_value: number;
+    max_discount_amount: number | null;
+  };
+  pricing?: {
+    original_base_price: number;
+    discount_amount: number;
+    final_base_price: number;
+    cgst_amount: number;
+    sgst_amount: number;
+    total_price_including_gst: number;
+    currency: string;
+  };
+};
+
 export const subscriptionApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getPlans: build.query<GetPlansResponse, void>({
@@ -301,11 +324,11 @@ export const subscriptionApi = baseApi.injectEndpoints({
       providesTags: [{ type: 'SubscriptionHistory' as const, id: 'LIST' }],
     }),
 
-    subscribeToPlan: build.mutation<SubscribeToPlanResponse, { planId: number }>({
-      query: ({ planId }) => ({
+    subscribeToPlan: build.mutation<SubscribeToPlanResponse, { planId: number; couponCode?: string }>({
+      query: ({ planId, couponCode }) => ({
         url: '/subscription/subscribe',
         method: 'POST',
-        body: { plan_id: planId },
+        body: { plan_id: planId, ...(couponCode ? { coupon_code: couponCode } : {}) },
       }),
       transformResponse: (response: ApiEnvelope<SubscribeToPlanResponse> | any) => {
         const unwrapped = unwrapCentralData<any>(response);
@@ -319,11 +342,11 @@ export const subscriptionApi = baseApi.injectEndpoints({
       ],
     }),
 
-    upgradePlan: build.mutation<UpgradePlanResponse, { planId: number }>({
-      query: ({ planId }) => ({
+    upgradePlan: build.mutation<UpgradePlanResponse, { planId: number; couponCode?: string }>({
+      query: ({ planId, couponCode }) => ({
         url: '/subscription/upgrade',
         method: 'POST',
-        body: { plan_id: planId },
+        body: { plan_id: planId, ...(couponCode ? { coupon_code: couponCode } : {}) },
       }),
       transformResponse: (response: ApiEnvelope<UpgradePlanResponse> | any) => {
         const unwrapped = unwrapCentralData<any>(response);
@@ -438,6 +461,22 @@ export const subscriptionApi = baseApi.injectEndpoints({
       providesTags: (_res, _err, arg) => [{ type: 'SubscriptionInvoices' as const, id: arg.invoiceId }],
     }),
 
+    /**
+     * Validate a coupon code against a plan.
+     * Returns pricing breakdown with discount applied if valid.
+     */
+    validateCoupon: build.mutation<CouponValidationResponse, { code: string; planId: number }>({
+      query: ({ code, planId }) => ({
+        url: '/coupon/validate',
+        method: 'POST',
+        body: { code, plan_id: planId },
+      }),
+      transformResponse: (response: ApiEnvelope<CouponValidationResponse> | any) => {
+        const unwrapped = unwrapCentralData<any>(response);
+        return unwrapped;
+      },
+    }),
+
   }),
   overrideExisting: false,
 });
@@ -462,4 +501,5 @@ export const {
   useLazyGetInvoicesQuery,
   useGetInvoiceByIdQuery,
   useLazyGetInvoiceByIdQuery,
+  useValidateCouponMutation,
 } = subscriptionApi;
