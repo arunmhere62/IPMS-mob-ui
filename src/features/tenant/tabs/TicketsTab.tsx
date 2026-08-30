@@ -1,10 +1,11 @@
 import React from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from '../components';
 import Theme from '@/theme';
 import { TenantTicket } from '@/features/tenant/api/tenantTicketsApi';
+import { TicketsTabSkeleton } from '../components/TenantSkeletons';
 
 const C = Theme.colors;
 
@@ -41,7 +42,7 @@ export const TicketsTab: React.FC<TicketsTabProps> = ({ tickets, isLoading, navi
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color={C.primary} style={{ marginVertical: 24 }} />
+        <TicketsTabSkeleton />
       ) : tickets.length === 0 ? (
         <View style={{ alignItems: 'center', paddingTop: 40 }}>
           <EmptyState icon="ticket-outline" message="No tickets raised yet" />

@@ -68,6 +68,10 @@ const getDynamicBaseQuery = () => {
         const pgId = state.tenantAuth?.pg?.pg_id;
         if (pgId) {
           headers.set('x-pg-id', String(pgId));
+          // Also send x-pg-location-id so we can call shared rent-payments endpoints
+          // (e.g. /rent-payments/gaps/:tenant_id, /rent-payments/next-dates/:tenant_id)
+          // which require x-pg-location-id via HeadersValidationGuard.
+          headers.set('x-pg-location-id', String(pgId));
         }
 
         const orgId = tenant?.organization_id;
@@ -98,14 +102,14 @@ const refreshTenantToken = async (api: any): Promise<{ accessToken: string; refr
   networkLogger.addLog({
     id: logId,
     method: 'POST',
-    url: `${getApiBaseUrl()}/tenant-auth/refresh`,
+    url: `${getApiBaseUrl()}/tenant-auth/refresh-token`,
     headers: { 'content-type': 'application/json' },
     requestData: { body: { refreshToken: '***' } },
     timestamp: new Date(),
   });
   
   try {
-    const response = await fetch(`${getApiBaseUrl()}/tenant-auth/refresh`, {
+    const response = await fetch(`${getApiBaseUrl()}/tenant-auth/refresh-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,7 +123,9 @@ const refreshTenantToken = async (api: any): Promise<{ accessToken: string; refr
         error: 'Token refresh failed',
         duration: Date.now() - startedAt,
       });
-      throw new Error('Token refresh failed');
+      // Don't throw — return null so the caller can handle gracefully.
+      // This is expected when the user hasn't logged in yet (no valid refresh token).
+      return null;
     }
     
     const data = await response.json();
@@ -135,7 +141,9 @@ const refreshTenantToken = async (api: any): Promise<{ accessToken: string; refr
       refreshToken: data.data.refreshToken,
     };
   } catch (error) {
-    console.error('Tenant token refresh error:', error);
+    // This is expected when there's no valid session (e.g. app startup before login).
+    // Log as debug, not error, to avoid noise.
+    console.log('Tenant token refresh skipped:', error instanceof Error ? error.message : String(error));
     networkLogger.updateLog(logId, {
       error: String(error),
       duration: Date.now() - startedAt,
@@ -169,7 +177,7 @@ const baseQueryWithTenantRefresh: BaseQueryFn<string | FetchArgs, unknown, Fetch
   // Check if this is a refresh call
   const isTenantRefreshCall = (u?: string) => {
     const path = (u || '').split('?')[0];
-    return path === '/tenant-auth/refresh' || path.endsWith('/tenant-auth/refresh');
+    return path === '/tenant-auth/refresh-token' || path.endsWith('/tenant-auth/refresh-token');
   };
   
   // Log the request
@@ -257,5 +265,5 @@ export const tenantBaseApi = createApi({
   reducerPath: 'tenantBaseApi',
   baseQuery: baseQueryWithTenantRefresh,
   endpoints: () => ({}),
-  tagTypes: ['TenantProfile', 'TenantPayments', 'TenantDues', 'TenantTickets', 'TenantTicketDetail', 'S3Objects', 'S3Object'],
+  tagTypes: ['TenantProfile', 'TenantPayments', 'TenantDues', 'TenantTickets', 'TenantTicketDetail', 'S3Objects', 'S3Object', 'TenantPaymentConfig', 'TenantPaymentSubmissions'],
 });

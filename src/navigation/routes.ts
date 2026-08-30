@@ -49,6 +49,10 @@ export const OWNER_ROUTES = {
   ADVANCE_PAYMENTS: 'AdvancePayments',
   REFUND_PAYMENTS: 'RefundPayments',
 
+  // Manual Payment Verification
+  PAYMENT_CONFIG: 'PaymentConfig',
+  PAYMENT_VERIFICATION: 'PaymentVerification',
+
   // PG Locations
   PG_LOCATIONS: 'PGLocations',
   PG_DETAILS: 'PGDetails',
@@ -105,6 +109,7 @@ export const TENANT_ROUTES = {
   TICKETS: 'TenantTickets',
   CREATE_TICKET: 'TenantCreateTicket',
   TICKET_DETAIL: 'TenantTicketDetail',
+  SUBMIT_PAYMENT_PROOF: 'TenantSubmitPaymentProof',
 } as const;
 
 // ==================== ROUTE GROUPS ====================

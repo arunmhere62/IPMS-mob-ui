@@ -12,7 +12,7 @@ import { clearPermissions } from '../../store/slices/rbacSlice';
 import { baseApi } from '@/features/owner/api/baseApi';
 import { useLogoutMutation } from '@/features/auth/api/authApi';
 import { useDeleteAccountMutation } from '@/features/owner/api/userApi';
-import { persistor } from '../../store';
+
 import { Card } from '@/components/Card';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { Theme } from '@/theme';
@@ -182,12 +182,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
       dispatch(setSelectedPGLocation(null));
       dispatch(setTenantLastUserRole(null));
       dispatch(logout());
-
-      try {
-        await persistor.purge();
-      } catch (e) {
-        console.warn('⚠️ Failed to purge persisted store:', e);
-      }
+      // NOTE: Do NOT call persistor.purge() here — it wipes the entire
+      // persisted store including lastUserRole, which breaks the
+      // "remember last login type" feature. The logout() reducer already
+      // clears tokens/user while preserving lastUserRole='admin'.
 
       console.log('✅ User logged out successfully');
     } finally {
@@ -248,6 +246,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   // Settings options - conditionally show "Report Issue" for non-Super Admin users
   const settingsOptions = [
     { title: 'Profile', icon: '👤', onPress: () => navigation.navigate('UserProfile') },
+    { title: 'Payment Settings', icon: '💳', onPress: () => navigation.navigate('PaymentConfig') },
+    { title: 'Payment Verification', icon: '✅', onPress: () => navigation.navigate('PaymentVerification') },
     { title: 'Report Issue', icon: '🐛', onPress: () => navigation.navigate('Tickets'), },
     { title: 'Terms & Conditions', icon: '📄', onPress: openTermsAndConditions },
     { title: 'Privacy Policy', icon: '🔒', onPress: openPrivacyPolicy },

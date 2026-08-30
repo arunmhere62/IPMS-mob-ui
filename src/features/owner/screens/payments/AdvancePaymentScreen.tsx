@@ -13,6 +13,7 @@ import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { AdvancePayment, useLazyGetAdvancePaymentsQuery } from '../../api/paymentsApi';
 import { SlideBottomModal } from '../../../../components/SlideBottomModal';
+import { FloatingListCounter } from '@/components/FloatingListCounter';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -502,39 +503,10 @@ export const AdvancePaymentScreen: React.FC<AdvancePaymentScreenProps> = ({ navi
         />
         
         {visibleItemsCount > 0 && (
-          <View style={{
-            position: 'absolute',
-            bottom: 100,
-            right: 16,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 20,
-            zIndex: 1000,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 4,
-            elevation: 5,
-          }}>
-            <Text style={{ 
-              fontSize: 12, 
-              fontWeight: '700', 
-              color: '#fff',
-              textAlign: 'center',
-            }}>
-              {visibleItemsCount} of {pagination?.total ?? advancePayments.length ?? 0}
-            </Text>
-            <Text style={{ 
-              fontSize: 10, 
-              color: '#fff',
-              opacity: 0.8,
-              textAlign: 'center',
-              marginTop: 2,
-            }}>
-              {(pagination?.total ?? advancePayments.length ?? 0) - visibleItemsCount} remaining
-            </Text>
-          </View>
+          <FloatingListCounter
+            visibleCount={visibleItemsCount}
+            totalCount={pagination?.total ?? advancePayments.length ?? 0}
+          />
         )}
         
         <FlatList

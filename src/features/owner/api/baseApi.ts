@@ -326,6 +326,11 @@ export const baseApi = createApi({
     'ElectricityBills',
     'ElectricityBill',
     'ElectricityBillItems',
+    'PaymentConfigs',
+    'PaymentConfig',
+    'PaymentSubmissions',
+    'PaymentSubmission',
+    'VerificationStats',
   ],
   endpoints: () => ({}),
 });

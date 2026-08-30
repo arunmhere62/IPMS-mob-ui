@@ -19,7 +19,7 @@ import { DashboardScreen } from '@/features/owner/screens/dashboard/DashboardScr
 import { RoomsScreen } from '@/features/owner/screens/rooms/RoomsScreen';
 import { TenantsScreen } from '@/features/owner/screens/tenants/TenantsScreen';
 import { SettingsScreen } from '@/features/owner/screens/settings/SettingsScreen';
-import { UpcomingVacanciesScreen } from '@/features/owner/screens/tenants/UpcomingVacanciesScreen';
+import { PaymentVerificationScreen } from '@/features/owner/screens/payment-verification/PaymentVerificationScreen';
 
 const Tab = createBottomTabNavigator<ParamListBase>();
 
@@ -48,8 +48,8 @@ const SCREENS: ScreenConfig[] = [
     permission: Permission.VIEW_TENANTS,
   },
   {
-    name: 'UpcomingVacancies',
-    component: UpcomingVacanciesScreen,
+    name: 'PaymentVerification',
+    component: PaymentVerificationScreen,
   },
   {
     name: 'Settings',

@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 13, color: C.darkTertiary, flex: 1, paddingRight: 6 },
   infoValue: { fontSize: 13, fontWeight: '600', color: C.dark, flex: 1.2, textAlign: 'right', paddingLeft: 6 },
   
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0' },
+  card: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
   cardIconWrap: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { fontSize: 15, fontWeight: '700', color: C.dark, flex: 1 },

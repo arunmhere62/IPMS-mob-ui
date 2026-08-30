@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, FlatList, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, RefreshControl, Alert, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { ScreenLayout } from '@/components/ScreenLayout';
@@ -10,7 +10,7 @@ import { FullScreenSlideUpModal } from '@/components/FullScreenSlideUpModal';
 import { RequestDetailsComponent } from '@/components/RequestDetailsComponent';
 import { networkLogger, type NetworkLog } from '@/utils/networkLogger';
 import { Theme } from '@/theme';
-import { ENV, setEnvironment, getCurrentEnv, ENV_URLS, ENVIRONMENTS, getDisplayUrl, type AppEnv } from '@/config';
+import { ENV, setEnvironment, resetEnvironment, getCurrentEnv, ENV_URLS, ENVIRONMENTS, getDisplayUrl, BUNDLED_ENV, type AppEnv } from '@/config';
 import { store } from '@/features/owner/store';
 import { baseApi } from '@/features/owner/api/baseApi';
 import { tenantBaseApi } from '@/features/tenant/api/tenantBaseApi';
@@ -125,6 +125,32 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     );
   }, [currentEnv, loadLogs, isLoggedIn]);
 
+  const handleResetEnv = useCallback(async () => {
+    if (currentEnv === BUNDLED_ENV) {
+      Alert.alert('Already Default', `Already using the .env bundled default (${BUNDLED_ENV}).`);
+      return;
+    }
+    Alert.alert(
+      'Reset to .env Default',
+      `Revert to the bundled env "${BUNDLED_ENV}"?\n\nThis clears the persisted override and refetches from the default server.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          onPress: async () => {
+            await resetEnvironment();
+            setCurrentEnv(BUNDLED_ENV);
+            store.dispatch(baseApi.util.resetApiState());
+            store.dispatch(tenantBaseApi.util.resetApiState());
+            networkLogger.clearLogs();
+            loadLogs();
+            Alert.alert('Environment Reset', `Reverted to ${BUNDLED_ENV} server.`);
+          },
+        },
+      ],
+    );
+  }, [currentEnv, loadLogs]);
+
   // Derive env options from the centralized config so the local IP only
   // needs to be changed in one place (.env -> app.config.js -> environment.ts).
   const ENV_OPTIONS: { env: AppEnv; label: string; color: string; url: string }[] =
@@ -196,6 +222,26 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             );
           })}
         </View>
+        {currentEnv !== BUNDLED_ENV && (
+          <TouchableOpacity
+            onPress={handleResetEnv}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: 8,
+              paddingVertical: 6,
+              paddingHorizontal: 10,
+              borderRadius: 8,
+              backgroundColor: Theme.colors.background.secondary,
+              alignSelf: 'flex-start',
+            }}
+          >
+            <Text style={{ fontSize: 10, fontWeight: '700', color: Theme.colors.text.tertiary }}>
+              ↺ Reset to .env default ({BUNDLED_ENV})
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16, paddingTop: 12 }}>

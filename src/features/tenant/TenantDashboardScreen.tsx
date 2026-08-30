@@ -8,12 +8,13 @@ import {
   RefreshControl,
   Platform,
   StatusBar,
-  ActivityIndicator,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { HomeTab, PaymentsTab, TicketsTab, ProfileTab } from './tabs';
+import { HomeTabSkeleton, PaymentsTabSkeleton, TicketsTabSkeleton, ProfileTabSkeleton } from './components/TenantSkeletons';
 import Theme from '@/theme';
 import { setTenantData, tenantLogout } from '@/features/tenant/store/tenantAuthSlice';
 import { setLastUserRole as setAdminLastUserRole } from '@/features/owner/store/slices/authSlice';
@@ -23,6 +24,7 @@ import {
   useGetTenantTicketStatsQuery,
   useTenantLogoutMutation,
 } from '@/features/tenant/api/tenantPortalApi';
+import { useGetTenantPaymentsSummaryQuery } from '@/features/tenant/api/tenantPaymentsApi';
 import { useGetTenantTicketsQuery } from '@/features/tenant/api/tenantTicketsApi';
 import { RootState } from '../owner/store';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
@@ -47,11 +49,17 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
   const [activeTab, setActiveTab] = useState('home');
   const [refreshing, setRefreshing] = useState(false);
 
-  // Profile query
+  // Profile query (slim — no payment data)
   const { data: profileData, isLoading: profileLoading, error, refetch: refetchProfile } = useGetTenantProfileQuery(undefined, {
     skip: !accessToken,
     refetchOnMountOrArgChange: true });
   const raw = profileData?.data;
+
+  // Payments summary query (due amount, payment status, cycles)
+  const { data: paymentsSummaryData, refetch: refetchPaymentsSummary } = useGetTenantPaymentsSummaryQuery(undefined, {
+    skip: !accessToken,
+    refetchOnMountOrArgChange: true });
+  const paymentsSummary = paymentsSummaryData?.data;
 
   // Ticket stats query
   const { data: ticketStatsData, refetch: refetchTicketStats } = useGetTenantTicketStatsQuery(undefined, {
@@ -68,7 +76,15 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
 
   const [tenantLogoutApi] = useTenantLogoutMutation();
 
-  // Sync profile to Redux
+  // Refetch payments summary when dashboard gains focus
+  // (e.g., returning from TenantSubmitPaymentProofScreen after submitting payment)
+  useFocusEffect(
+    useCallback(() => {
+      refetchPaymentsSummary();
+    }, [refetchPaymentsSummary]),
+  );
+
+  // Sync profile to Redux (slim — no payment data, that comes from payments-summary)
   useEffect(() => {
     if (raw) {
       dispatch(setTenantData({
@@ -89,13 +105,13 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
         room_no: raw.rooms?.room_no,
         bed_no: raw.beds?.bed_no,
         bed_price: raw.beds?.bed_price,
-        payment_status: raw.payment_status,
-        rent_due_amount: raw.rent_due_amount,
-        pending_months: raw.pending_months,
-        rentCycles: raw.tenant_rent_cycles,
-        recentPayments: raw.rent_payments }));
+        payment_status: paymentsSummary?.payment_status ?? null,
+        rent_due_amount: paymentsSummary?.rent_due_amount ?? 0,
+        pending_months: paymentsSummary?.unpaid_months?.length ?? 0,
+        rentCycles: paymentsSummary?.tenant_rent_cycles ?? [],
+        recentPayments: paymentsSummary?.rent_payments ?? [] }));
     }
-  }, [raw, dispatch]);
+  }, [raw, paymentsSummary, dispatch]);
 
   // Refresh handler based on active tab
   const handleRefresh = useCallback(async () => {
@@ -103,17 +119,16 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
     try {
       if (activeTab === 'tickets') await refetchTickets();
       else if (activeTab === 'home') {
-        await refetchProfile();
-        await refetchTicketStats();
+        await Promise.all([refetchProfile(), refetchTicketStats(), refetchPaymentsSummary()]);
       }
       else await refetchProfile();
     } finally {
       setRefreshing(false);
     }
-  }, [activeTab, refetchProfile, refetchTickets, refetchTicketStats]);
+  }, [activeTab, refetchProfile, refetchTickets, refetchTicketStats, refetchPaymentsSummary]);
 
-  const isPaid = raw?.payment_status === 'PAID';
-  const isPending = raw?.payment_status === 'PENDING';
+  const isPaid = paymentsSummary?.payment_status === 'PAID';
+  const isPending = paymentsSummary?.payment_status === 'PENDING' || paymentsSummary?.payment_status === 'PENDING_VERIFICATION';
 
   const handleLogout = async () => {
     try {
@@ -128,19 +143,15 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
 
   // Render content based on active tab
   const renderContent = () => {
-    // Show loading spinner for profile-based tabs when loading and no data
-    if ((activeTab === 'home' || activeTab === 'payments' || activeTab === 'profile') && profileLoading && !raw) {
-      return <ActivityIndicator color={C.primary} style={{ marginTop: 48 }} />;
-    }
-
     switch (activeTab) {
       case 'home':
-        return raw ? <HomeTab raw={raw} isPaid={isPaid} isPending={isPending} ticketStats={ticketStats} refetchProfile={refetchProfile} onViewPayments={() => setActiveTab('payments')} /> : null;
-      case 'payments':
-        return raw ? <PaymentsTab raw={raw} /> : null;
+        if (profileLoading && !raw) return <HomeTabSkeleton />;
+        return raw ? <HomeTab raw={raw} paymentsSummary={paymentsSummary} isPaid={isPaid} isPending={isPending} ticketStats={ticketStats} refetchProfile={refetchProfile} onViewPayments={() => setActiveTab('payments')} /> : null;
       case 'tickets':
+        if (ticketsLoading && tickets.length === 0) return <TicketsTabSkeleton />;
         return <TicketsTab tickets={tickets} isLoading={ticketsLoading} navigation={navigation} />;
       case 'profile':
+        if (profileLoading && !raw) return <ProfileTabSkeleton />;
         return raw ? <ProfileTab raw={raw} onLogout={handleLogout} /> : null;
       default:
         return null;
@@ -174,20 +185,33 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
         </View>
       </LinearGradient>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 90, paddingTop: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[C.primary]} tintColor={C.primary} />}
-        showsVerticalScrollIndicator={false}
-      >
-        {error && (
-          <View style={styles.errorBanner}>
-            <Ionicons name="wifi-outline" size={16} color={C.dangerDark} />
-            <Text style={styles.errorText}>Could not load data. Pull down to retry.</Text>
-          </View>
-        )}
-        {renderContent()}
-      </ScrollView>
+      {/* Payments tab manages its own sticky tab bar + scrolling content */}
+      {activeTab === 'payments' ? (
+        <View style={{ flex: 1 }}>
+          {error && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="wifi-outline" size={16} color={C.dangerDark} />
+              <Text style={styles.errorText}>Could not load data. Pull down to retry.</Text>
+            </View>
+          )}
+          {raw ? <PaymentsTab tenantId={raw.s_no} profileRaw={raw} /> : <PaymentsTabSkeleton />}
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 90, paddingTop: 16 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[C.primary]} tintColor={C.primary} />}
+          showsVerticalScrollIndicator={false}
+        >
+          {error && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="wifi-outline" size={16} color={C.dangerDark} />
+              <Text style={styles.errorText}>Could not load data. Pull down to retry.</Text>
+            </View>
+          )}
+          {renderContent()}
+        </ScrollView>
+      )}
 
       <BottomNav tabs={tenantTabs} activeTab={activeTab} onTabPress={setActiveTab} />
 

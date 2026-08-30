@@ -1,13 +1,15 @@
 import React, { useState, useCallback } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { FloatingListCounter } from '@/components/FloatingListCounter';
 import {
-  View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, StatusBar, Platform } from 'react-native';
+  View, Text, StyleSheet, FlatList, RefreshControl, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BottomNav } from '@/components/BottomNav';
 import Theme from '@/theme';
 import { TenantTicket, TenantTicketStatus, useGetTenantTicketsQuery } from '@/features/tenant/api/tenantTicketsApi';
 import { useFocusEffect } from '@react-navigation/native';
+import { TicketsTabSkeleton } from '@/features/tenant/components/TenantSkeletons';
 
 const C = Theme.colors;
 const ST = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 44;
@@ -62,6 +64,7 @@ export function TenantTicketsScreen({ navigation }: Props) {
   }, [refetch]);
 
   const tickets = data?.tickets ?? [];
+  const totalCount = data?.total ?? tickets.length;
 
   const renderTicket = ({ item }: { item: TenantTicket }) => {
     const sc = STATUS_COLORS[item.status] ?? STATUS_COLORS.OPEN;
@@ -146,7 +149,9 @@ export function TenantTicketsScreen({ navigation }: Props) {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator style={{ marginTop: 48 }} color={C.primary} />
+        <View style={{ flex: 1, paddingHorizontal: 12, paddingTop: 16 }}>
+          <TicketsTabSkeleton />
+        </View>
       ) : (
         <FlatList
           data={tickets}
@@ -163,6 +168,11 @@ export function TenantTicketsScreen({ navigation }: Props) {
           }
         />
       )}
+
+      <FloatingListCounter
+        visibleCount={tickets.length}
+        totalCount={totalCount}
+      />
 
       <BottomNav tabs={tenantTabs} activeTab="tickets" onTabPress={(tab) => {
         if (tab === 'home') navigation.navigate('TenantDashboard');
@@ -181,14 +191,14 @@ const styles = StyleSheet.create({
   addBtn: {
     width: 38, height: 38, borderRadius: 19,
     backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
-  filters: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  filters: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   chip: {
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
     backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#e5e7eb' },
   chipActive: { backgroundColor: C.primary, borderColor: C.primary },
   chipText: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
   chipTextActive: { color: '#fff' },
-  listContent: { padding: 16, gap: 12, paddingBottom: 100 },
+  listContent: { paddingHorizontal: 12, paddingTop: 16, gap: 12, paddingBottom: 100 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     backgroundColor: '#fff', borderRadius: 14, padding: 14,

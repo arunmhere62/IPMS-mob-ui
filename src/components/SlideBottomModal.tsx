@@ -10,7 +10,9 @@ import {
   ActivityIndicator,
   PanResponder,
   Animated,
-  Dimensions } from "react-native";
+  Dimensions,
+  Keyboard,
+  LayoutAnimation } from "react-native";
 import { Theme } from "../theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -70,6 +72,34 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
   );
   const [sheetHeight] = useState(new Animated.Value(minH));
   const [startHeight, setStartHeight] = useState(minH);
+
+  // Android: track keyboard height to shrink the sheet's maxHeight so it
+  // fits above the keyboard. Without this, the sheet (sized to full screen)
+  // overflows upward when the keyboard shrinks the window, hiding the header.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !visible) {
+      setKeyboardHeight(0);
+      return;
+    }
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      // Smooth the maxHeight transition so the sheet doesn't snap/flicker
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setKeyboardHeight(e.endCoordinates?.height ?? 0);
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setKeyboardHeight(0);
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, [visible]);
+
+  // On Android, reduce the available height by the keyboard height
+  const effectiveMaxSheetH = Math.max(200, maxSheetH - keyboardHeight);
 
   React.useEffect(() => {
     if (visible) {
@@ -244,10 +274,10 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
               borderTopRightRadius: 24,
               marginTop: topSpacing,
               maxHeight: enableFlexibleHeightDrag
-                ? maxSheetH
+                ? effectiveMaxSheetH
                 : isExpanded
-                ? maxSheetH
-                : Math.min(maxSheetH, Math.round(screenH * 0.85)),
+                ? effectiveMaxSheetH
+                : Math.min(effectiveMaxSheetH, Math.round(screenH * 0.85)),
               height: enableFlexibleHeightDrag ? sheetHeight : undefined,
               flex: enableFlexibleHeightDrag ? 0 : 1,
               flexDirection: "column",
@@ -327,15 +357,21 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
             </View>
 
             {/* Form */}
+            {/* iOS: behavior="padding" pushes content above keyboard correctly.
+                Android: behavior="height" shrinks the container and pushes the
+                bottom-anchored sheet off-screen. So on Android we disable KAV
+                (behavior=undefined) — the keyboard overlays the bottom of the
+                modal and the user scrolls to see the buttons (extra paddingBottom
+                ensures they can scroll past the keyboard). */}
             <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
               style={{ flex: 1 }}
             >
               <ScrollView
                 style={{ flex: 1 }}
                 contentContainerStyle={{
                   padding: 20,
-                  paddingBottom: 20 + (insets.bottom || 0),
+                  paddingBottom: 100 + (insets.bottom || 0),
                   flexGrow: 1 }}
                 showsVerticalScrollIndicator={true}
                 keyboardShouldPersistTaps="handled"

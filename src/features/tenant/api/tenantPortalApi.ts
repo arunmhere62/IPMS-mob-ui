@@ -1,6 +1,6 @@
 import { tenantBaseApi } from './tenantBaseApi';
 
-// Matches backend raw tenant response
+// Matches backend slim tenant profile response (no payment data)
 export interface TenantProfileData {
   // Tenant basic info
   s_no: number;
@@ -41,64 +41,11 @@ export interface TenantProfileData {
   rooms: { s_no: number; room_no: string } | null;
   beds: { s_no: number; bed_no: string; bed_price: string } | null;
 
-  // Rent cycles
-  tenant_rent_cycles: Array<{
-    s_no: number;
-    cycle_type: string;
-    anchor_day: number | null;
-    cycle_start: string;
-    cycle_end: string | null;
-  }>;
-
-  // Images / Docs
+  // Images / Docs (scalar fields on tenant model)
   images: string[];
   proof_documents: string[];
 
-  // Payments
-  rent_payments: Array<{
-    s_no: number;
-    payment_date: string;
-    pg_id: number;
-    room_id: number;
-    bed_id: number;
-    amount_paid: string;
-    actual_rent_amount: string;
-    cycle_id: number;
-    payment_method: string;
-    status: string;
-    remarks: string | null;
-    bed_rent_amount_snapshot: number;
-    tenant_rent_cycles: { s_no: number; cycle_type: string; cycle_start: string; cycle_end: string } | null;
-    pg_locations: { s_no: number; location_name: string } | null;
-    rooms: { s_no: number; room_no: string } | null;
-    beds: { s_no: number; bed_no: string } | null;
-  }>;
-  advance_payments: Array<{
-    s_no: number;
-    payment_date: string;
-    pg_id: number;
-    room_id: number;
-    bed_id: number;
-    amount_paid: string;
-    actual_rent_amount: string;
-    payment_method: string;
-    status: string;
-    remarks: string | null;
-    pg_locations: { s_no: number; location_name: string } | null;
-    rooms: { s_no: number; room_no: string } | null;
-    beds: { s_no: number; bed_no: string } | null;
-  }>;
-  refund_payments: Array<{
-    s_no: number;
-    payment_date: string;
-    amount_paid: string;
-    payment_method: string;
-    status: string;
-    remarks: string | null;
-  }>;
-  current_bills: any[];
-
-  // Tenant allocations
+  // Tenant allocations (bed price history)
   tenant_allocations: Array<{
     s_no: number;
     effective_from: string;
@@ -111,18 +58,6 @@ export interface TenantProfileData {
     rooms: { s_no: number; room_no: string } | null;
     beds: { s_no: number; bed_no: string } | null;
   }>;
-
-  // Payment status
-  is_rent_paid: boolean;
-  is_rent_partial: boolean;
-  rent_due_amount: number;
-  partial_due_amount: number;
-  pending_due_amount: number;
-  is_advance_paid: boolean;
-  is_refund_paid: boolean;
-  pending_months: number;
-  unpaid_months: Array<{ cycle_start: string; cycle_end: string; cycle_type: string }>;
-  payment_status: string;
 }
 
 export interface TenantPaymentsData {
@@ -228,6 +163,91 @@ export interface UpdateExpectedVacateDateResponse {
   data: any;
 }
 
+// ─── Manual Payment Flow Types ────────────────────────────────
+
+export interface TenantPaymentConfig {
+  has_payment_config: boolean;
+  config: {
+    upi_id: string;
+    upi_qr_image_url: string | null;
+    account_holder_name: string | null;
+    bank_name: string | null;
+    account_number: string | null;
+    ifsc_code: string | null;
+    payment_instructions: string | null;
+  } | null;
+  pg_name: string;
+}
+
+export interface TenantPaymentConfigResponse {
+  success: boolean;
+  message: string;
+  data: TenantPaymentConfig;
+}
+
+export interface TenantPaymentSubmission {
+  s_no: number;
+  rent_payment_id: number;
+  tenant_id: number;
+  pg_id: number;
+  paid_amount: string;
+  paid_date: string;
+  transaction_ref: string | null;
+  payment_method: string;
+  payment_screenshot_url: string | null;
+  tenant_notes: string | null;
+  status: 'SUBMITTED' | 'VERIFIED' | 'REJECTED';
+  verified_at: string | null;
+  rejection_reason: string | null;
+  submitted_at: string;
+  rent_payments?: {
+    s_no: number;
+    amount_paid: string;
+    actual_rent_amount: string;
+    status: string;
+    payment_method: string;
+  };
+  pg_locations?: {
+    s_no: number;
+    location_name: string;
+  };
+}
+
+export interface TenantPaymentSubmissionsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    data: TenantPaymentSubmission[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      hasMore: boolean;
+    };
+  };
+}
+
+export interface SubmitPaymentProofRequest {
+  rent_payment_id?: number; // Optional — if not provided, cycle_id is used
+  paid_amount: number;
+  paid_date: string;
+  transaction_ref?: string;
+  payment_method?: string;
+  payment_screenshot_url?: string;
+  tenant_notes?: string;
+  // Used when no rent_payment row exists yet (unpaid cycle)
+  cycle_id?: number;
+  cycle_start?: string;
+  cycle_end?: string;
+}
+
+export interface SubmitPaymentProofResponse {
+  success: boolean;
+  message: string;
+  data: TenantPaymentSubmission;
+}
+
 export const tenantPortalApi = tenantBaseApi.injectEndpoints({
   endpoints: (build) => ({
     // Get tenant profile with PG, room, bed details
@@ -278,6 +298,36 @@ export const tenantPortalApi = tenantBaseApi.injectEndpoints({
         method: 'POST',
       }),
     }),
+
+    // ─── Manual Payment Flow ──────────────────────────────────
+
+    // Get owner's payment config (UPI/QR) for this tenant's PG
+    getTenantPaymentConfig: build.query<TenantPaymentConfigResponse, void>({
+      query: () => ({
+        url: 'tenant/payment-config',
+        method: 'GET',
+      }),
+      providesTags: ['TenantPaymentConfig'],
+    }),
+
+    // Get my payment submissions ("I Paid" history)
+    getTenantPaymentSubmissions: build.query<TenantPaymentSubmissionsResponse, { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 20 }) => ({
+        url: `tenant/payment-submissions?page=${page}&limit=${limit}`,
+        method: 'GET',
+      }),
+      providesTags: ['TenantPaymentSubmissions'],
+    }),
+
+    // Submit payment proof ("I Paid" flow)
+    submitPaymentProof: build.mutation<SubmitPaymentProofResponse, SubmitPaymentProofRequest>({
+      query: (data) => ({
+        url: 'tenant/payment-submissions',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['TenantPaymentSubmissions', 'TenantPaymentConfig', 'TenantProfile', 'TenantDues', 'TenantPayments'],
+    }),
   }),
 });
 
@@ -289,4 +339,8 @@ export const {
   useGetTenantTicketStatsQuery,
   useUpdateExpectedVacateDateMutation,
   useTenantLogoutMutation,
+  useGetTenantPaymentConfigQuery,
+  useLazyGetTenantPaymentConfigQuery,
+  useGetTenantPaymentSubmissionsQuery,
+  useSubmitPaymentProofMutation,
 } = tenantPortalApi;

@@ -13,7 +13,7 @@ import { NetworkLoggerFloatingButton } from "./src/components/NetworkLoggerFloat
 import { AppStatusGate } from "./src/providers/AppStatusGate";
 import { ToastProvider } from "./src/providers/ToastProvider";
 import { persistor, store } from "@/features/owner/store";
-import { ENV } from "@/config/environment";
+import { ENV, initPersistedEnv } from "@/config/environment";
 import { useActivityTracking } from "./src/services/activity/useActivityTracking";
 
 // Hooks
@@ -39,6 +39,14 @@ Notifications.setNotificationHandler({
 
 export default function App() {
   useActivityTracking();
+
+  // Restore persisted env override (from Network Logger) before any API calls fire.
+  // Runs once on mount; .env bundled default is used until this resolves.
+  React.useEffect(() => {
+    initPersistedEnv().then((env) => {
+      console.log(`[App] Resolved startup env: ${env}`);
+    });
+  }, []);
 
   const { isInitialized, appError, clearError } = useAppInit();
   const [persistReady, setPersistReady] = React.useState(false);

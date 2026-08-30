@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
   headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  content: { padding: 20, gap: 6, paddingBottom: 110 },
+  content: { paddingHorizontal: 12, paddingTop: 20, gap: 6, paddingBottom: 110 },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginTop: 12, marginBottom: 6 },
   required: { color: '#ef4444' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

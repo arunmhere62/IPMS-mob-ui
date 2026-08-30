@@ -9,7 +9,7 @@ console.log('[app.config.js] MODE =', process.env.MODE);
 
 // Single source of truth for the local API URL: the LOCAL_API_BASE_URL env var
 // (see .env / .env.example). Change it there once and it propagates everywhere.
-const LOCAL_API_BASE_URL = process.env.LOCAL_API_BASE_URL || 'http://192.168.1.4:3001/api/v1';
+const LOCAL_API_BASE_URL = process.env.LOCAL_API_BASE_URL || 'http://192.168.1.6:3001/api/v1';
 
 const ENVIRONMENTS = {
   local: {
@@ -69,6 +69,28 @@ module.exports = ({ config }) => {
         ...((baseExpoConfig.android?.intentFilters ?? [])),
         ...(hasPaymentResultIntentFilter ? [] : [paymentResultIntentFilter]),
       ],
+    },
+    ios: {
+      ...(baseExpoConfig.ios ?? {}),
+      // Required for Linking.canOpenURL() to detect installed UPI apps on iOS.
+      // iOS 9+ requires apps to declare which URL schemes they query.
+      infoPlist: {
+        ...(baseExpoConfig.ios?.infoPlist ?? {}),
+        LSApplicationQueriesSchemes: [
+          ...((baseExpoConfig.ios?.infoPlist?.LSApplicationQueriesSchemes) ?? []),
+          'upi',
+          'tez',        // Google Pay (old scheme)
+          'gpay',       // Google Pay (new)
+          'phonepe',    // PhonePe
+          'paytmmp',    // Paytm
+          'bhim',       // BHIM
+          'mobikwik',   // Mobikwik
+          'freecharge', // Freecharge
+          'amazonpay',  // Amazon Pay
+          'myjio',      // Jio
+          'whatsapp',   // WhatsApp (for UPI on WhatsApp)
+        ],
+      },
     },
     plugins: [
       ...pluginsWithoutNotifications,

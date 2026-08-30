@@ -6,7 +6,8 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
-  Alert } from 'react-native';
+  Alert,
+  Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenLayout } from '@/components/ScreenLayout';
@@ -23,8 +24,10 @@ import {
   useGetSubscriptionStatusQuery,
   useSubscribeToPlanMutation,
   useUpgradePlanMutation } from '@/features/owner/api/subscriptionApi';
-import { getIapProductIdForDuration } from '@/config/iapProducts';
+import { getIapProductIdForPlan } from '@/config/iapProducts';
 import { useIAPSubscription } from '@/hooks/useIAPSubscription';
+import { createIosSubscriptionPlatform } from './subscriptionPlatform.ios';
+import { createAndroidSubscriptionPlatform } from './subscriptionPlatform.android';
 
 // iOS uses Apple In-App Purchase by default (App Store Guideline 3.1.1).
 // Set USE_IAP_FOR_IOS=false in .env to route iOS paid plans through CCAvenue.
@@ -63,6 +66,17 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
       refetchPlans();
     },
   });
+
+  // Platform-specific subscription logic (price display + purchase state).
+  // The bundler auto-selects subscriptionPlatform.ios.ts or .android.ts.
+  // On iOS, bound to the current IAP state so StoreKit prices are live.
+  const subscriptionPlatform = Platform.OS === 'ios'
+    ? createIosSubscriptionPlatform({
+        iapProducts: iap.products,
+        iapIsReady: iap.isReady,
+        purchasingProductIds: iap.purchasingProductIds,
+      })
+    : createAndroidSubscriptionPlatform();
 
   const plans = plansResponse?.data || [];
 
@@ -209,17 +223,19 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
   const handleSubscribeOrUpgrade = (plan: SubscriptionPlan, isExpiredFreePlanCard: boolean, hasActiveSubscription: boolean) => {
     if (isExpiredFreePlanCard) return;
 
-    const iapProductId = getIapProductIdForDuration(plan.duration);
-    const isPaidPlan = !plan.is_free && iapProductId !== null;
+    const purchaseState = subscriptionPlatform.getPlanPurchaseState(plan);
 
+    // iOS IAP path — Apple StoreKit handles the purchase.
     // Do nothing if StoreKit is still connecting; the CTA is already disabled.
-    if (ENV.USE_IAP && isPaidPlan) {
+    if (purchaseState.isIapPlan) {
+      const iapProductId = getIapProductIdForPlan(plan.s_no);
       if (iap.isReady && iapProductId) {
         iap.purchaseSubscription(iapProductId);
       }
       return;
     }
 
+    // Android / CCAvenue path.
     if (hasActiveSubscription) {
       handleUpgrade(plan.s_no);
     } else {
@@ -301,10 +317,8 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     
     const isFreePlan = Boolean(plan.is_free);
     const isExpiredFreePlanCard = isFreePlan && isFreePlanExpired;
-    const iapProductId = getIapProductIdForDuration(plan.duration);
-    const isIapPlan = ENV.USE_IAP && !isFreePlan && iapProductId !== null;
-    const iapNotReady = isIapPlan && !iap.isReady;
-    const isIapPurchasing = isIapPlan && iap.purchasingProductIds.includes(iapProductId ?? '');
+    const purchaseState = subscriptionPlatform.getPlanPurchaseState(plan);
+    const { isIapPlan, iapNotReady, isIapPurchasing } = purchaseState;
 
     const isFullyUnlimited = (() => {
       const limits = plan.limits;
@@ -401,36 +415,29 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           {/* Divider */}
           <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
 
-          {/* Price row */}
+          {/* Price row — platform-specific (Apple StoreKit price on iOS, DB price on Android) */}
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
             <View>
               <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '600', letterSpacing: 0.8, marginBottom: 2 }}>
-                {isFreePlan ? 'PRICE' : 'BASE PRICE'}
+                {isFreePlan ? 'PRICE' : isIapPlan ? 'PRICE' : 'BASE PRICE'}
               </Text>
-              {isFreePlan ? (
-                <Text style={{ fontSize: 44, fontWeight: '900', color: '#fff', letterSpacing: -1 }}>Free</Text>
-              ) : plan.gst_breakdown ? (() => {
-                const gstAmount = plan.gst_breakdown.cgst_amount + plan.gst_breakdown.sgst_amount;
-                const basePrice = plan.gst_breakdown.total_price_including_gst - gstAmount;
+              {(() => {
+                const priceInfo = subscriptionPlatform.getPlanPriceInfo(plan);
                 return (
                   <View>
                     <Text style={{ fontSize: 44, fontWeight: '900', color: '#fff', letterSpacing: -1 }}>
-                      {formatPrice(basePrice, plan.currency)}
+                      {priceInfo.displayPrice}
                     </Text>
-                    <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-                      + {plan.gst_breakdown.cgst_rate + plan.gst_breakdown.sgst_rate}% GST
-                      {'  '}
-                      <Text style={{ color: 'rgba(255,255,255,0.7)', fontWeight: '700' }}>
-                        = {formatPrice(plan.gst_breakdown.total_price_including_gst, plan.currency)}
+                    {priceInfo.subText ? (
+                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontWeight: '700' }}>
+                          {priceInfo.subText}
+                        </Text>
                       </Text>
-                    </Text>
+                    ) : null}
                   </View>
                 );
-              })() : (
-                <Text style={{ fontSize: 44, fontWeight: '900', color: '#fff', letterSpacing: -1 }}>
-                  {formatPrice(plan.price, plan.currency)}
-                </Text>
-              )}
+              })()}
             </View>
             {/* Duration badge */}
             <View style={{
@@ -483,8 +490,8 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
           </View>
         </View>
 
-        {/* ── GST BREAKDOWN ── */}
-        {!isFreeByPrice && plan.gst_breakdown && (() => {
+        {/* ── GST BREAKDOWN (Android only — Apple IAP prices are tax-inclusive) ── */}
+        {subscriptionPlatform.getPlanPriceInfo(plan).showGstBreakdown && plan.gst_breakdown && (() => {
           // eslint-disable-next-line no-shadow
           const isGstCollapsed = collapsedGst[plan.s_no] ?? true;
           return (
@@ -786,7 +793,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
         )}
 
         {/* Restore Purchases — required by Apple for IAP-enabled apps (iOS only). */}
-        {ENV.USE_IAP && (
+        {Platform.OS === 'ios' && ENV.USE_IAP && (
           <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 24 }}>
             <AnimatedPressableCard
               onPress={() => iap.restorePurchases()}

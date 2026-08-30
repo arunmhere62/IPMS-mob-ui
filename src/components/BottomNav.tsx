@@ -73,9 +73,9 @@ const userTabs: TabConfig[] = [
     icon: "people",
     permission: Permission.VIEW_TENANTS },
   {
-    name: "UpcomingVacancies",
-    label: "Vacancies",
-    icon: "log-out-outline" },
+    name: "PaymentVerification",
+    label: "Verify",
+    icon: "shield-checkmark-outline" },
   { name: "More", label: "More", icon: "grid" },
 ];
 
@@ -95,6 +95,7 @@ const moreMenuItems: MenuItem[] = [
   { name: "Visitors", label: "Visitors", icon: "people-circle-outline", route: "Visitors" },
   { name: "Expenses", label: "Expenses", icon: "receipt", route: "Expenses" },
   { name: "TenantTickets", label: "Tenant Tickets", icon: "ticket-outline", route: "PgTenantTickets" },
+  { name: "UpcomingVacancies", label: "Vacancies", icon: "log-out-outline", route: "UpcomingVacancies" },
   { name: "Settings", label: "Settings", icon: "settings", route: "Settings" },
 ];
 

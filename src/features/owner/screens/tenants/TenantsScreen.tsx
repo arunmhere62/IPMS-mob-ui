@@ -22,6 +22,7 @@ import { TenantsFilterModal } from "./TenantsFilterModal";
 import { Tenant, useLazyGetTenantsQuery } from "../../api";
 import { RootState } from "../../store";
 import { TenantCard } from "./TenantCard";
+import { FloatingListCounter } from '@/components/FloatingListCounter';
 
 interface TenantsScreenProps {
   navigation: any;
@@ -490,6 +491,12 @@ export const TenantsScreen: React.FC<TenantsScreenProps> = ({ navigation }) => {
           onPartialRentChange={setPartialRentFilter}
           onApply={applyFilters}
           onClear={clearFilters}
+        />
+
+        {/* Floating counter — shows loaded vs total tenants */}
+        <FloatingListCounter
+          visibleCount={tenants.length}
+          totalCount={pagination?.total ?? 0}
         />
 
         {selectedRoomId !== null && (

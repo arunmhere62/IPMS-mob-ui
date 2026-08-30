@@ -10,6 +10,7 @@ import Theme from '@/theme';
 import { RootState } from '@/features/owner/store';
 import { TenantTicketComment, tenantTicketsApi, useAddTenantTicketCommentMutation, useGetTenantTicketByIdQuery } from '@/features/tenant/api/tenantTicketsApi';
 import { useTicketSocket } from '@/hooks/useTicketSocket';
+import { TicketDetailSkeleton } from '@/features/tenant/components/TenantSkeletons';
 
 
 const C = Theme.colors;
@@ -122,11 +123,7 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
   };
 
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={C.primary} />
-      </View>
-    );
+    return <TicketDetailSkeleton />;
   }
 
   const sc = STATUS_COLORS[currentStatus] ?? STATUS_COLORS.OPEN;
@@ -219,8 +216,7 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  header: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
   backBtn: { padding: 4 },
   headerMeta: { flex: 1 },
   headerTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
@@ -228,7 +224,7 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontWeight: '600' },
   closeBtn: { padding: 4 },
   infoStrip: {
-    flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingVertical: 8,
+    flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 8,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   infoChip: {
     fontSize: 11, fontWeight: '600', color: '#6b7280',
@@ -252,7 +248,7 @@ const styles = StyleSheet.create({
   emptyChatText: { fontSize: 13, color: '#9ca3af', marginTop: 10, textAlign: 'center' },
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 10,
-    paddingHorizontal: 14, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 24 : 16,
+    paddingHorizontal: 12, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 24 : 16,
     backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   input: {
     flex: 1, backgroundColor: '#f3f4f6', borderRadius: 22,

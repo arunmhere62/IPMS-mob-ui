@@ -522,8 +522,8 @@ export const FollowUpsCard: React.FC<FollowUpsCardProps> = ({
                         {t.name ?? "Tenant"}
                       </Text>
                       <Text style={styles.tenantMeta}>
-                        {roomNo ? `Room ${roomNo}` : "Room —"}
-                        {bedNo ? ` · Bed ${bedNo}` : ""}
+                        {roomNo ? `${roomNo}` : "Room —"}
+                        {bedNo ? ` | ${bedNo}` : ""}
                         {typeof gapDueAmount === "number"
                           ? ` · ${formatCurrency(gapDueAmount)}`
                           : ""}

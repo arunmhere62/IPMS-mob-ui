@@ -131,7 +131,7 @@ export const tenantPortalAuthApi = baseApi.injectEndpoints({
     // Refresh token
     tenantRefreshToken: build.mutation<TenantRefreshTokenResponse, TenantRefreshTokenRequest>({
       query: (body) => ({
-        url: '/tenant-auth/refresh',
+        url: '/tenant-auth/refresh-token',
         method: 'POST',
         body,
       }),

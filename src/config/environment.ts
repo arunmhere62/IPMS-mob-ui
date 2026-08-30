@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type AppEnv = 'local' | 'development' | 'production';
 
@@ -21,13 +22,16 @@ export const ENVIRONMENTS: Record<AppEnv, { label: string; color: string }> = {
 
 // Single source of truth for the local API URL: read from app.config.js extra
 // (which itself reads LOCAL_API_BASE_URL from .env). Change the IP in .env once.
-const LOCAL_API_BASE_URL = appConfig.localApiBaseUrl || 'http://192.168.1.4:3001/api/v1';
+const LOCAL_API_BASE_URL = appConfig.localApiBaseUrl || 'http://192.168.1.6:3001/api/v1';
 
 export const ENV_URLS: Record<AppEnv, string> = {
   local: LOCAL_API_BASE_URL,
   development: 'https://dev-api.indianpgmanagement.com/api/v1',
   production: 'https://mobapi.indianpgmanagement.com/api/v1',
 };
+
+// AsyncStorage key for persisting runtime env overrides from the Network Logger.
+const PERSISTED_ENV_KEY = '@ipms:runtime_env_override';
 
 /**
  * Strips protocol and API path from a full URL for compact display in the UI.
@@ -49,8 +53,9 @@ export const getDisplayUrl = (url: string): string => {
 };
 
 
+// ─── .env default (baked in at build time by app.config.js) ───
 const rawEnv = (appConfig.appEnv || 'local').toLowerCase();
-const resolvedEnv: AppEnv = (['local', 'development', 'production'].includes(rawEnv) ? rawEnv : 'local') as AppEnv;
+const bundledEnv: AppEnv = (['local', 'development', 'production'].includes(rawEnv) ? rawEnv : 'local') as AppEnv;
 
 const validateConfig = () => {
   if (!appConfig.apiBaseUrl) {
@@ -64,6 +69,13 @@ const validateConfig = () => {
 
 validateConfig();
 
+/**
+ * The env baked into the bundle at build time (from .env via app.config.js).
+ * This is the "source of truth" that the app reverts to when the persisted
+ * override is cleared.
+ */
+export const BUNDLED_ENV: AppEnv = bundledEnv;
+
 export const ENV: {
   APP_ENV: AppEnv;
   ENV_LABEL: string;
@@ -75,9 +87,9 @@ export const ENV: {
   IS_DEVELOPMENT: boolean;
   IS_PRODUCTION: boolean;
 } = {
-  APP_ENV: resolvedEnv,
-  ENV_LABEL: ENVIRONMENTS[resolvedEnv]?.label ?? 'Unknown',
-  ENV_COLOR: ENVIRONMENTS[resolvedEnv]?.color ?? '#6B7280',
+  APP_ENV: bundledEnv,
+  ENV_LABEL: ENVIRONMENTS[bundledEnv]?.label ?? 'Unknown',
+  ENV_COLOR: ENVIRONMENTS[bundledEnv]?.color ?? '#6B7280',
 
   API_BASE_URL: appConfig.apiBaseUrl!,
 
@@ -89,19 +101,17 @@ export const ENV: {
   // and the "Sign Up" button opens this URL in Safari via Linking.openURL.
   WEB_SIGNUP_URL: appConfig.webSignupUrl ?? 'https://www.indianpgmanagement.com',
 
-  IS_LOCAL: resolvedEnv === 'local',
-  IS_DEVELOPMENT: resolvedEnv === 'development',
-  IS_PRODUCTION: resolvedEnv === 'production',
+  IS_LOCAL: bundledEnv === 'local',
+  IS_DEVELOPMENT: bundledEnv === 'development',
+  IS_PRODUCTION: bundledEnv === 'production',
 };
 
 export const getCurrentEnv = (): AppEnv => ENV.APP_ENV;
 
 /**
- * Switch environment at runtime (in-memory only). Does NOT persist to AsyncStorage.
- * On next app restart, .env (APP_ENV) is the single source of truth again.
- * Useful for quick testing during development via the Network Logger screen.
+ * Apply an env override to the in-memory ENV object (internal helper).
  */
-export async function setEnvironment(env: AppEnv): Promise<void> {
+const applyEnv = (env: AppEnv): void => {
   const url = ENV_URLS[env];
   ENV.API_BASE_URL = url;
   ENV.APP_ENV = env;
@@ -110,7 +120,63 @@ export async function setEnvironment(env: AppEnv): Promise<void> {
   ENV.IS_LOCAL = env === 'local';
   ENV.IS_DEVELOPMENT = env === 'development';
   ENV.IS_PRODUCTION = env === 'production';
-  console.log(`🔄 Environment switched to ${env} (${url}) [runtime only — .env wins on restart]`);
+};
+
+/**
+ * Switch environment at runtime AND persist the choice to AsyncStorage.
+ * The override survives app reloads and restarts until explicitly reset
+ * via `resetEnvironment()`.
+ *
+ * Architecture:
+ * - .env (APP_ENV) sets the BUNDLED default at build time (app.config.js).
+ * - setEnvironment() overrides at runtime and persists to AsyncStorage.
+ * - initPersistedEnv() runs on app startup and restores the override.
+ * - resetEnvironment() clears the override and reverts to the bundled default.
+ */
+export async function setEnvironment(env: AppEnv): Promise<void> {
+  applyEnv(env);
+  try {
+    await AsyncStorage.setItem(PERSISTED_ENV_KEY, env);
+    console.log(`🔄 Environment switched to ${env} (${ENV_URLS[env]}) [persisted]`);
+  } catch (e) {
+    console.warn('Failed to persist env override:', e);
+  }
+}
+
+/**
+ * Clear the persisted env override and revert to the .env bundled default.
+ */
+export async function resetEnvironment(): Promise<void> {
+  applyEnv(bundledEnv);
+  try {
+    await AsyncStorage.removeItem(PERSISTED_ENV_KEY);
+    console.log(`🔄 Environment reset to bundled default: ${bundledEnv} (${ENV_URLS[bundledEnv]})`);
+  } catch (e) {
+    console.warn('Failed to clear persisted env override:', e);
+  }
+}
+
+/**
+ * Restore the persisted env override on app startup (if any).
+ * Call this once early in the app lifecycle, before any API calls fire.
+ * Returns the resolved env (either the override or the bundled default).
+ */
+export async function initPersistedEnv(): Promise<AppEnv> {
+  try {
+    const persisted = await AsyncStorage.getItem(PERSISTED_ENV_KEY);
+    if (persisted && ['local', 'development', 'production'].includes(persisted)) {
+      const env = persisted as AppEnv;
+      // Only apply if different from bundled — avoids unnecessary mutation
+      if (env !== bundledEnv) {
+        applyEnv(env);
+        console.log(`🔄 Restored persisted env override: ${env} (${ENV_URLS[env]})`);
+      }
+      return env;
+    }
+  } catch (e) {
+    console.warn('Failed to read persisted env override:', e);
+  }
+  return bundledEnv;
 }
 
 export const getApiUrl = (endpoint: string = '') => {

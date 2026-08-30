@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFormatters } from '../hooks/useFormatters';
 import { TenantProfileData, TenantTicketStatsData } from '@/features/tenant/api/tenantPortalApi';
+import { TenantPaymentsSummaryData } from '@/features/tenant/api/tenantPaymentsApi';
 import { useUpdateExpectedVacateDateMutation } from '@/features/tenant/api/tenantPortalApi';
 import { SlideBottomModal } from '@/components/SlideBottomModal';
 import { DatePicker } from '@/components/DatePicker';
@@ -14,6 +15,7 @@ const C = Theme.colors;
 
 interface HomeTabProps {
   raw: TenantProfileData;
+  paymentsSummary?: TenantPaymentsSummaryData;
   isPaid: boolean;
   isPending: boolean;
   ticketStats?: TenantTicketStatsData;
@@ -21,7 +23,7 @@ interface HomeTabProps {
   onViewPayments?: () => void;
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticketStats, refetchProfile, onViewPayments }) => {
+export const HomeTab: React.FC<HomeTabProps> = ({ raw, paymentsSummary, isPaid, isPending, ticketStats, refetchProfile, onViewPayments }) => {
   const { formatDate, formatAmount } = useFormatters();
 
   const [vacateDateModalVisible, setVacateDateModalVisible] = useState(false);
@@ -57,26 +59,53 @@ export const HomeTab: React.FC<HomeTabProps> = ({ raw, isPaid, isPending, ticket
         <View style={styles.heroTop}>
           <View>
             <Text style={styles.heroAmountLabel}>Due Amount</Text>
-            <Text style={styles.heroAmount}>{formatAmount(raw?.rent_due_amount ?? 0)}</Text>
+            <Text style={styles.heroAmount}>{formatAmount(paymentsSummary?.rent_due_amount ?? 0)}</Text>
           </View>
           <View style={[styles.heroBadge, isPaid ? styles.badgePaid : isPending ? styles.badgePending : styles.badgeOverdue]}>
-            <Ionicons name={isPaid ? 'checkmark-circle' : 'time'} size={14} color={isPaid ? C.secondaryDark : isPending ? C.warningDark : C.dangerDark} />
+            <Ionicons
+              name={isPaid ? 'checkmark-circle' : paymentsSummary?.payment_status === 'PENDING_VERIFICATION' ? 'hourglass' : 'time'}
+              size={14}
+              color={isPaid ? C.secondaryDark : isPending ? C.warningDark : C.dangerDark}
+            />
             <Text style={[styles.heroBadgeText, isPaid ? styles.textPaid : isPending ? styles.textPending : styles.textOverdue]}>
-              {raw?.payment_status ?? 'N/A'}
+              {paymentsSummary?.payment_status === 'PENDING_VERIFICATION'
+                ? 'PENDING VERIFICATION'
+                : paymentsSummary?.payment_status ?? 'N/A'}
             </Text>
           </View>
         </View>
 
-        {raw?.unpaid_months && raw.unpaid_months.length > 0 && (
+        {/* Pending verification alert */}
+        {paymentsSummary?.has_pending_verification && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <Ionicons name="hourglass-outline" size={14} color={C.warningDark} />
+            <Text style={styles.heroPartialText} numberOfLines={2}>
+              Payment submitted — waiting for owner verification
+            </Text>
+          </View>
+        )}
+
+        {/* Unpaid months alert */}
+        {paymentsSummary?.unpaid_months && paymentsSummary.unpaid_months.length > 0 && (
           <>
             <View style={styles.heroDivider} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="alert-circle" size={14} color={C.danger} />
               <Text style={styles.heroUnpaidText} numberOfLines={1}>
-                {raw.unpaid_months.length} unpaid month{raw.unpaid_months.length > 1 ? 's' : ''} pending
+                {paymentsSummary.unpaid_months.length} unpaid month{paymentsSummary.unpaid_months.length > 1 ? 's' : ''} pending
               </Text>
             </View>
           </>
+        )}
+
+        {/* Partial payment alert */}
+        {paymentsSummary?.is_rent_partial && paymentsSummary.partial_due_amount > 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: paymentsSummary?.unpaid_months?.length ? 8 : 0 }}>
+            <Ionicons name="wallet-outline" size={14} color={C.warningDark} />
+            <Text style={styles.heroPartialText} numberOfLines={1}>
+              Partial payment due: {formatAmount(paymentsSummary.partial_due_amount)}
+            </Text>
+          </View>
         )}
 
         {onViewPayments && (
@@ -182,6 +211,7 @@ const styles = StyleSheet.create({
   textPending: { color: C.warningDark },
   textOverdue: { color: C.dangerDark },
   heroUnpaidText: { fontSize: 12, fontWeight: '600', color: C.danger },
+  heroPartialText: { fontSize: 12, fontWeight: '600', color: C.warningDark },
   heroLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: C.background.blueLight },
   heroLinkText: { fontSize: 13, fontWeight: '700', color: C.primary },
 
