@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AnimatedPressableCard } from './AnimatedPressableCard';
-import { View, Text, TextInput, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, TextInput, ScrollView, Animated } from 'react-native';
 import { Theme } from '../theme';
 import { SlideBottomModal } from './SlideBottomModal';
 
@@ -32,7 +32,6 @@ export const SelectModal: React.FC<SelectModalProps> = ({
   selectedValue,
   onSelect,
   isLoading = false,
-  placeholder = 'Select an option',
   searchPlaceholder = 'Search...' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [animatedValues] = useState(
@@ -50,9 +49,6 @@ export const SelectModal: React.FC<SelectModalProps> = ({
   }, [items, searchQuery]);
 
   // Get selected item label
-  const selectedItem = items.find(item => item.id === selectedValue);
-  const selectedLabel = selectedItem?.label || placeholder;
-
   const handleSelect = (item: SelectItem) => {
     onSelect(item);
     setSearchQuery('');
@@ -130,10 +126,6 @@ export const SelectModal: React.FC<SelectModalProps> = ({
             const scaleValue = animatedValues[item.id]?.interpolate({
               inputRange: [0, 1],
               outputRange: [1, 0.95] }) || 1;
-
-            const bgColorValue = animatedValues[item.id]?.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['rgba(239, 246, 255, 0)', 'rgba(59, 130, 246, 0.1)'] }) || 'rgba(239, 246, 255, 0)';
 
             return (
               <Animated.View

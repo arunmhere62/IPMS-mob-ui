@@ -31,8 +31,6 @@ export const BedForm: React.FC<BedFormProps> = ({
   roomNo,
   bed,
   pgId,
-  organizationId,
-  userId,
 }) => {
   const [createBedMutation] = useCreateBedMutation();
   const [updateBedMutation] = useUpdateBedMutation();
@@ -44,7 +42,6 @@ export const BedForm: React.FC<BedFormProps> = ({
     bed_price: "",
     images: [] as string[],
   });
-  const [originalImages, setOriginalImages] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isEditMode = !!bed;
@@ -59,7 +56,6 @@ export const BedForm: React.FC<BedFormProps> = ({
       bed_price: "",
       images: [],
     });
-    setOriginalImages([]);
     setErrors({});
   };
 
@@ -72,7 +68,6 @@ export const BedForm: React.FC<BedFormProps> = ({
           bed_price: bed.bed_price?.toString() || "",
           images: bedImages,
         });
-        setOriginalImages([...bedImages]);
       } else {
         setFormData({
           bed_no: "BED",

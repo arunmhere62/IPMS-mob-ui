@@ -4,7 +4,6 @@ import {
   TouchableWithoutFeedback, 
   ViewStyle, 
   StyleProp,
-  Text,
   TextStyle 
 } from 'react-native';
 
@@ -21,7 +20,6 @@ interface AnimatedButtonProps {
 export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   onPress,
   style,
-  textStyle,
   disabled = false,
   scaleValue = 0.95,
   duration = 150,

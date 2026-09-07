@@ -1,9 +1,9 @@
 import React, { memo, useState, useCallback } from 'react';
 import { AnimatedPressableCard } from './AnimatedPressableCard';
-import { View, Text, ScrollView, Modal } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { Card } from './Card';
 import { Theme } from '../theme';
-import { SkeletonLoader, CardSkeleton } from './SkeletonLoader';
+import { SkeletonLoader } from './SkeletonLoader';
 
 interface MonthlyFinancialData {
   month: string;
@@ -47,9 +47,7 @@ interface FinancialAnalyticsProps {
 export const FinancialAnalytics = memo<FinancialAnalyticsProps>(({ 
   data, 
   loading, 
-  selectedMonths, 
-  onMonthsChange 
-}) => {
+  selectedMonths }) => {
   const [selectedMonth, setSelectedMonth] = useState<MonthlyFinancialData | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
 

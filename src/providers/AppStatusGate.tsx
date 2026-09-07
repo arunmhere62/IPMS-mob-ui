@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';

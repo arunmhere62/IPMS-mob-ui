@@ -5,8 +5,6 @@ import {
   Text,
   TextInput,
   ActivityIndicator } from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/features/owner/store';
 import { Theme } from '../theme';
 import { SearchableDropdown } from './SearchableDropdown';
 import { DatePicker } from './DatePicker';
@@ -34,7 +32,6 @@ export const VisitorForm: React.FC<VisitorFormProps> = ({
   const [createVisitor, { isLoading: isCreating }] = useCreateVisitorMutation();
   const [updateVisitor, { isLoading: isUpdating }] = useUpdateVisitorMutation();
   const loading = isCreating || isUpdating;
-  const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   
   const { data: visitorData, isLoading: loadingData } = useGetVisitorByIdQuery(visitorId!, { skip: !isEditMode });
   

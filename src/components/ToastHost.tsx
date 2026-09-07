@@ -47,7 +47,7 @@ const variantGlyph: Record<ToastVariant, string> = {
 export const ToastHost: React.FC = () => {
   const [toast, setToast] = useState<InternalToast | null>(null);
   const anim = useRef(new Animated.Value(0)).current;
-  const hideTimer = useRef<NodeJS.Timeout | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
 
   const screenWidth = Dimensions.get('window').width;

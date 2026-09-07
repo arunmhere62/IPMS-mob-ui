@@ -43,8 +43,6 @@ export interface AddTenantCommentPayload {
   attachments?: string[];
 }
 
-type ApiEnvelope<T> = { success: boolean; message: string; data: T };
-
 export const tenantTicketsApi = tenantBaseApi.injectEndpoints({
   endpoints: (build) => ({
     getTenantTickets: build.query<

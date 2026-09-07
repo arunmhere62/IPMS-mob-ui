@@ -69,10 +69,9 @@ export default function VisitorDetailsScreen({ route, navigation }: VisitorDetai
   const canManageVisitors = isAdmin || isSuperAdmin;
   const canEditVisitor = canManageVisitors;
   const canDeleteVisitor = canManageVisitors;
-  const { data: visitor, isLoading, error, refetch } = useGetVisitorByIdQuery(visitorId);
+  const { data: visitor, isLoading, error: _error, refetch } = useGetVisitorByIdQuery(visitorId);
   const [deleteVisitorMutation] = useDeleteVisitorMutation();
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing] = useState(false);
 
   React.useEffect(() => {
     if (canManageVisitors) return;

@@ -16,12 +16,6 @@ import { TicketDetailSkeleton } from '@/features/tenant/components/TenantSkeleto
 const C = Theme.colors;
 const ST = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 44;
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  OPEN:        { bg: '#eff6ff', text: '#1d4ed8' },
-  IN_PROGRESS: { bg: '#fff7ed', text: '#c2410c' },
-  RESOLVED:    { bg: '#f0fdf4', text: '#166534' },
-  CLOSED:      { bg: '#f3f4f6', text: '#6b7280' } };
-
 interface Props {
   navigation: any;
   route: { params: { ticketId: number } };
@@ -30,7 +24,6 @@ interface Props {
 export function TenantTicketDetailScreen({ navigation, route }: Props) {
   const { ticketId } = route.params;
   const accessToken = useSelector((s: RootState) => s.tenantAuth.accessToken);
-  const tenantId = useSelector((s: RootState) => s.tenantAuth.tenant?.tenant_id);
 
   const { data: ticket, isLoading, isFetching, refetch } = useGetTenantTicketByIdQuery(ticketId);
   const [addComment, { isLoading: sending }] = useAddTenantTicketCommentMutation();
@@ -125,8 +118,6 @@ export function TenantTicketDetailScreen({ navigation, route }: Props) {
   if (isLoading) {
     return <TicketDetailSkeleton />;
   }
-
-  const sc = STATUS_COLORS[currentStatus] ?? STATUS_COLORS.OPEN;
 
   return (
     <KeyboardAvoidingView

@@ -31,8 +31,7 @@ interface NetworkProviderProps {
 }
 
 export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) => {
-  const [isConnected, setIsConnected] = useState(true);
-  const [wasOffline, setWasOffline] = useState(false);
+  const [isConnected] = useState(true);
   const failedRequestsQueue = useRef<Array<() => Promise<any>>>([]);
   const appState = useRef(AppState.currentState);
 
@@ -47,33 +46,6 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) =>
       console.log('📱 App came to foreground');
     }
     appState.current = nextAppState;
-  };
-
-  const handleNetworkLost = () => {
-    setIsConnected(false);
-    setWasOffline(true);
-    showOfflineMessage();
-  };
-
-  const handleNetworkRestored = () => {
-    setIsConnected(true);
-    if (wasOffline) {
-      Alert.alert(
-        '✅ Back Online',
-        'Your internet connection has been restored.',
-        [
-          {
-            text: 'Retry Failed Requests',
-            onPress: retryFailedRequests,
-          },
-          {
-            text: 'OK',
-            style: 'cancel',
-          },
-        ]
-      );
-      setWasOffline(false);
-    }
   };
 
   const showOfflineMessage = useCallback(() => {

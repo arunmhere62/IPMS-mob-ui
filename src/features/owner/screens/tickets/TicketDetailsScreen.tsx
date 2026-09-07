@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
@@ -10,8 +10,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image } from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
 import { useAddTicketCommentMutation, useGetTicketByIdQuery } from '@/features/owner/api/ticketsApi';
 import { Card } from '@/components/Card';
 import { Theme } from '@/theme';
@@ -59,7 +57,6 @@ const getCategoryIcon = (category: string) => {
 
 export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ navigation, route }) => {
   const { ticketId } = route.params;
-  const { user } = useSelector((state: RootState) => state.auth);
   const {
     data: ticketResponse,
     isLoading: loading,

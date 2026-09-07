@@ -5,7 +5,6 @@ import {
   Text,
   Image,
   StyleSheet } from 'react-native';
-import { Theme } from '../../../theme';
 
 interface RoleSelectionScreenProps {
   navigation: any;

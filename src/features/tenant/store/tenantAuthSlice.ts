@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type TenantUser = {
   tenant_id: number;
@@ -69,13 +68,6 @@ const initialState: TenantAuthState = {
   loading: false,
   error: null,
   lastUserRole: null,
-};
-
-const tenantPersistConfig = {
-  key: 'tenantAuth',
-  storage: AsyncStorage,
-  whitelist: ['tenant', 'pg', 'rentCycles', 'recentPayments', 'lastUserRole'], // Persist lastUserRole to remember login type
-  blacklist: ['accessToken', 'refreshToken', 'isAuthenticated'], // Blacklist sensitive data - require fresh login
 };
 
 const tenantAuthSlice = createSlice({
@@ -183,7 +175,7 @@ const tenantAuthSlice = createSlice({
     },
 
     // Reset state
-    resetTenantAuth: (state) => {
+    resetTenantAuth: (_state) => {
       return initialState;
     },
   },

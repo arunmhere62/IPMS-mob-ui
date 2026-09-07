@@ -16,7 +16,7 @@
  * must be sold via In-App Purchase. This hook is the iOS purchase path.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Alert } from 'react-native';
+import { Alert } from 'react-native';
 import {
   useIAP,
   ErrorCode,

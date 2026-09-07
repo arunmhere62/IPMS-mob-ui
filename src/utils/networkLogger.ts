@@ -33,7 +33,6 @@ const truncateValue = (
   if (typeof value === 'number' || typeof value === 'boolean') return value;
   if (typeof value === 'string') {
     // Check if it's a base64 image/data URI
-    const isBase64Image = value.startsWith('data:image') || value.length > 1000;
     if (value.length <= options.maxStringLength) return value;
     // For large strings (especially base64), show a short preview
     const preview = value.slice(0, 100);

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   Alert,
   ActivityIndicator,
@@ -50,23 +49,15 @@ export const RoomModal: React.FC<RoomModalProps> = ({
     room_no: 'RM',
     images: [] as string[],
   });
-  const [originalImages, setOriginalImages] = useState<string[]>([]); // Track original images for cleanup
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const roomData = (roomResponse as any)?.data;
   const isRoomNoLocked = !!roomId && Array.isArray(roomData?.beds) && roomData.beds.length > 0;
 
-  const resetCreateForm = () => {
-    setFormData({ room_no: 'RM', images: [] });
-    setOriginalImages([]);
-    setErrors({});
-  };
-
   useEffect(() => {
     if (!visible) return;
     if (!roomId) {
       setFormData({ room_no: 'RM', images: [] });
-      setOriginalImages([]);
       setErrors({});
       return;
     }
@@ -81,7 +72,6 @@ export const RoomModal: React.FC<RoomModalProps> = ({
         room_no: normalizedRoomNo,
         images: roomImages,
       });
-      setOriginalImages([...roomImages]);
     }
   }, [visible, roomId, roomResponse, isRoomFetching]);
 
@@ -209,7 +199,6 @@ export const RoomModal: React.FC<RoomModalProps> = ({
       room_no: 'RM',
       images: [],
     });
-    setOriginalImages([]);
     setErrors({});
     onClose();
   };

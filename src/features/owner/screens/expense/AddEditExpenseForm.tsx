@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, TextInput, Alert } from "react-native";
+import { View, Text, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "../../../../theme";
 import {

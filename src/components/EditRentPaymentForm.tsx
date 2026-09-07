@@ -32,19 +32,10 @@ const PAYMENT_METHODS = [
   { label: 'Bank Transfer', value: 'BANK_TRANSFER', icon: 'card-outline' },
 ];
 
-const PAYMENT_STATUS = [
-  { label: '✅ Paid', value: 'PAID', color: '#10B981', icon: 'checkmark-circle' },
-  { label: '🔵 Partial', value: 'PARTIAL', color: '#3B82F6', icon: 'pie-chart' },
-  { label: '⏳ Pending', value: 'PENDING', color: '#F59E0B', icon: 'time' },
-  { label: '❌ Failed', value: 'FAILED', color: '#EF4444', icon: 'close-circle' },
-];
-
 export const EditRentPaymentForm: React.FC<EditRentPaymentFormProps> = ({
   visible,
   payment,
   onClose,
-  onSave,
-  onSuccess,
   previousPayments = [] }) => {
   const [amountPaid, setAmountPaid] = useState('');
   const [actualRentAmount, setActualRentAmount] = useState('');
@@ -52,9 +43,8 @@ export const EditRentPaymentForm: React.FC<EditRentPaymentFormProps> = ({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('CASH');
-  const [status, setStatus] = useState('PENDING');
   const [remarks, setRemarks] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [errors, setErrors] = useState<any>({});
 
   useEffect(() => {
@@ -65,7 +55,6 @@ export const EditRentPaymentForm: React.FC<EditRentPaymentFormProps> = ({
       setStartDate(payment.start_date ? new Date(payment.start_date).toISOString().split('T')[0] : '');
       setEndDate(payment.end_date ? new Date(payment.end_date).toISOString().split('T')[0] : '');
       setPaymentMethod((payment.payment_method as string) || 'CASH');
-      setStatus((payment.status as string) || 'PENDING');
       setRemarks(payment.remarks || '');
     }
   }, [payment]);
@@ -104,12 +93,6 @@ export const EditRentPaymentForm: React.FC<EditRentPaymentFormProps> = ({
   const handleSave = async () => {
     if (!validate() || !payment) return;
 
-    Alert.alert('Not Allowed', 'Rent payments are immutable. Please create a new payment entry instead of editing.');
-    onClose();
-  };
-
-  const saveWithStatus = async (selectedStatus: string) => {
-    void selectedStatus;
     Alert.alert('Not Allowed', 'Rent payments are immutable. Please create a new payment entry instead of editing.');
     onClose();
   };

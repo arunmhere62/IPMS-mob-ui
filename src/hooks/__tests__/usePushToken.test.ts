@@ -26,7 +26,7 @@ jest.mock('react-native', () => ({
     get OS() {
       return 'android';
     },
-    set OS(value) {
+    set OS(_value) {
       // Allow setting for testing
     },
   },

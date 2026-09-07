@@ -1,13 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import {
   View,
   Text,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
-  Alert,
-  Platform } from 'react-native';
+  Platform, 
+  ActivityIndicator} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenLayout } from '@/components/ScreenLayout';
@@ -296,7 +295,6 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     const isCurrentPlan = ss?.subscription?.plan_id === plan.s_no;
     const hasActiveSubscription = Boolean(ss?.has_active_subscription);
     const isSelected = selectedPlan === plan.s_no;
-    const isPremium = plan.name.toLowerCase().includes('premium');
     void plan.name.toLowerCase().includes('standard');
     void plan.name.toLowerCase().includes('basic');
     const isYearly = plan.duration === 365;

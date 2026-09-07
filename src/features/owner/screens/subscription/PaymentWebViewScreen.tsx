@@ -869,7 +869,6 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
 
   // Android UPI app chooser bottom sheet state
   const [upiChooserVisible, setUpiChooserVisible] = useState(false);
-  const [upiChooserUrl, setUpiChooserUrl] = useState<string>('');
   const upiChooserUrlRef = useRef<string>('');
 
   const resetPaymentTracking = useCallback(() => {
@@ -974,7 +973,6 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
     } else {
       // Android: show a proper bottom sheet modal with all UPI apps listed.
       upiChooserUrlRef.current = upiUrl;
-      setUpiChooserUrl(upiUrl);
       setUpiChooserVisible(true);
     }
   }, [handleUpiAppSelection]);

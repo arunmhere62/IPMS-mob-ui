@@ -60,7 +60,6 @@ export const DashboardScreen: React.FC = () => {
   const { selectedPGLocationId, isRehydrated } = useSelector(
     (state: RootState) => state.pgLocations
   );
-  const { user } = useSelector((state: RootState) => state.auth);
   const appStatus = useSelector((state: RootState) => (state as any).appSettings?.appSettings);
   usePermissions();
   const { hintScreen } = useOnboardingState();

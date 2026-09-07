@@ -6,8 +6,6 @@ import {
   TextInput,
   RefreshControl,
   Alert,
-  Animated,
-  Easing,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
@@ -293,9 +291,7 @@ export const BedsScreen: React.FC<BedsScreenProps> = ({ navigation }) => {
     return count;
   };
 
-  const firstUnoccupiedIndex = beds.findIndex((b) => !b.is_occupied);
-
-  const renderBedCard = ({ item, index }: { item: Bed; index: number }) => (
+  const renderBedCard = ({ item, index: _index }: { item: Bed; index: number }) => (
     <Card
       style={{
         marginHorizontal: 12,

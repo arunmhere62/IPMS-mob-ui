@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, RefreshControl, Modal, ScrollView, Alert } from 'react-native';
+import { View, Text, FlatList, RefreshControl, Modal, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '@/features/owner/store';
@@ -272,23 +272,6 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
     const start = item?.tenant_rent_cycles?.cycle_start || item?.start_date;
     const end = item?.tenant_rent_cycles?.cycle_end || item?.end_date;
     return { start, end };
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PAID':
-        return Theme.colors.secondary;
-      case 'PARTIAL':
-        return '#EF4444';
-      case 'PENDING':
-        return Theme.colors.warning;
-      case 'FAILED':
-        return Theme.colors.danger;
-      case 'REFUNDED':
-        return Theme.colors.info;
-      default:
-        return Theme.colors.text.secondary;
-    }
   };
 
   const getPaymentMethodIcon = (method: string) => {

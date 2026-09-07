@@ -67,7 +67,7 @@ export const SignupScreenNew: React.FC = () => {
     rentCycleStart: 1,
     rentCycleEnd: 30 });
 
-  const [countries, setCountries] = useState<Country[]>([]);
+  const [, setCountries] = useState<Country[]>([]);
   const [selectedCountry, setSelectedCountry] = useState({
     code: "IN",
     name: "India",
@@ -75,7 +75,7 @@ export const SignupScreenNew: React.FC = () => {
     phoneCode: "+91",
     phoneLength: 10 });
   const [phoneVerified, setPhoneVerified] = useState(false);
-  const [fullPhone, setFullPhone] = useState("");
+  const [, setFullPhone] = useState("");
 
   const { data: countriesResponse } = useGetCountriesQuery();
   const [sendSignupOtp] = useSendSignupOtpMutation();

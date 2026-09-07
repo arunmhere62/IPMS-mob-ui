@@ -1,9 +1,5 @@
 import { baseApi } from './baseApi';
 
-type ApiEnvelope<T> = {
-  data?: T;
-};
-
 const unwrapCentralData = <T>(response: any): T => {
   if (response && typeof response === 'object' && 'success' in response && 'statusCode' in response) {
     return (response as any).data as T;

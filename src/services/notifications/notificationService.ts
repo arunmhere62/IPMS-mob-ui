@@ -8,7 +8,6 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { notificationsApi } from '../../features/owner/api/notificationsApi';
-import { FEATURES } from '../../config/env.config';
 import Constants from 'expo-constants';
 import { store } from '@/features/owner/store';
 import { navigate, navigationRef as navRef } from '../../navigation/navigationRef';
@@ -671,26 +670,6 @@ class NotificationService {
   }
 
   /**
-   * Display local notification
-   */
-  private async displayLocalNotification(title: string, body: string, data?: any) {
-    const channelId = this.getChannelId(data?.type);
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        data,
-        sound: 'default',
-      },
-      trigger: null, // Show immediately
-    });
-
-    // Update badge count
-    this.updateBadgeCount();
-  }
-
-  /**
    * Handle notification tapped
    */
   private handleNotificationTapped(notification: Notifications.Notification) {
@@ -708,28 +687,6 @@ class NotificationService {
     this.navigateToScreen(data.type as string, data);
   }
 
-
-  /**
-   * Get channel ID based on notification type
-   */
-  private getChannelId(type?: string): string {
-    if (!type) return 'default';
-
-    switch (type) {
-      case 'RENT_REMINDER':
-      case 'PAYMENT_DUE_SOON':
-        return 'rent-reminders';
-      case 'PAYMENT_CONFIRMATION':
-      case 'PARTIAL_PAYMENT':
-      case 'FULL_PAYMENT':
-        return 'payments';
-      case 'OVERDUE_ALERT':
-      case 'PAYMENT_OVERDUE':
-        return 'alerts';
-      default:
-        return 'default';
-    }
-  }
 
   /**
    * Navigate to screen based on notification type

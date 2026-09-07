@@ -22,7 +22,6 @@ interface RequestDetailsComponentProps {
 
 export const RequestDetailsComponent: React.FC<RequestDetailsComponentProps> = ({
   log,
-  onBack,
 }) => {
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {

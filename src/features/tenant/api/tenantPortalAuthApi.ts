@@ -94,14 +94,6 @@ export type TenantLogoutResponse = {
   };
 };
 
-// Unwrap helper for central envelope format
-const unwrapCentralData = <T>(response: any): T => {
-  if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
-    return (response as any).data as T;
-  }
-  return response as T;
-};
-
 export const tenantPortalAuthApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     // Send OTP to tenant phone

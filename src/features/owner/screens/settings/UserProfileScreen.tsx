@@ -5,9 +5,8 @@ import {
   Text,
   ScrollView,
   Image,
-  ActivityIndicator,
   RefreshControl,
-  Alert } from 'react-native';
+} from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { Card } from '@/components/Card';
@@ -179,14 +178,6 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
       .join('')
       .toUpperCase()
       .slice(0, 2);
-  };
-
-  const getStatusColor = (status?: string) => {
-    return status === 'ACTIVE' ? '#10B981' : '#EF4444';
-  };
-
-  const getStatusBgColor = (status?: string) => {
-    return status === 'ACTIVE' ? '#ECFDF5' : '#FEE2E2';
   };
 
   const getRoleBadgeColor = (roleName?: string) => {

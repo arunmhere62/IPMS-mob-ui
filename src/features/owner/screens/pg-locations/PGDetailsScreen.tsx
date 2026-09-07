@@ -175,20 +175,6 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({
     }
   };
 
-  const formatCurrency = (value?: number | string) => {
-    if (value === null || value === undefined) return "—";
-    const num = typeof value === "number" ? value : Number(value);
-    if (Number.isNaN(num)) return String(value);
-    return `₹${num.toLocaleString("en-IN")}`;
-  };
-
-  const formatRoomNumber = (roomNo?: string) => {
-    if (!roomNo) return "N/A";
-    if (roomNo.startsWith("RM-")) return roomNo;
-    if (roomNo.startsWith("RM")) return `RM-${roomNo.slice(2)}`;
-    return `RM-${roomNo}`;
-  };
-
   const {
     data: pgDetailsResponse,
     isFetching,

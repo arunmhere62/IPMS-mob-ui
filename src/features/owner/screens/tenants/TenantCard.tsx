@@ -13,7 +13,7 @@ interface TenantCardProps {
 
 export const TenantCard: React.FC<TenantCardProps> = ({
   tenant,
-  index,
+  index: _index,
   onPress,
 }) => {
   const { width: screenWidth } = useWindowDimensions();

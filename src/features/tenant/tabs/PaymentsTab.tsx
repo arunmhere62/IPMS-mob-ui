@@ -21,7 +21,6 @@ const C = Theme.colors;
 // Responsive helpers
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IS_TABLET = SCREEN_WIDTH > 600;
-const HORIZONTAL_PADDING = IS_TABLET ? 24 : 16;
 const CARD_GAP = IS_TABLET ? 14 : 10;
 
 // Enable LayoutAnimation for smooth tab transitions

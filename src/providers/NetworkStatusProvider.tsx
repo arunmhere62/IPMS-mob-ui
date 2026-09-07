@@ -36,7 +36,7 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
   const [showOfflineBanner, setShowOfflineBanner] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const bannerAnimation = useRef(new Animated.Value(-100)).current;
-  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const checkIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isOnlineRef = useRef(true);
 
   // Check actual internet connectivity by making a lightweight request
@@ -55,44 +55,6 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
       return response.ok || response.status === 204;
     } catch (error) {
       console.log('❌ Internet connectivity check failed:', error);
-      return false;
-    }
-  };
-
-  // Alternative connectivity check using DNS
-  const checkConnectivityAlternative = async (): Promise<boolean> => {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      // Try multiple endpoints for reliability
-      const endpoints = [
-        'https://www.google.com/generate_204',
-        'https://www.cloudflare.com/cdn-cgi/trace',
-        'https://1.1.1.1/cdn-cgi/trace',
-      ];
-
-      for (const endpoint of endpoints) {
-        try {
-          const response = await fetch(endpoint, {
-            method: 'HEAD',
-            cache: 'no-cache',
-            signal: controller.signal,
-          });
-          
-          clearTimeout(timeoutId);
-          if (response.ok || response.status === 204) {
-            return true;
-          }
-        } catch (err) {
-          // Try next endpoint
-          continue;
-        }
-      }
-
-      clearTimeout(timeoutId);
-      return false;
-    } catch (error) {
       return false;
     }
   };

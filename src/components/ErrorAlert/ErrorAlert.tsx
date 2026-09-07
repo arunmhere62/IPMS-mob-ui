@@ -4,8 +4,7 @@ import {
   View,
   Text,
   StyleSheet,
-  Animated,
-  Alert } from 'react-native';
+  Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 export interface ApiError {

@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Alert,
   TouchableOpacity,
-  Linking,
   Clipboard,
   AppState,
   AppStateStatus,
@@ -19,7 +18,6 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
-import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { UpiAppPicker } from '@/components/UpiAppPicker';
 import {
   useGetTenantPaymentConfigQuery,
@@ -118,7 +116,7 @@ export const TenantSubmitPaymentProofScreen: React.FC = () => {
   };
 
   // ─── Called when user selects an app from the picker ───
-  const handleAppSelected = (appId: string, appLabel: string) => {
+  const handleAppSelected = (_appId: string, appLabel: string) => {
     setUpiAppOpened(true);
     setHasAskedConfirmation(false);
     setSelectedAppLabel(appLabel);

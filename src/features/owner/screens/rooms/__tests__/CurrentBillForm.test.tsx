@@ -127,7 +127,7 @@ describe('CurrentBillForm', () => {
 
   describe('Form Validation', () => {
     it('shows error when bill amount is empty', async () => {
-      const { getByText, getByPlaceholderText } = render(
+      const { getByText } = render(
         <Provider store={mockStore}>
           <CurrentBillForm {...defaultProps} />
         </Provider>,

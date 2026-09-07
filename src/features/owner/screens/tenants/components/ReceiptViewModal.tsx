@@ -110,7 +110,7 @@ export const ReceiptViewModal: React.FC<ReceiptViewModalProps> = ({
       
       // Get the dimensions of the receipt content
       return new Promise((resolve) => {
-        receiptRef.current?.measure((x, y, width, height) => {
+        receiptRef.current?.measure((_x, _y, width, height) => {
           // Use a fixed width that matches the receipt's natural width
           const receiptWidth = 600; // Match this with your receipt's natural width
           const scale = 3; // Scale factor for better quality

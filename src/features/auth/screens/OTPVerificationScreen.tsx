@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, Alert, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { Theme } from '../../../theme';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../../owner/store/slices/authSlice';

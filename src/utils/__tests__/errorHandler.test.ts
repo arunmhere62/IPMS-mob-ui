@@ -5,7 +5,6 @@ import {
   retryWithBackoff,
   handleGlobalError,
   setupGlobalErrorHandlers,
-  ErrorInfo,
 } from '../errorHandler';
 import { Alert } from 'react-native';
 import { showToast } from '../toastService';

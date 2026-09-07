@@ -172,16 +172,6 @@ export const TenantAdvancePaymentsScreen: React.FC = () => {
     );
   };
 
-  const handleEditAdvancePayment = (payment: AdvancePayment) => {
-    if (!canEditAdvance) {
-      Alert.alert('Access Denied', "You don't have permission to edit advance payments");
-      return;
-    }
-    setAdvancePaymentFormMode("edit");
-    setEditingAdvancePayment(payment);
-    setAdvancePaymentFormVisible(true);
-  };
-
   const handleUpdateAdvancePayment = async (id: number, data: Partial<CreateAdvancePaymentDto>) => {
     if (!canEditAdvance) {
       Alert.alert('Access Denied', "You don't have permission to edit advance payments");

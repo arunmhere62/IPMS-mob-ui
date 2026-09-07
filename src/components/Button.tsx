@@ -24,7 +24,6 @@ export const Button: React.FC<ButtonProps> = ({
   disabled = false,
   variant = 'primary',
   size = 'md',
-  className = '',
   style,
   textStyle,
   icon,

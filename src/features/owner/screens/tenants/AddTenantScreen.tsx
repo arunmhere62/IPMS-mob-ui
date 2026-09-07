@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  Modal,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -147,8 +146,6 @@ export const AddTenantScreen: React.FC<AddTenantScreenProps> = ({
   // Check if we're coming from bed screen with pre-selected bed and room
   const preSelectedBedId = route?.params?.bed_id;
   const preSelectedRoomId = route?.params?.room_id;
-  const isFromBedFlow =
-    !isEditMode && !!preSelectedBedId && !!preSelectedRoomId;
 
   // Dropdown data
   const [roomList, setRoomList] = useState<OptionType[]>([]);

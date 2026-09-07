@@ -182,25 +182,6 @@ export const TenantRefundPaymentsScreen: React.FC = () => {
     setReceiptModalVisible(true);
   };
 
-  const handleWhatsAppReceipt = async (payment: RefundPayment) => {
-    try {
-      const data = prepareReceiptData(payment);
-      setReceiptData(data);
-
-      setTimeout(async () => {
-        await CompactReceiptGenerator.shareViaWhatsApp(
-          receiptRef,
-          data,
-          tenantPhone || ''
-        );
-        setReceiptData(null);
-      }, 100);
-    } catch (error: unknown) {
-      showErrorAlert(error, 'WhatsApp Share Error');
-      setReceiptData(null);
-    }
-  };
-
   const handleShareReceipt = async (payment: RefundPayment) => {
     try {
       const data = prepareReceiptData(payment);

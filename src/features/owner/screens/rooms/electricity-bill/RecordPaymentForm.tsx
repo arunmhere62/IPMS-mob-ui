@@ -19,13 +19,6 @@ interface RecordPaymentFormProps {
 
 const paymentMethods = ['CASH', 'GPAY', 'PHONEPE', 'BANK_TRANSFER', 'UPI', 'OTHER'];
 
-const formatDate = (d: Date) => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 export const RecordPaymentForm: React.FC<RecordPaymentFormProps> = ({
   visible,
   item,

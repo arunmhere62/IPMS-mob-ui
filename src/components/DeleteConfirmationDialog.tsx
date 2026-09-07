@@ -1,4 +1,3 @@
-import React from 'react';
 import { Alert, AlertButton } from 'react-native';
 
 export interface DeleteConfirmationDialogProps {
@@ -20,7 +19,6 @@ export const showDeleteConfirmation = ({
   itemName,
   onConfirm,
   onCancel,
-  isLoading = false,
 }: DeleteConfirmationDialogProps) => {
   const buttons: AlertButton[] = [
     {

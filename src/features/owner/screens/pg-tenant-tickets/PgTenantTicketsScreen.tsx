@@ -11,8 +11,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
 import {
   useGetPgTenantTicketsQuery,
-  PgTenantTicket,
-  PgTicketStatus } from '../../api/pgTicketsApi';
+  PgTenantTicket } from '../../api/pgTicketsApi';
 
 const C = Theme.colors;
 

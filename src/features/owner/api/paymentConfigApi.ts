@@ -1,5 +1,5 @@
 import { baseApi } from './baseApi';
-import { extractResponseData, isApiResponseSuccess, extractPaginatedData } from '../../../utils/apiResponseHandler';
+import { extractResponseData, isApiResponseSuccess } from '../../../utils/apiResponseHandler';
 
 // ─── Types ────────────────────────────────────────────────────
 

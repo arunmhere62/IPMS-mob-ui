@@ -10,7 +10,7 @@ import { FullScreenSlideUpModal } from '@/components/FullScreenSlideUpModal';
 import { RequestDetailsComponent } from '@/components/RequestDetailsComponent';
 import { networkLogger, type NetworkLog } from '@/utils/networkLogger';
 import { Theme } from '@/theme';
-import { ENV, setEnvironment, resetEnvironment, getCurrentEnv, ENV_URLS, ENVIRONMENTS, getDisplayUrl, BUNDLED_ENV, type AppEnv } from '@/config';
+import { setEnvironment, resetEnvironment, getCurrentEnv, ENV_URLS, ENVIRONMENTS, getDisplayUrl, BUNDLED_ENV, type AppEnv } from '@/config';
 import { store } from '@/features/owner/store';
 import { baseApi } from '@/features/owner/api/baseApi';
 import { tenantBaseApi } from '@/features/tenant/api/tenantBaseApi';
@@ -45,15 +45,6 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     const errors = logs.filter((l) => l.status && l.status >= 400).length;
     return { total, success, errors };
   }, [logs]);
-
-  const getPath = (url: string) => {
-    try {
-      const u = new URL(url);
-      return u.pathname + (u.search || '');
-    } catch {
-      return url;
-    }
-  };
 
   const getStatusColor = (status?: number) => {
     if (!status) return Theme.colors.text.tertiary;

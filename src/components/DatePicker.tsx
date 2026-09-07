@@ -62,7 +62,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     return `${formattedDay}/${formattedMonth}/${year}`;
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateChange = (_event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowPicker(false);
     }

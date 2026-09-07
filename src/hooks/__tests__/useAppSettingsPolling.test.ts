@@ -17,7 +17,6 @@ jest.mock('@/features/owner/store/slices/appSettingsSlice', () => ({
 describe('useAppSettingsPolling', () => {
   const mockDispatch = jest.fn();
   const mockUseGetPublicAppStatusQuery = require('@/features/owner/api/appSettingsApi').useGetPublicAppStatusQuery as jest.Mock;
-  const mockSetAppSettings = require('@/features/owner/store/slices/appSettingsSlice').setAppSettings;
 
   beforeEach(() => {
     jest.clearAllMocks();

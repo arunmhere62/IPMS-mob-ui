@@ -52,7 +52,6 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
   const [panY] = useState(new Animated.Value(0));
   const [backdropOpacity] = useState(new Animated.Value(0));
   const [slideY] = useState(new Animated.Value(500));
-  const [isDraggingHeader, setIsDraggingHeader] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const screenH = Dimensions.get("window").height;
   const topSpacing = (insets?.top ?? 0) + 12;
@@ -152,17 +151,16 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
   const headerPanResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
+      onMoveShouldSetPanResponder: (_evt, gestureState) => {
         // Respond to vertical swipes on header (avoid accidental small movements)
         return Math.abs(gestureState.dy) > 5;
       },
       onPanResponderGrant: () => {
-        setIsDraggingHeader(true);
         if (enableFlexibleHeightDrag) {
           setStartHeight((sheetHeight as any).__getValue?.() ?? minH);
         }
       },
-      onPanResponderMove: (evt, gestureState) => {
+      onPanResponderMove: (_evt, gestureState) => {
         if (enableFlexibleHeightDrag) {
           // dy < 0 => drag up => increase height
           // dy > 0 => drag down => decrease height
@@ -187,9 +185,7 @@ export const SlideBottomModal: React.FC<SlideBottomModalProps> = ({
           panY.setValue(clamped);
         }
       },
-      onPanResponderRelease: (evt, gestureState) => {
-        setIsDraggingHeader(false);
-
+      onPanResponderRelease: (_evt, gestureState) => {
         if (enableFlexibleHeightDrag) {
           const currentH = (sheetHeight as any).__getValue?.() ?? minH;
 

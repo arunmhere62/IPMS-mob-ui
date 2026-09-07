@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Animated, StyleSheet, Easing } from 'react-native';
+import { View, Animated, Easing } from 'react-native';
 
 interface SkeletonLoaderProps {
   width?: number | string;

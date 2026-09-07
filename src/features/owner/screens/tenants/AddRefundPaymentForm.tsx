@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   ScrollView,
-  ActivityIndicator,
   Alert,
 } from "react-native";
 import { Theme } from "../../../../theme";
@@ -76,12 +75,6 @@ const formatRoomNo = (roomNo?: string): string => {
   if (!roomNo) return '';
   return roomNo.toUpperCase().startsWith('RM') ? roomNo : `RM${roomNo}`;
 };
-
-const PAYMENT_STATUS: Option[] = [
-  { label: "Paid", value: "PAID", icon: "✅" },
-  { label: "Pending", value: "PENDING", icon: "⏳" },
-  { label: "Failed", value: "FAILED", icon: "❌" },
-];
 
 export const AddRefundPaymentForm: React.FC<AddRefundPaymentFormProps> = ({
   visible,

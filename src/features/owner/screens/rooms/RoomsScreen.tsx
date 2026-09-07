@@ -16,7 +16,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { RootState } from "../../store";
 import {
   Room,
-  useDeleteRoomMutation,
   useGetAllRoomsQuery,
 } from "../../api/roomsApi";
 import { Card } from "../../../../components/Card";
@@ -26,7 +25,6 @@ import { Theme } from "../../../../theme";
 import { ScreenHeader } from "../../../../components/ScreenHeader";
 import { ScreenLayout } from "../../../../components/ScreenLayout";
 import { RoomFormModal } from "./CreateEditRoomForm";
-import { showDeleteConfirmation } from "../../../../components/DeleteConfirmationDialog";
 import { showErrorAlert, showSuccessAlert } from "../../../../utils/errorHandler";
 import { CONTENT_COLOR } from "@/constant";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -46,8 +44,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   const { step: onboardingStep } = useOnboardingState();
 
   const canCreateRoom = can(Permission.CREATE_ROOM);
-  const canEditRoom = can(Permission.EDIT_ROOM);
-  const canDeleteRoom = can(Permission.DELETE_ROOM);
 
   const { width: screenWidth } = useWindowDimensions();
 
@@ -77,8 +73,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     skip: !selectedPGLocationId,
     refetchOnMountOrArgChange: false,
   });
-
-  const [deleteRoomMutation] = useDeleteRoomMutation();
 
   // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -239,15 +233,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     return ["All", ...sorted];
   }, [rooms]);
 
-  const handleOpenEditModal = (roomId: number) => {
-    if (!canEditRoom) {
-      Alert.alert("Access Denied", "You don't have permission to edit rooms");
-      return;
-    }
-    setEditingRoomId(roomId);
-    setEditModalVisible(true);
-  };
-
   const handleCloseEditModal = () => {
     setEditModalVisible(false);
     setEditingRoomId(null);
@@ -255,35 +240,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
 
   const handleEditSuccess = () => {
     refetchRooms();
-  };
-
-  const handleDeleteRoom = (roomId: number, roomNo: string) => {
-    if (!canDeleteRoom) {
-      Alert.alert("Access Denied", "You don't have permission to delete rooms");
-      return;
-    }
-    showDeleteConfirmation({
-      title: "Delete Room",
-      message: "Are you sure you want to delete Room",
-      itemName: roomNo,
-      onConfirm: async () => {
-        try {
-          // Delete room from database (backend will handle S3 image deletion)
-          const response = await deleteRoomMutation(roomId).unwrap();
-
-          if (!(response as any)?.success) {
-            showErrorAlert(response as any, "Delete Error");
-            return;
-          }
-
-          showSuccessAlert(response);
-          // Optimistically remove from local state without refetching
-          setRooms((prev) => prev.filter((room) => room.s_no !== roomId));
-        } catch (error: any) {
-          showErrorAlert(error, "Delete Error");
-        }
-      },
-    });
   };
 
   const formatPrice = (price: number) => (price > 0 ? `₹${price.toLocaleString('en-IN')}` : '—');

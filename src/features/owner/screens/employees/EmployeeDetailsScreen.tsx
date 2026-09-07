@@ -60,44 +60,6 @@ const DetailRow = ({
   </View>
 );
 
-interface Role {
-  s_no: number;
-  role_name: string;
-}
-
-interface City {
-  s_no: number;
-  name: string;
-}
-
-interface State {
-  s_no: number;
-  name: string;
-}
-
-interface _Employee {
-  s_no: number;
-  name: string;
-  email: string | null;
-  phone: string;
-  status: string;
-  role_id: number | null;
-  organization_id: number;
-  gender: string;
-  address: string | null;
-  city_id: number | null;
-  state_id: number | null;
-  pincode: string | null;
-  country: string | null;
-  proof_documents: string | null;
-  profile_images: string | string[] | null;
-  created_at: string;
-  updated_at: string;
-  roles?: Role | null;
-  city?: City | null;
-  state?: State | null;
-}
-
 const EmployeeDetailsScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();

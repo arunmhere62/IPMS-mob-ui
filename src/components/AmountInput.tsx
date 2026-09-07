@@ -28,7 +28,6 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   required = false,
   disabled = false,
   containerStyle,
-  prefix = '₹',
   maxLength = 10,
   returnKeyType,
   blurOnSubmit,

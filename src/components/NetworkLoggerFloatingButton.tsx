@@ -4,7 +4,7 @@ import { Animated, Dimensions, PanResponder, StyleSheet, Text, View } from 'reac
 import { Theme } from '../theme';
 import { networkLogger } from '../utils/networkLogger';
 import { NetworkLoggerModal } from '../screens/network/NetworkLoggerScreen';
-import { ENV, getCurrentEnv } from '../config';
+import { ENV } from '../config';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

@@ -65,7 +65,7 @@ export const usePermissions = () => {
      * @param screenPath - Screen path/name
      * @returns boolean
      */
-    canAccess: (screenPath: string): boolean => {
+    canAccess: (_screenPath: string): boolean => {
       return true;
     },
 

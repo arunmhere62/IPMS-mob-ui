@@ -6,7 +6,6 @@ import {
   RefreshControl,
   Alert,
   TextInput,
-  ActivityIndicator,
   Image,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -18,7 +17,6 @@ import { Theme } from '../../../../theme';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { Card } from '../../../../components/Card';
-import { AnimatedButton } from '../../../../components/AnimatedButton';
 import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';

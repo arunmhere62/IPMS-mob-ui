@@ -37,7 +37,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredPermissions,
   requireAll = false,
   fallback,
-  screenName,
 }) => {
   const { can, canAny, canAll } = usePermissions();
 

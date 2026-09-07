@@ -7,7 +7,6 @@ import {
   Animated,
   Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AnnouncementBannerProps {
   title: string;
@@ -15,7 +14,6 @@ interface AnnouncementBannerProps {
 }
 
 export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ title, message }) => {
-  const insets = useSafeAreaInsets();
   const [dismissed, setDismissed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const slideAnim = useRef(new Animated.Value(-80)).current;

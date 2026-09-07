@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   FlatList,
   RefreshControl,
-  Alert,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
-import { useLazyGetTicketsQuery, useDeleteTicketMutation } from '@/features/owner/api/ticketsApi';
+import { useLazyGetTicketsQuery } from '@/features/owner/api/ticketsApi';
 import { Card } from '@/components/Card';
 import Theme from '@/theme';
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { showErrorAlert } from '@/utils/errorHandler';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
@@ -55,7 +54,6 @@ const getCategoryIcon = (category: string) => {
 
 export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
   const [triggerTickets, { isFetching }] = useLazyGetTicketsQuery();
-  const [deleteTicketMutation] = useDeleteTicketMutation();
 
   const [tickets, setTickets] = useState<any[]>([]);
   const [pagination, setPagination] = useState<any>(null);
@@ -119,29 +117,6 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
     setRefreshing(true);
     await loadTickets();
     setRefreshing(false);
-  };
-
-  const handleDeleteTicket = (ticketId: number, ticketNumber: string) => {
-    Alert.alert(
-      'Delete Ticket',
-      `Are you sure you want to delete ticket ${ticketNumber}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const res = await deleteTicketMutation(ticketId).unwrap();
-              showSuccessAlert(res);
-              loadTickets();
-            } catch (error: any) {
-              showErrorAlert(error, 'Delete Error');
-            }
-          },
-        },
-      ]
-    );
   };
 
   const renderTicketCard = ({ item }: { item: any }) => {

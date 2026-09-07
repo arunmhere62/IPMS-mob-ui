@@ -22,7 +22,7 @@ export const ENVIRONMENTS: Record<AppEnv, { label: string; color: string }> = {
 
 // Single source of truth for the local API URL: read from app.config.js extra
 // (which itself reads LOCAL_API_BASE_URL from .env). Change the IP in .env once.
-const LOCAL_API_BASE_URL = appConfig.localApiBaseUrl || 'http://192.168.1.6:3001/api/v1';
+const LOCAL_API_BASE_URL = appConfig.localApiBaseUrl || 'http://192.168.1.5:3001/api/v1';
 
 export const ENV_URLS: Record<AppEnv, string> = {
   local: LOCAL_API_BASE_URL,

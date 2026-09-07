@@ -99,7 +99,7 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
   const { data: statesResponse, isFetching: isFetchingStates } = useGetStatesQuery({ countryCode: 'IN' });
   const [fetchCitiesTrigger] = useLazyGetCitiesQuery();
 
-  const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, {
+  useGetPGLocationsQuery(undefined, {
     skip: false });
 
   // Fetch employee data if in edit mode
@@ -210,12 +210,6 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
       setLoadingRoles(false);
     }
   };
-
-  const safeLocations = Array.isArray((pgLocationsResponse as any)?.data) ? (pgLocationsResponse as any).data : [];
-
-  const selectedPGLocation = selectedPGLocationId
-    ? safeLocations.find((loc: any) => loc.s_no === selectedPGLocationId)
-    : null;
 
   const updateField = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

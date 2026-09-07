@@ -43,10 +43,7 @@ import {
   ExpectedVacateDateForm,
 } from './components';
 import {
-  useCreateAdvancePaymentMutation,
   useCreateRefundPaymentMutation,
-  useDeleteAdvancePaymentMutation,
-  useDeleteRefundPaymentMutation,
   useUpdateAdvancePaymentMutation,
   useUpdateRefundPaymentMutation,
   useCreateTenantPaymentMutation,
@@ -63,10 +60,9 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import AdvancePaymentForm from './AdvancePaymentForm';
 import { useGetAllBedsQuery, useGetAllRoomsQuery } from '@/features/owner/api/roomsApi';
 import type { Bed, GetBedsParams, GetRoomsParams, Room } from '@/features/owner/api/roomsApi';
-import { useGetPGLocationsQuery, useGetPGLocationDetailsQuery } from '@/features/owner/api/pgLocationsApi';
+import { useGetPGLocationsQuery } from '@/features/owner/api/pgLocationsApi';
 import {
   TenantPayment,
-  useCheckoutTenantWithDateMutation,
   useDeleteTenantMutation,
   useGetTenantByIdQuery,
   useLazyGetTenantsQuery,
@@ -117,12 +113,6 @@ type TenantPaymentWithCycle = TenantPayment & {
   };
 };
 
-type TenantPaymentWithRelations = TenantPaymentWithCycle & {
-  pg_locations?: { location_name?: string };
-  rooms?: { room_no?: string };
-  beds?: { bed_no?: string };
-};
-
 type PaymentWithCycle = Payment & {
   tenant_rent_cycles?: {
     cycle_start?: string;
@@ -168,10 +158,8 @@ const TenantDetailsContent: React.FC<{
   canDeleteRent: _canDeleteRent,
   canCreateAdvance,
   canEditAdvance,
-  canDeleteAdvance,
   canCreateRefund,
   canEditRefund,
-  canDeleteRefund,
 }) => {
   const PAYMENT_METHODS: Option[] = [
     { label: 'GPay', value: 'GPAY', icon: '📱' },
@@ -191,8 +179,6 @@ const TenantDetailsContent: React.FC<{
 
   // Expected vacate date modal state
   const [vacateDateModalVisible, setVacateDateModalVisible] = useState(false);
-  const [newVacateDate, setNewVacateDate] = useState('');
-  const [vacateLoading, setVacateLoading] = useState(false);
 
   // Transfer tenant modal state
   const [transferModalVisible, setTransferModalVisible] = useState(false);
@@ -223,17 +209,13 @@ const TenantDetailsContent: React.FC<{
 
   const [triggerTenants] = useLazyGetTenantsQuery();
   const [deleteTenantMutation] = useDeleteTenantMutation();
-  const [checkoutTenantWithDate] = useCheckoutTenantWithDateMutation();
   const [updateTenantCheckoutDate] = useUpdateTenantCheckoutDateMutation();
   const [transferTenantMutation] = useTransferTenantMutation();
   const [updateTenantMutation] = useUpdateTenantMutation();
 
-  const [createAdvancePayment] = useCreateAdvancePaymentMutation();
   const [updateAdvancePayment] = useUpdateAdvancePaymentMutation();
-  const [deleteAdvancePayment] = useDeleteAdvancePaymentMutation();
   const [createRefundPayment] = useCreateRefundPaymentMutation();
   const [updateRefundPayment] = useUpdateRefundPaymentMutation();
-  const [deleteRefundPayment] = useDeleteRefundPaymentMutation();
 
   const [createTenantPayment] = useCreateTenantPaymentMutation();
   const [triggerDetectPaymentGaps] = useLazyDetectPaymentGapsQuery();
@@ -251,13 +233,6 @@ const TenantDetailsContent: React.FC<{
       ?.transfer_difference_due_cycle ?? null;
 
   const { data: pgLocationsResponse } = useGetPGLocationsQuery(undefined, { skip: false });
-
-  const effectiveReceiptPgId =
-    (currentTenant as { pg_id?: number | null } | null | undefined)?.pg_id ?? selectedPGLocationId ?? null;
-
-  const { data: pgDetailsResponse } = useGetPGLocationDetailsQuery(Number(effectiveReceiptPgId), {
-    skip: !effectiveReceiptPgId,
-  });
 
   const {
     data: transferRoomsResponse,
@@ -334,11 +309,6 @@ const TenantDetailsContent: React.FC<{
     label: `Bed ${b.bed_no}`,
     value: b.s_no,
   }));
-
-  const _handleOpenTransfer = () => {
-    if (!currentTenant) return;
-    setTransferModalVisible(true);
-  };
 
   const openCollectTransferDifference = () => {
     if (!currentTenant) return;
@@ -481,7 +451,7 @@ const TenantDetailsContent: React.FC<{
 
   // Receipt modal state
   const [receiptModalVisible, setReceiptModalVisible] = useState(false);
-  const [receiptData, setReceiptData] = useState<CompactReceiptData | null>(null);
+  const [receiptData] = useState<CompactReceiptData | null>(null);
   const receiptRef = React.useRef<View>(null);
 
   useEffect(() => {
@@ -581,36 +551,6 @@ const TenantDetailsContent: React.FC<{
     navigation.goBack();
   };
 
-  const _toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  const _handleSaveAdvancePayment = async (data: Partial<CreateAdvancePaymentDto>) => {
-    if (!canCreateAdvance) {
-      Alert.alert('Access Denied', "You don't have permission to create advance payments");
-      throw new Error('ACCESS_DENIED');
-    }
-    try {
-      // Ensure pg_id is available from tenant or selected location
-      const pgId = currentTenant?.pg_id || selectedPGLocationId;
-      
-      if (!pgId) {
-        throw new Error('PG Location ID is required');
-      }
-
-      await createAdvancePayment({ ...(data as CreateAdvancePaymentDto), pg_id: pgId }).unwrap();
-
-      showSuccessAlert('Advance payment created successfully');
-      refetchTenant();
-      refreshTenantList(); // Refresh tenant list
-    } catch (error: unknown) {
-      throw error; // Re-throw to let modal handle it
-    }
-  };
-
   const handleSaveRefundPayment = async (data: {
     tenant_id: number;
     room_id: number;
@@ -665,169 +605,7 @@ const TenantDetailsContent: React.FC<{
   };
 
   // Receipt handlers
-  const prepareReceiptData = (payment: TenantPaymentWithRelations): CompactReceiptData => {
-    const periodStartRaw = payment?.tenant_rent_cycles?.cycle_start || payment?.start_date || payment?.payment_date;
-    const periodEndRaw = payment?.tenant_rent_cycles?.cycle_end || payment?.end_date || payment?.payment_date;
-
-    const pgDetails = pgDetailsResponse?.data;
-
-    return {
-      receiptNumber: `RCP-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
-      paymentDate: new Date(payment.payment_date),
-      tenantName: (currentTenant as any)?.name || 'Tenant',
-      tenantPhone: (currentTenant as any)?.phone_no || '',
-      pgName: payment?.pg_locations?.location_name || 'PG',
-      pgDetails: pgDetails
-        ? {
-            pgId: effectiveReceiptPgId ? Number(effectiveReceiptPgId) : undefined,
-            pgName: pgDetails.location_name,
-            address: pgDetails.address,
-            pincode: pgDetails.pincode ?? undefined,
-            city: pgDetails.city ?? undefined,
-            state: pgDetails.state ?? undefined,
-          }
-        : undefined,
-      roomNumber: payment?.rooms?.room_no || '',
-      bedNumber: payment?.beds?.bed_no || '',
-      rentPeriod: {
-        startDate: periodStartRaw ? new Date(periodStartRaw) : new Date(payment.payment_date),
-        endDate: periodEndRaw ? new Date(periodEndRaw) : new Date(payment.payment_date),
-      },
-      actualRent: Number(payment.actual_rent_amount || 0),
-      amountPaid: Number(payment.amount_paid || 0),
-      paymentMethod: payment.payment_method || 'CASH',
-      remarks: payment.remarks,
-      receiptType: 'RENT',
-    };
-  };
-
-  const prepareAdvanceReceiptData = (payment: PaymentsAdvancePayment): CompactReceiptData => {
-    const paymentDate = new Date(payment.payment_date);
-    const pgDetails = pgDetailsResponse?.data;
-    return {
-      receiptNumber: `ADV-${payment.s_no}-${new Date(payment.payment_date).getFullYear()}`,
-      paymentDate,
-      tenantName: (currentTenant as any)?.name || 'Tenant',
-      tenantPhone: (currentTenant as any)?.phone_no || '',
-      pgName: (payment as any)?.pg_locations?.location_name || (currentTenant as any)?.pg_locations?.location_name || 'PG',
-      pgDetails: pgDetails
-        ? {
-            pgId: effectiveReceiptPgId ? Number(effectiveReceiptPgId) : undefined,
-            pgName: pgDetails.location_name,
-            address: pgDetails.address,
-            pincode: pgDetails.pincode ?? undefined,
-            city: pgDetails.city ?? undefined,
-            state: pgDetails.state ?? undefined,
-          }
-        : undefined,
-      roomNumber: (payment as any)?.rooms?.room_no || (currentTenant as any)?.rooms?.room_no || '',
-      bedNumber: (payment as any)?.beds?.bed_no || (currentTenant as any)?.beds?.bed_no || '',
-      rentPeriod: {
-        startDate: paymentDate,
-        endDate: paymentDate,
-      },
-      actualRent: Number(payment.amount_paid || 0),
-      amountPaid: Number(payment.amount_paid || 0),
-      paymentMethod: payment.payment_method || 'CASH',
-      remarks: payment.remarks,
-      receiptType: 'ADVANCE' as const,
-    };
-  };
-
-  const _handleViewReceipt = (payment: TenantPayment) => {
-    const data = prepareReceiptData(payment as TenantPaymentWithRelations);
-    setReceiptData(data);
-    setReceiptModalVisible(true);
-  };
-
-  const _handleWhatsAppReceipt = async (payment: TenantPayment) => {
-    try {
-      const data = prepareReceiptData(payment as TenantPaymentWithRelations);
-      setReceiptData(data);
-      
-      // Wait for component to render
-      setTimeout(async () => {
-        await CompactReceiptGenerator.shareViaWhatsApp(
-          receiptRef,
-          data,
-          currentTenant?.phone_no || ''
-        );
-        setReceiptData(null);
-      }, 100);
-    } catch (error: unknown) {
-      showErrorAlert(error, 'WhatsApp Share Error');
-      setReceiptData(null);
-    }
-  };
-
-  const _handleShareReceipt = async (payment: TenantPayment) => {
-    try {
-      const data = prepareReceiptData(payment as TenantPaymentWithRelations);
-      setReceiptData(data);
-      
-      // Wait for component to render
-      setTimeout(async () => {
-        await CompactReceiptGenerator.shareImage(receiptRef);
-        setReceiptData(null);
-      }, 100);
-    } catch (error: unknown) {
-      showErrorAlert(error, 'Share Receipt Error');
-      setReceiptData(null);
-    }
-  };
-
   // Advance payment receipt handlers
-  const _handleViewAdvanceReceipt = (payment: PaymentsAdvancePayment) => {
-    const data = prepareAdvanceReceiptData(payment);
-    setReceiptData(data);
-    setReceiptModalVisible(true);
-  };
-
-  const _handleWhatsAppAdvanceReceipt = async (payment: PaymentsAdvancePayment) => {
-    try {
-      const data = prepareAdvanceReceiptData(payment);
-      setReceiptData(data);
-      
-      // Wait for component to render
-      setTimeout(async () => {
-        await CompactReceiptGenerator.shareViaWhatsApp(
-          receiptRef,
-          data,
-          currentTenant?.phone_no || ''
-        );
-        setReceiptData(null);
-      }, 100);
-    } catch (error: unknown) {
-      showErrorAlert(error, 'WhatsApp Share Error');
-      setReceiptData(null);
-    }
-  };
-
-  const _handleShareAdvanceReceipt = async (payment: PaymentsAdvancePayment) => {
-    try {
-      const data = prepareAdvanceReceiptData(payment);
-      setReceiptData(data);
-      
-      // Wait for component to render
-      setTimeout(async () => {
-        await CompactReceiptGenerator.shareImage(receiptRef);
-        setReceiptData(null);
-      }, 100);
-    } catch (error: unknown) {
-      showErrorAlert(error, 'Share Receipt Error');
-      setReceiptData(null);
-    }
-  };
-
-  const _handleEditAdvancePayment = (payment: PaymentsAdvancePayment) => {
-    if (!canEditAdvance) {
-      Alert.alert('Access Denied', "You don't have permission to edit advance payments");
-      return;
-    }
-    setEditingAdvancePayment(payment);
-    setEditAdvancePaymentFormVisible(true);
-  };
-
   const handleUpdateAdvancePayment = async (id: number, data: Partial<CreateAdvancePaymentDto>) => {
     if (!canEditAdvance) {
       Alert.alert('Access Denied', "You don't have permission to edit advance payments");
@@ -842,46 +620,6 @@ const TenantDetailsContent: React.FC<{
     } catch (error: unknown) {
       throw error; // Re-throw to let modal handle it
     }
-  };
-
-  const _handleDeleteAdvancePayment = (payment: PaymentsAdvancePayment) => {
-    if (!canDeleteAdvance) {
-      Alert.alert('Access Denied', "You don't have permission to delete advance payments");
-      return;
-    }
-    Alert.alert(
-      'Delete Advance Payment',
-      `Are you sure you want to delete this payment?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteAdvancePayment(payment.s_no).unwrap();
-              showSuccessAlert('Advance payment deleted successfully');
-              refetchTenant();
-              refreshTenantList(); // Refresh tenant list
-            } catch (error: unknown) {
-              showErrorAlert(error, 'Delete Error');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const _handleEditRefundPayment = (payment: PaymentsRefundPayment) => {
-    if (!canEditRefund) {
-      Alert.alert('Access Denied', "You don't have permission to edit refund payments");
-      return;
-    }
-    setEditingRefundPayment(payment);
-    setEditRefundPaymentFormVisible(true);
   };
 
   const handleUpdateRefundPayment = async (id: number, data: Partial<CreateRefundPaymentDto>) => {
@@ -907,41 +645,6 @@ const TenantDetailsContent: React.FC<{
     setNewCheckoutDate('');
   };
 
-  const _confirmCheckout = async () => {
-    if (!newCheckoutDate) {
-      Alert.alert('Error', 'Please select a checkout date');
-      return;
-    }
-
-    try {
-      setCheckoutLoading(true);
-      await checkoutTenantWithDate({ id: currentTenant.s_no, check_out_date: newCheckoutDate }).unwrap();
-      showSuccessAlert('Tenant checked out successfully');
-      setCheckoutDateModalVisible(false);
-      setNewCheckoutDate('');
-      refetchTenant();
-      refreshTenantList(); // Refresh tenant list
-    } catch (error: unknown) {
-      const errObj = (error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined);
-      const errData = errObj?.data && typeof errObj.data === 'object' ? (errObj.data as Record<string, unknown>) : undefined;
-      const nestedError = errObj?.error && typeof errObj.error === 'object' ? (errObj.error as Record<string, unknown>) : undefined;
-      const nestedData = nestedError?.data && typeof nestedError.data === 'object' ? (nestedError.data as Record<string, unknown>) : undefined;
-      const msg =
-        (typeof errData?.message === 'string' ? errData.message : undefined) ||
-        (typeof nestedData?.message === 'string' ? nestedData.message : undefined) ||
-        (typeof errObj?.message === 'string' ? errObj.message : undefined) ||
-        '';
-
-      if (typeof msg === 'string' && msg.toLowerCase().includes('pending dues')) {
-        Alert.alert('Cannot Checkout', msg);
-      } else {
-        showErrorAlert(error, 'Checkout Error');
-      }
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
-
   const handleCloseCheckoutModal = () => {
     setCheckoutDateModalVisible(false);
     setNewCheckoutDate('');
@@ -949,84 +652,6 @@ const TenantDetailsContent: React.FC<{
 
   const handleOpenVacateModal = () => {
     setVacateDateModalVisible(true);
-  };
-
-  const handleSaveVacateDate = async () => {
-    if (!newVacateDate) {
-      // Clearing the date is allowed
-      try {
-        setVacateLoading(true);
-        await updateTenantMutation({
-          id: currentTenant.s_no,
-          data: { expected_vacate_date: null } as any,
-        }).unwrap();
-        showSuccessAlert('Expected vacate date cleared');
-        setVacateDateModalVisible(false);
-        refetchTenant();
-      } catch (error: unknown) {
-        showErrorAlert(error, 'Update Error');
-      } finally {
-        setVacateLoading(false);
-      }
-      return;
-    }
-
-    // Validate that expected vacate date is in the future
-    const selectedDate = new Date(newVacateDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    selectedDate.setHours(0, 0, 0, 0);
-
-    if (selectedDate <= today) {
-      Alert.alert('Invalid Date', 'Expected vacate date must be in the future. Please select a date after today.');
-      return;
-    }
-
-    try {
-      setVacateLoading(true);
-      await updateTenantMutation({
-        id: currentTenant.s_no,
-        data: { expected_vacate_date: newVacateDate } as any,
-      }).unwrap();
-      showSuccessAlert('Expected vacate date saved');
-      setVacateDateModalVisible(false);
-      refetchTenant();
-    } catch (error: unknown) {
-      showErrorAlert(error, 'Update Error');
-    } finally {
-      setVacateLoading(false);
-    }
-  };
-
-  const _handleDeleteRefundPayment = (payment: PaymentsRefundPayment) => {
-    if (!canDeleteRefund) {
-      Alert.alert('Access Denied', "You don't have permission to delete refund payments");
-      return;
-    }
-    Alert.alert(
-      'Delete Refund Payment',
-      `Are you sure you want to delete this refund?\n\nAmount: ₹${payment.amount_paid}\nDate: ${new Date(payment.payment_date).toLocaleDateString('en-IN')}`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteRefundPayment(payment.s_no).unwrap();
-              showSuccessAlert('Refund payment deleted successfully');
-              refetchTenant();
-              refreshTenantList(); // Refresh tenant list
-            } catch (error: unknown) {
-              showErrorAlert(error, 'Delete Error');
-            }
-          },
-        },
-      ]
-    );
   };
 
   const handleDeleteTenant = () => {
@@ -2045,7 +1670,6 @@ const TenantDetailsContent: React.FC<{
           const checkoutReason = resolveDisabledReason('CHECKOUT');
           const changeReason = resolveDisabledReason('CHANGE_CHECKOUT');
           const clearReason = resolveDisabledReason('CLEAR_CHECKOUT');
-          const _transferReason = resolveDisabledReason('TRANSFER');
 
           return (
             <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
