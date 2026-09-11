@@ -32,7 +32,7 @@ const NetworkLoggerContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
   const loadLogs = useCallback(() => {
     setLogs(networkLogger.getLogs());
   }, []);
-
+//HELLO
   useEffect(() => {
     loadLogs();
     const t = setInterval(loadLogs, 800);
