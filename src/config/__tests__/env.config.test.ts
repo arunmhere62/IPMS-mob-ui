@@ -36,7 +36,7 @@ describe('env.config', () => {
 
   describe('IS_EXPO_GO detection', () => {
     it('is false when expo global is not defined', () => {
-      const IS_EXPO_GO = !!(typeof (global as any).expo !== 'undefined' && (global as any).expo?.modules?.ExpoGo);
+      const IS_EXPO_GO = !!(typeof (globalThis as any).expo !== 'undefined' && (globalThis as any).expo?.modules?.ExpoGo);
       expect(IS_EXPO_GO).toBe(false);
     });
   });

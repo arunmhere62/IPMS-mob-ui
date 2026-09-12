@@ -336,7 +336,7 @@ export const handleGlobalError = (error: any, context?: string) => {
 export const setupGlobalErrorHandlers = () => {
   try {
     // Log all promise rejections
-    const globalAny = global as any;
+    const globalAny = globalThis as any;
     
     if (typeof globalAny.ErrorUtils !== 'undefined') {
       const originalErrorHandler = globalAny.ErrorUtils.getGlobalHandler();

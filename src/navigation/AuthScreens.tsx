@@ -1,14 +1,11 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ENV } from '@/config/environment';
 
 import { RoleSelectionScreen } from '@/features/auth/screens/RoleSelectionScreen';
 import { LoginScreen } from '@/features/auth/screens/LoginScreen';
 import { OTPVerificationScreen } from '@/features/auth/screens/OTPVerificationScreen';
-// In-app business/organization signup is disabled on iOS per App Store
-// Guideline 3.1.1. iOS users register on the website instead.
-// See: LoginScreen "Sign Up" button -> Linking.openURL(WEB_SIGNUP_URL).
+// Business/organization signup is unavailable in the iOS app.
 import { SignupScreenNew } from '@/features/auth/screens/SignupScreenNew';
 import { SignupOtpScreen } from '@/features/auth/screens/SignupOtpScreen';
 import { LegalDocumentsScreen } from '@/features/owner/screens/legal/LegalDocumentsScreen';
@@ -20,10 +17,7 @@ import { TenantOTPVerificationScreen } from '@/features/tenant/TenantOTPVerifica
 import { stackScreenOptions } from './navigationTheme';
 
 // Only register in-app signup routes on non-iOS platforms.
-// Exception: when APP_ENV is local or development, allow in-app signup on iOS
-// too (useful for testing). Production iOS still redirects to the website
-// per App Store Guideline 3.1.1.
-const showInAppSignup = Platform.OS !== 'ios' || ENV.IS_LOCAL || ENV.IS_DEVELOPMENT;
+const showInAppSignup = Platform.OS !== 'ios';
 
 const Stack = createNativeStackNavigator();
 

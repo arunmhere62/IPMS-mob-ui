@@ -14,9 +14,8 @@ import { DatePicker } from '../../../../components/DatePicker';
 import { AmountInput } from '../../../../components/AmountInput';
 import { OptionSelector, Option } from '../../../../components/OptionSelector';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
-import { setIsOnboardingComplete } from '@/features/owner/store/slices/rbacSlice';
 import { Card } from '../../../../components/Card';
 import { Theme } from '../../../../theme';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
@@ -596,8 +595,6 @@ const TenantDetailsContent: React.FC<{
       throw error; // Re-throw to let modal handle it
     }
   };
-
-  const dispatch = useDispatch();
 
   const handleAddRentPayment = () => {
     if (!canCreateRent) return;
@@ -1882,7 +1879,6 @@ const TenantDetailsContent: React.FC<{
           onSuccess={() => {
             refetchTenant();
             refreshTenantList();
-            dispatch(setIsOnboardingComplete(true));
           }}
         />
       )}

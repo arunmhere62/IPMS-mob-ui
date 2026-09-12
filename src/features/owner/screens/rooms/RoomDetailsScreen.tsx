@@ -7,8 +7,6 @@ import {
   RefreshControl,
   Image,
   Dimensions,
-  Animated,
-  Easing,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
@@ -40,7 +38,6 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Permission } from '@/config/rbac.config';
-import { useOnboardingState, OnboardingStep } from '@/features/onboarding';
 interface RoomDetailsScreenProps {
   navigation: any;
   route: any;
@@ -58,25 +55,6 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
   const canEditBed = can(Permission.EDIT_BED);
   const canDeleteBed = can(Permission.DELETE_BED);
   const canCreateTenant = can(Permission.CREATE_TENANT);
-  const { step: onboardingStep } = useOnboardingState();
-  const showBedHint = onboardingStep === OnboardingStep.ROOMS;
-
-  // Onboarding: pulse animation for first available bed's Add Tenant button
-  const bedPulse = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (!showBedHint) {
-      bedPulse.setValue(1);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bedPulse, { toValue: 1.08, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(bedPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [showBedHint, bedPulse]);
 
   const [room, setRoom] = useState<Room | null>(null);
   const [beds, setBeds] = useState<Bed[]>([]);
@@ -688,10 +666,9 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
                 const numA = parseInt(a.bed_no?.replace(/\D/g, '') || '0', 10);
                 const numB = parseInt(b.bed_no?.replace(/\D/g, '') || '0', 10);
                 return numA - numB;
-              }).map((bed, index, sortedBeds) => {
+              }).map((bed) => {
                 const occupied = bed.is_occupied;
                 const tenant = bed.tenants?.[0];
-                const isFirstAvailableBed = showBedHint && !occupied && sortedBeds.findIndex(b => !b.is_occupied) === index;
                 return (
                   <View
                     key={bed.s_no}
@@ -742,28 +719,15 @@ export const RoomDetailsScreen: React.FC<RoomDetailsScreenProps> = ({ navigation
 
                     {/* Add / View button */}
                     {!occupied ? (
-                      <>
-                        {isFirstAvailableBed && (
-                          <View style={{ alignItems: 'center', marginBottom: 4 }}>
-                            <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                              <Ionicons name="finger-print" size={11} color="#fff" />
-                              <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Tap to add tenant</Text>
-                            </View>
-                            <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
-                          </View>
-                        )}
-                        <AnimatedPressableCard
-                          onPress={() => {
-                            navigation.navigate('AddTenant', { bed_id: bed.s_no, room_id: room.s_no });
-                          }}
-                          disabled={!canCreateTenant}
-                          style={{ backgroundColor: '#16A34A', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, opacity: canCreateTenant ? 1 : 0.45 }}
-                        >
-                          <Animated.View style={{ transform: [{ scale: isFirstAvailableBed ? bedPulse : 1 }] }}>
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>+ Add Tenant</Text>
-                          </Animated.View>
-                        </AnimatedPressableCard>
-                      </>
+                      <AnimatedPressableCard
+                        onPress={() => {
+                          navigation.navigate('AddTenant', { bed_id: bed.s_no, room_id: room.s_no });
+                        }}
+                        disabled={!canCreateTenant}
+                        style={{ backgroundColor: '#16A34A', borderRadius: 8, paddingVertical: 7, alignItems: 'center', marginBottom: 8, opacity: canCreateTenant ? 1 : 0.45 }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>+ Add Tenant</Text>
+                      </AnimatedPressableCard>
                     ) : tenant?.s_no ? (
                       <AnimatedPressableCard
                         onPress={() => navigation.navigate('TenantDetails', { tenantId: tenant.s_no })}

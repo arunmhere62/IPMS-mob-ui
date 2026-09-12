@@ -1,7 +1,7 @@
+import { describe, expect, it } from '@jest/globals';
 import rbacReducer, {
   setPermissionsMap,
   setSubscription,
-  setIsOnboardingComplete,
   clearPermissions,
   type RbacState,
 } from '../rbacSlice';
@@ -11,9 +11,6 @@ describe('rbacSlice', () => {
     permissionsMap: {},
     loadedAt: null,
     subscription: null,
-    isOnboardingComplete: null,
-    onboardingHasRooms: false,
-    onboardingHasTenants: false,
   };
 
   it('should return initial state', () => {
@@ -36,9 +33,6 @@ describe('rbacSlice', () => {
         permissionsMap: { old_permission: true },
         loadedAt: 123456,
         subscription: null,
-        isOnboardingComplete: null,
-        onboardingHasRooms: false,
-        onboardingHasTenants: false,
       };
       const newPermissions = { new_permission: true };
       const action = setPermissionsMap(newPermissions);
@@ -71,45 +65,11 @@ describe('rbacSlice', () => {
         permissionsMap: {},
         loadedAt: 123456,
         subscription: { plan: 'basic' } as any,
-        isOnboardingComplete: null,
-        onboardingHasRooms: false,
-        onboardingHasTenants: false,
       };
       const action = setSubscription(null);
       const state = rbacReducer(existingState, action);
 
       expect(state.subscription).toBeNull();
-    });
-  });
-
-  describe('setIsOnboardingComplete', () => {
-    it('sets onboarding complete to true', () => {
-      const action = setIsOnboardingComplete(true);
-      const state = rbacReducer(initialState, action);
-
-      expect(state.isOnboardingComplete).toBe(true);
-    });
-
-    it('sets onboarding complete to false', () => {
-      const action = setIsOnboardingComplete(false);
-      const state = rbacReducer(initialState, action);
-
-      expect(state.isOnboardingComplete).toBe(false);
-    });
-
-    it('sets onboarding complete to null', () => {
-      const existingState: RbacState = {
-        permissionsMap: {},
-        loadedAt: 123456,
-        subscription: null,
-        isOnboardingComplete: true,
-        onboardingHasRooms: false,
-        onboardingHasTenants: false,
-      };
-      const action = setIsOnboardingComplete(null);
-      const state = rbacReducer(existingState, action);
-
-      expect(state.isOnboardingComplete).toBeNull();
     });
   });
 
@@ -119,9 +79,6 @@ describe('rbacSlice', () => {
         permissionsMap: { create_tenant: true },
         loadedAt: 123456,
         subscription: { plan: 'premium' } as any,
-        isOnboardingComplete: true,
-        onboardingHasRooms: false,
-        onboardingHasTenants: false,
       };
       const action = clearPermissions();
       const state = rbacReducer(existingState, action);
@@ -129,7 +86,6 @@ describe('rbacSlice', () => {
       expect(state.permissionsMap).toEqual({});
       expect(state.loadedAt).toBeNull();
       expect(state.subscription).toBeNull();
-      expect(state.isOnboardingComplete).toBeNull();
     });
 
     it('clears state even when already empty', () => {

@@ -22,7 +22,7 @@ export const ENVIRONMENTS: Record<AppEnv, { label: string; color: string }> = {
 
 // Single source of truth for the local API URL: read from app.config.js extra
 // (which itself reads LOCAL_API_BASE_URL from .env). Change the IP in .env once.
-const LOCAL_API_BASE_URL = appConfig.localApiBaseUrl || 'http://192.168.1.5:3001/api/v1';
+const LOCAL_API_BASE_URL = appConfig.localApiBaseUrl || 'http://192.168.1.9:3001/api/v1';
 
 export const ENV_URLS: Record<AppEnv, string> = {
   local: LOCAL_API_BASE_URL,
@@ -35,7 +35,7 @@ const PERSISTED_ENV_KEY = '@ipms:runtime_env_override';
 
 /**
  * Strips protocol and API path from a full URL for compact display in the UI.
- * e.g. "http://192.168.1.5:3001/api/v1" -> "192.168.1.5:3001"
+ * e.g. "http://192.168.1.9:3001/api/v1" -> "192.168.1.9:3001"
  *      "https://mobapi.indianpgmanagement.com/api/v1" -> "mobapi"
  */
 export const getDisplayUrl = (url: string): string => {

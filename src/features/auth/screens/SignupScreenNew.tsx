@@ -353,7 +353,7 @@ export const SignupScreenNew: React.FC = () => {
       </View>
     );
 
-  const renderOnboardingAfterOtp = () => {
+  const renderSignupDetails = () => {
     if (!phoneVerified) return null;
 
     return (
@@ -852,7 +852,7 @@ export const SignupScreenNew: React.FC = () => {
 
             <Card className="mb-6 shadow-none">
               {renderPhoneVerification()}
-              {renderOnboardingAfterOtp()}
+              {renderSignupDetails()}
             </Card>
           </ScrollView>
         </TouchableWithoutFeedback>

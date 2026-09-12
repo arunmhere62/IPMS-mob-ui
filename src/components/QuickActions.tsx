@@ -1,11 +1,6 @@
 import React, { memo } from "react";
 import type { ComponentProps } from "react";
-import {
-  View,
-  Text,
-  Animated,
-  Easing,
-} from "react-native";
+import { View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressableCard } from "./AnimatedPressableCard";
 
@@ -22,8 +17,6 @@ interface QuickActionsProps {
   onNavigate: (screen: string) => void;
   variant?: "grid" | "horizontal";
   horizontalRows?: 1 | 2;
-  /** When set, the matching Quick Action card shows a pulsing onboarding hint badge. */
-  hintScreen?: string | null;
 }
 
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
@@ -33,40 +26,16 @@ const SUBTITLES: Record<string, string> = {
   Tenants: "View tenants",
   Rooms: "Rooms & beds",
   Expenses: "Track costs",
-  UpcomingVacancies: "See who's leaving soon",
-};
-
-const HINT_LABELS: Record<string, string> = {
-  QuickSetup: "Tap here to start",
-  Rooms: "Tap to view rooms",
 };
 
 const QuickActionItem = memo<{
   item: MenuItem;
   onNavigate: (screen: string) => void;
   isLarge?: boolean;
-  showHint?: boolean;
 }>(
-  ({ item, onNavigate, isLarge, showHint }) => {
+  ({ item, onNavigate, isLarge }) => {
     const bgColor = item.color + "15";
     const subtitle = item.subtitle || SUBTITLES[item.screen] || "";
-    const hintLabel = HINT_LABELS[item.screen] || "Tap here";
-
-    const pulseAnim = React.useRef(new Animated.Value(1)).current;
-    React.useEffect(() => {
-      if (!showHint) {
-        pulseAnim.setValue(1);
-        return;
-      }
-      const loop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.06, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        ])
-      );
-      loop.start();
-      return () => loop.stop();
-    }, [showHint, pulseAnim]);
 
     return (
       <AnimatedPressableCard
@@ -76,19 +45,7 @@ const QuickActionItem = memo<{
           width: isLarge ? undefined : '48.5%',
         }}
       >
-        {showHint && (
-          <View style={{ alignItems: 'center', marginBottom: 4 }}>
-            <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="finger-print" size={11} color="#fff" />
-              <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-                {hintLabel}
-              </Text>
-            </View>
-            <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
-          </View>
-        )}
-        <Animated.View style={{ transform: [{ scale: showHint ? pulseAnim : 1 }] }}>
-          <View
+        <View
             style={{
               backgroundColor: bgColor,
               borderRadius: 16,
@@ -146,8 +103,7 @@ const QuickActionItem = memo<{
             </View>
 
             <Ionicons name="chevron-forward" size={16} color={item.color} />
-          </View>
-        </Animated.View>
+        </View>
       </AnimatedPressableCard>
     );
   }
@@ -156,7 +112,7 @@ const QuickActionItem = memo<{
 QuickActionItem.displayName = "QuickActionItem";
 
 export const QuickActions = memo<QuickActionsProps>(
-  ({ menuItems, onNavigate, hintScreen }) => {
+  ({ menuItems, onNavigate }) => {
     // First row: first 3 items stacked, second row: remaining items
     const topRow = menuItems.slice(0, 3);
     const bottomRow = menuItems.slice(3);
@@ -184,7 +140,6 @@ export const QuickActions = memo<QuickActionsProps>(
               item={item}
               onNavigate={onNavigate}
               isLarge
-              showHint={hintScreen === item.screen}
             />
           ))}
         </View>
@@ -198,7 +153,6 @@ export const QuickActions = memo<QuickActionsProps>(
                 item={item}
                 onNavigate={onNavigate}
                 isLarge={bottomRow.length === 1}
-                showHint={hintScreen === item.screen}
               />
             ))}
           </View>

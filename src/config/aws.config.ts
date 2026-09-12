@@ -79,7 +79,7 @@ export const AWS_CONFIG = {
 // Environment-specific configurations
 export const getAWSConfig = () => {
   // In a real app, you might want to use different configs for dev/staging/prod
-  const environment = process.env.NODE_ENV || 'development';
+  const environment: string = process.env.NODE_ENV || 'development';
   
   switch (environment) {
     case 'production':

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
-import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView, Alert, Linking } from 'react-native';
+import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView, Alert } from 'react-native';
 import { Theme } from '../../../theme';
 import { useSendOtpMutation } from '../api/authApi';
 import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../owner/api/legalDocumentsApi';
@@ -8,7 +8,6 @@ import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { CountryPhoneSelector } from '../../../components/CountryPhoneSelector';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
-import { ENV } from '@/config/environment';
 
 interface Country {
   code: string;
@@ -162,23 +161,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               You will receive an OTP on your registered phone number
             </Text>
 
-            <View style={{ marginTop: Theme.spacing.lg }}>
-              <Button
-                title={Platform.OS === 'ios' && !ENV.IS_LOCAL && !ENV.IS_DEVELOPMENT ? 'Sign Up on Website' : 'Sign Up'}
-                onPress={() => {
-                  if (Platform.OS === 'ios' && !ENV.IS_LOCAL && !ENV.IS_DEVELOPMENT) {
-                    // App Store Guideline 3.1.1: in-app business/organization
-                    // registration is not allowed on iOS. Redirect to website.
-                    // Exception: local/development builds allow in-app signup.
-                    Linking.openURL(ENV.WEB_SIGNUP_URL);
-                  } else {
-                    navigation.navigate('Signup');
-                  }
-                }}
-                variant="outline"
-                size='md'
-              />
-            </View>
+            {Platform.OS !== 'ios' && (
+              <View style={{ marginTop: Theme.spacing.lg }}>
+                <Button
+                  title="Sign Up"
+                  onPress={() => navigation.navigate('Signup')}
+                  variant="outline"
+                  size='md'
+                />
+              </View>
+            )}
           </Card>
 
           {/* Legal Links */}

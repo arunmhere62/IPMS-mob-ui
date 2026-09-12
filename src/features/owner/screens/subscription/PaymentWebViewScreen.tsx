@@ -1069,9 +1069,13 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
         onPress: () => {
           // Navigate back to SubscriptionPlansScreen so a fresh order is created.
           // Reusing the same cancelled orderId causes CCAvenue to reject the retry.
+          // Include MainTabs underneath so the back button works from SubscriptionPlans.
           navigation.reset({
-            index: 0,
-            routes: [{ name: 'SubscriptionPlans' }],
+            index: 1,
+            routes: [
+              { name: 'MainTabs', params: { screen: 'Settings' } },
+              { name: 'SubscriptionPlans' },
+            ],
           });
         },
       }]
@@ -1139,8 +1143,11 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
               onPress: () => {
                 fullResetPaymentTracking();
                 navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'SubscriptionPlans' }],
+                  index: 1,
+                  routes: [
+                    { name: 'MainTabs', params: { screen: 'Settings' } },
+                    { name: 'SubscriptionPlans' },
+                  ],
                 });
               },
             },
@@ -1206,8 +1213,11 @@ export const PaymentWebViewScreen: React.FC<PaymentWebViewScreenProps> = ({ navi
           stopPaymentStatusPolling();
           fullResetPaymentTracking();
           navigation.reset({
-            index: 0,
-            routes: [{ name: 'SubscriptionPlans' }],
+            index: 1,
+            routes: [
+              { name: 'MainTabs', params: { screen: 'Settings' } },
+              { name: 'SubscriptionPlans' },
+            ],
           });
         },
       },

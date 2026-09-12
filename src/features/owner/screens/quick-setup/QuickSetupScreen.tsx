@@ -427,8 +427,8 @@ export const QuickSetupScreen: React.FC = () => {
   return (
     <ScreenLayout contentBackgroundColor={Theme.colors.background.primary}>
       <ScreenHeader
-        title="Quick Setup"
-        subtitle="Create your rooms and beds in one go"
+        title="Set Up Rooms"
+        subtitle="Add multiple rooms and beds in a few steps"
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
         backgroundColor={Theme.colors.background.blue}
@@ -474,6 +474,24 @@ export const QuickSetupScreen: React.FC = () => {
             </Card>
           ) : (
             <>
+              <Card style={{ marginBottom: 16, backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE" }}>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: "#1E3A8A", marginBottom: 12 }}>
+                  How it works
+                </Text>
+                {[
+                  ["1", "Enter the number of rooms and a usual monthly price per bed."],
+                  ["2", "Review each room. Change its room number, bed count, or price if needed."],
+                  ["3", "Check the summary and tap Create Rooms & Beds."],
+                ].map(([step, text]) => (
+                  <View key={step} style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: step === "3" ? 0 : 10 }}>
+                    <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                      <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "800" }}>{step}</Text>
+                    </View>
+                    <Text style={{ flex: 1, color: "#334155", fontSize: 12, lineHeight: 18 }}>{text}</Text>
+                  </View>
+                ))}
+              </Card>
+
               <Card style={{ marginBottom: 16 }}>
                 <Text
                   style={{
@@ -483,7 +501,7 @@ export const QuickSetupScreen: React.FC = () => {
                     marginBottom: 16,
                   }}
                 >
-                  Step 1: Basic Details
+                  Step 1: Tell us what to create
                 </Text>
 
                 {/* Number of Rooms */}
@@ -496,8 +514,11 @@ export const QuickSetupScreen: React.FC = () => {
                       marginBottom: 6,
                     }}
                   >
-                    Number of Rooms{" "}
+                    How many rooms do you want to add?{" "}
                     <Text style={{ color: Theme.colors.danger }}>*</Text>
+                  </Text>
+                  <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+                    We will create one editable row for each room.
                   </Text>
                   <View
                     style={{
@@ -537,6 +558,19 @@ export const QuickSetupScreen: React.FC = () => {
                       }}
                     />
                   </View>
+                  <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                    {[1, 5, 10].map((count) => (
+                      <AnimatedPressableCard
+                        key={count}
+                        onPress={() => handleNumRoomsChange(String(count))}
+                        style={{ paddingVertical: 7, paddingHorizontal: 14, borderRadius: 8, backgroundColor: numRooms === String(count) ? Theme.colors.primary : "#F1F5F9" }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: numRooms === String(count) ? "#FFFFFF" : Theme.colors.text.primary }}>
+                          {count} {count === 1 ? "room" : "rooms"}
+                        </Text>
+                      </AnimatedPressableCard>
+                    ))}
+                  </View>
                   {errors.numRooms && (
                     <Text
                       style={{
@@ -560,8 +594,11 @@ export const QuickSetupScreen: React.FC = () => {
                       marginBottom: 6,
                     }}
                   >
-                    Default Bed Price / Month{" "}
+                    What is the usual monthly rent for one bed?{" "}
                     <Text style={{ color: Theme.colors.danger }}>*</Text>
+                  </Text>
+                  <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 8 }}>
+                    This price is copied to every room. You can change individual room prices in Step 2.
                   </Text>
                   <View
                     style={{
@@ -613,6 +650,19 @@ export const QuickSetupScreen: React.FC = () => {
                       }}
                     />
                   </View>
+                  <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                    {[3000, 5000, 7000].map((price) => (
+                      <AnimatedPressableCard
+                        key={price}
+                        onPress={() => handleDefaultPriceChange(String(price))}
+                        style={{ paddingVertical: 7, paddingHorizontal: 14, borderRadius: 8, backgroundColor: defaultPrice === String(price) ? Theme.colors.primary : "#F1F5F9" }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: defaultPrice === String(price) ? "#FFFFFF" : Theme.colors.text.primary }}>
+                          ₹{price.toLocaleString("en-IN")}
+                        </Text>
+                      </AnimatedPressableCard>
+                    ))}
+                  </View>
                   {errors.defaultPrice && (
                     <Text
                       style={{
@@ -647,7 +697,7 @@ export const QuickSetupScreen: React.FC = () => {
                       paddingHorizontal: 4,
                     }}
                   >
-                    <View>
+                    <View style={{ flex: 1, marginRight: 8 }}>
                       <Text
                         style={{
                           fontSize: 16,
@@ -655,7 +705,10 @@ export const QuickSetupScreen: React.FC = () => {
                           color: Theme.colors.text.primary,
                         }}
                       >
-                        Step 2: Rooms & Beds
+                        Step 2: Review each room
+                      </Text>
+                      <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginTop: 3 }}>
+                        Room numbers are filled automatically. Edit anything that is different.
                       </Text>
                       {isFetchingExistingRooms && (
                         <Text
@@ -978,6 +1031,12 @@ export const QuickSetupScreen: React.FC = () => {
 
               {rooms.length > 0 && (
                 <Card style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 16, fontWeight: "800", color: Theme.colors.text.primary, marginBottom: 4 }}>
+                    Step 3: Confirm and create
+                  </Text>
+                  <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 16 }}>
+                    Check the totals below. Nothing is created until you tap the final button.
+                  </Text>
                   <View
                     style={{
                       flexDirection: "row",
@@ -1155,7 +1214,7 @@ export const QuickSetupScreen: React.FC = () => {
 
               {rooms.length > 0 && (
                 <Button
-                  title="Create Rooms & Beds"
+                  title={`Create ${rooms.length} ${rooms.length === 1 ? "Room" : "Rooms"} & ${totalBeds} ${totalBeds === 1 ? "Bed" : "Beds"}`}
                   onPress={handleSubmit}
                   loading={isSubmitting}
                   disabled={isSubmitting}

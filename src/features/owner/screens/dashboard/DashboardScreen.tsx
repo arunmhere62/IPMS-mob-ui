@@ -36,7 +36,6 @@ import { AppDispatch, RootState } from "../../store";
 import { Tenant } from "../../api";
 import { AnnouncementBanner } from "../../../../components/AnnouncementBanner";
 import { TrialBanner } from "../../../../components/TrialBanner";
-import { useOnboardingState } from "@/features/onboarding";
 
 type DashboardRouteName =
   | "PGLocations"
@@ -62,7 +61,6 @@ export const DashboardScreen: React.FC = () => {
   );
   const appStatus = useSelector((state: RootState) => (state as any).appSettings?.appSettings);
   usePermissions();
-  const { hintScreen } = useOnboardingState();
   const [refreshing, setRefreshing] = useState(false);
   const {
     onScroll: bottomNavOnScroll,
@@ -151,12 +149,6 @@ export const DashboardScreen: React.FC = () => {
       },
       { title: "Rooms", icon: "home", screen: "Rooms", color: "#22C55E" },
       { title: "Tenants", icon: "people", screen: "Tenants", color: "#EC4899" },
-      {
-        title: "Upcoming Vacancies",
-        icon: "calendar-outline",
-        screen: "UpcomingVacancies",
-        color: "#8B5CF6",
-      },
     ],
     []
   );
@@ -164,7 +156,7 @@ export const DashboardScreen: React.FC = () => {
   const handleQuickActionNavigate = useCallback(
     (screen: string) => {
       // Screens that exist as tabs — navigate within tab navigator to keep bottom nav visible
-      const tabScreens = ["Rooms", "Tenants", "UpcomingVacancies", "Dashboard"];
+      const tabScreens = ["Rooms", "Tenants", "Dashboard"];
       if (tabScreens.includes(screen)) {
         // Navigate to the tab within MainTabs (sibling tab screens)
         const parent = (navigation as any).getParent?.();
@@ -318,7 +310,6 @@ export const DashboardScreen: React.FC = () => {
           <QuickActions
             menuItems={dashboardQuickActions}
             onNavigate={handleQuickActionNavigate}
-            hintScreen={hintScreen}
           />
 
           <FollowUpsCard

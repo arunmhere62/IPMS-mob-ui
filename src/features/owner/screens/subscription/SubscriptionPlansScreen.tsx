@@ -21,6 +21,7 @@ import {
   SubscriptionPlan,
   useGetPlansQuery,
   useGetSubscriptionStatusQuery,
+  useGetSubscriptionHistoryQuery,
   useSubscribeToPlanMutation,
   useUpgradePlanMutation } from '@/features/owner/api/subscriptionApi';
 import { getIapProductIdForPlan } from '@/config/iapProducts';
@@ -53,6 +54,10 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     error: statusError,
     refetch: refetchStatus } = useGetSubscriptionStatusQuery();
 
+  const {
+    data: historyResponse,
+    refetch: refetchHistory } = useGetSubscriptionHistoryQuery();
+
   const [subscribeToPlan, { isLoading: subscribing }] = useSubscribeToPlanMutation();
   const [upgradePlan, { isLoading: upgrading }] = useUpgradePlanMutation();
 
@@ -83,11 +88,25 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
 
   const lastSubscription = ss?.last_subscription;
   const lastPlan: any = (lastSubscription as any)?.plan ?? (lastSubscription as any)?.subscription_plans;
+  // A plan is "free" if the backend flags it OR its price is 0.
+  // StarterX has is_free=false but price=0, so price is the reliable signal.
+  const isPlanFree = (plan: any) => {
+    if (plan?.is_free) return true;
+    const n = parseFloat(String(plan?.price ?? ''));
+    return Number.isFinite(n) && n <= 0;
+  };
   const isFreePlanExpired =
     Boolean(ss) &&
     !ss?.has_active_subscription &&
-    Boolean(lastPlan?.is_free) &&
+    isPlanFree(lastPlan) &&
     (lastSubscription as any)?.status === 'EXPIRED';
+
+  // Build a set of plan IDs the user has ever subscribed to (any status),
+  // so we can block re-subscribing to free plans they've already used.
+  const subscriptionHistory = (historyResponse?.data || []) as any[];
+  const usedPlanIds = new Set<number>(
+    subscriptionHistory.map((s) => s?.plan_id).filter((id): id is number => typeof id === 'number'),
+  );
 
   useEffect(() => {
     const err: any = plansError || statusError;
@@ -111,6 +130,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     useCallback(() => {
       refetchPlans();
       refetchStatus();
+      refetchHistory();
     }, [])
   );
 
@@ -313,8 +333,11 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
     
     const tierInfo = getTierInfo();
     
-    const isFreePlan = Boolean(plan.is_free);
+    const isFreePlan = isFreeByPrice || Boolean(plan.is_free);
     const isExpiredFreePlanCard = isFreePlan && isFreePlanExpired;
+    // A free plan that was previously used (any status) can never be subscribed to again.
+    const isFreePlanAlreadyUsed = isFreePlan && usedPlanIds.has(plan.s_no);
+    const isFreePlanBlocked = isExpiredFreePlanCard || isFreePlanAlreadyUsed;
     const purchaseState = subscriptionPlatform.getPlanPurchaseState(plan);
     const { isIapPlan, iapNotReady, isIapPurchasing } = purchaseState;
 
@@ -555,6 +578,11 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
             <Ionicons name="checkmark-circle" size={18} color="#10B981" />
             <Text style={{ fontSize: 15, fontWeight: '700', color: '#10B981' }}>Your Current Plan</Text>
           </View>
+        ) : isFreePlanBlocked ? (
+          <View style={{ backgroundColor: '#F3F4F6', paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+            <Ionicons name="lock-closed" size={18} color="#9CA3AF" />
+            <Text style={{ fontSize: 15, fontWeight: '700', color: '#9CA3AF' }}>Already Used</Text>
+          </View>
         ) : (
           <AnimatedPressableCard
             onPress={() => {
@@ -564,6 +592,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
               subscribing ||
               upgrading ||
               isExpiredFreePlanCard ||
+              isFreePlanAlreadyUsed ||
               iapNotReady ||
               isIapPurchasing
             }
@@ -589,7 +618,7 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
             ) : (
               <>
                 <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: 0.4 }}>
-                  {isExpiredFreePlanCard ? 'Free Plan Ended' : hasActiveSubscription ? 'Upgrade Now' : 'Get Started'}
+                  {isExpiredFreePlanCard ? 'Free Plan Ended' : hasActiveSubscription ? 'Upgrade Now' : 'Subscribe'}
                 </Text>
                 {!isExpiredFreePlanCard && <Ionicons name="arrow-forward-circle" size={22} color="rgba(255,255,255,0.85)" />}
               </>
@@ -601,11 +630,23 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
   };
 
 
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'MainTabs', params: { screen: 'Settings' } }],
+    });
+  };
+
   return (
     <ScreenLayout backgroundColor={Theme.colors.background.blue} contentBackgroundColor={CONTENT_COLOR}>
       <ScreenHeader
         showBackButton
-        onBackPress={() => navigation.goBack()}
+        onBackPress={handleBackPress}
         title="Subscription Plans"
         subtitle="Choose the perfect plan for your business"
         backgroundColor={Theme.colors.background.blue}
@@ -707,6 +748,26 @@ export const SubscriptionPlansScreen: React.FC<SubscriptionPlansScreenProps> = (
                 </Text>
                 <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, lineHeight: 18 }}>
                   Please subscribe to a paid plan to continue using create features.
+                </Text>
+              </View>
+            )}
+
+            {!ss.has_active_subscription && !isFreePlanExpired && lastSubscription && ['EXPIRED', 'CANCELLED'].includes((lastSubscription as any)?.status) && !isPlanFree(lastPlan) && (
+              <View
+                style={{
+                  backgroundColor: Theme.withOpacity('#D97706', 0.12),
+                  padding: 12,
+                  borderRadius: 10,
+                  marginTop: 12 }}
+              >
+                <Text style={{ fontSize: 13, color: Theme.colors.text.primary, fontWeight: '700', marginBottom: 4 }}>
+                  Your {lastPlan?.name || 'subscription'} has ended
+                </Text>
+                <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, lineHeight: 18 }}>
+                  {lastSubscription?.end_date
+                    ? `It ended on ${new Date(lastSubscription.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. `
+                    : ''}
+                  Subscribe again to continue using all features.
                 </Text>
               </View>
             )}

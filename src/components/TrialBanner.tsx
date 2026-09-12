@@ -19,11 +19,26 @@ export const TrialBanner: React.FC = () => {
   const subscription = useSelector((state: RootState) => (state as any).rbac?.subscription);
   const slideAnim = useRef(new Animated.Value(-60)).current;
 
-  const show =
+  const isTrial =
     subscription &&
     subscription.has_active_plan &&
     subscription.is_trial &&
     !subscription.is_free_plan;
+
+  const isPaidExpiringSoon =
+    subscription &&
+    subscription.has_active_plan &&
+    !subscription.is_trial &&
+    !subscription.is_free_plan &&
+    (subscription.days_remaining ?? 0) <= 7;
+
+  const isExpired =
+    subscription &&
+    !subscription.has_active_plan &&
+    subscription.is_expired &&
+    !subscription.is_free_plan;
+
+  const show = isTrial || isPaidExpiringSoon || isExpired;
 
   useEffect(() => {
     if (show) {
@@ -38,9 +53,9 @@ export const TrialBanner: React.FC = () => {
   if (!show) return null;
 
   const days = subscription.days_remaining ?? 0;
-  const planName = subscription.plan_name ?? 'Trial';
+  const planName = subscription.plan_name ?? (isTrial ? 'Trial' : isExpired ? 'Subscription' : 'Your Plan');
 
-  const urgency = days <= 3 ? 'critical' : days <= 7 ? 'warning' : 'info';
+  const urgency = isExpired ? 'critical' : days <= 3 ? 'critical' : days <= 7 ? 'warning' : 'info';
 
   const config = {
     critical: {
@@ -80,7 +95,9 @@ export const TrialBanner: React.FC = () => {
       btnBg: '#EF4444',
       btnText: '#FFFFFF' } }[urgency];
 
-  const daysLabel = days === 0 ? 'Expires today' : days === 1 ? '1 day left' : `${days} days left`;
+  const daysLabel = isExpired
+    ? 'Expired'
+    : days === 0 ? 'Expires today' : days === 1 ? '1 day left' : `${days} days left`;
 
   return (
     <Animated.View
@@ -110,9 +127,15 @@ export const TrialBanner: React.FC = () => {
             </View>
           </View>
           <Text style={[styles.subtitle, { color: config.subtitleColor }]}>
-            {days <= 3
-              ? 'Upgrade now to avoid losing access'
-              : 'Upgrade to unlock all features'}
+            {isExpired
+              ? 'Subscribe again to continue using all features'
+              : isTrial
+                ? (days <= 3
+                  ? 'Upgrade now to avoid losing access'
+                  : 'Upgrade to unlock all features')
+                : (days <= 3
+                  ? 'Subscribe again now to avoid losing access'
+                  : 'Subscribe again before it ends to continue')}
           </Text>
         </View>
 
@@ -120,7 +143,9 @@ export const TrialBanner: React.FC = () => {
           style={[styles.btn, { backgroundColor: config.btnBg }]}
           onPress={() => navigation.navigate('SubscriptionPlans')}
         >
-          <Text style={[styles.btnText, { color: config.btnText }]}>Upgrade</Text>
+          <Text style={[styles.btnText, { color: config.btnText }]}>
+            {isExpired ? 'Subscribe' : isTrial ? 'Upgrade' : 'Renew'}
+          </Text>
           <Ionicons name="arrow-forward" size={12} color={config.btnText} />
         </AnimatedPressableCard>
       </View>

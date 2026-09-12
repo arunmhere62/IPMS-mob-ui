@@ -6,8 +6,6 @@ import {
   TextInput,
   RefreshControl,
   Alert,
-  Animated,
-  Easing,
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,7 +27,6 @@ import { showErrorAlert, showSuccessAlert } from "../../../../utils/errorHandler
 import { CONTENT_COLOR } from "@/constant";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/config/rbac.config";
-import { useOnboardingState, OnboardingStep } from "@/features/onboarding";
 
 
 interface RoomsScreenProps {
@@ -41,7 +38,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     (state: RootState) => state.pgLocations
   );
   const { can } = usePermissions();
-  const { step: onboardingStep } = useOnboardingState();
 
   const canCreateRoom = can(Permission.CREATE_ROOM);
 
@@ -81,24 +77,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
   // Scroll position tracking
   const flatListRef = useRef<any>(null);
   const scrollPositionRef = useRef(0);
-
-  // Onboarding: pulse animation for first room hint
-  const roomPulse = useRef(new Animated.Value(1)).current;
-  const showRoomHint = onboardingStep === OnboardingStep.ROOMS;
-  useEffect(() => {
-    if (!showRoomHint) {
-      roomPulse.setValue(1);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(roomPulse, { toValue: 1.08, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(roomPulse, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [showRoomHint, roomPulse]);
 
   useEffect(() => {
     setRooms(((roomsResponse as any)?.data || []) as Room[]);
@@ -260,7 +238,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
     const roomNo = item.room_no?.startsWith('RM-') ? item.room_no : item.room_no?.startsWith('RM') ? `RM-${item.room_no.slice(2)}` : `RM-${item.room_no}`;
     const cardBg = isAvailable ? '#ECFDF5' : isFull ? '#FEF2F2' : '#FFFBEB';
     const borderColor = isAvailable ? '#A7F3D0' : isFull ? '#FECACA' : '#FDE68A';
-    const isFirstRoomHint = showRoomHint && index === 0;
 
     return (
       <AnimatedPressableCard
@@ -268,16 +245,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
           navigation.navigate("RoomDetails", { roomId: item.s_no });
         }}
       >
-        {isFirstRoomHint && (
-          <View style={{ alignItems: 'center', marginBottom: 4 }}>
-            <View style={{ backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="finger-print" size={11} color="#fff" />
-              <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Tap to open room</Text>
-            </View>
-            <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#1E3A8A', marginTop: 2 }} />
-          </View>
-        )}
-        <Animated.View style={{ transform: [{ scale: isFirstRoomHint ? roomPulse : 1 }] }}>
         <Card style={{
           padding: 10,
           margin: 0,
@@ -333,7 +300,6 @@ export const RoomsScreen: React.FC<RoomsScreenProps> = ({ navigation }) => {
             {min === max ? formatPrice(min) : `${formatPrice(min)} - ${formatPrice(max)}`}
           </Text>
         </Card>
-        </Animated.View>
       </AnimatedPressableCard>
     );
   };

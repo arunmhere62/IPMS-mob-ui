@@ -301,6 +301,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                         Active - {subscriptionStatus.subscription?.plan?.name || 'Unknown Plan'}
                       </Text>
                     </View>
+                  ) : subscriptionStatus?.last_subscription && ['EXPIRED', 'CANCELLED'].includes(subscriptionStatus.last_subscription.status) ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                      <Ionicons name="alert-circle" size={14} color={Theme.colors.warning} style={{ marginRight: 4 }} />
+                      <Text style={{ fontSize: 13, color: Theme.colors.warning, fontWeight: '600' }}>
+                        {subscriptionStatus.last_subscription.plan?.name || 'Subscription'} ended
+                        {subscriptionStatus.last_subscription.end_date
+                          ? ` on ${new Date(subscriptionStatus.last_subscription.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                          : ''}
+                      </Text>
+                    </View>
                   ) : (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                       <Ionicons name="alert-circle" size={14} color={Theme.colors.warning} style={{ marginRight: 4 }} />
@@ -322,6 +332,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                 }}>
                   <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginBottom: 6 }}>
                     {subscriptionStatus.days_remaining} days remaining
+                    {subscriptionStatus.subscription?.end_date
+                      ? ` · ends ${new Date(subscriptionStatus.subscription.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                      : ''}
                   </Text>
                   <View style={{
                     height: 4,
@@ -397,6 +410,59 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                       width: `${Math.min(100, Math.max(5, ((rbacSubscription.days_remaining) / 30) * 100))}%`,
                       backgroundColor: 'rgba(255,255,255,0.6)',
                     }} />
+                  </View>
+                </AnimatedPressableCard>
+              )}
+
+              {/* Paid plan expiring soon banner */}
+              {rbacSubscription?.has_active_plan && !rbacSubscription?.is_trial && !rbacSubscription?.is_free_plan && (rbacSubscription.days_remaining ?? 0) <= 7 && (
+                <AnimatedPressableCard
+                  onPress={() => navigation.navigate('SubscriptionPlans')}
+                  style={{
+                    marginBottom: 12,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    backgroundColor: rbacSubscription.days_remaining <= 3 ? '#B45309' : '#D97706',
+                  }}
+                >
+                  <View style={{
+                    padding: 14,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}>
+                    <View style={{
+                      width: 40, height: 40, borderRadius: 20,
+                      backgroundColor: 'rgba(255,255,255,0.18)',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Ionicons name="time" size={20} color="#FFFFFF" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
+                          Subscription Ending Soon
+                        </Text>
+                        <View style={{ backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 20, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>
+                            {rbacSubscription.days_remaining === 0 ? 'Expires today' : `${rbacSubscription.days_remaining}d left`}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', lineHeight: 15 }}>
+                        {rbacSubscription.days_remaining <= 3
+                          ? 'Subscribe again now to avoid losing access'
+                          : 'Subscribe again before it ends to continue your subscription'}
+                      </Text>
+                    </View>
+                    <View style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 7,
+                    }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#D97706' }}>Renew</Text>
+                    </View>
                   </View>
                 </AnimatedPressableCard>
               )}

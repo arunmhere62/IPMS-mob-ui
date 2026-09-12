@@ -502,77 +502,77 @@ describe('errorHandler', () => {
 
   describe('setupGlobalErrorHandlers', () => {
     it('sets up global error handler when ErrorUtils exists', () => {
-      const globalAny = global as any;
+      const globalAny = globalThis as any;
       globalAny.ErrorUtils = {
         getGlobalHandler: jest.fn(() => jest.fn()),
         setGlobalHandler: jest.fn(),
       };
-      
+
       setupGlobalErrorHandlers();
-      
+
       expect(globalAny.ErrorUtils.setGlobalHandler).toHaveBeenCalled();
-      
+
       delete globalAny.ErrorUtils;
     });
 
     it('handles missing ErrorUtils gracefully', () => {
-      const globalAny = global as any;
+      const globalAny = globalThis as any;
       delete globalAny.ErrorUtils;
-      
+
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       expect(() => setupGlobalErrorHandlers()).not.toThrow();
       consoleErrorSpy.mockRestore();
     });
 
     it('sets up unhandled rejection handler when addEventListener exists', () => {
-      const globalAny = global as any;
+      const globalAny = globalThis as any;
       globalAny.addEventListener = jest.fn();
-      
+
       setupGlobalErrorHandlers();
-      
+
       expect(globalAny.addEventListener).toHaveBeenCalledWith('unhandledrejection', expect.any(Function));
-      
+
       delete globalAny.addEventListener;
     });
 
     it('handles missing addEventListener gracefully', () => {
-      const globalAny = global as any;
+      const globalAny = globalThis as any;
       delete globalAny.addEventListener;
-      
+
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       expect(() => setupGlobalErrorHandlers()).not.toThrow();
       consoleErrorSpy.mockRestore();
     });
 
     it('logs success message when setup completes', () => {
-      const globalAny = global as any;
+      const globalAny = globalThis as any;
       globalAny.ErrorUtils = {
         getGlobalHandler: jest.fn(() => jest.fn()),
         setGlobalHandler: jest.fn(),
       };
-      
+
       const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
       setupGlobalErrorHandlers();
       expect(consoleLogSpy).toHaveBeenCalledWith('✅ Global error handlers initialized');
       consoleLogSpy.mockRestore();
-      
+
       delete globalAny.ErrorUtils;
     });
 
     it('logs error when setup fails', () => {
-      const globalAny = global as any;
+      const globalAny = globalThis as any;
       globalAny.ErrorUtils = {
         getGlobalHandler: () => {
           throw new Error('Setup failed');
         },
         setGlobalHandler: jest.fn(),
       };
-      
+
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       setupGlobalErrorHandlers();
       expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Failed to setup global error handlers:', expect.any(Error));
       consoleErrorSpy.mockRestore();
-      
+
       delete globalAny.ErrorUtils;
     });
   });
