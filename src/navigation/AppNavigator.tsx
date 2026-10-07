@@ -27,7 +27,7 @@ import { TenantScreens } from './TenantScreens';
 import { OwnerScreens } from './OwnerScreens';
 
 export const AppNavigator = () => {
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
 
   const {
@@ -46,11 +46,20 @@ export const AppNavigator = () => {
     }
   }, [isAuthenticated, dispatch]);
 
+  // Safety gate: an authenticated owner must have an organization before
+  // any dashboard/PG-guarded API can be called. The unified sign-in flow
+  // creates the organization before login, so this normally only protects
+  // incomplete/legacy accounts.
+  const needsOwnerSetup = isAuthenticated && !isTenantAuthenticated && user && !user.organization_id;
+
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme}>
       <AuthRedirectHandler />
-      {isUnauthenticated ? (
-        <AuthScreens key={navigatorKey} initialRouteName={initialAuthRoute} />
+      {isUnauthenticated || needsOwnerSetup ? (
+        <AuthScreens
+          key={navigatorKey}
+          initialRouteName={needsOwnerSetup ? 'Signup' : initialAuthRoute}
+        />
       ) : isTenantAuthenticated ? (
         <TenantScreens key={navigatorKey} />
       ) : (

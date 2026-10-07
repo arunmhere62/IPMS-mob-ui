@@ -4,7 +4,7 @@ import { View, Text, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from
 import { Theme } from '../../../theme';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../../owner/store/slices/authSlice';
-import { useResendOtpMutation, useVerifyOtpMutation } from '../api/authApi';
+import { useFlowSendOtpMutation, useFlowVerifyOtpMutation } from '../api/authApi';
 import { useRegisterNotificationTokenMutation } from '../../owner/api/notificationsApi';
 import { AppDispatch } from '@/features/owner/store';
 import { Button } from '../../../components/Button';
@@ -28,15 +28,15 @@ interface OTPVerificationScreenProps {
 }
 
 export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ navigation, route }) => {
-  const { phone } = route.params;
+  const { phone, flow = 'LOGIN' } = route.params;
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
-  const [verifyOtp, { isLoading: verifyingOtp }] = useVerifyOtpMutation();
-  const [resendOtp, { isLoading: resendingOtp }] = useResendOtpMutation();
+  const [verifyOtp, { isLoading: verifyingOtp }] = useFlowVerifyOtpMutation();
+  const [resendOtp, { isLoading: resendingOtp }] = useFlowSendOtpMutation();
   const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
   const [registerToken] = useRegisterNotificationTokenMutation();
 
@@ -79,8 +79,20 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
     }
 
     try {
-      const result = await verifyOtp({ phone, otp }).unwrap();
+      const result = (await verifyOtp({ phone, otp }).unwrap()) as any;
 
+      // New user branch: phone verified, now collect PG/org details.
+      if (flow === 'SIGNUP' || result?.flow === 'SIGNUP') {
+        showSuccessAlert('Phone verified. Please complete your account setup.');
+        navigation.navigate('Signup', {
+          phone,
+          setupToken: result?.setupToken,
+          verifiedPhone: phone,
+        });
+        return;
+      }
+
+      // Existing user branch: full login response.
       dispatch(
         setCredentials({
           user: result.user,
@@ -176,6 +188,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ na
       showErrorAlert(err, 'OTP Error');
     }
   };
+
 
   return (
     <ScreenLayout contentBackgroundColor={CONTENT_COLOR}>

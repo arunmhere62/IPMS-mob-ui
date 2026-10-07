@@ -95,6 +95,54 @@ export type SignupRequest = {
 
 export type SignupResponse = unknown;
 
+export type AuthFlow = 'LOGIN' | 'SIGNUP';
+
+export type FlowSendOtpRequest = {
+  phone: string;
+};
+
+export type FlowSendOtpResponse = {
+  phone: string;
+  flow: AuthFlow;
+  expiresIn: string;
+};
+
+export type FlowVerifyOtpRequest = {
+  phone: string;
+  otp: string;
+};
+
+export type FlowVerifyOtpResponse =
+  | {
+      // existing user - full login payload
+      user: User;
+      accessToken: string;
+      refreshToken?: string;
+    }
+  | {
+      // new user - setup token
+      flow: 'SIGNUP';
+      setupToken: string;
+      phone: string;
+    };
+
+export type FlowSetupRequest = {
+  setupToken: string;
+  organizationName: string;
+  name: string;
+  pgName: string;
+  phone?: string;
+  rentCycleType?: string;
+  rentCycleStart?: number | null;
+  rentCycleEnd?: number | null;
+};
+
+export type FlowSetupResponse = {
+  user: User;
+  accessToken: string;
+  refreshToken?: string;
+};
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     sendOtp: build.mutation<SendOtpResponse, SendOtpRequest>({
@@ -191,6 +239,56 @@ export const authApi = baseApi.injectEndpoints({
         return data;
       },
     }),
+
+    flowSendOtp: build.mutation<FlowSendOtpResponse, FlowSendOtpRequest>({
+      query: (body) => ({
+        url: '/auth/flow/send-otp',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: CentralEnvelope<FlowSendOtpResponse> | any) => {
+        return unwrapCentralData<FlowSendOtpResponse>(response);
+      },
+    }),
+
+    flowVerifyOtp: build.mutation<FlowVerifyOtpResponse, FlowVerifyOtpRequest>({
+      query: (body) => ({
+        url: '/auth/flow/verify-otp',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: CentralEnvelope<any> | any) => {
+        const data = unwrapCentralData<any>(response);
+        // Existing user branch returns snake_case tokens.
+        if (data && data.user) {
+          return {
+            user: data.user,
+            accessToken: data.accessToken ?? data.access_token,
+            refreshToken: data.refreshToken ?? data.refresh_token,
+          };
+        }
+        return data;
+      },
+    }),
+
+    flowSetup: build.mutation<FlowSetupResponse, FlowSetupRequest>({
+      query: (body) => ({
+        url: '/auth/flow/setup',
+        method: 'POST',
+        body,
+        headers: {
+          Authorization: `Bearer ${body.setupToken}`,
+        },
+      }),
+      transformResponse: (response: CentralEnvelope<FlowSetupResponse> | any) => {
+        const data = unwrapCentralData<any>(response);
+        return {
+          user: data.user,
+          accessToken: data.accessToken ?? data.access_token,
+          refreshToken: data.refreshToken ?? data.refresh_token,
+        };
+      },
+    }),
   }),
   overrideExisting: false,
 });
@@ -204,4 +302,7 @@ export const {
   useSignupMutation,
   useRefreshTokenMutation,
   useLogoutMutation,
+  useFlowSendOtpMutation,
+  useFlowVerifyOtpMutation,
+  useFlowSetupMutation,
 } = authApi;

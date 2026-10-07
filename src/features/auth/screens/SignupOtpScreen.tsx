@@ -39,13 +39,6 @@ export const SignupOtpScreen: React.FC<SignupOtpScreenProps> = ({ navigation, ro
       return;
     }
 
-    // Always accept 5555 for signup as fallback
-    if (otp.trim() === '5555') {
-      showSuccessAlert('Phone number verified successfully');
-      navigation.navigate('Signup', { verifiedPhone: phone });
-      return;
-    }
-
     try {
       await verifySignupOtp({ phone, otp: otp.trim() }).unwrap();
       showSuccessAlert('Phone number verified successfully');
@@ -75,6 +68,15 @@ export const SignupOtpScreen: React.FC<SignupOtpScreenProps> = ({ navigation, ro
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg={true}
       />
+
+      {/* Debug info - remove in production */}
+      {__DEV__ && (
+        <View style={{ padding: 8, backgroundColor: '#FEF3C7', margin: 16, borderRadius: 8 }}>
+          <Text style={{ fontSize: 10, color: '#92400E' }}>
+            Phone from params: {phone || 'NONE'}
+          </Text>
+        </View>
+      )}
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView

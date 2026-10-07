@@ -1,11 +1,9 @@
 import React from 'react';
-import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { RoleSelectionScreen } from '@/features/auth/screens/RoleSelectionScreen';
 import { LoginScreen } from '@/features/auth/screens/LoginScreen';
 import { OTPVerificationScreen } from '@/features/auth/screens/OTPVerificationScreen';
-// Business/organization signup is unavailable in the iOS app.
 import { SignupScreenNew } from '@/features/auth/screens/SignupScreenNew';
 import { SignupOtpScreen } from '@/features/auth/screens/SignupOtpScreen';
 import { LegalDocumentsScreen } from '@/features/owner/screens/legal/LegalDocumentsScreen';
@@ -15,9 +13,6 @@ import { TenantLoginScreen } from '@/features/tenant/TenantLoginScreen';
 import { TenantOTPVerificationScreen } from '@/features/tenant/TenantOTPVerificationScreen';
 
 import { stackScreenOptions } from './navigationTheme';
-
-// Only register in-app signup routes on non-iOS platforms.
-const showInAppSignup = Platform.OS !== 'ios';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,12 +37,8 @@ export const AuthScreens: React.FC<AuthScreensProps> = ({ initialRouteName }) =>
     <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="TenantLogin" component={TenantLoginScreen} />
-    {showInAppSignup && (
-      <>
-        <Stack.Screen name="Signup" component={SignupScreenNew} />
-        <Stack.Screen name="SignupOtp" component={SignupOtpScreen} />
-      </>
-    )}
+    <Stack.Screen name="Signup" component={SignupScreenNew} />
+    <Stack.Screen name="SignupOtp" component={SignupOtpScreen} />
     <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
     <Stack.Screen
       name="LegalDocuments"

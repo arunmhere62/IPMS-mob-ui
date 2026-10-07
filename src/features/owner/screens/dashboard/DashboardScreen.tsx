@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   View,
   ScrollView,
@@ -17,6 +17,7 @@ import { QuickActions } from "../../../../components/QuickActions";
 import { MonthlyMetricsCard } from "./MonthlyMetricsCard";
 import { TicketStatsCard } from "./TicketStatsCard";
 import { FollowUpsCard } from "./FollowUpsCard";
+import { PaymentQRCard } from "./PaymentQRCard";
 import {
   DashboardHeaderSkeleton,
   DashboardMonthlyMetricsSkeleton,
@@ -36,6 +37,19 @@ import { AppDispatch, RootState } from "../../store";
 import { Tenant } from "../../api";
 import { AnnouncementBanner } from "../../../../components/AnnouncementBanner";
 import { TrialBanner } from "../../../../components/TrialBanner";
+import { useGetPaymentConfigsQuery } from "../../api/paymentConfigApi";
+import {
+  useGetAvailableFeatureToursQuery,
+  useStartFeatureTourMutation,
+  useUpdateFeatureTourProgressMutation,
+  useCompleteFeatureTourMutation,
+  useDismissFeatureTourMutation,
+} from "../../api/featureToursApi";
+import {
+  FeatureTourModal,
+  WELCOME_TOUR_STEPS,
+} from "../../../onboarding/FeatureTourModal";
+import { showErrorAlert } from "../../../../utils/errorHandler";
 
 type DashboardRouteName =
   | "PGLocations"
@@ -119,6 +133,65 @@ export const DashboardScreen: React.FC = () => {
   });
 
   const ticketStats = ticketStatsResponse?.data;
+
+  // Payment config for QR code display
+  const {
+    data: paymentConfigsResponse,
+    isFetching: paymentConfigFetching,
+  } = useGetPaymentConfigsQuery();
+
+  const paymentConfigs = paymentConfigsResponse?.data ?? [];
+  const paymentConfig = selectedPGLocationId
+    ? paymentConfigs.find(
+        (config) =>
+          config.is_active &&
+          config.scope_type === "SPECIFIC_PG" &&
+          config.pg_id === selectedPGLocationId
+      ) ?? paymentConfigs.find(
+        (config) => config.is_active && config.scope_type === "ALL_PG"
+      )
+    : undefined;
+
+  const { data: featureTours = [], isLoading: featureToursLoading } =
+    useGetAvailableFeatureToursQuery();
+  const welcomeTour = featureTours.find(
+    (tour) =>
+      tour.tour_key === "welcome_tour" &&
+      tour.total_steps === WELCOME_TOUR_STEPS.length
+  );
+  const [startFeatureTour] = useStartFeatureTourMutation();
+  const [updateFeatureTourProgress] = useUpdateFeatureTourProgressMutation();
+  const [completeFeatureTour] = useCompleteFeatureTourMutation();
+  const [dismissFeatureTour] = useDismissFeatureTourMutation();
+  const [welcomeTourVisible, setWelcomeTourVisible] = useState(false);
+  const [welcomeTourStarted, setWelcomeTourStarted] = useState(false);
+  const [welcomeTourStep, setWelcomeTourStep] = useState(0);
+  const [welcomeTourSaving, setWelcomeTourSaving] = useState(false);
+  const activeTourVersion = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (featureToursLoading) return;
+    if (!welcomeTour) {
+      activeTourVersion.current = null;
+      setWelcomeTourVisible(false);
+      return;
+    }
+
+    const versionKey = `${welcomeTour.s_no}:${welcomeTour.current_version}`;
+    if (activeTourVersion.current === versionKey) return;
+    activeTourVersion.current = versionKey;
+
+    const { status, current_step } = welcomeTour.progress;
+    if (status === "NOT_STARTED" || status === "IN_PROGRESS") {
+      setWelcomeTourStep(
+        Math.min(Math.max(current_step, 0), WELCOME_TOUR_STEPS.length - 1)
+      );
+      setWelcomeTourStarted(status === "IN_PROGRESS");
+      setWelcomeTourVisible(true);
+    } else {
+      setWelcomeTourVisible(false);
+    }
+  }, [featureToursLoading, welcomeTour]);
 
   // Load initial monthly metrics
   useEffect(() => {
@@ -247,6 +320,72 @@ export const DashboardScreen: React.FC = () => {
     setRefreshing(false);
   };
 
+  const handleStartWelcomeTour = async () => {
+    if (!welcomeTour) return;
+    setWelcomeTourSaving(true);
+    try {
+      await startFeatureTour(welcomeTour.tour_key).unwrap();
+      setWelcomeTourStarted(true);
+    } catch (error) {
+      showErrorAlert(error, "Unable to start the welcome tour");
+    } finally {
+      setWelcomeTourSaving(false);
+    }
+  };
+
+  const handleWelcomeTourNext = async () => {
+    if (!welcomeTour) return;
+    setWelcomeTourSaving(true);
+    try {
+      if (welcomeTourStep === WELCOME_TOUR_STEPS.length - 1) {
+        await completeFeatureTour(welcomeTour.tour_key).unwrap();
+        setWelcomeTourVisible(false);
+        return;
+      }
+
+      const nextStep = welcomeTourStep + 1;
+      await updateFeatureTourProgress({
+        tourKey: welcomeTour.tour_key,
+        current_step: nextStep,
+      }).unwrap();
+      setWelcomeTourStep(nextStep);
+    } catch (error) {
+      showErrorAlert(error, "Unable to save tour progress");
+    } finally {
+      setWelcomeTourSaving(false);
+    }
+  };
+
+  const handleWelcomeTourBack = async () => {
+    if (!welcomeTour || welcomeTourStep === 0) return;
+    setWelcomeTourSaving(true);
+    try {
+      const previousStep = welcomeTourStep - 1;
+      await updateFeatureTourProgress({
+        tourKey: welcomeTour.tour_key,
+        current_step: previousStep,
+      }).unwrap();
+      setWelcomeTourStep(previousStep);
+    } catch (error) {
+      showErrorAlert(error, "Unable to save tour progress");
+    } finally {
+      setWelcomeTourSaving(false);
+    }
+  };
+
+  const handleDismissWelcomeTour = async () => {
+    if (!welcomeTour) return;
+    setWelcomeTourSaving(true);
+    try {
+      await dismissFeatureTour(welcomeTour.tour_key).unwrap();
+      setWelcomeTourVisible(false);
+    } catch (error) {
+      showErrorAlert(error, "Unable to dismiss the welcome tour");
+    } finally {
+      setWelcomeTourSaving(false);
+    }
+  };
+
   return (
     <ScreenLayout
       backgroundColor={Theme.colors.background.blue}
@@ -312,6 +451,15 @@ export const DashboardScreen: React.FC = () => {
             onNavigate={handleQuickActionNavigate}
           />
 
+          <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+            <PaymentQRCard
+              qrImageUrl={paymentConfig?.upi_qr_image_url}
+              upiId={paymentConfig?.upi_id}
+              isLoading={paymentConfigFetching}
+              onConfigure={() => navigation.navigate('PaymentConfig' as never)}
+            />
+          </View>
+
           <FollowUpsCard
             tenantStatus={tenantStatus}
             isLoading={dashboardFetching}
@@ -341,6 +489,19 @@ export const DashboardScreen: React.FC = () => {
           )}
         </ScrollView>
       </View>
+      <FeatureTourModal
+        visible={!!welcomeTour && welcomeTourVisible}
+        title={welcomeTour?.display_name ?? "Welcome Tour"}
+        description={welcomeTour?.description}
+        steps={WELCOME_TOUR_STEPS}
+        currentStep={welcomeTourStep}
+        isStarted={welcomeTourStarted}
+        isSaving={welcomeTourSaving}
+        onStart={handleStartWelcomeTour}
+        onNext={handleWelcomeTourNext}
+        onBack={handleWelcomeTourBack}
+        onDismiss={handleDismissWelcomeTour}
+      />
     </ScreenLayout>
   );
 };

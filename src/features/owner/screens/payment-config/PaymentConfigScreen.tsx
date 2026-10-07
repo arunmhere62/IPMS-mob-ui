@@ -6,11 +6,11 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { Theme } from '@/theme';
+import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { Card } from '@/components/Card';
@@ -18,7 +18,7 @@ import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { SlideBottomModal } from '@/components/SlideBottomModal';
-import { SelectModal, type SelectItem } from '@/components/SelectModal';
+import { SearchableDropdown } from '@/components/SearchableDropdown';
 import { OptionSelector } from '@/components/OptionSelector';
 import { ImageUploadS3 } from '@/components/ImageUploadS3';
 import {
@@ -30,8 +30,7 @@ import {
   type PaymentConfigScopeType,
   type CreatePaymentConfigDto,
 } from '@/features/owner/api/paymentConfigApi';
-import { useGetPGLocationsQuery } from '@/features/owner/api/pgLocationsApi';
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { useLazyGetPGLocationsQuery } from '@/features/owner/api/pgLocationsApi';
 
 const C = Theme.colors;
 
@@ -42,21 +41,40 @@ interface PaymentConfigScreenProps {
 export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { data: configsResponse, isLoading, refetch } = useGetPaymentConfigsQuery();
-  const { data: pgLocationsResponse } = useGetPGLocationsQuery();
+  const [fetchPGLocationsTrigger] = useLazyGetPGLocationsQuery();
   const [createConfig] = useCreatePaymentConfigMutation();
   const [updateConfig] = useUpdatePaymentConfigMutation();
   const [deleteConfig] = useDeletePaymentConfigMutation();
 
   const configs = configsResponse?.data ?? [];
-  // Safe extraction — response may be the array directly or wrapped in { data: [...] }
-  const pgLocations: any[] = Array.isArray(pgLocationsResponse)
-    ? (pgLocationsResponse as any[])
-    : Array.isArray((pgLocationsResponse as any)?.data)
-      ? (pgLocationsResponse as any).data
-      : [];
+  const [pgLocations, setPgLocations] = useState<any[]>([]);
+  const [loadingPGs, setLoadingPGs] = useState(false);
+
+  // Load PG locations on mount
+  React.useEffect(() => {
+    loadPGLocations();
+  }, []);
+
+  const loadPGLocations = async () => {
+    setLoadingPGs(true);
+    try {
+      const response = await fetchPGLocationsTrigger({ _t: Date.now() }).unwrap();
+      console.log('PG Locations Response:', response);
+      // API returns: { success: true, data: [...], message, statusCode, timestamp }
+      // The transformResponse in pgLocationsApi should handle this, but let's be safe
+      const items = Array.isArray(response?.data) ? response.data : 
+                   Array.isArray(response) ? response : [];
+      console.log('Extracted PG Locations:', items);
+      setPgLocations(items);
+    } catch (error) {
+      console.error('Error loading PG locations:', error);
+      setPgLocations([]);
+    } finally {
+      setLoadingPGs(false);
+    }
+  };
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [pgPickerVisible, setPgPickerVisible] = useState(false);
   const [editingConfig, setEditingConfig] = useState<OwnerPaymentConfig | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -71,13 +89,12 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
   const [ifscCode, setIfscCode] = useState('');
   const [paymentInstructions, setPaymentInstructions] = useState('');
 
-  // PG picker items for SelectModal
-  const pgItems: SelectItem[] = pgLocations.map((pg: any) => ({
+  // PG picker items for SearchableDropdown
+  const pgItems = pgLocations.map((pg: any) => ({
     id: pg.s_no,
     label: pg.location_name,
     value: pg.s_no,
   }));
-  const selectedPg = pgLocations.find((pg: any) => pg.s_no === selectedPgId);
 
   const resetForm = () => {
     setScopeType('ALL_PG');
@@ -206,9 +223,21 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
         showBackButton
         onBackPress={() => navigation.goBack()}
         rightAction={
-          <TouchableOpacity onPress={openCreateModal} style={styles.addButton}>
-            <Ionicons name="add-circle-outline" size={24} color={C.text.inverse} />
-          </TouchableOpacity>
+          <AnimatedPressableCard
+            onPress={openCreateModal}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: Theme.withOpacity('#000000', 0.4),
+            }}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
+          </AnimatedPressableCard>
         }
       />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -322,18 +351,15 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
 
         {/* PG Selector — only for SPECIFIC_PG and create mode */}
         {!editingConfig && scopeType === 'SPECIFIC_PG' && (
-          <View style={{ marginBottom: 16 }}>
-            <Text style={styles.fieldLabel}>Select PG <Text style={{ color: C.danger }}>*</Text></Text>
-            <AnimatedPressableCard
-              onPress={() => setPgPickerVisible(true)}
-              style={styles.pgSelector}
-            >
-              <Text style={selectedPg ? styles.pgSelectorText : styles.pgSelectorPlaceholder}>
-                {selectedPg ? selectedPg.location_name : 'Select a PG location'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color={C.darkTertiary} />
-            </AnimatedPressableCard>
-          </View>
+          <SearchableDropdown
+            label="Select PG"
+            placeholder="Select a PG location"
+            items={pgItems}
+            selectedValue={selectedPgId}
+            onSelect={(item) => setSelectedPgId(item.id)}
+            loading={loadingPGs}
+            required
+          />
         )}
 
         <Input
@@ -408,19 +434,6 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
           style={styles.compactTextarea}
         />
       </SlideBottomModal>
-
-      {/* PG Picker — using SelectModal */}
-      <SelectModal
-        visible={pgPickerVisible}
-        onClose={() => setPgPickerVisible(false)}
-        title="Select PG Location"
-        subtitle="Choose which PG this config applies to"
-        items={pgItems}
-        selectedValue={selectedPgId}
-        onSelect={(item) => setSelectedPgId(Number(item.id))}
-        placeholder="Select a PG location"
-        searchPlaceholder="Search PG..."
-      />
     </ScreenLayout>
   );
 };
@@ -428,7 +441,6 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 16, paddingBottom: 40 },
-  addButton: { paddingHorizontal: 8 },
 
   infoBanner: {
     flexDirection: 'row',
@@ -463,12 +475,6 @@ const styles = StyleSheet.create({
   configActions: { flexDirection: 'row', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.border },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: C.border },
   actionText: { fontSize: 13, fontWeight: '600' },
-
-  // Form fields inside SlideBottomModal
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: C.dark, marginBottom: 4 },
-  pgSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: '#F9FAFB', minHeight: 40 },
-  pgSelectorText: { fontSize: 13, fontWeight: '600', color: C.dark },
-  pgSelectorPlaceholder: { fontSize: 13, color: C.darkTertiary },
 
   // Compact input overrides — smaller height & padding than Input default (48px)
   compactInput: { minHeight: 38, paddingVertical: 8, paddingHorizontal: 12, fontSize: 13, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: '#F9FAFB' },

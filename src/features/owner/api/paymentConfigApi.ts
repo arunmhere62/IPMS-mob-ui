@@ -52,13 +52,21 @@ export interface UpdatePaymentConfigDto {
   is_active?: boolean;
 }
 
-type WithMessage = { message?: unknown };
+type WithMessage = { data?: unknown; message?: unknown; success?: unknown };
 
 const normalizeEntity = <T>(response: unknown): { success: boolean; data: T; message?: string } => {
-  const msg = (response as WithMessage | null | undefined)?.message;
+  const payload = extractResponseData<unknown>(response);
+  const nestedEnvelope = payload && typeof payload === 'object' && 'success' in payload && 'data' in payload
+    ? payload as WithMessage
+    : undefined;
+  const outerEnvelope = response as WithMessage | null | undefined;
+  const msg = nestedEnvelope?.message ?? outerEnvelope?.message;
+
   return {
-    success: isApiResponseSuccess(response as unknown),
-    data: extractResponseData<T>(response as unknown),
+    success: typeof nestedEnvelope?.success === 'boolean'
+      ? nestedEnvelope.success
+      : isApiResponseSuccess(response),
+    data: (nestedEnvelope ? nestedEnvelope.data : payload) as T,
     message: typeof msg === 'string' ? msg : undefined,
   };
 };

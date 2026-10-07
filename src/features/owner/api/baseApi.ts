@@ -331,6 +331,7 @@ export const baseApi = createApi({
     'PaymentSubmissions',
     'PaymentSubmission',
     'VerificationStats',
+    'FeatureTours',
   ],
   endpoints: () => ({}),
 });

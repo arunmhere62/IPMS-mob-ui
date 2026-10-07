@@ -212,20 +212,17 @@ export const QuickSetupScreen: React.FC = () => {
 
   const handleDefaultPriceChange = (value: string) => {
     const sanitized = cleanPrice(value);
-    setDefaultPrice((prevDefault) => {
-      if (sanitized) {
-        setRooms((prevRooms) =>
-          prevRooms.map((r) => {
-            // Only update rooms that are empty or still match the previous default
-            if (!r.price || r.price === prevDefault) {
-              return { ...r, price: sanitized };
-            }
-            return r;
-          })
-        );
-      }
-      return sanitized;
-    });
+    const previousDefault = defaultPrice;
+    setDefaultPrice(sanitized);
+    setRooms((prevRooms) =>
+      prevRooms.map((r) => {
+        // Only update rooms that are empty or still match the previous default
+        if (!r.price || r.price === previousDefault) {
+          return { ...r, price: sanitized };
+        }
+        return r;
+      })
+    );
     setErrors((prev) => {
       const next = { ...prev };
       delete next.defaultPrice;

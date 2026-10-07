@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { View, Text, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Image, ScrollView, Alert } from 'react-native';
 import { Theme } from '../../../theme';
-import { useSendOtpMutation } from '../api/authApi';
+import { useFlowSendOtpMutation } from '../api/authApi';
 import { useLazyGetRequiredLegalDocumentsStatusQuery } from '../../owner/api/legalDocumentsApi';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
@@ -32,7 +32,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     flag: '🇮🇳',
     phoneCode: '+91',
     phoneLength: 10 });
-  const [sendOtp, { isLoading: sendingOtp }] = useSendOtpMutation();
+  const [sendOtp, { isLoading: sendingOtp }] = useFlowSendOtpMutation();
   const [getRequiredLegalStatus] = useLazyGetRequiredLegalDocumentsStatusQuery();
 
   useEffect(() => {
@@ -81,8 +81,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       // Send phone with country code and space
       const fullPhone = selectedCountry.phoneCode + ' ' + phone;
       const res = await sendOtp({ phone: fullPhone }).unwrap();
-      showSuccessAlert(res);
-      navigation.navigate('OTPVerification', { phone: fullPhone });
+      showSuccessAlert('OTP sent successfully');
+      navigation.navigate('OTPVerification', {
+        phone: fullPhone,
+        flow: res.flow,
+      });
     } catch (err: any) {
       showErrorAlert(err, 'OTP Error');
     }
@@ -158,19 +161,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               textAlign: 'center',
               marginTop: Theme.spacing.md,
               marginBottom: Theme.spacing.md }}>
-              You will receive an OTP on your registered phone number
+              You will receive an OTP on your phone number. New users can sign up after verification.
             </Text>
-
-            {Platform.OS !== 'ios' && (
-              <View style={{ marginTop: Theme.spacing.lg }}>
-                <Button
-                  title="Sign Up"
-                  onPress={() => navigation.navigate('Signup')}
-                  variant="outline"
-                  size='md'
-                />
-              </View>
-            )}
           </Card>
 
           {/* Legal Links */}

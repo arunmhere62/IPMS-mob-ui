@@ -12,6 +12,7 @@ import {
   TouchableWithoutFeedback,
   Image } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useDispatch } from "react-redux";
 import { Theme } from "../../../theme";
 import { CountryPhoneSelector } from "../../../components/CountryPhoneSelector";
 import { Button } from "../../../components/Button";
@@ -22,9 +23,13 @@ import { CONTENT_COLOR } from "@/constant";
 import { useGetCountriesQuery } from "../../owner/api/locationApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
 import {
+  useFlowSetupMutation,
   useSendSignupOtpMutation,
   useSignupMutation } from "../api/authApi";
 import { Ionicons } from "@expo/vector-icons";
+import { setCredentials } from "../../owner/store/slices/authSlice";
+import { setSelectedPGLocation } from "../../owner/store/slices/pgLocationSlice";
+import { AppDispatch } from "@/features/owner/store";
 import {
   type RequiredLegalDocument,
   useAcceptLegalDocumentMutation,
@@ -50,6 +55,7 @@ interface Country {
 export const SignupScreenNew: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const dispatch = useDispatch<AppDispatch>();
   const [loading, setLoading] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [hasAgreedToLegal, setHasAgreedToLegal] = useState(false);
@@ -75,11 +81,12 @@ export const SignupScreenNew: React.FC = () => {
     phoneCode: "+91",
     phoneLength: 10 });
   const [phoneVerified, setPhoneVerified] = useState(false);
-  const [, setFullPhone] = useState("");
+  const [fullPhone, setFullPhone] = useState("");
 
   const { data: countriesResponse } = useGetCountriesQuery();
   const [sendSignupOtp] = useSendSignupOtpMutation();
-  const [signup] = useSignupMutation();
+  const [setupAccount] = useFlowSetupMutation();
+  const [legacySignup] = useSignupMutation();
   const [getRequiredLegalStatus] =
     useLazyGetRequiredLegalDocumentsStatusQuery();
   const [acceptLegalDocument] = useAcceptLegalDocumentMutation();
@@ -115,13 +122,24 @@ export const SignupScreenNew: React.FC = () => {
     if (typeof verifiedPhone === "string" && verifiedPhone) {
       setFullPhone(verifiedPhone);
       setPhoneVerified(true);
+      
+      // Extract the local phone number from the full phone number
+      // Format: +91XXXXXXXXXX -> XXXXXXXXXX
+      const selectedPhoneCode = selectedCountry.phoneCode.replace('+', '');
+      const localPhone = verifiedPhone.startsWith(selectedCountry.phoneCode) 
+        ? verifiedPhone.slice(selectedCountry.phoneCode.length) 
+        : verifiedPhone.slice(selectedPhoneCode.length);
+      
+      // Update formData with the local phone number
+      setFormData(prev => ({ ...prev, phone: localPhone }));
+      
       try {
         navigation.setParams({ verifiedPhone: undefined });
       } catch {
         // ignore
       }
     }
-  }, [navigation, route?.params?.verifiedPhone]);
+  }, [navigation, route?.params?.verifiedPhone, selectedCountry.phoneCode]);
 
   useEffect(() => {
     (async () => {
@@ -155,7 +173,7 @@ export const SignupScreenNew: React.FC = () => {
   };
 
   const validateForm = () => {
-    if (!formData.phone.trim()) {
+    if (!phoneVerified && !formData.phone.trim()) {
       Alert.alert("Error", "Please enter phone number");
       return false;
     }
@@ -246,6 +264,8 @@ export const SignupScreenNew: React.FC = () => {
 
     setLoading(true);
     try {
+      const setupToken = route?.params?.setupToken;
+
       const pgName = formData.pgName.trim();
       const signupData: any = {
         organizationName: pgName,
@@ -255,10 +275,12 @@ export const SignupScreenNew: React.FC = () => {
         rentCycleStart: formData.rentCycleStart,
         rentCycleEnd: formData.rentCycleEnd };
 
-      if (formData.phone.trim()) {
+      const verifiedPhone = route?.params?.verifiedPhone || route?.params?.phone || fullPhone;
+      if (verifiedPhone) {
+        signupData.phone = verifiedPhone;
+      } else if (formData.phone.trim()) {
         signupData.phone = selectedCountry.phoneCode + formData.phone.trim();
       }
-      console.log("📤 Sending signup data:", signupData);
 
       const status = await getRequiredLegalStatus({
         context: "SIGNUP" }).unwrap();
@@ -266,14 +288,32 @@ export const SignupScreenNew: React.FC = () => {
         status?.pending ??
         []) as RequiredLegalDocument[];
 
-      const signupResult: any = await signup(signupData).unwrap();
-      const rawUserId =
-        signupResult?.userId ?? signupResult?.user_id ?? signupResult?.s_no;
-      const userId = Number(rawUserId);
+      let signupResult: any;
+      let user: any;
+      let userId: number;
+      let pgId: number;
+
+      if (setupToken) {
+        // Unified flow: create account and log in automatically.
+        signupData.setupToken = setupToken;
+        console.log("📤 Sending unified setup data:", signupData);
+        signupResult = await setupAccount(signupData).unwrap();
+        user = signupResult?.user;
+        userId = Number(user?.s_no);
+        pgId = Number(signupResult?.pgId);
+      } else {
+        // Legacy standalone signup flow.
+        console.log("📤 Sending legacy signup data:", signupData);
+        signupResult = await legacySignup(signupData).unwrap();
+        userId = Number(
+          signupResult?.userId ?? signupResult?.user_id ?? signupResult?.s_no
+        );
+        pgId = Number(signupResult?.pgId);
+      }
 
       if (docsToAccept?.length) {
         if (!Number.isFinite(userId) || userId <= 0) {
-          throw new Error("Signup succeeded but user id was not returned");
+          throw new Error("Account created but user id was not returned");
         }
 
         for (const doc of docsToAccept) {
@@ -286,10 +326,23 @@ export const SignupScreenNew: React.FC = () => {
         }
       }
 
-      showSuccessAlert(signupResult, {
-        onOk: () => {
-          (navigation as any).navigate("Login");
-        } });
+      if (setupToken) {
+        // Auto-login: set credentials so AppNavigator switches to OwnerScreens.
+        dispatch(setCredentials({
+          user,
+          accessToken: signupResult?.accessToken,
+          refreshToken: signupResult?.refreshToken,
+        }));
+        if (Number.isFinite(pgId) && pgId > 0) {
+          dispatch(setSelectedPGLocation(pgId));
+        }
+        showSuccessAlert("Account created successfully!");
+      } else {
+        showSuccessAlert(signupResult, {
+          onOk: () => {
+            (navigation as any).navigate("Login");
+          } });
+      }
     } catch (error: any) {
       showErrorAlert(error, "Signup failed");
     } finally {
@@ -390,6 +443,21 @@ export const SignupScreenNew: React.FC = () => {
             </Text>
           </View>
         </View>
+
+        {/* Debug info - remove in production */}
+        {__DEV__ && (
+          <View style={{ marginBottom: 16, padding: 8, backgroundColor: '#FEF3C7', borderRadius: 8 }}>
+            <Text style={{ fontSize: 10, color: '#92400E' }}>
+              Phone Verified: {phoneVerified ? 'YES' : 'NO'}
+            </Text>
+            <Text style={{ fontSize: 10, color: '#92400E' }}>
+              Full Phone: {fullPhone || 'NONE'}
+            </Text>
+            <Text style={{ fontSize: 10, color: '#92400E' }}>
+              Form Phone: {formData.phone || 'NONE'}
+            </Text>
+          </View>
+        )}
 
         <View style={{ marginBottom: 16 }}>
           <Text
