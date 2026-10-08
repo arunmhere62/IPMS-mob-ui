@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import {
   type ParamListBase,
   type NavigationState,
@@ -13,6 +13,7 @@ import { BottomNavVisibilityProvider } from '@/components/BottomNavVisibility';
 import { BottomNav } from '@/components/BottomNav';
 import { Theme } from '@/theme';
 import { Permission } from '@/config/rbac.config';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // Tab Screens
 import { DashboardScreen } from '@/features/owner/screens/dashboard/DashboardScreen';
@@ -50,6 +51,7 @@ const SCREENS: ScreenConfig[] = [
   {
     name: 'PaymentVerification',
     component: PaymentVerificationScreen,
+    permission: Permission.VIEW_PAYMENT_VERIFICATION,
   },
   {
     name: 'Settings',
@@ -68,6 +70,8 @@ const SCREENS: ScreenConfig[] = [
  */
 export const MainTabs: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { can, isReady, isSuperAdmin } = usePermissions();
+  const accessibleScreens = SCREENS.filter((screen) => !screen.permission || can(screen.permission));
 
   const currentRoute = useNavigationState((state) => {
     const s = state as unknown as NavigationState;
@@ -101,7 +105,7 @@ export const MainTabs: React.FC = () => {
   });
 
   // Tab screen names that should navigate within the tab navigator
-  const tabScreenNames = SCREENS.map(s => s.name);
+  const tabScreenNames = accessibleScreens.map((screen) => screen.name);
 
   const handleTabPress = useCallback((tabName: string) => {
     if (tabScreenNames.includes(tabName)) {
@@ -112,6 +116,14 @@ export const MainTabs: React.FC = () => {
       navigation.navigate(tabName as never);
     }
   }, [navigation, tabScreenNames]);
+
+  if (!isReady && !isSuperAdmin) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={Theme.colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <BottomNavVisibilityProvider>
@@ -124,9 +136,9 @@ export const MainTabs: React.FC = () => {
               lazy: true,
             }}
             sceneContainerStyle={{ backgroundColor: Theme.colors.background.primary }}
-            initialRouteName="Dashboard"
+            initialRouteName={accessibleScreens[0]?.name ?? 'Settings'}
           >
-            {SCREENS.map((screen) => (
+            {accessibleScreens.map((screen) => (
               <Tab.Screen
                 key={screen.name}
                 name={screen.name}

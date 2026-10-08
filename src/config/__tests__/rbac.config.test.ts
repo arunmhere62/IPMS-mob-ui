@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { Permission } from '../rbac.config';
 
 describe('rbac.config - Permission enum', () => {
@@ -54,6 +55,11 @@ describe('rbac.config - Permission enum', () => {
     expect(Permission.DELETE_TICKET).toBe('ticket_delete');
   });
 
+  it('has payment verification permissions', () => {
+    expect(Permission.VIEW_PAYMENT_VERIFICATION).toBe('payment_verification_view');
+    expect(Permission.EDIT_PAYMENT_VERIFICATION).toBe('payment_verification_edit');
+  });
+
   it('all permission values follow snake_case convention', () => {
     const values = Object.values(Permission);
     values.forEach(val => {
@@ -68,7 +74,7 @@ describe('rbac.config - Permission enum', () => {
   });
 
   it('has CRUD permissions for each resource', () => {
-    const resources = ['pg_location', 'tenant', 'room', 'bed', 'payment', 'employee', 'ticket'];
+    const resources = ['pg_location', 'tenant', 'room', 'bed', 'payment', 'employee', 'ticket', 'expense', 'visitor', 'electricity_bill'];
     const actions = ['view', 'create', 'edit', 'delete'];
 
     resources.forEach(resource => {

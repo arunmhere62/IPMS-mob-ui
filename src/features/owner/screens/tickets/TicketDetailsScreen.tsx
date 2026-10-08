@@ -19,6 +19,8 @@ import { ImageUploadS3 } from '@/components/ImageUploadS3';
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { Ionicons } from '@expo/vector-icons';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface TicketDetailsScreenProps {
   navigation: any;
@@ -57,6 +59,8 @@ const getCategoryIcon = (category: string) => {
 
 export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ navigation, route }) => {
   const { ticketId } = route.params;
+  const { can } = usePermissions();
+  const canEditTicket = can(Permission.EDIT_TICKET);
   const {
     data: ticketResponse,
     isLoading: loading,
@@ -70,6 +74,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
   const [submittingComment, setSubmittingComment] = useState(false);
 
   const handleAddComment = async () => {
+    if (!canEditTicket) return;
     if (!commentText.trim()) {
       Alert.alert('Validation Error', 'Please enter a comment');
       return;
@@ -286,7 +291,7 @@ export const TicketDetailsScreen: React.FC<TicketDetailsScreenProps> = ({ naviga
                 )}
 
                 {/* Add Comment */}
-                {currentTicket.status === 'CLOSED' ? (
+                {!canEditTicket ? null : currentTicket.status === 'CLOSED' ? (
                   <View style={{ borderTopWidth: 1, borderTopColor: Theme.colors.border, paddingTop: 16, marginTop: 8 }}>
                     <View style={{
                       backgroundColor: '#FEF3C7',

@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 
 import { ScreenLayout } from "@/components/ScreenLayout";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -23,7 +23,7 @@ import { setSelectedPGLocation } from "@/features/owner/store/slices/pgLocationS
 import {
   useCreateRoomMutation,
   useBulkCreateBedMutation,
-  useGetAllRoomsQuery,
+  useLazyGetAllRoomsQuery,
 } from "@/features/owner/api/roomsApi";
 import { useGetPGLocationsQuery } from "@/features/owner/api/pgLocationsApi";
 import { showErrorAlert, showSuccessAlert } from "@/utils/errorHandler";
@@ -38,6 +38,7 @@ interface RoomSetupRow {
 
 // Production constants
 const MAX_ROOMS = 50;
+const ROOMS_PAGE_SIZE = 100;
 const MAX_BEDS_PER_ROOM = 50;
 const MIN_PRICE = 1;
 const MAX_PRICE = 10_00_000; // ₹10,00,000 per bed
@@ -68,11 +69,11 @@ export const QuickSetupScreen: React.FC = () => {
 
   const { data: pgLocationsResponse, isFetching: pgLocationsFetching } =
     useGetPGLocationsQuery(undefined, { skip: false });
-  const { data: existingRoomsResponse, isFetching: isFetchingExistingRooms } =
-    useGetAllRoomsQuery(
-      { pg_id: selectedPGLocationId ?? undefined },
-      { skip: !selectedPGLocationId }
-    );
+  const [fetchRoomsPage] = useLazyGetAllRoomsQuery();
+  const [existingRoomNumbers, setExistingRoomNumbers] = useState<string[]>([]);
+  const [isFetchingExistingRooms, setIsFetchingExistingRooms] = useState(false);
+  const [existingRoomsError, setExistingRoomsError] = useState(false);
+  const [checkedRoomsPGId, setCheckedRoomsPGId] = useState<number | null>(null);
 
   const [createRoom] = useCreateRoomMutation();
   const [bulkCreateBeds] = useBulkCreateBedMutation();
@@ -85,6 +86,7 @@ export const QuickSetupScreen: React.FC = () => {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [completedRooms, setCompletedRooms] = useState<string[]>([]);
   const isMounted = useRef(true);
+  const existingRoomsRequestId = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -101,24 +103,78 @@ export const QuickSetupScreen: React.FC = () => {
     }
   }, []);
 
+  const loadExistingRoomNumbers = useCallback(async (pgId: number) => {
+    const requestId = ++existingRoomsRequestId.current;
+    setIsFetchingExistingRooms(true);
+    setExistingRoomsError(false);
+    setCheckedRoomsPGId(null);
+
+    try {
+      const roomNumbers: string[] = [];
+      let page = 1;
+      let totalPages = 1;
+
+      do {
+        const response = await fetchRoomsPage({
+          pg_id: pgId,
+          page,
+          limit: ROOMS_PAGE_SIZE,
+        }).unwrap();
+        const pageRooms = Array.isArray(response?.data) ? response.data : [];
+        roomNumbers.push(
+          ...pageRooms
+            .map((room) => room.room_no)
+            .filter((roomNo): roomNo is string => typeof roomNo === 'string')
+        );
+        totalPages = Math.max(1, Number(response?.pagination?.totalPages) || 1);
+        page += 1;
+      } while (page <= totalPages && requestId === existingRoomsRequestId.current);
+
+      if (requestId !== existingRoomsRequestId.current) return;
+      setExistingRoomNumbers(roomNumbers);
+      setCheckedRoomsPGId(pgId);
+    } catch {
+      if (requestId !== existingRoomsRequestId.current) return;
+      setExistingRoomNumbers([]);
+      setExistingRoomsError(true);
+    } finally {
+      if (requestId === existingRoomsRequestId.current) {
+        setIsFetchingExistingRooms(false);
+      }
+    }
+  }, [fetchRoomsPage]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedPGLocationId) {
+        void loadExistingRoomNumbers(selectedPGLocationId);
+      }
+
+      return () => {
+        existingRoomsRequestId.current += 1;
+      };
+    }, [loadExistingRoomNumbers, selectedPGLocationId])
+  );
+
+  const existingRoomsReady =
+    Boolean(selectedPGLocationId) &&
+    checkedRoomsPGId === selectedPGLocationId &&
+    !isFetchingExistingRooms &&
+    !existingRoomsError;
+
   const existingRoomNos = useMemo(() => {
-    const raw = existingRoomsResponse as any;
-    const rooms = Array.isArray(raw) ? raw : (raw?.data ?? []);
     const set = new Set<string>();
-    rooms.forEach((r: any) => {
-      const no = r?.room_no;
-      if (typeof no === "string" && no.trim()) {
-        const normalized = no.trim().toUpperCase();
-        // Support both "RM101" and "101" formats from backend
-        if (/^\d+$/.test(normalized)) {
-          set.add(`RM${normalized}`);
-        } else {
-          set.add(normalized);
-        }
+    existingRoomNumbers.forEach((roomNo) => {
+      const normalized = roomNo.trim().toUpperCase();
+      const numericPart = normalized.replace(/^RM\s*/, '');
+      if (/^\d+$/.test(numericPart)) {
+        set.add(`RM${numericPart.replace(/^0+(?=\d)/, '')}`);
+      } else if (normalized) {
+        set.add(normalized);
       }
     });
     return set;
-  }, [existingRoomsResponse]);
+  }, [existingRoomNumbers]);
 
   const getNextAvailableRoomNos = useCallback(
     (count: number, currentRooms: RoomSetupRow[]): string[] => {
@@ -161,6 +217,7 @@ export const QuickSetupScreen: React.FC = () => {
   }, [isRehydrated, selectedPGLocationId, pgLocationsResponse, pgLocationsFetching, dispatch]);
 
   const handleNumRoomsChange = (value: string) => {
+    if (!existingRoomsReady || isSubmitting) return;
     const digits = value.replace(/[^0-9]/g, "");
     const count = parseInt(digits, 10);
     const validCount =
@@ -263,6 +320,7 @@ export const QuickSetupScreen: React.FC = () => {
   };
 
   const addRoom = () => {
+    if (!existingRoomsReady || isSubmitting) return;
     setRooms((prev) => {
       const nextId = prev.length > 0 ? Math.max(...prev.map((r) => r.id)) + 1 : 0;
       const newNumbers = getNextAvailableRoomNos(1, prev);
@@ -332,10 +390,6 @@ export const QuickSetupScreen: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validate()) {
-      Alert.alert("Validation Error", "Please fix the highlighted fields");
-      return;
-    }
     if (!selectedPGLocationId) {
       Alert.alert(
         "PG Location missing",
@@ -343,8 +397,16 @@ export const QuickSetupScreen: React.FC = () => {
       );
       return;
     }
-    if (isFetchingExistingRooms) {
-      Alert.alert("Loading", "Please wait while we check existing rooms.");
+    if (existingRoomsError) {
+      Alert.alert("Rooms could not be checked", "Retry the existing room check before creating rooms.");
+      return;
+    }
+    if (!existingRoomsReady) {
+      Alert.alert("Checking existing rooms", "Please wait while we check this PG's rooms.");
+      return;
+    }
+    if (!validate()) {
+      Alert.alert("Validation Error", "Please fix the highlighted fields");
       return;
     }
 
@@ -355,11 +417,13 @@ export const QuickSetupScreen: React.FC = () => {
     try {
       for (let i = 0; i < rooms.length; i++) {
         const room = rooms[i];
+        const roomNo = `RM${room.roomNo.trim()}`;
         const roomRes = await createRoom({
           pg_id: selectedPGLocationId,
-          room_no: `RM${room.roomNo.trim()}`,
+          room_no: roomNo,
           images: [],
         }).unwrap();
+        safeSetState(setExistingRoomNumbers, (prev) => [...prev, roomNo]);
 
         const roomId = extractSno(roomRes);
 
@@ -489,6 +553,34 @@ export const QuickSetupScreen: React.FC = () => {
                 ))}
               </Card>
 
+              {isFetchingExistingRooms ? (
+                <Card style={{ marginBottom: 16 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <ActivityIndicator color={Theme.colors.primary} style={{ marginRight: 10 }} />
+                    <Text style={{ fontSize: 12, color: Theme.colors.text.secondary }}>
+                      Checking all existing rooms for this PG…
+                    </Text>
+                  </View>
+                </Card>
+              ) : existingRoomsError ? (
+                <Card style={{ marginBottom: 16, borderWidth: 1, borderColor: Theme.colors.danger }}>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: Theme.colors.danger, marginBottom: 8 }}>
+                    Could not verify existing rooms. Room creation is paused to avoid duplicates.
+                  </Text>
+                  <Button
+                    title="Retry room check"
+                    onPress={() => {
+                      if (selectedPGLocationId) void loadExistingRoomNumbers(selectedPGLocationId);
+                    }}
+                    variant="primary"
+                  />
+                </Card>
+              ) : existingRoomsReady ? (
+                <Text style={{ fontSize: 11, color: Theme.colors.text.secondary, marginBottom: 12, paddingHorizontal: 4 }}>
+                  Checked {existingRoomNumbers.length} existing room{existingRoomNumbers.length === 1 ? "" : "s"}; duplicates will be skipped.
+                </Text>
+              ) : null}
+
               <Card style={{ marginBottom: 16 }}>
                 <Text
                   style={{
@@ -543,6 +635,7 @@ export const QuickSetupScreen: React.FC = () => {
                       keyboardType="numeric"
                       maxLength={2}
                       returnKeyType="next"
+                      editable={existingRoomsReady && !isSubmitting}
                       accessibilityLabel="Number of rooms"
                       style={{
                         flex: 1,
@@ -560,7 +653,8 @@ export const QuickSetupScreen: React.FC = () => {
                       <AnimatedPressableCard
                         key={count}
                         onPress={() => handleNumRoomsChange(String(count))}
-                        style={{ paddingVertical: 7, paddingHorizontal: 14, borderRadius: 8, backgroundColor: numRooms === String(count) ? Theme.colors.primary : "#F1F5F9" }}
+                        disabled={!existingRoomsReady || isSubmitting}
+                        style={{ paddingVertical: 7, paddingHorizontal: 14, borderRadius: 8, backgroundColor: numRooms === String(count) ? Theme.colors.primary : "#F1F5F9", opacity: existingRoomsReady ? 1 : 0.5 }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: "700", color: numRooms === String(count) ? "#FFFFFF" : Theme.colors.text.primary }}>
                           {count} {count === 1 ? "room" : "rooms"}
@@ -721,6 +815,7 @@ export const QuickSetupScreen: React.FC = () => {
                     </View>
                     <AnimatedPressableCard
                       onPress={addRoom}
+                      disabled={!existingRoomsReady || isSubmitting}
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
@@ -728,6 +823,7 @@ export const QuickSetupScreen: React.FC = () => {
                         paddingHorizontal: 10,
                         backgroundColor: Theme.colors.primary + "15",
                         borderRadius: 8,
+                        opacity: existingRoomsReady ? 1 : 0.5,
                       }}
                     >
                       <Ionicons
@@ -1214,7 +1310,7 @@ export const QuickSetupScreen: React.FC = () => {
                   title={`Create ${rooms.length} ${rooms.length === 1 ? "Room" : "Rooms"} & ${totalBeds} ${totalBeds === 1 ? "Bed" : "Beds"}`}
                   onPress={handleSubmit}
                   loading={isSubmitting}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !existingRoomsReady}
                   variant="primary"
                   size="lg"
                 />

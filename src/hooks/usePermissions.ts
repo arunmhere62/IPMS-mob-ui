@@ -3,6 +3,54 @@ import { Permission } from '../config/rbac.config';
 import { getBackendPermissionKeyCandidates } from '../config/rbac-backend-map';
 import { RootState } from '@/features/owner/store';
 
+const screenPermissionMap: Record<string, Permission> = {
+  dashboard: Permission.VIEW_DASHBOARD,
+  rooms: Permission.VIEW_ROOM,
+  roomdetails: Permission.VIEW_ROOM,
+  beds: Permission.VIEW_BED,
+  tenants: Permission.VIEW_TENANTS,
+  tenantdetails: Permission.VIEW_TENANTS,
+  upcomingvacancies: Permission.VIEW_TENANTS,
+  pglocations: Permission.VIEW_PG_LOCATIONS,
+  pgdetails: Permission.VIEW_PG_LOCATIONS,
+  payments: Permission.VIEW_PAYMENT,
+  rentpayments: Permission.VIEW_PAYMENT,
+  advancepayments: Permission.VIEW_PAYMENT,
+  refundpayments: Permission.VIEW_PAYMENT,
+  tenantrentpaymentsscreen: Permission.VIEW_PAYMENT,
+  tenantadvancepaymentsscreen: Permission.VIEW_PAYMENT,
+  tenantrefundpaymentsscreen: Permission.VIEW_PAYMENT,
+  paymentverification: Permission.VIEW_PAYMENT_VERIFICATION,
+  paymentconfig: Permission.VIEW_PAYMENT,
+  expenses: Permission.VIEW_EXPENSE,
+  employees: Permission.VIEW_EMPLOYEE,
+  employeedetails: Permission.VIEW_EMPLOYEE,
+  visitors: Permission.VIEW_VISITOR,
+  visitordetails: Permission.VIEW_VISITOR,
+  tickets: Permission.VIEW_TICKET,
+  ticketdetails: Permission.VIEW_TICKET,
+  pgtenanttickets: Permission.VIEW_TICKET,
+  pgtenantticketdetail: Permission.VIEW_TICKET,
+  roomelectricitybills: Permission.VIEW_ELECTRICITY_BILL,
+};
+
+const superAdminScreens = new Set(['organizations', 'employeepermissionoverrides']);
+
+const unguardedScreens = new Set([
+  'settings',
+  'userprofile',
+  'faqwebview',
+  'legaldocuments',
+  'legalwebview',
+  'subscriptionplans',
+  'subscriptionhistory',
+  'subscriptionconfirm',
+  'paymentwebview',
+  'invoiceviewer',
+  'networklogger',
+  'maintabs',
+]);
+
 /**
  * Custom hook for role-based access control
  * 
@@ -65,8 +113,14 @@ export const usePermissions = () => {
      * @param screenPath - Screen path/name
      * @returns boolean
      */
-    canAccess: (_screenPath: string): boolean => {
-      return true;
+    canAccess: (screenPath: string): boolean => {
+      const screenName = String(screenPath).split(/[/?#]/).filter(Boolean).pop()?.replace(/[-_]/g, '').toLowerCase() ?? '';
+      const requiredPermission = screenPermissionMap[screenName];
+      if (requiredPermission) {
+        const keys = getBackendPermissionKeyCandidates(requiredPermission);
+        return isSuperAdmin || keys.some((key) => Boolean((permissionsMap as any)[key]));
+      }
+      return unguardedScreens.has(screenName) || (isSuperAdmin && superAdminScreens.has(screenName));
     },
 
     /**

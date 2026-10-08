@@ -16,6 +16,8 @@ import { useLazyGetTenantPaymentsQuery, useUpdatePaymentStatusMutation } from '@
 import { SlideBottomModal } from '../../../../components/SlideBottomModal';
 import { FloatingListCounter } from '@/components/FloatingListCounter';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -30,6 +32,8 @@ interface RentPaymentsScreenProps {
 }
 
 export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigation, embedded }) => {
+  const { can } = usePermissions();
+  const canEditPayment = can(Permission.EDIT_PAYMENT);
   const { selectedPGLocationId } = useSelector((state: RootState) => state.pgLocations);
   const [updatePaymentStatus] = useUpdatePaymentStatusMutation();
   const [triggerGetPayments, paymentsQuery] = useLazyGetTenantPaymentsQuery();
@@ -230,12 +234,13 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
   };
 
   const handleMarkAsPaid = (payment: Payment) => {
+    if (!canEditPayment) return;
     setSelectedPayment(payment);
     setShowStatusModal(true);
   };
 
   const confirmMarkAsPaid = async () => {
-    if (!selectedPayment) return;
+    if (!canEditPayment || !selectedPayment) return;
 
     try {
       setUpdatingStatus(true);
@@ -458,7 +463,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
               </View>
             )}
 
-            {item.status === 'PENDING' && (
+            {item.status === 'PENDING' && canEditPayment && (
               <AnimatedPressableCard
                 onPress={() => handleMarkAsPaid(item)}
                 style={{

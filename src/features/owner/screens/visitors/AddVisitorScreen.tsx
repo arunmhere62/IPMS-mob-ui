@@ -23,6 +23,7 @@ import { useLazyGetCitiesQuery, useLazyGetStatesQuery } from '../../api/location
 import { CONTENT_COLOR } from '@/constant';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface AddVisitorScreenProps {
   navigation: any;
@@ -33,17 +34,9 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
   const { visitorId } = route?.params || {};
   const isEditMode = Boolean(visitorId);
 
-  const { isAdmin, isSuperAdmin } = usePermissions();
-  const canManageVisitors = isAdmin || isSuperAdmin;
-
-  useEffect(() => {
-    if (canManageVisitors) return;
-    Alert.alert('Access Denied', 'Only Admin/Super Admin can manage Visitors.', [
-      {
-        text: 'OK',
-        onPress: () => navigation.goBack() },
-    ]);
-  }, [canManageVisitors, navigation]);
+  const { can } = usePermissions();
+  const canCreateVisitor = can(Permission.CREATE_VISITOR);
+  const canEditVisitor = can(Permission.EDIT_VISITOR);
 
   const [createVisitor, { isLoading: isCreating }] = useCreateVisitorMutation();
   const [updateVisitor, { isLoading: isUpdating }] = useUpdateVisitorMutation();
@@ -212,6 +205,11 @@ export default function AddVisitorScreen({ navigation, route }: AddVisitorScreen
   };
 
   const handleSubmit = async () => {
+    if (!(isEditMode ? canEditVisitor : canCreateVisitor)) {
+      Alert.alert('Access Denied', "You don't have permission to save visitors");
+      return;
+    }
+
     if (!visitorName.trim()) {
       Alert.alert('Validation Error', 'Please enter visitor name');
       return;

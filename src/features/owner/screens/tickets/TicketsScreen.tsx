@@ -17,6 +17,8 @@ import { showErrorAlert } from '@/utils/errorHandler';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface TicketsScreenProps {
   navigation: any;
@@ -53,6 +55,8 @@ const getCategoryIcon = (category: string) => {
 };
 
 export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
+  const { can } = usePermissions();
+  const canCreateTicket = can(Permission.CREATE_TICKET);
   const [triggerTickets, { isFetching }] = useLazyGetTicketsQuery();
 
   const [tickets, setTickets] = useState<any[]>([]);
@@ -192,7 +196,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
         subtitle={`${pagination?.total || 0} total`}
         showPGSelector={false}
         showBackButton={true}
-        rightAction={
+        rightAction={canCreateTicket ? (
           <AnimatedPressableCard
             onPress={() => navigation.navigate('CreateTicket')}
             style={{
@@ -208,7 +212,7 @@ export const TicketsScreen: React.FC<TicketsScreenProps> = ({ navigation }) => {
             <Ionicons name="add" size={18} color="#fff" />
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
           </AnimatedPressableCard>
-        }
+        ) : null}
       />
 
       <View style={{ flex: 1, backgroundColor: CONTENT_COLOR }}>

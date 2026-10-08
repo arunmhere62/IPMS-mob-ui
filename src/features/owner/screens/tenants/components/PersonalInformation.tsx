@@ -1,7 +1,10 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Clipboard, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { AnimatedPressableCard } from '../../../../../components/AnimatedPressableCard';
 import { Card } from '../../../../../components/Card';
 import { Theme } from '../../../../../theme';
+import { showSuccessAlert } from '../../../../../utils/errorHandler';
 import { Tenant } from '@/features/owner/api/tenantsApi';
 
 interface PersonalInformationProps {
@@ -12,6 +15,13 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
   const na = (value: any) => {
     const v = typeof value === 'string' ? value.trim() : value;
     return v ? String(v) : 'N/A';
+  };
+
+  const handleCopyPhone = async () => {
+    const phone = tenant.phone_no?.trim();
+    if (!phone) return;
+    await Clipboard.setString(phone);
+    showSuccessAlert('Phone number copied to clipboard');
   };
 
   return (
@@ -27,11 +37,33 @@ export const PersonalInformation: React.FC<PersonalInformationProps> = ({ tenant
       </Text>
 
       <View style={{ gap: 12 }}>
-        <View>
-          <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Phone</Text>
-          <Text style={{ fontSize: 14, color: Theme.colors.text.primary }}>
-            {na(tenant.phone_no)}
-          </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary }}>Phone</Text>
+            <Text style={{ fontSize: 14, color: Theme.colors.text.primary }}>
+              {na(tenant.phone_no)}
+            </Text>
+          </View>
+          {!!tenant.phone_no?.trim() && (
+            <AnimatedPressableCard
+              onPress={handleCopyPhone}
+              accessibilityLabel='Copy phone number'
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                paddingHorizontal: 10,
+                paddingVertical: 7,
+                borderRadius: 8,
+                backgroundColor: Theme.colors.background.secondary,
+                borderWidth: 1,
+                borderColor: Theme.colors.border,
+              }}
+            >
+              <Ionicons name='copy-outline' size={15} color={Theme.colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: Theme.colors.primary }}>Copy</Text>
+            </AnimatedPressableCard>
+          )}
         </View>
 
         <View>

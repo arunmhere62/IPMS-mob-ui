@@ -1,3 +1,5 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import type { Mock } from 'jest-mock';
 import { renderHook } from '@testing-library/react-native';
 import { usePermissions } from '../usePermissions';
 import { Permission } from '../../config/rbac.config';
@@ -14,8 +16,12 @@ jest.mock('../../config/rbac-backend-map', () => ({
 }));
 
 describe('usePermissions', () => {
-  const mockUseSelector = require('react-redux').useSelector as jest.Mock;
-  const mockGetBackendPermissionKeyCandidates = getBackendPermissionKeyCandidates as jest.Mock;
+  const mockUseSelector = require('react-redux').useSelector as Mock<
+    (selector: (state: RootState) => unknown) => unknown
+  >;
+  const mockGetBackendPermissionKeyCandidates = getBackendPermissionKeyCandidates as Mock<
+    (permission: Permission) => string[]
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -611,7 +617,7 @@ describe('usePermissions', () => {
   });
 
   describe('canAccess method', () => {
-    it('always returns true (placeholder implementation)', () => {
+    it('checks the mapped screen permission and only allows unguarded screens', () => {
       mockUseSelector.mockImplementation((selector: (state: RootState) => unknown) => {
         const mockState: Partial<RootState> = {
           auth: {
@@ -620,7 +626,7 @@ describe('usePermissions', () => {
           } as any,
         };
         (mockState as any).rbac = {
-          permissionsMap: {},
+          permissionsMap: { dashboard_view: true },
           loadedAt: Date.now(),
         };
         return selector(mockState as RootState);
@@ -628,8 +634,9 @@ describe('usePermissions', () => {
 
       const { result } = renderHook(() => usePermissions());
       expect(result.current.canAccess('/dashboard')).toBe(true);
+      expect(result.current.canAccess('/rooms')).toBe(false);
       expect(result.current.canAccess('/settings')).toBe(true);
-      expect(result.current.canAccess('')).toBe(true);
+      expect(result.current.canAccess('')).toBe(false);
     });
   });
 

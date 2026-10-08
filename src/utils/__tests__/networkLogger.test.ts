@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from '@jest/globals';
 import { networkLogger, type NetworkLog } from '../networkLogger';
 
 describe('networkLogger', () => {
@@ -37,6 +38,23 @@ describe('networkLogger', () => {
       const logs = networkLogger.getLogs();
       expect(logs[0].id).toBe('2');
       expect(logs[1].id).toBe('1');
+    });
+
+    it('redacts access tokens from headers and nested request/response data', () => {
+      networkLogger.addLog({
+        id: 'auth',
+        method: 'POST',
+        url: '/tenant-auth/verify-otp',
+        headers: { Authorization: 'Bearer test-access-token' },
+        requestData: { body: { refreshToken: 'test-refresh-token', password: 'secret' } },
+        responseData: { data: { accessToken: 'test-access-token' } },
+        timestamp: new Date(),
+      });
+
+      const [log] = networkLogger.getLogs();
+      expect(log.headers).toEqual({ Authorization: '[REDACTED]' });
+      expect(log.requestData).toEqual({ body: { refreshToken: '[REDACTED]', password: '[REDACTED]' } });
+      expect(log.responseData).toEqual({ data: { accessToken: '[REDACTED]' } });
     });
 
     it('truncates large strings in request/response data', () => {
@@ -196,7 +214,7 @@ describe('networkLogger', () => {
       const logs = networkLogger.getLogs();
       const truncatedHeaders = logs[0].headers as Record<string, string>;
       const truncatedData = logs[0].responseData as Record<string, string>;
-      expect(truncatedHeaders.authorization).toContain('truncated for display');
+      expect(truncatedHeaders.authorization).toBe('[REDACTED]');
       expect(truncatedData.data).toContain('truncated for display');
     });
 

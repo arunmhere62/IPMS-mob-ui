@@ -31,6 +31,8 @@ import {
   type CreatePaymentConfigDto,
 } from '@/features/owner/api/paymentConfigApi';
 import { useLazyGetPGLocationsQuery } from '@/features/owner/api/pgLocationsApi';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 const C = Theme.colors;
 
@@ -40,6 +42,10 @@ interface PaymentConfigScreenProps {
 
 export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { can } = usePermissions();
+  const canCreateConfig = can(Permission.CREATE_PAYMENT);
+  const canEditConfig = can(Permission.EDIT_PAYMENT);
+  const canDeleteConfig = can(Permission.DELETE_PAYMENT);
   const { data: configsResponse, isLoading, refetch } = useGetPaymentConfigsQuery();
   const [fetchPGLocationsTrigger] = useLazyGetPGLocationsQuery();
   const [createConfig] = useCreatePaymentConfigMutation();
@@ -109,12 +115,14 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
   };
 
   const openCreateModal = () => {
+    if (!canCreateConfig) return;
     setEditingConfig(null);
     resetForm();
     setModalVisible(true);
   };
 
   const openEditModal = (config: OwnerPaymentConfig) => {
+    if (!canEditConfig) return;
     setEditingConfig(config);
     setScopeType(config.scope_type);
     setSelectedPgId(config.pg_id);
@@ -129,6 +137,7 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
   };
 
   const handleSave = async () => {
+    if (!(editingConfig ? canEditConfig : canCreateConfig)) return;
     if (!upiId.trim()) {
       Alert.alert('Validation Error', 'UPI ID is required');
       return;
@@ -182,6 +191,7 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
   };
 
   const handleDelete = (config: OwnerPaymentConfig) => {
+    if (!canDeleteConfig) return;
     Alert.alert(
       'Deactivate Payment Config',
       `Are you sure you want to deactivate this ${config.scope_type === 'ALL_PG' ? 'ALL PG' : 'specific PG'} payment config?`,
@@ -196,7 +206,30 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
               showSuccessAlert('Payment config deactivated');
               refetch();
             } catch (error: any) {
-              showErrorAlert(null, error?.data?.message || 'Failed to deactivate');
+              showErrorAlert(error, 'Failed to deactivate');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleActivate = (config: OwnerPaymentConfig) => {
+    if (!canEditConfig) return;
+    Alert.alert(
+      'Activate Payment Config',
+      `Activate this ${config.scope_type === 'ALL_PG' ? 'ALL PG' : 'specific PG'} payment config?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Activate',
+          onPress: async () => {
+            try {
+              await updateConfig({ id: config.s_no, body: { is_active: true } }).unwrap();
+              showSuccessAlert('Payment config activated');
+              refetch();
+            } catch (error: any) {
+              showErrorAlert(error, 'Failed to activate');
             }
           },
         },
@@ -222,7 +255,7 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
         subtitle="UPI / QR config for tenant payments"
         showBackButton
         onBackPress={() => navigation.goBack()}
-        rightAction={
+        rightAction={canCreateConfig ? (
           <AnimatedPressableCard
             onPress={openCreateModal}
             style={{
@@ -238,7 +271,7 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
             <Ionicons name="add" size={18} color="#fff" />
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
           </AnimatedPressableCard>
-        }
+        ) : null}
       />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.infoBanner}>
@@ -253,7 +286,7 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
             <Ionicons name="card-outline" size={48} color={C.darkTertiary} />
             <Text style={styles.emptyTitle}>No Payment Config</Text>
             <Text style={styles.emptySubtitle}>Add your UPI ID so tenants can pay rent</Text>
-            <Button title="Add Payment Config" onPress={openCreateModal} icon={<Ionicons name="add" size={18} color={C.button.primaryText} />} />
+            {canCreateConfig && <Button title="Add Payment Config" onPress={openCreateModal} icon={<Ionicons name="add" size={18} color={C.button.primaryText} />} />}
           </Card>
         ) : (
           configs.map((config) => (
@@ -304,14 +337,22 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
               </View>
 
               <View style={styles.configActions}>
-                <AnimatedPressableCard onPress={() => openEditModal(config)} style={styles.actionBtn}>
-                  <Ionicons name="create-outline" size={16} color={C.primary} />
-                  <Text style={[styles.actionText, { color: C.primary }]}>Edit</Text>
-                </AnimatedPressableCard>
-                {config.is_active && (
+                {canEditConfig && (
+                  <AnimatedPressableCard onPress={() => openEditModal(config)} style={styles.actionBtn}>
+                    <Ionicons name="create-outline" size={16} color={C.primary} />
+                    <Text style={[styles.actionText, { color: C.primary }]}>Edit</Text>
+                  </AnimatedPressableCard>
+                )}
+                {canDeleteConfig && config.is_active && (
                   <AnimatedPressableCard onPress={() => handleDelete(config)} style={[styles.actionBtn, { borderColor: '#FECACA' }]}>
                     <Ionicons name="trash-outline" size={16} color={C.danger} />
                     <Text style={[styles.actionText, { color: C.danger }]}>Deactivate</Text>
+                  </AnimatedPressableCard>
+                )}
+                {canEditConfig && !config.is_active && (
+                  <AnimatedPressableCard onPress={() => handleActivate(config)} style={[styles.actionBtn, { borderColor: '#A7F3D0' }]}>
+                    <Ionicons name="checkmark-circle-outline" size={16} color={C.secondaryDark} />
+                    <Text style={[styles.actionText, { color: C.secondaryDark }]}>Activate</Text>
                   </AnimatedPressableCard>
                 )}
               </View>

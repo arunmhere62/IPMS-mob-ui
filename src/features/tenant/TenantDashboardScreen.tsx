@@ -80,8 +80,9 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
   // (e.g., returning from TenantSubmitPaymentProofScreen after submitting payment)
   useFocusEffect(
     useCallback(() => {
+      if (!accessToken) return;
       refetchPaymentsSummary();
-    }, [refetchPaymentsSummary]),
+    }, [accessToken, refetchPaymentsSummary]),
   );
 
   // Sync profile to Redux (slim — no payment data, that comes from payments-summary)
@@ -115,6 +116,7 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
 
   // Refresh handler based on active tab
   const handleRefresh = useCallback(async () => {
+    if (!accessToken) return;
     setRefreshing(true);
     try {
       if (activeTab === 'tickets') await refetchTickets();
@@ -125,7 +127,7 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
     } finally {
       setRefreshing(false);
     }
-  }, [activeTab, refetchProfile, refetchTickets, refetchTicketStats, refetchPaymentsSummary]);
+  }, [accessToken, activeTab, refetchProfile, refetchTickets, refetchTicketStats, refetchPaymentsSummary]);
 
   const isPaid = paymentsSummary?.payment_status === 'PAID';
   const isPending = paymentsSummary?.payment_status === 'PENDING' || paymentsSummary?.payment_status === 'PENDING_VERIFICATION';
@@ -141,18 +143,48 @@ export const TenantDashboardScreen: React.FC<TenantDashboardScreenProps> = ({ na
     dispatch(tenantLogout());
   };
 
+  const renderUnavailable = () => {
+    const sessionMissing = !accessToken;
+    return (
+      <View style={{ margin: 16, padding: 24, alignItems: 'center', borderRadius: 16, backgroundColor: C.background.secondary }}>
+        <Ionicons name={sessionMissing ? 'log-in-outline' : 'cloud-offline-outline'} size={36} color={C.primary} />
+        <Text style={{ marginTop: 12, fontSize: 16, fontWeight: '700', color: C.text.primary, textAlign: 'center' }}>
+          {sessionMissing ? 'Session unavailable' : 'Dashboard unavailable'}
+        </Text>
+        <Text style={{ marginTop: 6, fontSize: 13, color: C.text.secondary, textAlign: 'center' }}>
+          {sessionMissing
+            ? 'Please sign in again to view your tenant dashboard.'
+            : error
+              ? 'We could not load your tenant details. Check your connection and retry.'
+              : 'No tenant details were returned. Please retry.'}
+        </Text>
+        <AnimatedPressableCard
+          onPress={() => {
+            if (sessionMissing) void handleLogout();
+            else void handleRefresh();
+          }}
+          style={{ marginTop: 16, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10, backgroundColor: C.primary }}
+        >
+          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>
+            {sessionMissing ? 'Sign in again' : 'Retry'}
+          </Text>
+        </AnimatedPressableCard>
+      </View>
+    );
+  };
+
   // Render content based on active tab
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
         if (profileLoading && !raw) return <HomeTabSkeleton />;
-        return raw ? <HomeTab raw={raw} paymentsSummary={paymentsSummary} isPaid={isPaid} isPending={isPending} ticketStats={ticketStats} refetchProfile={refetchProfile} onViewPayments={() => setActiveTab('payments')} /> : null;
+        return raw ? <HomeTab raw={raw} paymentsSummary={paymentsSummary} isPaid={isPaid} isPending={isPending} ticketStats={ticketStats} refetchProfile={refetchProfile} onViewPayments={() => setActiveTab('payments')} /> : renderUnavailable();
       case 'tickets':
         if (ticketsLoading && tickets.length === 0) return <TicketsTabSkeleton />;
         return <TicketsTab tickets={tickets} isLoading={ticketsLoading} navigation={navigation} />;
       case 'profile':
         if (profileLoading && !raw) return <ProfileTabSkeleton />;
-        return raw ? <ProfileTab raw={raw} onLogout={handleLogout} /> : null;
+        return raw ? <ProfileTab raw={raw} onLogout={handleLogout} /> : renderUnavailable();
       default:
         return null;
     }

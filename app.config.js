@@ -9,7 +9,7 @@ console.log('[app.config.js] MODE =', process.env.MODE);
 
 // Single source of truth for the local API URL: the LOCAL_API_BASE_URL env var
 // (see .env / .env.example). Change it there once and it propagates everywhere.
-const LOCAL_API_BASE_URL = process.env.LOCAL_API_BASE_URL || 'http://172.20.10.3:3001/api/v1';
+const LOCAL_API_BASE_URL = process.env.LOCAL_API_BASE_URL || 'http://192.168.1.6:3001/api/v1';
 
 const ENVIRONMENTS = {
   local: {

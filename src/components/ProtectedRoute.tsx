@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { usePermissions } from '../hooks/usePermissions';
 import { Permission } from '../config/rbac.config';
 import { Theme } from '../theme';
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
   requiredPermission?: Permission;
   requiredPermissions?: Permission[];
   requireAll?: boolean; // If true, user must have ALL permissions. If false, ANY permission is enough
+  requireSuperAdmin?: boolean;
   fallback?: React.ReactNode;
   screenName?: string;
 }
@@ -36,9 +37,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredPermission,
   requiredPermissions,
   requireAll = false,
+  requireSuperAdmin = false,
   fallback,
 }) => {
-  const { can, canAny, canAll } = usePermissions();
+  const { can, canAny, canAll, isReady, isSuperAdmin } = usePermissions();
+
+  if (!isReady && !isSuperAdmin) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator color={Theme.colors.primary} />
+      </View>
+    );
+  }
+
+  if (requireSuperAdmin && !isSuperAdmin) {
+    return fallback || <AccessDenied />;
+  }
 
   // Check single permission
   if (requiredPermission && !can(requiredPermission)) {

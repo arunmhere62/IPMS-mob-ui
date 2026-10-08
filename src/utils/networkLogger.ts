@@ -60,6 +60,20 @@ const truncateValue = (
   return out;
 };
 
+const redactSensitiveFields = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(redactSensitiveFields);
+  if (!value || typeof value !== 'object') return value;
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, nested]) => [
+      key,
+      /^(authorization|proxy-authorization|cookie|set-cookie|access[_-]?token|refresh[_-]?token|token|password|otp)$/i.test(key)
+        ? '[REDACTED]'
+        : redactSensitiveFields(nested),
+    ])
+  );
+};
+
 class NetworkLogger {
   private logs: NetworkLog[] = [];
   private maxLogs = 50;
@@ -67,9 +81,9 @@ class NetworkLogger {
   addLog(log: NetworkLog) {
     const safeLog: NetworkLog = {
       ...log,
-      headers: truncateValue(log.headers),
-      requestData: truncateValue(log.requestData),
-      responseData: truncateValue(log.responseData),
+      headers: redactSensitiveFields(truncateValue(log.headers)),
+      requestData: redactSensitiveFields(truncateValue(log.requestData)),
+      responseData: redactSensitiveFields(truncateValue(log.responseData)),
     };
 
     this.logs.unshift(safeLog);
@@ -85,11 +99,11 @@ class NetworkLogger {
       this.logs[index] = {
         ...this.logs[index],
         ...updates,
-        headers: updates.headers !== undefined ? truncateValue(updates.headers) : this.logs[index].headers,
+        headers: updates.headers !== undefined ? redactSensitiveFields(truncateValue(updates.headers)) : this.logs[index].headers,
         requestData:
-          updates.requestData !== undefined ? truncateValue(updates.requestData) : this.logs[index].requestData,
+          updates.requestData !== undefined ? redactSensitiveFields(truncateValue(updates.requestData)) : this.logs[index].requestData,
         responseData:
-          updates.responseData !== undefined ? truncateValue(updates.responseData) : this.logs[index].responseData,
+          updates.responseData !== undefined ? redactSensitiveFields(truncateValue(updates.responseData)) : this.logs[index].responseData,
       };
     } 
   }

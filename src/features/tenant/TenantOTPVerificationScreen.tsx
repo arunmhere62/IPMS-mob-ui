@@ -77,11 +77,9 @@ export const TenantOTPVerificationScreen: React.FC<TenantOTPVerificationScreenPr
     try {
       const result = await verifyOtp({ phone, otp }).unwrap();
 
-      console.log('OTP Verify - Full Result:', JSON.stringify(result, null, 2));
       // Response: CentralEnvelope -> ResponseUtilWrapper -> { tenant, pg, accessToken, refreshToken }
       const actualData = result.data?.data;
       console.log('OTP Verify - AccessToken:', actualData?.accessToken ? 'present' : 'missing');
-      console.log('OTP Verify - Token value:', actualData?.accessToken);
 
       // Store tenant credentials in Redux
       dispatch(

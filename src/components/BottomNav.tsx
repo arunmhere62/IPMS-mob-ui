@@ -75,7 +75,8 @@ const userTabs: TabConfig[] = [
   {
     name: "PaymentVerification",
     label: "Verify",
-    icon: "shield-checkmark-outline" },
+    icon: "shield-checkmark-outline",
+    permission: Permission.VIEW_PAYMENT_VERIFICATION },
   { name: "More", label: "More", icon: "grid" },
 ];
 
@@ -84,18 +85,19 @@ const moreMenuItems: MenuItem[] = [
     name: "PG Locations",
     label: "PG Locations",
     icon: "business",
-    route: "PGLocations" },
-  { name: "Employees", label: "Employees", icon: "people", route: "Employees" },
+    route: "PGLocations",
+    permission: Permission.VIEW_PG_LOCATIONS },
+  { name: "Employees", label: "Employees", icon: "people", route: "Employees", permission: Permission.VIEW_EMPLOYEE },
   {
     name: "Payments",
     label: "Payments",
     icon: "card",
     route: "Payments",
     permission: Permission.VIEW_PAYMENT },
-  { name: "Visitors", label: "Visitors", icon: "people-circle-outline", route: "Visitors" },
-  { name: "Expenses", label: "Expenses", icon: "receipt", route: "Expenses" },
-  { name: "TenantTickets", label: "Tenant Tickets", icon: "ticket-outline", route: "PgTenantTickets" },
-  { name: "UpcomingVacancies", label: "Vacancies", icon: "log-out-outline", route: "UpcomingVacancies" },
+  { name: "Visitors", label: "Visitors", icon: "people-circle-outline", route: "Visitors", permission: Permission.VIEW_VISITOR },
+  { name: "Expenses", label: "Expenses", icon: "receipt", route: "Expenses", permission: Permission.VIEW_EXPENSE },
+  { name: "TenantTickets", label: "Tenant Tickets", icon: "ticket-outline", route: "PgTenantTickets", permission: Permission.VIEW_TICKET },
+  { name: "UpcomingVacancies", label: "Vacancies", icon: "log-out-outline", route: "UpcomingVacancies", permission: Permission.VIEW_TENANTS },
   { name: "Settings", label: "Settings", icon: "settings", route: "Settings" },
 ];
 
@@ -159,11 +161,10 @@ const TabItem = ({
 export const BottomNav: React.FC<BottomNavProps> = React.memo(
   ({ navigation, currentRoute, tabs, activeTab: propActiveTab, onTabPress }) => {
     const insets = useSafeAreaInsets();
-    // Use configurable tabs if provided, otherwise use default user tabs
-    const accessibleTabs = tabs || userTabs;
+    const { can } = usePermissions();
+    const accessibleTabs = (tabs || userTabs).filter((tab) => !tab.permission || can(tab.permission));
     const { translateY, setHideDistance } = useBottomNavVisibilitySafe();
     const [moreModalVisible, setMoreModalVisible] = useState(false);
-    const { can } = usePermissions();
 
     const handleTabPress = (tab: TabConfig) => {
       if (tab.name === "More") {

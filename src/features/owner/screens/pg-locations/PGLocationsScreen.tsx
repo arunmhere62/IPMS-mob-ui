@@ -277,19 +277,24 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
 
   const validateForm = () => {
     if (!formData.locationName.trim()) {
-      showErrorAlert(null, 'PG Location Name Required');
+      showErrorAlert('Please enter a PG location name.', 'PG Location Name Required');
       return false;
     }
     if (!formData.address.trim()) {
-      showErrorAlert(null, 'Address Required');
+      showErrorAlert('Please enter an address.', 'Address Required');
       return false;
     }
     if (!formData.stateId) {
-      showErrorAlert(null, 'State Required');
+      showErrorAlert('Please select a state.', 'State Required');
       return false;
     }
     if (!formData.cityId) {
-      showErrorAlert(null, 'City Required');
+      showErrorAlert('Please select a city.', 'City Required');
+      return false;
+    }
+    const pincode = formData.pincode.trim();
+    if (pincode && !/^[1-9]\d{5}$/.test(pincode)) {
+      showErrorAlert('Enter a valid 6-digit Indian PIN code.', 'Invalid PIN code');
       return false;
     }
     return true;
@@ -394,7 +399,7 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
               </Text>
               {pg.pincode && (
                 <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginLeft: 8 }}>
-                  • {pg.pincode}asdasd
+                  • {pg.pincode}
                 </Text>
               )}
             </View>
@@ -663,7 +668,8 @@ export const PGLocationsScreen: React.FC<PGLocationsScreenProps> = ({ navigation
             placeholder="Enter pincode (optional)"
             value={formData.pincode}
             onChangeText={(text) => setFormData({ ...formData, pincode: text })}
-            keyboardType="numeric"
+            keyboardType="number-pad"
+            maxLength={6}
             editable={!submitting}
           />
         </View>

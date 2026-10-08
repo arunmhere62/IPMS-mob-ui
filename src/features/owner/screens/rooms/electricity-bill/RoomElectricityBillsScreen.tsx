@@ -23,6 +23,8 @@ import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { CreateElectricityBillForm } from './CreateElectricityBillForm';
 import { RecordPaymentForm } from './RecordPaymentForm';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 interface RoomElectricityBillsScreenProps {
   navigation: any;
@@ -83,6 +85,10 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
   navigation,
   route }) => {
   const { roomId, roomNo } = route.params || {};
+  const { can } = usePermissions();
+  const canCreateBill = can(Permission.CREATE_ELECTRICITY_BILL);
+  const canEditBill = can(Permission.EDIT_ELECTRICITY_BILL);
+  const canDeleteBill = can(Permission.DELETE_ELECTRICITY_BILL);
   const [bills, setBills] = useState<ElectricityBill[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -129,6 +135,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
 
   const handleDeleteBill = useCallback(
     (billId: number) => {
+      if (!canDeleteBill) return;
       Alert.alert('Delete Bill', 'Are you sure you want to delete this bill?', [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -145,7 +152,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
           } },
       ]);
     },
-    [deleteBillMutation, refetchBills]
+    [canDeleteBill, deleteBillMutation, refetchBills]
   );
 
   const renderBillItem = ({ item: bill }: { item: ElectricityBill }) => {
@@ -187,9 +194,11 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
             >
               <Text style={{ fontSize: 12, fontWeight: '700', color: statusColor }}>{bill.status}</Text>
             </View>
-            <AnimatedPressableCard onPress={() => handleDeleteBill(bill.s_no)}>
-              <Ionicons name="trash-outline" size={20} color="#DC2626" />
-            </AnimatedPressableCard>
+            {canDeleteBill && (
+              <AnimatedPressableCard onPress={() => handleDeleteBill(bill.s_no)}>
+                <Ionicons name="trash-outline" size={20} color="#DC2626" />
+              </AnimatedPressableCard>
+            )}
           </View>
         </View>
 
@@ -275,7 +284,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
                       </Text>
                     )}
                   </View>
-                  {!isPaid ? (
+                  {!isPaid && canEditBill ? (
                     <AnimatedPressableCard
                       onPress={() => {
                         setSelectedItem(item);
@@ -289,7 +298,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
                     >
                       <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Pay</Text>
                     </AnimatedPressableCard>
-                  ) : (
+                  ) : isPaid || isPartial ? (
                     <View
                       style={{
                         backgroundColor: isPartial ? '#FEF3C7' : '#DCFCE7',
@@ -301,7 +310,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
                         {isPartial ? 'Partial' : 'Paid'}
                       </Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
 
                 {/* Row 2: Share details */}
@@ -406,7 +415,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
         onBackPress={() => navigation.goBack()}
         backgroundColor={Theme.colors.background.blue}
         syncMobileHeaderBg
-        rightAction={
+        rightAction={canCreateBill ? (
           <AnimatedPressableCard
             onPress={() => setCreateModalVisible(true)}
             style={{
@@ -422,7 +431,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
             <Ionicons name="add" size={18} color="#fff" />
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
           </AnimatedPressableCard>
-        }
+        ) : null}
       />
       <View style={{ flex: 1, backgroundColor: Theme.colors.background.primary }}>
         <FlatList
@@ -439,14 +448,14 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
       </View>
 
       <CreateElectricityBillForm
-        visible={createModalVisible}
+        visible={canCreateBill && createModalVisible}
         roomId={roomId}
         onClose={() => setCreateModalVisible(false)}
         onSuccess={handleCreateSuccess}
       />
 
       <RecordPaymentForm
-        visible={!!selectedItem}
+        visible={canEditBill && !!selectedItem}
         item={selectedItem}
         billId={selectedBillId}
         onClose={() => {

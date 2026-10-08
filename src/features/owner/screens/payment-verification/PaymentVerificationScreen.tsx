@@ -27,6 +27,8 @@ import {
   type SubmissionStatus,
 } from '@/features/owner/api/paymentVerificationApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 
 const C = Theme.colors;
 
@@ -54,6 +56,8 @@ interface PaymentVerificationScreenProps {
 
 export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps> = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { can } = usePermissions();
+  const canVerifyPayment = can(Permission.EDIT_PAYMENT_VERIFICATION);
   const [activeTab, setActiveTab] = useState<SubmissionStatus | 'ALL'>('SUBMITTED');
   const [submissions, setSubmissions] = useState<TenantPaymentSubmission[]>([]);
   const [loading, setLoading] = useState(false);
@@ -148,6 +152,7 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
   };
 
   const handleVerify = (submission: TenantPaymentSubmission) => {
+    if (!canVerifyPayment) return;
     Alert.alert(
       'Verify Payment',
       `Are you sure you want to verify this payment of ${formatAmount(submission.paid_amount)} from ${submission.tenants?.name || 'tenant'}?\n\nThis will mark the rent payment as PAID.`,
@@ -173,11 +178,13 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
   };
 
   const handleRejectPress = (submission: TenantPaymentSubmission) => {
+    if (!canVerifyPayment) return;
     setRejectReason('');
     setRejectModal({ visible: true, submissionId: submission.s_no });
   };
 
   const handleRejectConfirm = async () => {
+    if (!canVerifyPayment) return;
     if (!rejectReason.trim()) {
       Alert.alert('Validation Error', 'Please provide a rejection reason');
       return;
@@ -279,7 +286,7 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
         )}
 
         {/* Actions */}
-        {submission.status === 'SUBMITTED' && (
+        {submission.status === 'SUBMITTED' && canVerifyPayment && (
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.border }}>
             <Button
               title="Reject"

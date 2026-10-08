@@ -22,8 +22,7 @@ export const TrialBanner: React.FC = () => {
   const isTrial =
     subscription &&
     subscription.has_active_plan &&
-    subscription.is_trial &&
-    !subscription.is_free_plan;
+    subscription.is_trial;
 
   const isPaidExpiringSoon =
     subscription &&

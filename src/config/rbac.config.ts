@@ -46,5 +46,26 @@ export enum Permission {
   CREATE_TICKET = 'ticket_create',
   EDIT_TICKET = 'ticket_edit',
   DELETE_TICKET = 'ticket_delete',
-  
+
+  // Expense
+  VIEW_EXPENSE = 'expense_view',
+  CREATE_EXPENSE = 'expense_create',
+  EDIT_EXPENSE = 'expense_edit',
+  DELETE_EXPENSE = 'expense_delete',
+
+  // Visitor
+  VIEW_VISITOR = 'visitor_view',
+  CREATE_VISITOR = 'visitor_create',
+  EDIT_VISITOR = 'visitor_edit',
+  DELETE_VISITOR = 'visitor_delete',
+
+  // Payment verification
+  VIEW_PAYMENT_VERIFICATION = 'payment_verification_view',
+  EDIT_PAYMENT_VERIFICATION = 'payment_verification_edit',
+
+  // Electricity bills
+  VIEW_ELECTRICITY_BILL = 'electricity_bill_view',
+  CREATE_ELECTRICITY_BILL = 'electricity_bill_create',
+  EDIT_ELECTRICITY_BILL = 'electricity_bill_edit',
+  DELETE_ELECTRICITY_BILL = 'electricity_bill_delete',
 }

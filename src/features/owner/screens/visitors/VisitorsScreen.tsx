@@ -21,6 +21,7 @@ import { ActionButtons } from '../../../../components/ActionButtons';
 import { Ionicons } from '@expo/vector-icons';
 import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
+import { Permission } from '@/config/rbac.config';
 import {
   useLazyGetVisitorsQuery,
   useDeleteVisitorMutation } from '../../api/visitorsApi';
@@ -32,10 +33,10 @@ interface VisitorsScreenProps {
 
 export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) => {
   const FlatListWithRef = FlatList as unknown as React.ComponentType<any>;
-  const { isAdmin, isSuperAdmin } = usePermissions();
-  const canManageVisitors = isAdmin || isSuperAdmin;
-  const canEditVisitor = canManageVisitors;
-  const canDeleteVisitor = canManageVisitors;
+  const { can } = usePermissions();
+  const canCreateVisitor = can(Permission.CREATE_VISITOR);
+  const canEditVisitor = can(Permission.EDIT_VISITOR);
+  const canDeleteVisitor = can(Permission.DELETE_VISITOR);
   const [triggerGetVisitors, { isFetching: isVisitorsFetching }] = useLazyGetVisitorsQuery();
   const [deleteVisitorMutation, { isLoading: isDeleting }] = useDeleteVisitorMutation();
 
@@ -55,15 +56,6 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   const [selectedVisitorId, setSelectedVisitorId] = useState<number | undefined>();
   
   const flatListRef = React.useRef<React.ElementRef<typeof FlatList> | null>(null);
-
-  useEffect(() => {
-    if (canManageVisitors) return;
-    Alert.alert('Access Denied', 'Only Admin/Super Admin can access Visitors.', [
-      {
-        text: 'OK',
-        onPress: () => navigation.goBack() },
-    ]);
-  }, [canManageVisitors, navigation]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -198,6 +190,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
   };
 
   const handleAddVisitor = () => {
+    if (!canCreateVisitor) return;
     setSelectedVisitorId(undefined);
     setVisitorModalVisible(true);
   };
@@ -361,7 +354,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
         onBackPress={() => navigation.goBack()}
         subtitle={`${pagination?.total || 0} total`}
         showPGSelector={false}
-        rightAction={
+        rightAction={canCreateVisitor ? (
           <AnimatedPressableCard
             onPress={handleAddVisitor}
             style={{
@@ -377,7 +370,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
             <Ionicons name="add" size={18} color="#fff" />
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Add</Text>
           </AnimatedPressableCard>
-        }
+        ) : null}
       />
 
       {/* Scroll Position Indicator */}
