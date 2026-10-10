@@ -14,6 +14,7 @@ import { Theme } from '@/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { Card } from '@/components/Card';
+import { CopyableText } from '@/components/CopyableText';
 import { Input } from '@/components/Input';
 import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
 import { Button } from '@/components/Button';
@@ -72,18 +73,29 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
   const isFetchingRef = useRef(false);
   const isFirstFocusRef = useRef(true);
   const activeTabRef = useRef(activeTab);
+  const permissionDeniedRef = useRef(false);
 
-  const { data: statsResponse } = useGetVerificationStatsQuery();
+  const canView = can(Permission.VIEW_PAYMENT_VERIFICATION);
+  const { data: statsResponse, error: statsError } = useGetVerificationStatsQuery(undefined, { skip: !canView });
   const [fetchSubmissions] = useLazyGetSubmissionsQuery();
   const [verifySubmission] = useVerifySubmissionMutation();
   const [rejectSubmission] = useRejectSubmissionMutation();
 
   const stats = statsResponse?.data;
+  const statsLoading = !statsResponse && !statsError && canView;
 
   const loadSubmissions = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     if (isFetchingRef.current) return;
+    if (!canView) {
+      permissionDeniedRef.current = true;
+      setLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       isFetchingRef.current = true;
+      permissionDeniedRef.current = false;
       if (append) {
         setLoadingMore(true);
       } else {
@@ -107,14 +119,20 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
         setPage(pageNum);
       }
     } catch (error: any) {
-      showErrorAlert(null, error?.data?.message || 'Failed to load submissions');
+      // 403 = permission denied — don't show an Alert (it causes a focus loop)
+      const status = error?.status ?? error?.data?.statusCode;
+      if (status === 403) {
+        permissionDeniedRef.current = true;
+      } else {
+        showErrorAlert(error);
+      }
     } finally {
       setLoading(false);
       setLoadingMore(false);
       setRefreshing(false);
       isFetchingRef.current = false;
     }
-  }, [fetchSubmissions]);
+  }, [fetchSubmissions, canView]);
 
   // Reload when active tab changes
   const handleTabChange = (tab: SubmissionStatus | 'ALL') => {
@@ -129,6 +147,8 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
 
   useFocusEffect(
     useCallback(() => {
+      // Don't refetch if permission was denied — prevents Alert → focus → refetch loop
+      if (permissionDeniedRef.current) return;
       if (isFirstFocusRef.current) {
         isFirstFocusRef.current = false;
         loadSubmissions(1, false);
@@ -139,6 +159,8 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
   );
 
   const onRefresh = () => {
+    // Allow refresh to retry after a permission denial (e.g. permissions were updated)
+    permissionDeniedRef.current = false;
     setRefreshing(true);
     setSubmissions([]);
     setHasMore(true);
@@ -207,11 +229,15 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
     }
   };
 
-  const renderDetailRow = (icon: string, label: string, value: string) => (
+  const renderDetailRow = (icon: string, label: string, value: string, copyable?: boolean) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
       <Ionicons name={icon as any} size={14} color={C.text.secondary} />
       <Text style={{ fontSize: 13, color: C.text.secondary, marginLeft: 6, flex: 1 }}>{label}</Text>
-      <Text style={{ fontSize: 13, fontWeight: '700', color: C.text.primary }} numberOfLines={1}>{value}</Text>
+      {copyable && value && value !== '-' ? (
+        <CopyableText value={value} fontSize={13} color={C.text.primary} />
+      ) : (
+        <Text style={{ fontSize: 13, fontWeight: '700', color: C.text.primary }} numberOfLines={1}>{value}</Text>
+      )}
     </View>
   );
 
@@ -248,7 +274,7 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
           {renderDetailRow('cash-outline', 'Paid Amount', formatAmount(submission.paid_amount))}
           {renderDetailRow('calendar-outline', 'Paid Date', formatDate(submission.paid_date))}
           {renderDetailRow('card-outline', 'Method', submission.payment_method)}
-          {renderDetailRow('barcode-outline', 'Txn Ref', submission.transaction_ref || '-')}
+          {renderDetailRow('barcode-outline', 'Txn Ref', submission.transaction_ref || '-', true)}
         </View>
 
         {/* Rent Payment Context */}
@@ -326,6 +352,16 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
         onBackPress={() => navigation.goBack()}
       />
 
+      {!canView ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
+          <Ionicons name="lock-closed-outline" size={48} color={C.darkTertiary} />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: C.dark }}>Access Denied</Text>
+          <Text style={{ fontSize: 13, color: C.darkTertiary, textAlign: 'center' }}>
+            You don't have permission to view payment verification. Please contact your administrator.
+          </Text>
+        </View>
+      ) : (
+        <>
       {/* Tab Filters — fixed horizontal scroll bar like RoomsScreen */}
       <View style={{ height: 48, backgroundColor: C.background.secondary, borderBottomWidth: 1, borderBottomColor: C.border }}>
         <ScrollView
@@ -411,6 +447,8 @@ export const PaymentVerificationScreen: React.FC<PaymentVerificationScreenProps>
           ) : null
         }
       />
+        </>
+      )}
 
       {/* Reject Modal — uses reusable SlideBottomModal + Input */}
       <SlideBottomModal

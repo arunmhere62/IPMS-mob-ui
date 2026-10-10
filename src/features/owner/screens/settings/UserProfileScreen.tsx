@@ -10,6 +10,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { Card } from '@/components/Card';
+import { CopyableText } from '@/components/CopyableText';
 import { Theme } from '@/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ScreenLayout } from '@/components/ScreenLayout';
@@ -664,15 +665,9 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                 Email Address
               </Text>
             </View>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: '600',
-                color: Theme.colors.text.primary,
-                marginLeft: 22 }}
-            >
-              {userData?.email || 'Not provided'}
-            </Text>
+            <View style={{ marginLeft: 22 }}>
+              <CopyableText value={userData?.email} fallback="Not provided" fontSize={16} color={Theme.colors.text.primary} />
+            </View>
           </View>
 
           {/* Phone */}
@@ -689,15 +684,9 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   Phone Number
                 </Text>
               </View>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '600',
-                  color: Theme.colors.text.primary,
-                  marginLeft: 22 }}
-              >
-                {userData.phone}
-              </Text>
+              <View style={{ marginLeft: 22 }}>
+                <CopyableText value={userData.phone} fontSize={16} color={Theme.colors.text.primary} />
+              </View>
             </View>
           )}
 
@@ -715,16 +704,9 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
                   Address
                 </Text>
               </View>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '600',
-                  color: Theme.colors.text.primary,
-                  marginLeft: 22,
-                  lineHeight: 22 }}
-              >
-                {userData.address}
-              </Text>
+              <View style={{ marginLeft: 22 }}>
+                <CopyableText value={userData.address} fontSize={16} color={Theme.colors.text.primary} layout="block" />
+              </View>
             </View>
           )}
         </Card>

@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card } from '@/components/Card';
+import { CopyableText } from '@/components/CopyableText';
 import { SkeletonLoader } from '@/components/SkeletonLoader';
 import { Theme } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -279,9 +280,7 @@ export const RoomElectricityBillsScreen: React.FC<RoomElectricityBillsScreenProp
                       {item.tenants?.name ?? 'Tenant'}
                     </Text>
                     {(item as any).tenants?.phone_no && (
-                      <Text style={{ fontSize: 11, color: Theme.colors.text.tertiary, marginTop: 1 }}>
-                        {(item as any).tenants.phone_no}
-                      </Text>
+                      <CopyableText value={(item as any).tenants.phone_no} fontSize={11} color={Theme.colors.text.tertiary} />
                     )}
                   </View>
                   {!isPaid && canEditBill ? (

@@ -26,6 +26,9 @@ export interface OwnerPaymentConfig {
     location_name: string;
     address: string;
   } | null;
+  // Override metadata returned by findAll()
+  overrides_default?: boolean;
+  overridden_by?: string[];
 }
 
 export interface CreatePaymentConfigDto {

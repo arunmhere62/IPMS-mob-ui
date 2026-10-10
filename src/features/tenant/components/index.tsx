@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Clipboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AnimatedPressableCard } from '@/components/AnimatedPressableCard';
+import { showSuccessAlert } from '@/utils/errorHandler';
 import Theme from '@/theme';
 
 const C = Theme.colors;
@@ -25,13 +27,26 @@ export const StatusBadge = ({ status }: { status: string | null | undefined }) =
   );
 };
 
-export const InfoRow = ({ label, value, valueColor, icon }: { label: string; value: string; valueColor?: string; icon?: string }) => (
-  <View style={styles.infoRow}>
-    {icon ? <Ionicons name={icon as any} size={14} color={C.darkTertiary} style={{ marginRight: 6 }} /> : null}
-    <Text style={styles.infoLabel} numberOfLines={2} ellipsizeMode="tail">{label}</Text>
-    <Text style={[styles.infoValue, valueColor ? { color: valueColor } : {}]} numberOfLines={2} ellipsizeMode="tail">{value}</Text>
-  </View>
-);
+export const InfoRow = ({ label, value, valueColor, icon, copyable }: { label: string; value: string; valueColor?: string; icon?: string; copyable?: boolean }) => {
+  const canCopy = copyable && !!value && value !== 'N/A';
+  const handleCopy = async () => {
+    if (!canCopy) return;
+    await Clipboard.setString(value);
+    showSuccessAlert('Copied to clipboard');
+  };
+  return (
+    <View style={styles.infoRow}>
+      {icon ? <Ionicons name={icon as any} size={14} color={C.darkTertiary} style={{ marginRight: 6 }} /> : null}
+      <Text style={styles.infoLabel} numberOfLines={2} ellipsizeMode="tail">{label}</Text>
+      <Text style={[styles.infoValue, valueColor ? { color: valueColor } : {}]} numberOfLines={2} ellipsizeMode="tail">{value}</Text>
+      {canCopy && (
+        <AnimatedPressableCard onPress={handleCopy} accessibilityLabel={`Copy ${label}`} style={styles.copyBtn}>
+          <Ionicons name="copy-outline" size={14} color={C.primary} />
+        </AnimatedPressableCard>
+      )}
+    </View>
+  );
+};
 
 export const SectionCard = ({ children, style }: { children: React.ReactNode; style?: any }) => (
   <View style={[styles.card, style]}>{children}</View>
@@ -64,6 +79,7 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.border },
   infoLabel: { fontSize: 13, color: C.darkTertiary, flex: 1, paddingRight: 6 },
   infoValue: { fontSize: 13, fontWeight: '600', color: C.dark, flex: 1.2, textAlign: 'right', paddingLeft: 6 },
+  copyBtn: { marginLeft: 8, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 8, backgroundColor: C.background.secondary, borderWidth: 1, borderColor: C.border },
   
   card: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },

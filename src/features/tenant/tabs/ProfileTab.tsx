@@ -71,13 +71,13 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout, onDeleteA
 
       <SectionCard>
         <CardHeader icon="person-outline" title="Personal Details" />
-        <InfoRow icon="call-outline" label="Phone" value={raw?.phone_no ?? 'N/A'} />
-        <InfoRow icon="logo-whatsapp" label="WhatsApp" value={raw?.whatsapp_number ?? 'N/A'} />
-        <InfoRow icon="mail-outline" label="Email" value={raw?.email ?? 'N/A'} />
+        <InfoRow icon="call-outline" label="Phone" value={raw?.phone_no ?? 'N/A'} copyable />
+        <InfoRow icon="logo-whatsapp" label="WhatsApp" value={raw?.whatsapp_number ?? 'N/A'} copyable />
+        <InfoRow icon="mail-outline" label="Email" value={raw?.email ?? 'N/A'} copyable />
         <InfoRow icon="briefcase-outline" label="Occupation" value={raw?.occupation ?? 'N/A'} />
         <InfoRow icon="location-outline" label="City" value={raw?.city?.name ?? 'N/A'} />
         <InfoRow icon="map-outline" label="State" value={raw?.state?.name ?? 'N/A'} />
-        <InfoRow icon="home-outline" label="Address" value={raw?.tenant_address ?? 'N/A'} />
+        <InfoRow icon="home-outline" label="Address" value={raw?.tenant_address ?? 'N/A'} copyable />
         <InfoRow icon="log-in-outline" label="Check-in" value={formatDate(raw?.check_in_date)} />
         <InfoRow icon="log-out-outline" label="Check-out" value={formatDate(raw?.check_out_date)} />
       </SectionCard>
@@ -85,7 +85,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ raw, onLogout, onDeleteA
       <SectionCard>
         <CardHeader icon="business" title="PG Details" />
         <InfoRow icon="business-outline" label="PG Name" value={raw?.pg_locations?.location_name ?? 'N/A'} />
-        <InfoRow icon="location-outline" label="Address" value={raw?.pg_locations?.address ?? 'N/A'} />
+        <InfoRow icon="location-outline" label="Address" value={raw?.pg_locations?.address ?? 'N/A'} copyable />
         <InfoRow icon="bed-outline" label="Room" value={raw?.rooms?.room_no ?? 'N/A'} />
         <InfoRow icon="key-outline" label="Bed" value={raw?.beds?.bed_no ?? 'N/A'} />
         <InfoRow icon="cash-outline" label="Bed Price" value={formatAmount(raw?.beds?.bed_price)} />

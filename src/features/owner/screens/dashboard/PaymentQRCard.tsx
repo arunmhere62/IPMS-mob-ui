@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../../theme';
 import { Card } from '../../../../components/Card';
+import { CopyableText } from '../../../../components/CopyableText';
 import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
 import { ImageViewerModal } from '../tenants/components';
 
@@ -95,7 +96,7 @@ export const PaymentQRCard: React.FC<PaymentQRCardProps> = ({
         {upiId && (
           <View style={styles.upiContainer}>
             <Text style={styles.upiLabel}>UPI ID</Text>
-            <Text style={styles.upiValue}>{upiId}</Text>
+            <CopyableText value={upiId} fontSize={16} color={Theme.colors.dark} />
           </View>
         )}
 

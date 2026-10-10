@@ -15,6 +15,7 @@ import { Theme } from "../../../../theme";
 import { ScreenHeader } from "../../../../components/ScreenHeader";
 import { ScreenLayout } from "../../../../components/ScreenLayout";
 import { Card } from "../../../../components/Card";
+import { CopyableText } from "../../../../components/CopyableText";
 import { ActionButtons } from "../../../../components/ActionButtons";
 import { showDeleteConfirmation } from "../../../../components/DeleteConfirmationDialog";
 import { showErrorAlert, showSuccessAlert } from "../../../../utils/errorHandler";
@@ -438,15 +439,12 @@ export const PGDetailsScreen: React.FC<PGDetailsScreenProps> = ({
                     color={Theme.colors.primary}
                     style={{ marginRight: 8, marginTop: 2 }}
                   />
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: Theme.colors.text.primary,
-                      flex: 1,
-                    }}
-                  >
-                    {pgDetails.address}
-                  </Text>
+                  <CopyableText
+                    value={pgDetails.address}
+                    fontSize={13}
+                    color={Theme.colors.text.primary}
+                    style={{ flex: 1 }}
+                  />
                 </View>
                 {pgDetails.pincode && (
                   <View

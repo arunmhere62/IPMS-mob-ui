@@ -13,6 +13,7 @@ import { showErrorAlert } from '../../../../utils/errorHandler';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { Card } from '../../../../components/Card';
+import { CopyableText } from '../../../../components/CopyableText';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { CONTENT_COLOR } from '@/constant';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -171,9 +172,7 @@ export default function VisitorDetailsScreen({ route, navigation }: VisitorDetai
                     <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1}>
                       {visitor.visitor_name || 'N/A'}
                     </Text>
-                    <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.secondary }}>
-                      {visitor.phone_no || 'N/A'}
-                    </Text>
+                    <CopyableText value={visitor.phone_no} fontSize={12} color={Theme.colors.text.secondary} />
                   </View>
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 8 }}>

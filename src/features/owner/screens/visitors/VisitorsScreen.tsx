@@ -10,6 +10,7 @@ import {
 import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { Card } from '../../../../components/Card';
+import { CopyableText } from '../../../../components/CopyableText';
 import { Theme } from '../../../../theme';
 import { showErrorAlert, showSuccessAlert } from '../../../../utils/errorHandler';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
@@ -248,9 +249,7 @@ export const VisitorsScreen: React.FC<VisitorsScreenProps> = ({ navigation }) =>
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Ionicons name="call-outline" size={14} color={Theme.colors.text.tertiary} />
-            <Text style={{ fontSize: 13, color: Theme.colors.text.tertiary }}>
-              {phoneNo}
-            </Text>
+            <CopyableText value={item?.phone_no} fallback="N/A" fontSize={13} color={Theme.colors.text.tertiary} />
           </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 6 }}>

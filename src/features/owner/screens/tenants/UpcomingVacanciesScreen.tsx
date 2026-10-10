@@ -5,6 +5,7 @@ import { Theme } from '../../../../theme';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { Card } from '../../../../components/Card';
+import { CopyableText } from '../../../../components/CopyableText';
 import { CONTENT_COLOR } from '@/constant';
 import { useGetUpcomingVacanciesQuery } from '../../api/tenantsApi';
 import type { UpcomingVacancy } from '../../api/tenantsApi';
@@ -130,9 +131,7 @@ export const UpcomingVacanciesScreen: React.FC<UpcomingVacanciesScreenProps> = (
                             {v.name}
                           </Text>
                           {v.phone_no ? (
-                            <Text style={{ fontSize: 12, color: Theme.colors.text.secondary, marginTop: 2 }}>
-                              {v.phone_no}
-                            </Text>
+                            <CopyableText value={v.phone_no} fontSize={12} color={Theme.colors.text.secondary} />
                           ) : null}
                         </View>
                         <UrgencyBadge days={d} />

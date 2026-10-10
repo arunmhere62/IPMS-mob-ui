@@ -3,6 +3,7 @@ import { View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-n
 import { useGetAllOrganizationsQuery } from '../../api/organizationApi';
 import { Theme } from '../../../../theme';
 import { Card } from '../../../../components/Card';
+import { CopyableText } from '../../../../components/CopyableText';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
@@ -228,9 +229,10 @@ export const OrganizationsScreen: React.FC<OrganizationsScreenProps> = ({ naviga
                   {admin.email}
                 </Text>
                 {admin.phone && (
-                  <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary, marginTop: 1 }}>
-                    📞 {admin.phone}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+                    <Text style={{ fontSize: 12, color: Theme.colors.text.tertiary }}>📞</Text>
+                    <CopyableText value={admin.phone} fontSize={12} color={Theme.colors.text.tertiary} />
+                  </View>
                 )}
               </View>
 

@@ -36,6 +36,121 @@ import { Permission } from '@/config/rbac.config';
 
 const C = Theme.colors;
 
+// ─── ConfigCard sub-component ─────────────────────────────────
+interface ConfigCardProps {
+  config: OwnerPaymentConfig;
+  canEditConfig: boolean;
+  canDeleteConfig: boolean;
+  onEdit: (config: OwnerPaymentConfig) => void;
+  onActivate: (config: OwnerPaymentConfig) => void;
+  onDelete: (config: OwnerPaymentConfig) => void;
+}
+
+const ConfigCard: React.FC<ConfigCardProps> = ({
+  config,
+  canEditConfig,
+  canDeleteConfig,
+  onEdit,
+  onActivate,
+  onDelete,
+}) => {
+  const isAllPg = config.scope_type === 'ALL_PG';
+  const pgName = config.pg_locations?.location_name || `PG #${config.pg_id}`;
+  const overriddenBy = config.overridden_by ?? [];
+  const overridesDefault = config.overrides_default ?? false;
+
+  return (
+    <Card key={config.s_no} style={styles.configCard}>
+      <View style={styles.configHeader}>
+        <View style={[styles.scopeBadge, { backgroundColor: isAllPg ? C.background.blueLight : '#FEF3C7' }]}>
+          <Ionicons name={isAllPg ? 'business-outline' : 'location-outline'} size={14} color={isAllPg ? C.primary : C.warningDark} />
+          <Text style={[styles.scopeText, { color: isAllPg ? C.primary : C.warningDark }]}>
+            {isAllPg ? 'All PGs' : pgName}
+          </Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: config.is_active ? '#D1FAE5' : '#FEE2E2' }]}>
+          <Text style={[styles.statusText, { color: config.is_active ? C.secondaryDark : C.danger }]}>
+            {config.is_active ? 'Active' : 'Inactive'}
+          </Text>
+        </View>
+      </View>
+
+      {/* Override relationship chips */}
+      {config.is_active && (isAllPg ? overriddenBy.length > 0 : overridesDefault) ? (
+        <View style={styles.overrideRow}>
+          {isAllPg ? (
+            <View style={[styles.overrideChip, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="swap-horizontal-outline" size={12} color={C.warningDark} />
+              <Text style={[styles.overrideChipText, { color: C.warningDark }]}>
+                Overridden by: {overriddenBy.join(', ')}
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.overrideChip, { backgroundColor: '#E0E7FF' }]}>
+              <Ionicons name="arrow-up-circle-outline" size={12} color="#4F46E5" />
+              <Text style={[styles.overrideChipText, { color: '#4F46E5' }]}>
+                Overrides default
+              </Text>
+            </View>
+          )}
+        </View>
+      ) : null}
+
+      <View style={styles.configBody}>
+        <View style={styles.upiRow}>
+          <Ionicons name="cash-outline" size={20} color={C.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.upiLabel}>UPI ID</Text>
+            <Text style={styles.upiValue}>{config.upi_id}</Text>
+          </View>
+        </View>
+
+        {config.account_holder_name ? (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Account Holder</Text>
+            <Text style={styles.detailValue}>{config.account_holder_name}</Text>
+          </View>
+        ) : null}
+
+        {config.bank_name ? (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Bank</Text>
+            <Text style={styles.detailValue}>{config.bank_name}</Text>
+          </View>
+        ) : null}
+
+        {config.payment_instructions ? (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Instructions</Text>
+            <Text style={styles.detailValue}>{config.payment_instructions}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.configActions}>
+        {canEditConfig && (
+          <AnimatedPressableCard onPress={() => onEdit(config)} style={styles.actionBtn}>
+            <Ionicons name="create-outline" size={16} color={C.primary} />
+            <Text style={[styles.actionText, { color: C.primary }]}>Edit</Text>
+          </AnimatedPressableCard>
+        )}
+        {canDeleteConfig && config.is_active && (
+          <AnimatedPressableCard onPress={() => onDelete(config)} style={[styles.actionBtn, { borderColor: '#FECACA' }]}>
+            <Ionicons name="trash-outline" size={16} color={C.danger} />
+            <Text style={[styles.actionText, { color: C.danger }]}>Deactivate</Text>
+          </AnimatedPressableCard>
+        )}
+        {canEditConfig && !config.is_active && (
+          <AnimatedPressableCard onPress={() => onActivate(config)} style={[styles.actionBtn, { borderColor: '#A7F3D0' }]}>
+            <Ionicons name="checkmark-circle-outline" size={16} color={C.secondaryDark} />
+            <Text style={[styles.actionText, { color: C.secondaryDark }]}>Activate</Text>
+          </AnimatedPressableCard>
+        )}
+      </View>
+    </Card>
+  );
+};
+
 interface PaymentConfigScreenProps {
   navigation: NavigationProp<ParamListBase>;
 }
@@ -43,9 +158,9 @@ interface PaymentConfigScreenProps {
 export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { can } = usePermissions();
-  const canCreateConfig = can(Permission.CREATE_PAYMENT);
-  const canEditConfig = can(Permission.EDIT_PAYMENT);
-  const canDeleteConfig = can(Permission.DELETE_PAYMENT);
+  const canCreateConfig = can(Permission.CREATE_PAYMENT_CONFIG);
+  const canEditConfig = can(Permission.EDIT_PAYMENT_CONFIG);
+  const canDeleteConfig = can(Permission.DELETE_PAYMENT_CONFIG);
   const { data: configsResponse, isLoading, refetch } = useGetPaymentConfigsQuery();
   const [fetchPGLocationsTrigger] = useLazyGetPGLocationsQuery();
   const [createConfig] = useCreatePaymentConfigMutation();
@@ -53,6 +168,13 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
   const [deleteConfig] = useDeletePaymentConfigMutation();
 
   const configs = configsResponse?.data ?? [];
+
+  // Group configs: ALL_PG first (default), then SPECIFIC_PG
+  const allPgConfigs = configs.filter((c) => c.scope_type === 'ALL_PG');
+  const specificPgConfigs = configs.filter((c) => c.scope_type === 'SPECIFIC_PG');
+  const hasActiveAllPg = allPgConfigs.some((c) => c.is_active);
+  const activeAllPgConfig = allPgConfigs.find((c) => c.is_active) ?? null;
+
   const [pgLocations, setPgLocations] = useState<any[]>([]);
   const [loadingPGs, setLoadingPGs] = useState(false);
 
@@ -216,9 +338,13 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
 
   const handleActivate = (config: OwnerPaymentConfig) => {
     if (!canEditConfig) return;
+    const scopeDesc = config.scope_type === 'ALL_PG' ? 'all PGs' : (config.pg_locations?.location_name || `PG #${config.pg_id}`);
+    const overrideNote = config.scope_type === 'SPECIFIC_PG'
+      ? '\n\nTenants in this PG will see this config instead of the default (ALL_PG) config.'
+      : '\n\nTenants in PGs without a specific override will use this default config.';
     Alert.alert(
       'Activate Payment Config',
-      `Activate this ${config.scope_type === 'ALL_PG' ? 'ALL PG' : 'specific PG'} payment config?`,
+      `Activate this payment config for ${scopeDesc}?${overrideNote}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -277,7 +403,7 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle-outline" size={20} color={C.primary} />
           <Text style={styles.infoText}>
-            Tenants will see these UPI details when paying rent. You can set one config for all PGs or specific configs per PG.
+            Tenants see the SPECIFIC_PG config for their PG if one is active; otherwise they fall back to the ALL_PG default. Set one default for all PGs and override per-PG where needed.
           </Text>
         </View>
 
@@ -289,75 +415,43 @@ export const PaymentConfigScreen: React.FC<PaymentConfigScreenProps> = () => {
             {canCreateConfig && <Button title="Add Payment Config" onPress={openCreateModal} icon={<Ionicons name="add" size={18} color={C.button.primaryText} />} />}
           </Card>
         ) : (
-          configs.map((config) => (
-            <Card key={config.s_no} style={styles.configCard}>
-              <View style={styles.configHeader}>
-                <View style={[styles.scopeBadge, { backgroundColor: config.scope_type === 'ALL_PG' ? C.background.blueLight : '#FEF3C7' }]}>
-                  <Ionicons name={config.scope_type === 'ALL_PG' ? 'business-outline' : 'location-outline'} size={14} color={config.scope_type === 'ALL_PG' ? C.primary : C.warningDark} />
-                  <Text style={[styles.scopeText, { color: config.scope_type === 'ALL_PG' ? C.primary : C.warningDark }]}>
-                    {config.scope_type === 'ALL_PG' ? 'All PGs' : config.pg_locations?.location_name || `PG #${config.pg_id}`}
-                  </Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: config.is_active ? '#D1FAE5' : '#FEE2E2' }]}>
-                  <Text style={[styles.statusText, { color: config.is_active ? C.secondaryDark : C.danger }]}>
-                    {config.is_active ? 'Active' : 'Inactive'}
-                  </Text>
-                </View>
+          <>
+            {/* ── Default (ALL_PG) section ── */}
+            {allPgConfigs.length > 0 && (
+              <View style={styles.sectionGroup}>
+                <Text style={styles.sectionLabel}>Default Config (All PGs)</Text>
+                {allPgConfigs.map((config) => (
+                  <ConfigCard
+                    key={config.s_no}
+                    config={config}
+                    canEditConfig={canEditConfig}
+                    canDeleteConfig={canDeleteConfig}
+                    onEdit={openEditModal}
+                    onActivate={handleActivate}
+                    onDelete={handleDelete}
+                  />
+                ))}
               </View>
+            )}
 
-              <View style={styles.configBody}>
-                <View style={styles.upiRow}>
-                  <Ionicons name="cash-outline" size={20} color={C.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.upiLabel}>UPI ID</Text>
-                    <Text style={styles.upiValue}>{config.upi_id}</Text>
-                  </View>
-                </View>
-
-                {config.account_holder_name ? (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Account Holder</Text>
-                    <Text style={styles.detailValue}>{config.account_holder_name}</Text>
-                  </View>
-                ) : null}
-
-                {config.bank_name ? (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Bank</Text>
-                    <Text style={styles.detailValue}>{config.bank_name}</Text>
-                  </View>
-                ) : null}
-
-                {config.payment_instructions ? (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Instructions</Text>
-                    <Text style={styles.detailValue}>{config.payment_instructions}</Text>
-                  </View>
-                ) : null}
+            {/* ── Specific PG overrides section ── */}
+            {specificPgConfigs.length > 0 && (
+              <View style={styles.sectionGroup}>
+                <Text style={styles.sectionLabel}>Per-PG Overrides</Text>
+                {specificPgConfigs.map((config) => (
+                  <ConfigCard
+                    key={config.s_no}
+                    config={config}
+                    canEditConfig={canEditConfig}
+                    canDeleteConfig={canDeleteConfig}
+                    onEdit={openEditModal}
+                    onActivate={handleActivate}
+                    onDelete={handleDelete}
+                  />
+                ))}
               </View>
-
-              <View style={styles.configActions}>
-                {canEditConfig && (
-                  <AnimatedPressableCard onPress={() => openEditModal(config)} style={styles.actionBtn}>
-                    <Ionicons name="create-outline" size={16} color={C.primary} />
-                    <Text style={[styles.actionText, { color: C.primary }]}>Edit</Text>
-                  </AnimatedPressableCard>
-                )}
-                {canDeleteConfig && config.is_active && (
-                  <AnimatedPressableCard onPress={() => handleDelete(config)} style={[styles.actionBtn, { borderColor: '#FECACA' }]}>
-                    <Ionicons name="trash-outline" size={16} color={C.danger} />
-                    <Text style={[styles.actionText, { color: C.danger }]}>Deactivate</Text>
-                  </AnimatedPressableCard>
-                )}
-                {canEditConfig && !config.is_active && (
-                  <AnimatedPressableCard onPress={() => handleActivate(config)} style={[styles.actionBtn, { borderColor: '#A7F3D0' }]}>
-                    <Ionicons name="checkmark-circle-outline" size={16} color={C.secondaryDark} />
-                    <Text style={[styles.actionText, { color: C.secondaryDark }]}>Activate</Text>
-                  </AnimatedPressableCard>
-                )}
-              </View>
-            </Card>
-          ))
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -504,6 +598,13 @@ const styles = StyleSheet.create({
   scopeText: { fontSize: 12, fontWeight: '700' },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontSize: 11, fontWeight: '700' },
+
+  sectionGroup: { marginBottom: 8 },
+  sectionLabel: { fontSize: 13, fontWeight: '800', color: C.darkSecondary, marginBottom: 8, marginLeft: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  overrideRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
+  overrideChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  overrideChipText: { fontSize: 11, fontWeight: '600' },
 
   configBody: { gap: 10 },
   upiRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, backgroundColor: C.background.secondary, borderRadius: 10, paddingHorizontal: 12 },

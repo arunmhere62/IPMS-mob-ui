@@ -61,7 +61,15 @@ export enum Permission {
 
   // Payment verification
   VIEW_PAYMENT_VERIFICATION = 'payment_verification_view',
+  CREATE_PAYMENT_VERIFICATION = 'payment_verification_create',
   EDIT_PAYMENT_VERIFICATION = 'payment_verification_edit',
+  DELETE_PAYMENT_VERIFICATION = 'payment_verification_delete',
+
+  // Payment config
+  VIEW_PAYMENT_CONFIG = 'payment_config_view',
+  CREATE_PAYMENT_CONFIG = 'payment_config_create',
+  EDIT_PAYMENT_CONFIG = 'payment_config_edit',
+  DELETE_PAYMENT_CONFIG = 'payment_config_delete',
 
   // Electricity bills
   VIEW_ELECTRICITY_BILL = 'electricity_bill_view',

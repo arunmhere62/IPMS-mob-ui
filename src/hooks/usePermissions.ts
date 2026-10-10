@@ -21,7 +21,7 @@ const screenPermissionMap: Record<string, Permission> = {
   tenantadvancepaymentsscreen: Permission.VIEW_PAYMENT,
   tenantrefundpaymentsscreen: Permission.VIEW_PAYMENT,
   paymentverification: Permission.VIEW_PAYMENT_VERIFICATION,
-  paymentconfig: Permission.VIEW_PAYMENT,
+  paymentconfig: Permission.VIEW_PAYMENT_CONFIG,
   expenses: Permission.VIEW_EXPENSE,
   employees: Permission.VIEW_EMPLOYEE,
   employeedetails: Permission.VIEW_EMPLOYEE,
@@ -69,6 +69,16 @@ export const usePermissions = () => {
   const loadedAt = useSelector((state: RootState) => (state as any).rbac?.loadedAt ?? null);
   const isReady = loadedAt != null;
 
+  /**
+   * Check a single permission key against the map.
+   * Default-allow: if the key is NOT in the map, return true.
+   * Only deny when the key exists and is explicitly false.
+   */
+  const checkKey = (key: string): boolean => {
+    if (isSuperAdmin) return true;
+    if (!(key in permissionsMap)) return true; // not mapped → allow
+    return Boolean((permissionsMap as any)[key]);
+  };
 
   return {
     /**
@@ -77,9 +87,8 @@ export const usePermissions = () => {
      * @returns boolean
      */
     can: (permission: Permission): boolean => {
-      if (isSuperAdmin) return true;
       const keys = getBackendPermissionKeyCandidates(permission);
-      return keys.some((k) => Boolean((permissionsMap as any)[k]));
+      return keys.some((k) => checkKey(k));
     },
 
     /**
@@ -88,10 +97,9 @@ export const usePermissions = () => {
      * @returns boolean
      */
     canAny: (permissions: Permission[]): boolean => {
-      if (isSuperAdmin) return true;
       return permissions.some((p) => {
         const keys = getBackendPermissionKeyCandidates(p);
-        return keys.some((k) => Boolean((permissionsMap as any)[k]));
+        return keys.some((k) => checkKey(k));
       });
     },
 
@@ -101,10 +109,9 @@ export const usePermissions = () => {
      * @returns boolean
      */
     canAll: (permissions: Permission[]): boolean => {
-      if (isSuperAdmin) return true;
       return permissions.every((p) => {
         const keys = getBackendPermissionKeyCandidates(p);
-        return keys.some((k) => Boolean((permissionsMap as any)[k]));
+        return keys.some((k) => checkKey(k));
       });
     },
 
@@ -118,7 +125,7 @@ export const usePermissions = () => {
       const requiredPermission = screenPermissionMap[screenName];
       if (requiredPermission) {
         const keys = getBackendPermissionKeyCandidates(requiredPermission);
-        return isSuperAdmin || keys.some((key) => Boolean((permissionsMap as any)[key]));
+        return keys.some((key) => checkKey(key));
       }
       return unguardedScreens.has(screenName) || (isSuperAdmin && superAdminScreens.has(screenName));
     },

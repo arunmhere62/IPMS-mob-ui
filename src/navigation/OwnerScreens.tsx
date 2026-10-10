@@ -116,7 +116,7 @@ const TicketDetailsRoute = withPermission(TicketDetailsScreen, Permission.VIEW_T
 const PgTenantTicketsRoute = withPermission(PgTenantTicketsScreen, Permission.VIEW_TICKET);
 const PgTenantTicketDetailRoute = withPermission(PgTenantTicketDetailScreen, Permission.VIEW_TICKET);
 const ElectricityBillsRoute = withPermission(RoomElectricityBillsScreen, Permission.VIEW_ELECTRICITY_BILL);
-const PaymentConfigRoute = withPermission(PaymentConfigScreen, Permission.VIEW_PAYMENT);
+const PaymentConfigRoute = withPermission(PaymentConfigScreen, Permission.VIEW_PAYMENT_CONFIG);
 const PaymentVerificationRoute = withPermission(PaymentVerificationScreen, Permission.VIEW_PAYMENT_VERIFICATION);
 const CreateTicketRoute = withPermission(CreateTicketScreen, Permission.CREATE_TICKET);
 const AddVisitorRoute: React.FC<any> = (props) => {

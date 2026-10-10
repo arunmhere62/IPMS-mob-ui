@@ -57,7 +57,16 @@ describe('rbac.config - Permission enum', () => {
 
   it('has payment verification permissions', () => {
     expect(Permission.VIEW_PAYMENT_VERIFICATION).toBe('payment_verification_view');
+    expect(Permission.CREATE_PAYMENT_VERIFICATION).toBe('payment_verification_create');
     expect(Permission.EDIT_PAYMENT_VERIFICATION).toBe('payment_verification_edit');
+    expect(Permission.DELETE_PAYMENT_VERIFICATION).toBe('payment_verification_delete');
+  });
+
+  it('has payment config permissions', () => {
+    expect(Permission.VIEW_PAYMENT_CONFIG).toBe('payment_config_view');
+    expect(Permission.CREATE_PAYMENT_CONFIG).toBe('payment_config_create');
+    expect(Permission.EDIT_PAYMENT_CONFIG).toBe('payment_config_edit');
+    expect(Permission.DELETE_PAYMENT_CONFIG).toBe('payment_config_delete');
   });
 
   it('all permission values follow snake_case convention', () => {
@@ -74,7 +83,7 @@ describe('rbac.config - Permission enum', () => {
   });
 
   it('has CRUD permissions for each resource', () => {
-    const resources = ['pg_location', 'tenant', 'room', 'bed', 'payment', 'employee', 'ticket', 'expense', 'visitor', 'electricity_bill'];
+    const resources = ['pg_location', 'tenant', 'room', 'bed', 'payment', 'employee', 'ticket', 'expense', 'visitor', 'electricity_bill', 'payment_verification', 'payment_config'];
     const actions = ['view', 'create', 'edit', 'delete'];
 
     resources.forEach(resource => {

@@ -12,6 +12,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { Theme } from '../../../../theme';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { Card } from '../../../../components/Card';
+import { CopyableText } from '../../../../components/CopyableText';
 import { ScreenLayout } from '../../../../components/ScreenLayout';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { CONTENT_COLOR } from '@/constant';
@@ -289,9 +290,7 @@ const EmployeeDetailsScreen: React.FC = () => {
                   <Text style={{ fontSize: 18, fontWeight: '700', color: Theme.colors.text.primary }} numberOfLines={1}>
                     {employee.name || 'N/A'}
                   </Text>
-                  <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.text.secondary }}>
-                    {employee.phone || 'N/A'}
-                  </Text>
+                  <CopyableText value={employee.phone} fontSize={12} color={Theme.colors.text.secondary} />
                   {employee.roles && (
                     <Text style={{ marginTop: 2, fontSize: 12, color: Theme.colors.primary }}>
                       Role: {employee.roles.role_name}

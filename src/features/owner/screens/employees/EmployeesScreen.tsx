@@ -10,6 +10,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/features/owner/store';
 import { Card } from '../../../../components/Card';
+import { CopyableText } from '../../../../components/CopyableText';
 import { ActionButtons } from '../../../../components/ActionButtons';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
 import { Theme } from '../../../../theme';
@@ -190,9 +191,7 @@ export const EmployeesScreen: React.FC<EmployeesScreenProps> = ({ navigation }) 
           {employee.phone && (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <Ionicons name="call-outline" size={14} color={Theme.colors.text.secondary} />
-              <Text style={{ fontSize: 13, color: Theme.colors.text.secondary, marginLeft: 6 }}>
-                {employee.phone}
-              </Text>
+              <CopyableText value={employee.phone} fontSize={13} color={Theme.colors.text.secondary} style={{ marginLeft: 6 }} />
             </View>
           )}
         </View>

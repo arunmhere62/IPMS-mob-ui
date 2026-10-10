@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '@/features/owner/store';
 import { Card } from '../../../../components/Card';
+import { CopyableText } from '../../../../components/CopyableText';
 import { ErrorBanner } from '../../../../components/ErrorBanner';
 import { SkeletonLoader } from '../../../../components/SkeletonLoader';
 import { AnimatedPressableCard } from '../../../../components/AnimatedPressableCard';
@@ -391,9 +392,7 @@ export const RentPaymentsScreen: React.FC<RentPaymentsScreenProps> = ({ navigati
               {getPaymentMethodIcon(item.payment_method)} {item.payment_method}
             </Text>
             {!!item.tenants?.phone_no && (
-              <Text style={{ fontSize: 11, color: Theme.colors.text.secondary }}>
-                {item.tenants.phone_no}
-              </Text>
+              <CopyableText value={item.tenants.phone_no} fontSize={11} color={Theme.colors.text.secondary} />
             )}
           </View>
 
