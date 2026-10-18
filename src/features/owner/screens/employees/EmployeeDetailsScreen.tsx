@@ -170,6 +170,10 @@ const EmployeeDetailsScreen: React.FC = () => {
   }, [navigation, employeeId, canEditEmployee]);
 
   const handleToggleStatus = () => {
+    if (!isSuperAdmin) {
+      Alert.alert('Access Denied', 'Only Super Admin can deactivate or activate employee accounts.');
+      return;
+    }
     const isActive = employee?.status === 'ACTIVE';
     Alert.alert(
       isActive ? 'Deactivate Account' : 'Activate Account',

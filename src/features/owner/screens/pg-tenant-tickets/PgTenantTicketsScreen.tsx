@@ -44,7 +44,7 @@ export function PgTenantTicketsScreen({ navigation }: Props) {
   const { can } = usePermissions();
   const [activeFilter, setActiveFilter] = useState<string | undefined>(undefined);
 
-  if (!can(Permission.VIEW_TICKET)) {
+  if (!can(Permission.VIEW_TENANT_TICKET)) {
     return (
       <ScreenLayout backgroundColor={Theme.colors.background.blue}>
         <ScreenHeader

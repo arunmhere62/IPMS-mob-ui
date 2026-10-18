@@ -47,6 +47,12 @@ export enum Permission {
   EDIT_TICKET = 'ticket_edit',
   DELETE_TICKET = 'ticket_delete',
 
+  // Tenant Ticket
+  VIEW_TENANT_TICKET = 'tenant_ticket_view',
+  CREATE_TENANT_TICKET = 'tenant_ticket_create',
+  EDIT_TENANT_TICKET = 'tenant_ticket_edit',
+  DELETE_TENANT_TICKET = 'tenant_ticket_delete',
+
   // Expense
   VIEW_EXPENSE = 'expense_view',
   CREATE_EXPENSE = 'expense_create',

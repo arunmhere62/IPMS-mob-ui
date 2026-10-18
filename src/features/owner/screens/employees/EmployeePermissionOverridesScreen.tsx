@@ -17,17 +17,13 @@ import {
 } from '../../api/rbacApi';
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler';
 import { useRefreshMyPermissions } from '@/hooks/useRefreshMyPermissions';
-
-const EFFECTS = ['ALLOW', 'DENY'] as const;
-
-type Effect = (typeof EFFECTS)[number];
-
-type PermissionItem = {
-  s_no: number;
-  screen_name: string;
-  action: string;
-  description?: string | null;
-};
+import {
+  PermissionGroupCard,
+  Effect,
+  PendingChange,
+  PermissionItem,
+  buildPermissionKey,
+} from './components/PermissionGroupCard';
 
 const EmployeePermissionOverridesScreen: React.FC = () => {
   const route = useRoute<any>();
@@ -60,7 +56,7 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
   const [removeOverride, { isLoading: removing }] = useRemoveUserPermissionOverrideMutation();
   const { refresh: refreshMyPermissions } = useRefreshMyPermissions({ ttlMs: 0, enableAppResume: false });
 
-  const [pending, setPending] = useState<Record<number, Effect>>({});
+  const [pending, setPending] = useState<Record<number, PendingChange>>({});
 
   const overrideByPermissionId = useMemo(() => {
     const map = new Map<number, { effect: string }>();
@@ -77,16 +73,26 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
 
   const permissionsMap = (employeePerms as any)?.permissions_map ?? {};
 
-  const buildPermissionKey = (p: PermissionItem) => {
-    return `${p.screen_name}_${String(p.action).toLowerCase()}`;
-  };
+  const onToggleAccess = (permission: PermissionItem, allow: boolean) => {
+    const savedEffect = overrideByPermissionId.get(permission.s_no)?.effect as Effect | undefined;
+    const hasAccess = Boolean(permissionsMap[buildPermissionKey(permission)]);
+    const roleDefault =
+      savedEffect === 'ALLOW' ? false : savedEffect === 'DENY' ? true : hasAccess;
 
-  const onSet = async (permission: PermissionItem, effect: Effect) => {
-    try {
-      setPending((prev) => ({ ...prev, [permission.s_no]: effect }));
-    } catch (e: any) {
-      showErrorAlert(e, 'Override Error');
-    }
+    setPending((prev) => {
+      const next = { ...prev };
+      if (allow === roleDefault) {
+        // Desired access matches the role default -> the override (if any) should be removed
+        if (savedEffect) next[permission.s_no] = 'CLEAR';
+        else delete next[permission.s_no];
+      } else {
+        const desired: Effect = allow ? 'ALLOW' : 'DENY';
+        // Matches the already-saved override -> nothing to change
+        if (desired === savedEffect) delete next[permission.s_no];
+        else next[permission.s_no] = desired;
+      }
+      return next;
+    });
   };
 
   const onSaveBulk = async () => {
@@ -97,41 +103,36 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
     }
 
     try {
-      await bulkUpsertOverrides({
-        overrides: entries.map(([permissionId, effect]) => ({
+      const upserts = entries
+        .filter(([, change]) => change !== 'CLEAR')
+        .map(([permissionId, effect]) => ({
           user_id: employeeId,
           permission_id: Number(permissionId),
-          effect: effect as any,
-        })),
-      }).unwrap();
+          effect: effect as Effect,
+        }));
+      const clears = entries
+        .filter(([, change]) => change === 'CLEAR')
+        .map(([permissionId]) => Number(permissionId));
+
+      if (upserts.length) {
+        await bulkUpsertOverrides({ overrides: upserts }).unwrap();
+      }
+      if (clears.length) {
+        await Promise.all(
+          clears.map((permissionId) =>
+            removeOverride({ user_id: employeeId, permission_id: permissionId }).unwrap(),
+          ),
+        );
+      }
 
       setPending({});
-      showSuccessAlert('Overrides saved');
+      showSuccessAlert('Changes saved');
       await refetchOverrides();
       await refetchEmployeePerms();
       await refreshMyPermissions();
     } catch (e: any) {
-      showErrorAlert(e, 'Bulk Save Error');
+      showErrorAlert(e, 'Save Error');
     }
-  };
-
-  const onClear = async (permission: PermissionItem) => {
-    Alert.alert('Remove Override', 'Remove this override?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await removeOverride({ user_id: employeeId, permission_id: permission.s_no }).unwrap();
-            showSuccessAlert('Override removed');
-            await refreshMyPermissions();
-          } catch (e: any) {
-            showErrorAlert(e, 'Override Error');
-          }
-        },
-      },
-    ]);
   };
 
   const loading = loadingCatalog || loadingOverrides;
@@ -155,7 +156,15 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
             </Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+          <ScrollView
+            contentContainerStyle={{
+              padding: 16,
+              paddingBottom: 100,
+              width: '100%',
+              maxWidth: 720,
+              alignSelf: 'center',
+            }}
+          >
             <Card style={{ padding: 14, borderRadius: 16, backgroundColor: '#fff', marginBottom: 12 }}>
               <Text style={{ fontSize: 14, fontWeight: '800', color: Theme.colors.text.primary }}>
                 Manage Employee Access
@@ -164,11 +173,11 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
                 This screen lets you fine-tune permissions for one employee without changing their role.
               </Text>
               <Text style={{ marginTop: 6, fontSize: 12, color: Theme.colors.text.secondary, lineHeight: 16 }}>
-                Choose Allow to grant access, Deny to block access, or Clear to follow the role defaults.
+                Turn the switch on to allow access or off to block it. Switching back to the role default removes the custom setting.
               </Text>
             </Card>
 
-           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 12 }}>
+           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
              <AnimatedPressableCard
               disabled={saving || removing || Object.keys(pending).length === 0}
               onPress={onSaveBulk}
@@ -205,165 +214,17 @@ const EmployeePermissionOverridesScreen: React.FC = () => {
            </View>
 
             {groups.map(([groupName, perms]) => (
-              <Card
+              <PermissionGroupCard
                 key={groupName}
-                style={{ padding: 14, borderRadius: 16, backgroundColor: '#fff', marginBottom: 12 }}
-              >
-                {(() => {
-                  const list = perms as PermissionItem[];
-                  const allowedCount = list.reduce((sum, p) => {
-                    const permissionKey = buildPermissionKey(p);
-                    return sum + (Boolean((permissionsMap as any)[permissionKey]) ? 1 : 0);
-                  }, 0);
-                  const blockedCount = list.length - allowedCount;
-                  const pendingCount = list.reduce((sum, p) => sum + (pending[p.s_no] ? 1 : 0), 0);
-
-                  return (
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: Theme.colors.text.primary }}>
-                        {groupName}
-                      </Text>
-
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <View
-                          style={{
-                            paddingHorizontal: 8,
-                            paddingVertical: 3,
-                            borderRadius: 999,
-                            backgroundColor: '#DCFCE7',
-                          }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: '800', color: '#166534' }}>
-                            Allowed: {allowedCount}
-                          </Text>
-                        </View>
-                        <View
-                          style={{
-                            paddingHorizontal: 8,
-                            paddingVertical: 3,
-                            borderRadius: 999,
-                            backgroundColor: '#FEE2E2',
-                          }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: '800', color: '#991B1B' }}>
-                            Blocked: {blockedCount}
-                          </Text>
-                        </View>
-                        {pendingCount ? (
-                          <View
-                            style={{
-                              paddingHorizontal: 8,
-                              paddingVertical: 3,
-                              borderRadius: 999,
-                              backgroundColor: '#FEF3C7',
-                            }}
-                          >
-                            <Text style={{ fontSize: 11, fontWeight: '800', color: '#92400E' }}>
-                              Pending: {pendingCount}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    </View>
-                  );
-                })()}
-
-                {(perms as PermissionItem[]).map((p) => {
-                  const current = pending[p.s_no] ?? (overrideByPermissionId.get(p.s_no)?.effect as any);
-                  const permissionKey = buildPermissionKey(p);
-                  const hasAccess = Boolean((permissionsMap as any)[permissionKey]);
-
-                  const pendingEffect = pending[p.s_no];
-                  const savedEffect = overrideByPermissionId.get(p.s_no)?.effect as any;
-                  const effectiveEffect = pendingEffect ?? savedEffect;
-
-                  const accessLabel = hasAccess ? 'Currently Allowed' : 'Currently Blocked';
-
-                  const sourceLabel = effectiveEffect
-                    ? `Access setting: ${String(effectiveEffect)}${pendingEffect ? ' (pending)' : ''}`
-                    : hasAccess
-                      ? 'From role permission'
-                      : 'No role permission';
-
-                  const statusLabel = hasAccess ? 'ALLOWED' : 'BLOCKED';
-                  const statusBg = hasAccess ? '#DCFCE7' : '#FEE2E2';
-                  const statusFg = hasAccess ? '#166534' : '#991B1B';
-                  return (
-                    <View key={p.s_no} style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: Theme.colors.border + '40' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <View
-                          style={{
-                            paddingHorizontal: 8,
-                            paddingVertical: 3,
-                            borderRadius: 999,
-                            backgroundColor: statusBg,
-                          }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: '800', color: statusFg }}>
-                            {statusLabel}
-                          </Text>
-                        </View>
-
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: Theme.colors.text.secondary }}>
-                          {accessLabel}
-                        </Text>
-                      </View>
-
-                      <Text style={{ marginTop: 4, fontSize: 11, color: Theme.colors.text.secondary }}>
-                        {sourceLabel}
-                      </Text>
-
-                      <Text style={{ marginTop: 6, fontSize: 13, fontWeight: '600', color: Theme.colors.text.primary }}>
-                        {p.screen_name}_{String(p.action).toLowerCase()}
-                      </Text>
-                      {p.description ? (
-                        <Text style={{ marginTop: 4, fontSize: 12, color: Theme.colors.text.secondary }}>
-                          {p.description}
-                        </Text>
-                      ) : null}
-
-                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                        {EFFECTS.map((e) => {
-                          const selected = current === e;
-                          return (
-                            <AnimatedPressableCard
-                              key={e}
-                              disabled={saving || removing}
-                              onPress={() => onSet(p, e)}
-                              style={{
-                                paddingHorizontal: 12,
-                                paddingVertical: 8,
-                                borderRadius: 10,
-                                backgroundColor: selected ? Theme.colors.primary : '#F3F4F6',
-                              }}
-                            >
-                              <Text style={{ color: selected ? '#fff' : Theme.colors.text.primary, fontWeight: '700', fontSize: 12 }}>
-                                {e}
-                              </Text>
-                            </AnimatedPressableCard>
-                          );
-                        })}
-
-                        <AnimatedPressableCard
-                          disabled={saving || removing || !current}
-                          onPress={() => onClear(p)}
-                          style={{
-                            marginLeft: 'auto',
-                            paddingHorizontal: 12,
-                            paddingVertical: 8,
-                            borderRadius: 10,
-                            backgroundColor: current ? '#FEE2E2' : '#F3F4F6',
-                          }}
-                        >
-                          <Text style={{ color: current ? '#991B1B' : Theme.colors.text.tertiary, fontWeight: '700', fontSize: 12 }}>
-                            Clear
-                          </Text>
-                        </AnimatedPressableCard>
-                      </View>
-                    </View>
-                  );
-                })}
-              </Card>
+                groupName={groupName}
+                permissions={perms as PermissionItem[]}
+                permissionsMap={permissionsMap}
+                overrideByPermissionId={overrideByPermissionId}
+                pending={pending}
+                saving={saving}
+                removing={removing}
+                onToggleAccess={onToggleAccess}
+              />
             ))}
           </ScrollView>
         )}

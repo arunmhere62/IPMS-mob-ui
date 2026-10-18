@@ -49,7 +49,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
   const ticketId: number = typeof rawId === 'string' ? parseInt(rawId, 10) : rawId;
   const pgId: number | undefined = rawPgId ? (typeof rawPgId === 'string' ? parseInt(rawPgId, 10) : rawPgId) : undefined;
   const accessToken = useSelector((s: RootState) => s.auth.accessToken);
-  const canEditTicket = can(Permission.EDIT_TICKET);
+  const canEditTicket = can(Permission.EDIT_TENANT_TICKET);
   const [message, setMessage] = useState('');
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [liveComments, setLiveComments] = useState<PgTenantTicketComment[]>([]);
@@ -168,7 +168,7 @@ export function PgTenantTicketDetailScreen({ navigation, route }: Props) {
     );
   }
 
-  if (!can(Permission.VIEW_TICKET)) {
+  if (!can(Permission.VIEW_TENANT_TICKET)) {
     return (
       <ScreenLayout backgroundColor={C.background?.blue ?? C.primary}>
         <ScreenHeader title="Access Denied" showBackButton onBackPress={() => navigation.goBack()} showPGSelector={false} />

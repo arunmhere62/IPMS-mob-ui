@@ -305,7 +305,9 @@ export const AddEmployeeScreen: React.FC<AddEmployeeScreenProps> = ({ navigation
 
       const payload = {
         name: formData.name.trim(),
-        email: email || undefined,
+        // UpdateEmployeeDto omits email — sending it in edit mode makes the
+        // API reject with "Validation failed" (forbidNonWhitelisted).
+        ...(isEditMode ? {} : { email: email || undefined }),
         password: shouldSendPassword ? password : undefined,
         phone: `${selectedCountry?.phoneCode ?? '+91'}${localPhoneDigits}`,
         role_id: formData.role_id!,

@@ -212,18 +212,24 @@ export const DashboardScreen: React.FC = () => {
     [getMonthlyMetrics]
   );
 
+  const { isSuperAdmin } = usePermissions();
+
   const dashboardQuickActions = useMemo(
     () => [
-      {
-        title: "Quick Setup",
-        icon: "flash",
-        screen: "QuickSetup",
-        color: "#6366F1",
-      },
+      ...(isSuperAdmin
+        ? [
+            {
+              title: "Quick Setup",
+              icon: "flash",
+              screen: "QuickSetup",
+              color: "#6366F1",
+            },
+          ]
+        : []),
       { title: "Rooms", icon: "home", screen: "Rooms", color: "#22C55E" },
       { title: "Tenants", icon: "people", screen: "Tenants", color: "#EC4899" },
     ],
-    []
+    [isSuperAdmin]
   );
 
   const handleQuickActionNavigate = useCallback(

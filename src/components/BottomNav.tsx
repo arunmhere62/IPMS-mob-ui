@@ -96,7 +96,7 @@ const moreMenuItems: MenuItem[] = [
     permission: Permission.VIEW_PAYMENT },
   { name: "Visitors", label: "Visitors", icon: "people-circle-outline", route: "Visitors", permission: Permission.VIEW_VISITOR },
   { name: "Expenses", label: "Expenses", icon: "receipt", route: "Expenses", permission: Permission.VIEW_EXPENSE },
-  { name: "TenantTickets", label: "Tenant Tickets", icon: "ticket-outline", route: "PgTenantTickets", permission: Permission.VIEW_TICKET },
+  { name: "TenantTickets", label: "Tenant Tickets", icon: "ticket-outline", route: "PgTenantTickets", permission: Permission.VIEW_TENANT_TICKET },
   { name: "UpcomingVacancies", label: "Vacancies", icon: "log-out-outline", route: "UpcomingVacancies", permission: Permission.VIEW_TENANTS },
   { name: "Settings", label: "Settings", icon: "settings", route: "Settings" },
 ];

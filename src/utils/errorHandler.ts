@@ -177,7 +177,35 @@ export const showErrorAlert = (error: any, title: string = 'Error'): void => {
         errorMessage = JSON.stringify(candidateData) || 'An error occurred. Please try again.';
       }
     }
-    
+
+    // Surface field-level validation details the backend puts in
+    // error.details (e.g. ["property email should not exist"]). The
+    // top-level message is only "Validation failed" and hides the cause.
+    const candidateObj =
+      candidateData && typeof candidateData === 'object'
+        ? (candidateData as Record<string, unknown>)
+        : undefined;
+    const errField = candidateObj?.error;
+    const details =
+      errField && typeof errField === 'object' && 'details' in errField
+        ? (errField as Record<string, unknown>).details
+        : candidateObj?.details;
+    const detailMessages = Array.isArray(details)
+      ? details
+          .map((d) =>
+            typeof d === 'string'
+              ? d
+              : d && typeof d === 'object' && typeof (d as Record<string, unknown>).message === 'string'
+              ? String((d as Record<string, unknown>).message)
+              : '')
+          .filter(Boolean)
+      : [];
+
+    if (detailMessages.length > 0 && !errorMessage.includes(detailMessages[0])) {
+      const detailText = detailMessages.slice(0, 5).join('\n');
+      errorMessage = errorMessage ? `${errorMessage}\n\n${detailText}` : detailText;
+    }
+
     Alert.alert(title, errorMessage);
   } catch (e) {
     console.error('Error in showErrorAlert:', e);

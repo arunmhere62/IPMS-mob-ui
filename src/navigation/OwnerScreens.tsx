@@ -61,20 +61,6 @@ const withPermission = (Screen: React.ComponentType<any>, permission: Permission
   return ProtectedScreen;
 };
 
-const withPermissions = (
-  Screen: React.ComponentType<any>,
-  permissions: Permission[],
-  requireAll: boolean,
-) => {
-  const ProtectedScreen: React.FC<any> = (props) => (
-    <ProtectedRoute requiredPermissions={permissions} requireAll={requireAll}>
-      <Screen {...props} />
-    </ProtectedRoute>
-  );
-  ProtectedScreen.displayName = `Protected(${Screen.displayName || Screen.name || 'Screen'})`;
-  return ProtectedScreen;
-};
-
 const withSuperAdmin = (Screen: React.ComponentType<any>) => {
   const ProtectedScreen: React.FC<any> = (props) => (
     <ProtectedRoute requireSuperAdmin>
@@ -85,11 +71,7 @@ const withSuperAdmin = (Screen: React.ComponentType<any>) => {
   return ProtectedScreen;
 };
 
-const QuickSetupRoute = withPermissions(
-  QuickSetupScreen,
-  [Permission.VIEW_ROOM, Permission.CREATE_ROOM, Permission.CREATE_BED],
-  true,
-);
+const QuickSetupRoute = withSuperAdmin(QuickSetupScreen);
 const OrganizationsRoute = withSuperAdmin(OrganizationsScreen);
 const EmployeePermissionOverridesRoute = withSuperAdmin(EmployeePermissionOverridesScreen);
 const PGLocationsRoute = withPermission(PGLocationsScreen, Permission.VIEW_PG_LOCATIONS);
@@ -113,8 +95,8 @@ const VisitorsRoute = withPermission(VisitorsScreen, Permission.VIEW_VISITOR);
 const VisitorDetailsRoute = withPermission(VisitorDetailsScreen, Permission.VIEW_VISITOR);
 const TicketsRoute = withPermission(TicketsScreen, Permission.VIEW_TICKET);
 const TicketDetailsRoute = withPermission(TicketDetailsScreen, Permission.VIEW_TICKET);
-const PgTenantTicketsRoute = withPermission(PgTenantTicketsScreen, Permission.VIEW_TICKET);
-const PgTenantTicketDetailRoute = withPermission(PgTenantTicketDetailScreen, Permission.VIEW_TICKET);
+const PgTenantTicketsRoute = withPermission(PgTenantTicketsScreen, Permission.VIEW_TENANT_TICKET);
+const PgTenantTicketDetailRoute = withPermission(PgTenantTicketDetailScreen, Permission.VIEW_TENANT_TICKET);
 const ElectricityBillsRoute = withPermission(RoomElectricityBillsScreen, Permission.VIEW_ELECTRICITY_BILL);
 const PaymentConfigRoute = withPermission(PaymentConfigScreen, Permission.VIEW_PAYMENT_CONFIG);
 const PaymentVerificationRoute = withPermission(PaymentVerificationScreen, Permission.VIEW_PAYMENT_VERIFICATION);

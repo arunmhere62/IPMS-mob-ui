@@ -29,8 +29,8 @@ const screenPermissionMap: Record<string, Permission> = {
   visitordetails: Permission.VIEW_VISITOR,
   tickets: Permission.VIEW_TICKET,
   ticketdetails: Permission.VIEW_TICKET,
-  pgtenanttickets: Permission.VIEW_TICKET,
-  pgtenantticketdetail: Permission.VIEW_TICKET,
+  pgtenanttickets: Permission.VIEW_TENANT_TICKET,
+  pgtenantticketdetail: Permission.VIEW_TENANT_TICKET,
   roomelectricitybills: Permission.VIEW_ELECTRICITY_BILL,
 };
 
